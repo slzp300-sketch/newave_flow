@@ -12,6 +12,8 @@ import MeetingAttendancePage from '../pages/MeetingAttendancePage'
 import EventPage             from '../pages/EventPage'
 import StudentDetailPage     from '../pages/StudentDetailPage'
 import TTSPage               from '../pages/TTSPage'
+import EvangelismPage        from '../pages/EvangelismPage'
+import EvangelismAdminPage   from '../pages/EvangelismAdminPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -41,11 +43,13 @@ const router = createBrowserRouter([
           { path: '/tts',        element: <TTSPage /> },
           { path: '/meeting',    element: <MeetingAttendancePage /> },
           { path: '/events',     element: <EventPage /> },
-          { path: '/students/:id', element: <StudentDetailPage /> },
+          { path: '/students/:id',  element: <StudentDetailPage /> },
+          { path: '/evangelism',    element: <EvangelismPage /> },
           {
             element: <RequireRole roles={['PASTOR', 'EXECUTIVE']} />,
             children: [
-              { path: '/admin', element: <AdminDashboard /> },
+              { path: '/admin',             element: <AdminDashboard /> },
+              { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },
             ],
           },
         ],

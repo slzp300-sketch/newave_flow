@@ -1,7 +1,55 @@
 import { http, HttpResponse, delay } from 'msw'
-import { format } from 'date-fns'
+import { format, addDays, nextSaturday } from 'date-fns'
 
 const today = format(new Date(), 'yyyy-MM-dd')
+
+// ── 전도 로테이션 목 데이터 ──
+const sat0 = format(nextSaturday(new Date()), 'yyyy-MM-dd')
+const sat1 = format(addDays(nextSaturday(new Date()), 7), 'yyyy-MM-dd')
+const sat2 = format(addDays(nextSaturday(new Date()), 14), 'yyyy-MM-dd')
+const sat3 = format(addDays(nextSaturday(new Date()), 21), 'yyyy-MM-dd')
+const sat4 = format(addDays(nextSaturday(new Date()), 28), 'yyyy-MM-dd')
+const sat5 = format(addDays(nextSaturday(new Date()), 35), 'yyyy-MM-dd')
+
+const TEACHERS = [
+  { id: 3, name: '박교사' },
+  { id: 4, name: '최교사' },
+  { id: 5, name: '김교사' },
+  { id: 6, name: '이교사' },
+  { id: 7, name: '정교사' },
+  { id: 8, name: '한교사' },
+]
+const teacherName = (tid) => TEACHERS.find(t => t.id === tid)?.name ?? `교사${tid}`
+
+const EVANG_GROUPS = [
+  { id: 1, name: '1조', description: '월요 전도팀', members: [{ id: 1, teacherId: 3, teacherName: '박교사' }, { id: 2, teacherId: 4, teacherName: '최교사' }] },
+  { id: 2, name: '2조', description: '화요 전도팀', members: [{ id: 3, teacherId: 5, teacherName: '김교사' }] },
+  { id: 3, name: '3조', description: '수요 전도팀', members: [{ id: 4, teacherId: 6, teacherName: '이교사' }] },
+  { id: 4, name: '4조', description: '목요 전도팀', members: [{ id: 5, teacherId: 7, teacherName: '정교사' }] },
+  { id: 5, name: '5조', description: '금요 전도팀', members: [{ id: 6, teacherId: 8, teacherName: '한교사' }] },
+]
+
+const mkStatus = (date) => {
+  const d = new Date(date), t = new Date()
+  if (d < t) return 'COMPLETED'
+  const diff = (d - t) / 86400000
+  return diff <= 7 ? 'ACTIVE' : 'UPCOMING'
+}
+
+const EVANG_SCHEDULES = [
+  { id: 1, scheduledDate: sat0, periodLabel: '2025년 4월', note: '', status: mkStatus(sat0), assignments: [{ id: 1, teacherId: 3, teacherName: '박교사', groupId: 1, groupName: '1조' }] },
+  { id: 2, scheduledDate: sat1, periodLabel: '2025년 4월', note: '', status: mkStatus(sat1), assignments: [{ id: 2, teacherId: 5, teacherName: '김교사', groupId: 2, groupName: '2조' }] },
+  { id: 3, scheduledDate: sat2, periodLabel: '2025년 5월', note: '', status: mkStatus(sat2), assignments: [{ id: 3, teacherId: 6, teacherName: '이교사', groupId: 3, groupName: '3조' }] },
+  { id: 4, scheduledDate: sat3, periodLabel: '2025년 5월', note: '', status: mkStatus(sat3), assignments: [{ id: 4, teacherId: 7, teacherName: '정교사', groupId: 4, groupName: '4조' }] },
+  { id: 5, scheduledDate: sat4, periodLabel: '2025년 5월', note: '', status: mkStatus(sat4), assignments: [{ id: 5, teacherId: 8, teacherName: '한교사', groupId: 5, groupName: '5조' }] },
+  { id: 6, scheduledDate: sat5, periodLabel: '2025년 6월', note: '', status: mkStatus(sat5), assignments: [{ id: 6, teacherId: 4, teacherName: '최교사', groupId: 1, groupName: '1조' }] },
+]
+
+let evangScheduleIdSeq = 10
+const evangState = {
+  groups: JSON.parse(JSON.stringify(EVANG_GROUPS)),
+  schedules: JSON.parse(JSON.stringify(EVANG_SCHEDULES)),
+}
 
 // ──────────── 목 데이터 ────────────
 const USERS = {
@@ -114,6 +162,17 @@ export const handlers = [
   http.get('/api/users/me', () => {
     if (!state.currentUser) return HttpResponse.json({}, { status: 401 })
     return HttpResponse.json(state.currentUser)
+  }),
+
+  http.get('/api/users/teachers', () => {
+    return HttpResponse.json([
+      { id: 3, name: '박교사', email: 'teacher1@church.com', role: 'TEACHER' },
+      { id: 4, name: '최교사', email: 'teacher2@church.com', role: 'TEACHER' },
+      { id: 5, name: '김교사', email: 'teacher3@church.com', role: 'TEACHER' },
+      { id: 6, name: '이교사', email: 'teacher4@church.com', role: 'TEACHER' },
+      { id: 7, name: '정교사', email: 'teacher5@church.com', role: 'TEACHER' },
+      { id: 8, name: '한교사', email: 'teacher6@church.com', role: 'TEACHER' },
+    ])
   }),
 
   // ── 반(클래스) ──
@@ -285,5 +344,119 @@ export const handlers = [
     const key  = `${state.currentUser?.id}-${body.meetingDate}`
     state.meetingAttendance[key] = { teacherId: state.currentUser?.id, meetingDate: body.meetingDate, status: body.status }
     return HttpResponse.json(state.meetingAttendance[key])
+  }),
+
+  // ── 전도 로테이션 ──
+  http.get('/api/evangelism/groups', async () => {
+    await delay(200)
+    return HttpResponse.json(evangState.groups)
+  }),
+
+  http.post('/api/evangelism/groups', async ({ request }) => {
+    await delay(300)
+    const body = await request.json()
+    const group = { id: Date.now(), name: body.name, description: body.description, members: [] }
+    evangState.groups.push(group)
+    return HttpResponse.json(group, { status: 201 })
+  }),
+
+  http.put('/api/evangelism/groups/:id', async ({ params, request }) => {
+    await delay(300)
+    const body  = await request.json()
+    const group = evangState.groups.find(g => g.id === Number(params.id))
+    if (!group) return HttpResponse.json({ status: 404 }, { status: 404 })
+    group.name = body.name
+    group.description = body.description
+    return HttpResponse.json(group)
+  }),
+
+  http.put('/api/evangelism/groups/:id/members', async ({ params, request }) => {
+    await delay(300)
+    const body  = await request.json()
+    const group = evangState.groups.find(g => g.id === Number(params.id))
+    if (!group) return HttpResponse.json({ status: 404 }, { status: 404 })
+    group.members = body.teacherIds.map((tid, i) => ({
+      id: i + 1,
+      teacherId: tid,
+      teacherName: teacherName(tid),
+    }))
+    return HttpResponse.json(group)
+  }),
+
+  http.get('/api/evangelism/schedules', async ({ request }) => {
+    await delay(200)
+    const url = new URL(request.url)
+    const upcomingOnly = url.searchParams.get('upcomingOnly') === 'true'
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const result = upcomingOnly
+      ? evangState.schedules.filter(s => s.scheduledDate >= todayStr)
+      : evangState.schedules
+    return HttpResponse.json([...result].sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)))
+  }),
+
+  http.post('/api/evangelism/schedules', async ({ request }) => {
+    await delay(300)
+    const body = await request.json()
+    const schedule = {
+      id: ++evangScheduleIdSeq,
+      scheduledDate: body.scheduledDate,
+      periodLabel: body.periodLabel,
+      note: body.note ?? '',
+      status: mkStatus(body.scheduledDate),
+      assignments: (body.teacherIds ?? []).map((tid, i) => {
+        const group = evangState.groups.find(g => g.members.some(m => m.teacherId === tid))
+        return { id: i + 100, teacherId: tid, teacherName: teacherName(tid), groupId: group?.id ?? 1, groupName: group?.name ?? '1조' }
+      }),
+    }
+    evangState.schedules.push(schedule)
+    return HttpResponse.json(schedule, { status: 201 })
+  }),
+
+  http.put('/api/evangelism/schedules/:id', async ({ params, request }) => {
+    await delay(300)
+    const body     = await request.json()
+    const schedule = evangState.schedules.find(s => s.id === Number(params.id))
+    if (!schedule) return HttpResponse.json({ status: 404 }, { status: 404 })
+    schedule.scheduledDate = body.scheduledDate
+    schedule.periodLabel   = body.periodLabel
+    schedule.note          = body.note ?? ''
+    schedule.status        = mkStatus(body.scheduledDate)
+    schedule.assignments   = (body.teacherIds ?? []).map((tid, i) => {
+      const group = evangState.groups.find(g => g.members.some(m => m.teacherId === tid))
+      return { id: i + 100, teacherId: tid, teacherName: teacherName(tid), groupId: group?.id ?? 1, groupName: group?.name ?? '1조' }
+    })
+    return HttpResponse.json(schedule)
+  }),
+
+  http.delete('/api/evangelism/schedules/:id', async ({ params }) => {
+    await delay(200)
+    const idx = evangState.schedules.findIndex(s => s.id === Number(params.id))
+    if (idx === -1) return HttpResponse.json({ status: 404 }, { status: 404 })
+    evangState.schedules.splice(idx, 1)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get('/api/evangelism/status/mine', async () => {
+    await delay(200)
+    const uid = state.currentUser?.id
+    const myGroup = evangState.groups.find(g => g.members.some(m => m.teacherId === uid)) ?? null
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const upcoming = evangState.schedules
+      .filter(s => s.scheduledDate >= todayStr && s.assignments.some(a => a.teacherId === uid))
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))
+    return HttpResponse.json({
+      myGroup: myGroup ? { id: myGroup.id, name: myGroup.name, description: myGroup.description, members: myGroup.members } : null,
+      nextSchedule: upcoming[0] ?? null,
+      upcomingSchedules: upcoming,
+    })
+  }),
+
+  http.get('/api/evangelism/schedules/mine', async () => {
+    await delay(200)
+    const uid = state.currentUser?.id
+    const result = evangState.schedules
+      .filter(s => s.assignments.some(a => a.teacherId === uid))
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))
+    return HttpResponse.json(result)
   }),
 ]

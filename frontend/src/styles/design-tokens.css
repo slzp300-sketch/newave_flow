@@ -23,4 +23,8 @@
   .text-glow {
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
   }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all;
+  }
 }

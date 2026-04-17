@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, LogOut } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
 
-export default function Header({ title, showBack = false, showLogout = false, right }) {
+export default function Header({ title, showBack = false, onBack, showLogout = false, right }) {
   const navigate = useNavigate()
   const { clearAuth } = useAuthStore()
 
@@ -17,7 +17,7 @@ export default function Header({ title, showBack = false, showLogout = false, ri
     <header className="sticky top-0 z-50 glass-effect px-4 py-4 flex items-center gap-3">
       {showBack && (
         <button
-          onClick={() => navigate(-1)}
+          onClick={onBack ?? (() => navigate(-1))}
           className="p-1.5 -ml-1.5 rounded-xl active:scale-95 transition-transform"
         >
           <ChevronLeft size={22} className="text-gray-900" />

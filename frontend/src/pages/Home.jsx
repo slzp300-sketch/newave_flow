@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, Users, FileText, Calendar, CheckSquare, CalendarCheck, Sparkles, CheckCircle2 } from 'lucide-react'
+import { ChevronRight, Users, FileText, Calendar, CheckSquare, CalendarCheck, Sparkles, CheckCircle2, MapPin } from 'lucide-react'
 import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
+import { evangelismApi } from '../api/evangelism'
 import { formatDate, toApiDate, greetingByTime, getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -87,34 +88,64 @@ function useTTSSubmitted() {
   return submitted
 }
 
+// ────────── 전도 상태 훅 ──────────
+function useEvangelismStatus() {
+  const { data } = useQuery({
+    queryKey: ['evangelism-status'],
+    queryFn: () => evangelismApi.getMyStatus().then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+  return data ?? null
+}
+
 // ────────── 교사 뷰 ──────────
 function TeacherView({ navigate }) {
-  const ttsSubmitted = useTTSSubmitted()
-  const weekRange = getCurrentWeekRange()
-  const submissionOpen = canSubmitTTS()
-  
+  const ttsSubmitted    = useTTSSubmitted()
+  const weekRange       = getCurrentWeekRange()
+  const submissionOpen  = canSubmitTTS()
+  const evangelism      = useEvangelismStatus()
+
+  const evangelismDesc = (() => {
+    if (!evangelism?.nextSchedule) return '배정된 전도 일정을 확인하세요'
+    if (evangelism.nextSchedule.status === 'ACTIVE') return '이번 주 전도 당번입니다!'
+    const d = Math.ceil((new Date(evangelism.nextSchedule.scheduledDate) - new Date()) / 86400000)
+    return `다음 전도까지 D-${Math.max(0, d)}`
+  })()
+
+  const isEvangelismActive = evangelism?.nextSchedule?.status === 'ACTIVE'
+
   const tasks = [
-    { id: 'attendance', icon: Users,       color: 'bg-blue-50 text-blue-600',      title: '출석 체크',    desc: '학생들의 출결 현황을 기록하세요',   done: false,         path: '/attendance' },
-    { 
-      id: 'checklist',  
-      icon: CheckSquare, 
-      color: ttsSubmitted ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600', 
-      title: 'TTS 체크', 
-      desc: ttsSubmitted 
-        ? '이번 주 TTS 제출 완료!' 
-        : (submissionOpen ? '이번 주 TTS를 제출해 주세요' : '이번 주 활동을 기록해 주세요 (토-화 제출)'), 
-      done: ttsSubmitted, 
-      path: '/checklist' 
+    { id: 'attendance',  icon: Users,        color: 'bg-blue-50 text-blue-600',      title: '출석 체크',      desc: '학생들의 출결 현황을 기록하세요',   done: false,              path: '/attendance' },
+    {
+      id: 'checklist',
+      icon: CheckSquare,
+      color: ttsSubmitted ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600',
+      title: 'TTS 체크',
+      desc: ttsSubmitted
+        ? '이번 주 TTS 제출 완료!'
+        : (submissionOpen ? '이번 주 TTS를 제출해 주세요' : '이번 주 활동을 기록해 주세요 (토-화 제출)'),
+      done: ttsSubmitted,
+      path: '/checklist'
     },
-    { id: 'report',     icon: FileText,    color: 'bg-emerald-50 text-emerald-600', title: '일일 보고서',  desc: '주일 보고서를 제출해 주세요',         done: false,         path: '/report' },
-    { id: 'meeting',    icon: CalendarCheck, color: 'bg-violet-50 text-violet-600',  title: '주간 모임 체크', desc: '기도회 · 교사회의 참석을 체크하세요', done: false,         path: '/meeting' },
-    { id: 'events',     icon: Calendar,    color: 'bg-rose-50 text-rose-600',       title: '행사 일정',    desc: '등록된 교회 행사를 확인하세요',       done: false,         path: '/events' },
+    { id: 'meeting',     icon: CalendarCheck, color: 'bg-violet-50 text-violet-600',  title: '주간 모임 체크', desc: '기도회 · 교사회의 참석을 체크하세요', done: false,             path: '/meeting' },
+    {
+      id: 'evangelism',
+      icon: MapPin,
+      color: isEvangelismActive ? 'bg-red-100 text-red-600' : 'bg-orange-50 text-orange-500',
+      title: '전도 로테이션',
+      desc: evangelismDesc,
+      done: false,
+      path: '/evangelism',
+      badge: isEvangelismActive ? '당번' : null,
+    },
+    { id: 'report',      icon: FileText,     color: 'bg-emerald-50 text-emerald-600', title: '일일 보고서',    desc: '주일 보고서를 제출해 주세요',         done: false,             path: '/report' },
+    { id: 'events',      icon: Calendar,     color: 'bg-rose-50 text-rose-600',       title: '행사 일정',      desc: '등록된 교회 행사를 확인하세요',       done: false,             path: '/events' },
   ]
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       className="flex flex-col gap-3"
     >
       <div className="flex items-center justify-between px-1">
@@ -135,10 +166,10 @@ function TeacherView({ navigate }) {
   )
 }
 
-function TaskCard({ icon: Icon, color, title, desc, done, path, navigate }) {
+function TaskCard({ icon: Icon, color, title, desc, done, path, navigate, badge }) {
   return (
-    <Card 
-      onClick={() => navigate(path)} 
+    <Card
+      onClick={() => navigate(path)}
       className="group relative flex items-center justify-between p-5"
     >
       <div className="flex items-center gap-4">
@@ -146,7 +177,12 @@ function TaskCard({ icon: Icon, color, title, desc, done, path, navigate }) {
           <Icon size={22} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-black text-gray-900 text-base">{title}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-black text-gray-900 text-base">{title}</p>
+            {badge && (
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-red-100 text-red-600">{badge}</span>
+            )}
+          </div>
           <p className={`text-[11px] font-medium mt-0.5 ${done ? 'text-emerald-500' : 'text-gray-400'}`}>{desc}</p>
         </div>
       </div>
@@ -194,6 +230,20 @@ function AdminView({ navigate, today }) {
         <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
           <ChevronRight size={20} />
         </div>
+      </Card>
+
+      {/* 전도 로테이션 관리 */}
+      <Card onClick={() => navigate('/admin/evangelism')} className="flex items-center justify-between p-5 group">
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center">
+            <MapPin size={20} className="text-orange-500" />
+          </div>
+          <div>
+            <p className="font-black text-gray-900 text-sm">전도 로테이션 관리</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">조 구성 · 일정 등록 및 수정</p>
+          </div>
+        </div>
+        <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
       </Card>
       
       {/* 미제출 목록 피크 */}

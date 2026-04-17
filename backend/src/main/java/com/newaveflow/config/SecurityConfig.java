@@ -41,6 +41,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh").permitAll()
                 .requestMatchers("/api/reports/summary", "/api/attendance/summary").hasAnyRole("PASTOR", "EXECUTIVE")
                 .requestMatchers(HttpMethod.POST, "/api/users", "/api/classes", "/api/events").hasRole("PASTOR")
+                .requestMatchers(HttpMethod.POST, "/api/evangelism/groups", "/api/evangelism/schedules").hasAnyRole("PASTOR", "EXECUTIVE")
+                .requestMatchers(HttpMethod.PUT, "/api/evangelism/groups/**", "/api/evangelism/schedules/**").hasAnyRole("PASTOR", "EXECUTIVE")
+                .requestMatchers(HttpMethod.DELETE, "/api/evangelism/schedules/**").hasAnyRole("PASTOR", "EXECUTIVE")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
