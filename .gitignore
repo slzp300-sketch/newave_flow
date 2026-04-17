@@ -1,0 +1,25 @@
+# Node
+frontend/node_modules
+frontend/build
+
+# Spring Boot / Gradle
+backend/.gradle
+backend/build
+backend/target
+
+# Env
+.env
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+
+# Optional
+.claude
+output
+products
+scripts
+templates

@@ -1,0 +1,26 @@
+:root {
+  /* Premium Color Palette */
+  --primary-deep: #4f46e5;
+  --primary-glow: #818cf8;
+  --accent-soft: #f472b6;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  
+  /* Modern Shadows */
+  --shadow-premium: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/30 shadow-premium;
+  }
+  
+  .premium-gradient {
+    @apply bg-gradient-to-br from-indigo-600 via-primary-600 to-primary-700;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  }
+}

@@ -1,0 +1,25 @@
+@import './styles/design-tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { 
+    -webkit-tap-highlight-color: transparent; 
+    @apply transition-colors duration-200;
+  }
+  
+  body { 
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    @apply bg-gray-50 text-gray-900 antialiased selection:bg-primary-100 selection:text-primary-700;
+  }
+}
+
+@layer utilities {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+  
+  .glass-effect {
+    @apply backdrop-blur-lg bg-white/70 border border-white/40;
+  }
+}

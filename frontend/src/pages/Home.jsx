@@ -1,0 +1,230 @@
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronRight, Users, FileText, Calendar, CheckSquare, CalendarCheck, Sparkles, CheckCircle2 } from 'lucide-react'
+import useAuthStore from '../store/authStore'
+import { reportsApi } from '../api/reports'
+import { formatDate, toApiDate, greetingByTime, getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
+import Header from '../components/layout/Header'
+import Card from '../components/common/Card'
+import Badge from '../components/common/Badge'
+
+export default function Home() {
+  const { user }  = useAuthStore()
+  const navigate  = useNavigate()
+  const today     = toApiDate()
+  const isTeacher = user?.role === 'TEACHER'
+
+  return (
+    <div className="flex flex-col min-h-screen pb-12">
+      <Header title="Newave Flow" showLogout={true} />
+
+      {/* 프리미엄 그라데이션 배너 */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+        className="mx-4 mt-2 mb-6 rounded-[2rem] p-8 premium-gradient relative overflow-hidden shadow-glow"
+      >
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: 'radial-gradient(circle at 80% 20%, white 1.5px, transparent 1px)',
+          backgroundSize: '32px 32px'
+        }} />
+        <motion.div
+          animate={{ rotate: [0, 10, 0] }}
+          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+          className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"
+        />
+        
+        <p className="text-primary-100/80 text-sm font-bold tracking-wide uppercase relative flex items-center gap-2">
+          <Sparkles size={14} /> {greetingByTime()}
+        </p>
+        <h2 className="text-white text-3xl font-black mt-2 relative tracking-tight">
+          {user?.name}님, <br/>반가워요!
+        </h2>
+        <div className="mt-6 flex items-center justify-between relative">
+          <p className="text-primary-100/60 text-xs font-medium tracking-widest">{formatDate(new Date())}</p>
+          <RoleBadge role={user?.role} />
+        </div>
+      </motion.div>
+
+      <div className="px-4 flex flex-col gap-4">
+        <AnimatePresence mode="wait">
+          {isTeacher
+            ? <TeacherView key="teacher" navigate={navigate} />
+            : <AdminView  key="admin"   navigate={navigate} today={today} />
+          }
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
+function RoleBadge({ role }) {
+  const map = { 
+    TEACHER:   ['교사', 'bg-white/20 text-white'], 
+    EXECUTIVE: ['임원', 'bg-emerald-400/80 text-white'], 
+    PASTOR:    ['목사님', 'bg-white text-primary-700 shadow-sm'] 
+  }
+  const [label, cls] = map[role] ?? ['사용자', 'bg-white/20 text-white']
+  return <span className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-xl tracking-widest ${cls}`}>{label}</span>
+}
+
+// ────────── TTS 제출 여부 확인 ──────────
+function useTTSSubmitted() {
+  const [submitted, setSubmitted] = useState(false)
+  useEffect(() => {
+    const { weekNum } = getTTSWeekRange()
+    const year = new Date().getFullYear()
+    const key  = `tts_${year}_week${weekNum}`
+    const saved = localStorage.getItem(key)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      setSubmitted(!!parsed.submitted)
+    }
+  }, [])
+  return submitted
+}
+
+// ────────── 교사 뷰 ──────────
+function TeacherView({ navigate }) {
+  const ttsSubmitted = useTTSSubmitted()
+  const weekRange = getCurrentWeekRange()
+  const submissionOpen = canSubmitTTS()
+  
+  const tasks = [
+    { id: 'attendance', icon: Users,       color: 'bg-blue-50 text-blue-600',      title: '출석 체크',    desc: '학생들의 출결 현황을 기록하세요',   done: false,         path: '/attendance' },
+    { 
+      id: 'checklist',  
+      icon: CheckSquare, 
+      color: ttsSubmitted ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600', 
+      title: 'TTS 체크', 
+      desc: ttsSubmitted 
+        ? '이번 주 TTS 제출 완료!' 
+        : (submissionOpen ? '이번 주 TTS를 제출해 주세요' : '이번 주 활동을 기록해 주세요 (토-화 제출)'), 
+      done: ttsSubmitted, 
+      path: '/checklist' 
+    },
+    { id: 'report',     icon: FileText,    color: 'bg-emerald-50 text-emerald-600', title: '일일 보고서',  desc: '주일 보고서를 제출해 주세요',         done: false,         path: '/report' },
+    { id: 'meeting',    icon: CalendarCheck, color: 'bg-violet-50 text-violet-600',  title: '주간 모임 체크', desc: '기도회 · 교사회의 참석을 체크하세요', done: false,         path: '/meeting' },
+    { id: 'events',     icon: Calendar,    color: 'bg-rose-50 text-rose-600',       title: '행사 일정',    desc: '등록된 교회 행사를 확인하세요',       done: false,         path: '/events' },
+  ]
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="flex flex-col gap-3"
+    >
+      <div className="flex items-center justify-between px-1">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">This Week</p>
+        <p className="text-[10px] font-bold text-gray-400">{weekRange}</p>
+      </div>
+      {tasks.map((t, idx) => (
+        <motion.div
+          key={t.id}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: idx * 0.1 }}
+        >
+          <TaskCard {...t} navigate={navigate} />
+        </motion.div>
+      ))}
+    </motion.div>
+  )
+}
+
+function TaskCard({ icon: Icon, color, title, desc, done, path, navigate }) {
+  return (
+    <Card 
+      onClick={() => navigate(path)} 
+      className="group relative flex items-center justify-between p-5"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-110 ${color}`}>
+          <Icon size={22} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-black text-gray-900 text-base">{title}</p>
+          <p className={`text-[11px] font-medium mt-0.5 ${done ? 'text-emerald-500' : 'text-gray-400'}`}>{desc}</p>
+        </div>
+      </div>
+      <div className="flex-shrink-0 flex items-center gap-2 ml-3">
+        {done
+          ? <CheckCircle2 size={20} className="text-emerald-500" />
+          : <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
+        }
+      </div>
+    </Card>
+  )
+}
+
+// ────────── 관리자 뷰 ──────────
+function AdminView({ navigate, today }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['report-summary', today],
+    queryFn:  () => reportsApi.getSummary(today).then(r => r.data),
+  })
+
+  const submitRate = data?.totalTeachers
+    ? Math.round((data.submitted / data.totalTeachers) * 100)
+    : 0
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }}
+      className="flex flex-col gap-5"
+    >
+      <SectionLabel>System Pulse</SectionLabel>
+
+      {/* 통계 요약 */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatSummary value={submitRate + '%'} label="Submission" color="text-primary-600" />
+        <StatSummary value={data?.totalTeachers ?? '-'} label="Teachers" color="text-gray-900" />
+      </div>
+
+      {/* 대시보드 링크 */}
+      <Card onClick={() => navigate('/admin')} className="flex items-center justify-between p-5 premium-gradient group">
+        <div>
+          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">Detail View</p>
+          <p className="text-white text-[15px] font-black mt-1">전체 운영 현황 대시보드</p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+          <ChevronRight size={20} />
+        </div>
+      </Card>
+      
+      {/* 미제출 목록 피크 */}
+      {!isLoading && data?.notSubmitted?.filter((_, idx) => idx < 3).length > 0 && (
+        <div className="flex flex-col gap-2">
+          <SectionLabel>Urgent Follow-up</SectionLabel>
+          {data.notSubmitted.slice(0, 3).map(t => (
+            <Card key={t.teacherId} className="flex items-center gap-3 py-3 px-4">
+              <div className="w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-[11px] font-black">{t.teacherName[0]}</div>
+              <p className="text-sm font-bold text-gray-700">{t.teacherName}</p>
+              <Badge variant="danger" className="ml-auto text-[9px]">미제출</Badge>
+            </Card>
+          ))}
+          {data.notSubmitted.length > 3 && (
+            <p className="text-center text-[10px] text-gray-400 font-bold mt-1">외 {data.notSubmitted.length - 3}명 더 있음</p>
+          )}
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+function StatSummary({ value, label, color }) {
+  return (
+    <Card className="p-5 flex flex-col items-center">
+      <p className={`text-3xl font-black ${color} tracking-tighter`}>{value}</p>
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">{label}</p>
+    </Card>
+  )
+}
+
+function SectionLabel({ children }) {
+  return <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-1">{children}</p>
+}
