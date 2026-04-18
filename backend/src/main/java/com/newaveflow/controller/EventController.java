@@ -34,13 +34,19 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEvent(id));
     }
 
-    @PostMapping("/{id}/attendance")
-    public ResponseEntity<Map<String, Boolean>> saveAttendance(
-            @PathVariable Long id,
-            @Valid @RequestBody EventAttendanceRequest request,
-            @AuthenticationPrincipal User currentUser) {
-        
-        eventService.saveEventAttendance(id, currentUser.getId(), request);
-        return ResponseEntity.ok(Map.of("saved", true));
+    @PostMapping
+    public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody com.newaveflow.dto.event.EventDto.EventCreateRequest request) {
+        return ResponseEntity.ok(eventService.createEvent(request));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id, @Valid @RequestBody com.newaveflow.dto.event.EventDto.EventCreateRequest request) {
+        return ResponseEntity.ok(eventService.updateEvent(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        eventService.deleteEvent(id);
+        return ResponseEntity.noContent().build();
     }
 }

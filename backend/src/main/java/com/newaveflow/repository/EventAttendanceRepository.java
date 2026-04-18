@@ -7,4 +7,7 @@ import java.util.Optional;
 
 public interface EventAttendanceRepository extends JpaRepository<EventAttendance, Long> {
     Optional<EventAttendance> findByEventIdAndTeacherId(Long eventId, Long teacherId);
+
+    @org.springframework.transaction.annotation.Transactional
+    void deleteAllByEventId(Long eventId);
 }

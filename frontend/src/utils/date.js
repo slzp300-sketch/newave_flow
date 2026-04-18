@@ -53,8 +53,7 @@ export const getCurrentWeekRange = () => {
   return `${format(start, 'M/d')} ~ ${format(end, 'M/d')}`
 }
 
-/** TTS 제출 가능 여부 (토, 일, 월, 화만 가능) */
+/** TTS 제출 가능 여부 (상시 가능) */
 export const canSubmitTTS = () => {
-  const day = new Date().getDay()
-  return [6, 0, 1, 2].includes(day) // 6:토, 0:일, 1:월, 2:화
+  return true
 }

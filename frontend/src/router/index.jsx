@@ -5,15 +5,17 @@ import AppLayout from '../components/layout/AppLayout'
 import Login                 from '../pages/Login'
 import Home                  from '../pages/Home'
 import AttendancePage        from '../pages/AttendancePage'
-import ReportPage            from '../pages/ReportPage'
 import AdminDashboard        from '../pages/AdminDashboard'
 import CalendarPage          from '../pages/CalendarPage'
+import CalendarAdminPage     from '../pages/CalendarAdminPage'
 import MeetingAttendancePage from '../pages/MeetingAttendancePage'
 import EventPage             from '../pages/EventPage'
 import StudentDetailPage     from '../pages/StudentDetailPage'
 import TTSPage               from '../pages/TTSPage'
 import EvangelismPage        from '../pages/EvangelismPage'
 import EvangelismAdminPage   from '../pages/EvangelismAdminPage'
+import MeetingMinutesPage    from '../pages/MeetingMinutesPage'
+import MeetingMinutesAdminPage from '../pages/MeetingMinutesAdminPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -37,19 +39,21 @@ const router = createBrowserRouter([
         children: [
           { path: '/',           element: <Home /> },
           { path: '/attendance', element: <AttendancePage /> },
-          { path: '/report',     element: <ReportPage /> },
           { path: '/calendar',   element: <CalendarPage /> },
           { path: '/checklist',  element: <TTSPage /> },
           { path: '/tts',        element: <TTSPage /> },
           { path: '/meeting',    element: <MeetingAttendancePage /> },
-          { path: '/events',     element: <EventPage /> },
+          { path: '/minutes',    element: <MeetingMinutesPage /> },
+          { path: '/events',     element: <CalendarPage /> },
           { path: '/students/:id',  element: <StudentDetailPage /> },
           { path: '/evangelism',    element: <EvangelismPage /> },
           {
             element: <RequireRole roles={['PASTOR', 'EXECUTIVE']} />,
             children: [
               { path: '/admin',             element: <AdminDashboard /> },
+              { path: '/admin/calendar',    element: <CalendarAdminPage /> },
               { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },
+              { path: '/admin/minutes',     element: <MeetingMinutesAdminPage /> },
             ],
           },
         ],

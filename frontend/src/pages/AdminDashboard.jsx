@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { reportsApi } from '../api/reports'
 import { toApiDate, formatDate } from '../utils/date'
+import { Link } from 'react-router-dom'
+import { Users, FileText, Calendar } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
@@ -147,6 +149,31 @@ export default function AdminDashboard() {
             </Card>
           </motion.div>
         )}
+
+        {/* 관리 메뉴 */}
+        <div className="flex flex-col gap-3 mt-4">
+          <SectionLabel>시스템 관리</SectionLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/admin/evangelism" className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
+                <Users size={20} />
+              </div>
+              <span className="text-xs font-black text-gray-700">전도 관리</span>
+            </Link>
+            <Link to="/admin/minutes" className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
+                <FileText size={20} />
+              </div>
+              <span className="text-xs font-black text-gray-700">회의록 관리</span>
+            </Link>
+            <Link to="/admin/calendar" className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center gap-2 active:scale-95 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                <Calendar size={20} />
+              </div>
+              <span className="text-xs font-black text-gray-700">일정 관리</span>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   )

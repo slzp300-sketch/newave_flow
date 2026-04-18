@@ -25,6 +25,9 @@ public class EventService {
     private final UserRepository userRepository;
 
     public List<EventResponse> getEvents(LocalDate from, LocalDate to) {
+        if (from == null) from = LocalDate.now().minusMonths(6);
+        if (to == null) to = LocalDate.now().plusMonths(6);
+        
         return eventRepository.findByDateRange(from, to)
                 .stream()
                 .map(EventResponse::from)
@@ -38,24 +41,38 @@ public class EventService {
     }
 
     @Transactional
-    public void saveEventAttendance(Long eventId, Long teacherId, EventAttendanceRequest request) {
-        EventAttendance existing = eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId)
-                .orElse(null);
+    public EventResponse createEvent(com.newaveflow.dto.event.EventDto.EventCreateRequest request) {
+        Event event = Event.builder()
+                .title(request.title())
+                .description(request.description())
+                .eventDate(request.eventDate())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .color(request.color())
+                .eventType(Event.EventType.valueOf(request.eventType()))
+                .build();
+        return EventResponse.from(eventRepository.save(event));
+    }
 
-        if (existing != null) {
-            existing.updateStatus(request.status());
-        } else {
-            Event event = eventRepository.findById(eventId)
-                    .orElseThrow(() -> new IllegalArgumentException("Event not found"));
-            User teacher = userRepository.findById(teacherId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
-            
-            EventAttendance newAttendance = EventAttendance.builder()
-                    .event(event)
-                    .teacher(teacher)
-                    .status(request.status())
-                    .build();
-            eventAttendanceRepository.save(newAttendance);
-        }
+    @Transactional
+    public EventResponse updateEvent(Long id, com.newaveflow.dto.event.EventDto.EventCreateRequest request) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        
+        event.setTitle(request.title());
+        event.setDescription(request.description());
+        event.setEventDate(request.eventDate());
+        event.setStartTime(request.startTime());
+        event.setEndTime(request.endTime());
+        event.setColor(request.color());
+        event.setEventType(Event.EventType.valueOf(request.eventType()));
+        
+        return EventResponse.from(eventRepository.save(event));
+    }
+
+    @Transactional
+    public void deleteEvent(Long id) {
+        eventAttendanceRepository.deleteAllByEventId(id);
+        eventRepository.deleteById(id);
     }
 }

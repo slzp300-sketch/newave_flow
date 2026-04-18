@@ -6,10 +6,17 @@ import { ChevronRight, Users, FileText, Calendar, CheckSquare, CalendarCheck, Sp
 import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
 import { evangelismApi } from '../api/evangelism'
-import { formatDate, toApiDate, greetingByTime, getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
+import { 
+  formatDate, toApiDate, greetingByTime, getTTSWeekRange, 
+  getCurrentWeekRange, canSubmitTTS 
+} from '../utils/date'
+import { startOfWeek, endOfWeek, isSameDay, format } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import client from '../api/client'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
+import { Clock, Bell } from 'lucide-react'
 
 export default function Home() {
   const { user }  = useAuthStore()
@@ -100,10 +107,26 @@ function useEvangelismStatus() {
 
 // ────────── 교사 뷰 ──────────
 function TeacherView({ navigate }) {
+  const [weeklyEvents, setWeeklyEvents] = useState([])
   const ttsSubmitted    = useTTSSubmitted()
   const weekRange       = getCurrentWeekRange()
   const submissionOpen  = canSubmitTTS()
   const evangelism      = useEvangelismStatus()
+
+  useEffect(() => {
+    fetchWeeklyEvents()
+  }, [])
+
+  const fetchWeeklyEvents = async () => {
+    try {
+      const start = toApiDate(startOfWeek(new Date(), { weekStartsOn: 0 }))
+      const end = toApiDate(endOfWeek(new Date(), { weekStartsOn: 0 }))
+      const res = await client.get(`/events?from=${start}&to=${end}`)
+      setWeeklyEvents(res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const evangelismDesc = (() => {
     if (!evangelism?.nextSchedule) return '배정된 전도 일정을 확인하세요'
@@ -138,7 +161,15 @@ function TeacherView({ navigate }) {
       path: '/evangelism',
       badge: isEvangelismActive ? '당번' : null,
     },
-    { id: 'report',      icon: FileText,     color: 'bg-emerald-50 text-emerald-600', title: '일일 보고서',    desc: '주일 보고서를 제출해 주세요',         done: false,             path: '/report' },
+    { 
+      id: 'minutes',     
+      icon: FileText,     
+      color: 'bg-violet-50 text-violet-600', 
+      title: '회의록 및 영상', 
+      desc: '미참석 회의록 확인 및 영상 시청', 
+      done: false, 
+      path: '/minutes' 
+    },
     { id: 'events',      icon: Calendar,     color: 'bg-rose-50 text-rose-600',       title: '행사 일정',      desc: '등록된 교회 행사를 확인하세요',       done: false,             path: '/events' },
   ]
 
@@ -149,9 +180,46 @@ function TeacherView({ navigate }) {
       className="flex flex-col gap-3"
     >
       <div className="flex items-center justify-between px-1">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">This Week</p>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Weekly Summary</p>
         <p className="text-[10px] font-bold text-gray-400">{weekRange}</p>
       </div>
+
+      {/* 이번 주 일정 요약 */}
+      <Card onClick={() => navigate('/events')} className="p-5 bg-gradient-to-br from-rose-50 to-orange-50/50 border-rose-100 group">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-rose-500 shadow-sm">
+              <Bell size={16} />
+            </div>
+            <p className="text-sm font-black text-gray-900">이번 주 주요 일정</p>
+          </div>
+          <ChevronRight size={16} className="text-rose-300 group-hover:translate-x-1 transition-transform" />
+        </div>
+        
+        <div className="flex flex-col gap-2">
+          {weeklyEvents.length === 0 ? (
+            <p className="text-xs text-gray-400 font-bold py-2">이번 주 예정된 일정이 없습니다.</p>
+          ) : (
+            weeklyEvents.slice(0, 2).map(e => (
+              <div key={e.id} className="flex items-center gap-3">
+                <span className={`w-1 h-3 rounded-full ${e.color ? `bg-${e.color}-500` : 'bg-primary-500'}`} style={{ backgroundColor: e.color }} />
+                <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
+                <span className="text-[10px] font-bold text-gray-400 ml-auto">
+                  {format(new Date(e.eventDate), 'EEE', { locale: ko })}
+                </span>
+              </div>
+            ))
+          )}
+          {weeklyEvents.length > 2 && (
+            <p className="text-[10px] text-rose-400 font-black mt-1">+ {weeklyEvents.length - 2}개의 일정이 더 있습니다</p>
+          )}
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-between px-1 mt-2">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Tasks</p>
+      </div>
+
       {tasks.map((t, idx) => (
         <motion.div
           key={t.id}
@@ -198,10 +266,26 @@ function TaskCard({ icon: Icon, color, title, desc, done, path, navigate, badge 
 
 // ────────── 관리자 뷰 ──────────
 function AdminView({ navigate, today }) {
+  const [weeklyEvents, setWeeklyEvents] = useState([])
   const { data, isLoading } = useQuery({
     queryKey: ['report-summary', today],
     queryFn:  () => reportsApi.getSummary(today).then(r => r.data),
   })
+
+  useEffect(() => {
+    fetchWeeklyEvents()
+  }, [])
+
+  const fetchWeeklyEvents = async () => {
+    try {
+      const start = toApiDate(startOfWeek(new Date(), { weekStartsOn: 0 }))
+      const end = toApiDate(endOfWeek(new Date(), { weekStartsOn: 0 }))
+      const res = await client.get(`/events?from=${start}&to=${end}`)
+      setWeeklyEvents(res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const submitRate = data?.totalTeachers
     ? Math.round((data.submitted / data.totalTeachers) * 100)
@@ -220,6 +304,35 @@ function AdminView({ navigate, today }) {
         <StatSummary value={submitRate + '%'} label="Submission" color="text-primary-600" />
         <StatSummary value={data?.totalTeachers ?? '-'} label="Teachers" color="text-gray-900" />
       </div>
+
+      {/* 이번 주 일정 요약 */}
+      <Card onClick={() => navigate('/admin/calendar')} className="p-5 bg-gradient-to-br from-rose-50 to-orange-50/50 border-rose-100 group">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-rose-500 shadow-sm">
+              <Bell size={16} />
+            </div>
+            <p className="text-sm font-black text-gray-900">이번 주 주요 일정</p>
+          </div>
+          <ChevronRight size={16} className="text-rose-300 group-hover:translate-x-1 transition-transform" />
+        </div>
+        
+        <div className="flex flex-col gap-2">
+          {weeklyEvents.length === 0 ? (
+            <p className="text-xs text-gray-400 font-bold py-2">이번 주 예정된 일정이 없습니다.</p>
+          ) : (
+            weeklyEvents.slice(0, 2).map(e => (
+              <div key={e.id} className="flex items-center gap-3">
+                <span className={`w-1 h-3 rounded-full ${e.color ? `bg-${e.color}-500` : 'bg-primary-500'}`} style={{ backgroundColor: e.color }} />
+                <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
+                <span className="text-[10px] font-bold text-gray-400 ml-auto">
+                  {format(new Date(e.eventDate), 'EEE', { locale: ko })}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
 
       {/* 대시보드 링크 */}
       <Card onClick={() => navigate('/admin')} className="flex items-center justify-between p-5 premium-gradient group">
@@ -241,6 +354,20 @@ function AdminView({ navigate, today }) {
           <div>
             <p className="font-black text-gray-900 text-sm">전도 로테이션 관리</p>
             <p className="text-[11px] text-gray-400 mt-0.5">조 구성 · 일정 등록 및 수정</p>
+          </div>
+        </div>
+        <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
+      </Card>
+      
+      {/* 회의록 및 영상 관리 */}
+      <Card onClick={() => navigate('/admin/minutes')} className="flex items-center justify-between p-5 group">
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl bg-violet-50 flex items-center justify-center">
+            <FileText size={20} className="text-violet-600" />
+          </div>
+          <div>
+            <p className="font-black text-gray-900 text-sm">회의록 및 영상 관리</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">회의록 등록 · 녹화 영상 공유 · 확인 현황</p>
           </div>
         </div>
         <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />

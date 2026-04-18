@@ -8,6 +8,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "events")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor
@@ -26,11 +27,20 @@ public class Event {
     @Column(nullable = false)
     private LocalDate eventDate;
 
+    @Column(length = 20)
+    private String startTime;
+
+    @Column(length = 20)
+    private String endTime;
+
+    @Column(length = 20)
+    private String color; // hex color or class name
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EventType eventType;
 
     public enum EventType {
-        SPECIAL, MEETING, REGULAR
+        SPECIAL, MEETING, REGULAR, CHURCH_WIDE
     }
 }

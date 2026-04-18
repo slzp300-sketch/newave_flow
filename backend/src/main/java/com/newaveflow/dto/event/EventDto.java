@@ -12,6 +12,9 @@ public class EventDto {
             String title,
             String description,
             LocalDate eventDate,
+            String startTime,
+            String endTime,
+            String color,
             String eventType
     ) {
         public static EventResponse from(Event event) {
@@ -20,10 +23,23 @@ public class EventDto {
                     event.getTitle(),
                     event.getDescription(),
                     event.getEventDate(),
+                    event.getStartTime(),
+                    event.getEndTime(),
+                    event.getColor(),
                     event.getEventType().name()
             );
         }
     }
+
+    public record EventCreateRequest(
+            @NotNull String title,
+            String description,
+            @NotNull LocalDate eventDate,
+            String startTime,
+            String endTime,
+            String color,
+            @NotNull String eventType
+    ) {}
 
     public record EventAttendanceRequest(
             @NotNull String status

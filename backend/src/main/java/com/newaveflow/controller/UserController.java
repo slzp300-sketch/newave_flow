@@ -24,7 +24,8 @@ public class UserController {
         if (currentUser == null) return ResponseEntity.status(401).build();
         return ResponseEntity.ok(new UserInfo(
             currentUser.getId(), currentUser.getName(),
-            currentUser.getEmail(), currentUser.getRole().name()
+            currentUser.getEmail(), currentUser.getRole().name(),
+            currentUser.getGrade()
         ));
     }
 
@@ -32,7 +33,7 @@ public class UserController {
     public ResponseEntity<List<UserInfo>> getTeachers() {
         List<UserInfo> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER)
             .stream()
-            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name()))
+            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), u.getGrade()))
             .toList();
         return ResponseEntity.ok(teachers);
     }
