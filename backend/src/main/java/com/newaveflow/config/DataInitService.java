@@ -37,6 +37,7 @@ public class DataInitService {
 
     @PostConstruct
     public void init() {
+        if (userRepository.count() > 0) return; // 이미 초기화된 경우 건너뜀
         List<User> teachers = initUsers();
         initClasses(teachers);
         initChecklistItems();
@@ -46,22 +47,6 @@ public class DataInitService {
     }
 
     private List<User> initUsers() {
-        // Clear all data to reset
-        attendanceRepository.deleteAll();
-        checklistRecordRepository.deleteAll();
-        dailyReportRepository.deleteAll();
-        meetingAttendanceRepository.deleteAll();
-        eventAttendanceRepository.deleteAll();
-        meetingMinuteConfirmRepository.deleteAll();
-        meetingMinuteRepository.deleteAll();
-        evangelismAssignmentRepository.deleteAll();
-        evangelismGroupMemberRepository.deleteAll();
-        evangelismGroupRepository.deleteAll();
-        evangelismScheduleRepository.deleteAll();
-        teacherClassRepository.deleteAll();
-        studentRepository.deleteAll();
-        classGroupRepository.deleteAll();
-        userRepository.deleteAll();
 
         String pw = passwordEncoder.encode("password123");
 
@@ -122,15 +107,15 @@ public class DataInitService {
         }
 
         LocalDate nextSat = LocalDate.now().with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
-        EvangelismSchedule schedule = evangelismScheduleRepository.save(EvangelismSchedule.builder().scheduledDate(nextSat).build());
-
-        evangelismAssignmentRepository.save(
-            EvangelismAssignment.builder()
-                .schedule(schedule)
-                .teacher(teachers.get(0))
-                .group(g1)
-                .build()
+        EvangelismSchedule schedule = evangelismScheduleRepository.save(
+            EvangelismSchedule.builder().scheduledDate(nextSat).responsibleGroup(g1).build()
         );
+
+        for (User t : teachers) {
+            evangelismAssignmentRepository.save(
+                EvangelismAssignment.builder().schedule(schedule).teacher(t).group(g1).build()
+            );
+        }
     }
 
     private void initMeetingMinutes(List<User> users) {

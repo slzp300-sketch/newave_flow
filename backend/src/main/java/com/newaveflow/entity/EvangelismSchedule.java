@@ -34,12 +34,17 @@ public class EvangelismSchedule {
     @Builder.Default
     private String status = "ACTIVE";
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsible_group_id", nullable = true)
+    private EvangelismGroup responsibleGroup;
+
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<EvangelismAssignment> assignments = new ArrayList<>();
 
-    public void update(LocalDate scheduledDate) {
+    public void update(LocalDate scheduledDate, EvangelismGroup responsibleGroup) {
         this.scheduledDate = scheduledDate;
+        this.responsibleGroup = responsibleGroup;
     }
 
     public void cancel() {

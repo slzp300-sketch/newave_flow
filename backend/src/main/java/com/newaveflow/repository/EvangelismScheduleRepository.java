@@ -16,10 +16,10 @@ public interface EvangelismScheduleRepository extends JpaRepository<EvangelismSc
     @Query("SELECT s FROM EvangelismSchedule s LEFT JOIN FETCH s.assignments a LEFT JOIN FETCH a.teacher LEFT JOIN FETCH a.group WHERE s.scheduledDate >= :from ORDER BY s.scheduledDate")
     List<EvangelismSchedule> findUpcomingWithAssignments(@Param("from") LocalDate from);
 
-    @Query("SELECT DISTINCT s FROM EvangelismSchedule s JOIN s.assignments a LEFT JOIN FETCH s.assignments a2 LEFT JOIN FETCH a2.teacher LEFT JOIN FETCH a2.group WHERE a.teacher.id = :teacherId AND s.scheduledDate >= :from ORDER BY s.scheduledDate")
-    List<EvangelismSchedule> findUpcomingByTeacherIdWithAssignments(@Param("teacherId") Long teacherId, @Param("from") LocalDate from);
+    @Query("SELECT DISTINCT s FROM EvangelismSchedule s LEFT JOIN FETCH s.assignments a LEFT JOIN FETCH a.teacher LEFT JOIN FETCH a.group WHERE s.responsibleGroup.id = :groupId AND s.scheduledDate >= :from ORDER BY s.scheduledDate")
+    List<EvangelismSchedule> findUpcomingByGroupId(@Param("groupId") Long groupId, @Param("from") LocalDate from);
 
-    @Query("SELECT DISTINCT s FROM EvangelismSchedule s JOIN s.assignments a LEFT JOIN FETCH s.assignments a2 LEFT JOIN FETCH a2.teacher LEFT JOIN FETCH a2.group WHERE a.teacher.id = :teacherId ORDER BY s.scheduledDate DESC")
-    List<EvangelismSchedule> findAllByTeacherIdWithAssignments(@Param("teacherId") Long teacherId);
+    @Query("SELECT DISTINCT s FROM EvangelismSchedule s LEFT JOIN FETCH s.assignments a LEFT JOIN FETCH a.teacher LEFT JOIN FETCH a.group WHERE s.responsibleGroup.id = :groupId ORDER BY s.scheduledDate DESC")
+    List<EvangelismSchedule> findAllByGroupId(@Param("groupId") Long groupId);
 
 }

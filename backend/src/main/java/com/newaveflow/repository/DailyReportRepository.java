@@ -30,4 +30,6 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
         WHERE r.reportDate = :date AND r.status = 'SUBMITTED'
         """)
     long countSubmittedByDate(@Param("date") LocalDate date);
+
+    List<DailyReport> findByTeacherIdAndReportDateBetween(Long teacherId, LocalDate start, LocalDate end);
 }

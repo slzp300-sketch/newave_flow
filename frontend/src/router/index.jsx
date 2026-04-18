@@ -16,6 +16,7 @@ import EvangelismPage        from '../pages/EvangelismPage'
 import EvangelismAdminPage   from '../pages/EvangelismAdminPage'
 import MeetingMinutesPage    from '../pages/MeetingMinutesPage'
 import MeetingMinutesAdminPage from '../pages/MeetingMinutesAdminPage'
+import WeeklyCheckPage from '../pages/WeeklyCheckPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -40,7 +41,7 @@ const router = createBrowserRouter([
           { path: '/',           element: <Home /> },
           { path: '/attendance', element: <AttendancePage /> },
           { path: '/calendar',   element: <CalendarPage /> },
-          { path: '/checklist',  element: <TTSPage /> },
+          { path: '/checklist',  element: <WeeklyCheckPage /> },
           { path: '/tts',        element: <TTSPage /> },
           { path: '/meeting',    element: <MeetingAttendancePage /> },
           { path: '/minutes',    element: <MeetingMinutesPage /> },

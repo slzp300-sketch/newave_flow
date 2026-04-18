@@ -86,43 +86,61 @@ public class EvangelismService {
 
     public MyStatusResponse getMyStatus(Long teacherId) {
         List<EvangelismGroupMember> memberships = memberRepo.findByTeacherId(teacherId);
-        GroupResponse myGroup = memberships.isEmpty() ? null
-            : GroupResponse.from(memberships.get(0).getGroup());
+        if (memberships.isEmpty()) return new MyStatusResponse(null, null, List.of());
+
+        EvangelismGroup myGroup = memberships.get(0).getGroup();
+        GroupResponse myGroupResponse = GroupResponse.from(myGroup);
 
         List<ScheduleResponse> upcoming = scheduleRepo
-            .findUpcomingByTeacherIdWithAssignments(teacherId, LocalDate.now())
+            .findUpcomingByGroupId(myGroup.getId(), LocalDate.now())
             .stream().map(ScheduleResponse::from).toList();
 
         ScheduleResponse next = upcoming.isEmpty() ? null : upcoming.get(0);
-
-        return new MyStatusResponse(myGroup, next, upcoming);
+        return new MyStatusResponse(myGroupResponse, next, upcoming);
     }
 
     public List<ScheduleResponse> getMySchedules(Long teacherId) {
-        return scheduleRepo.findAllByTeacherIdWithAssignments(teacherId).stream()
+        List<EvangelismGroupMember> memberships = memberRepo.findByTeacherId(teacherId);
+        if (memberships.isEmpty()) return List.of();
+
+        Long groupId = memberships.get(0).getGroup().getId();
+        return scheduleRepo.findAllByGroupId(groupId).stream()
             .map(ScheduleResponse::from)
             .toList();
     }
 
     @Transactional
     public ScheduleResponse createSchedule(ScheduleRequest req) {
+        EvangelismGroup responsibleGroup = req.groupId() != null
+            ? groupRepo.findById(req.groupId()).orElseThrow(() -> AppException.notFound("조를 찾을 수 없습니다."))
+            : null;
         EvangelismSchedule schedule = EvangelismSchedule.builder()
             .scheduledDate(req.scheduledDate())
+            .responsibleGroup(responsibleGroup)
             .build();
         scheduleRepo.save(schedule);
         saveAssignments(schedule, req.teacherIds(), req.groupId());
-        return ScheduleResponse.from(scheduleRepo.findById(schedule.getId()).orElseThrow());
+        return ScheduleResponse.from(scheduleRepo.findAllWithAssignments().stream()
+            .filter(s -> s.getId().equals(schedule.getId()))
+            .findFirst()
+            .orElseThrow());
     }
 
     @Transactional
     public ScheduleResponse updateSchedule(Long scheduleId, ScheduleRequest req) {
         EvangelismSchedule schedule = scheduleRepo.findById(scheduleId)
             .orElseThrow(() -> AppException.notFound("일정을 찾을 수 없습니다."));
-
-        schedule.update(req.scheduledDate());
+        EvangelismGroup responsibleGroup = req.groupId() != null
+            ? groupRepo.findById(req.groupId()).orElseThrow(() -> AppException.notFound("조를 찾을 수 없습니다."))
+            : null;
+        schedule.update(req.scheduledDate(), responsibleGroup);
         assignmentRepo.deleteByScheduleId(scheduleId);
+        assignmentRepo.flush();
         saveAssignments(schedule, req.teacherIds(), req.groupId());
-        return ScheduleResponse.from(scheduleRepo.findById(scheduleId).orElseThrow());
+        return ScheduleResponse.from(scheduleRepo.findAllWithAssignments().stream()
+            .filter(s -> s.getId().equals(scheduleId))
+            .findFirst()
+            .orElseThrow());
     }
 
     @Transactional

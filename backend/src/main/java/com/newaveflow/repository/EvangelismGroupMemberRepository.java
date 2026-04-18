@@ -13,5 +13,7 @@ public interface EvangelismGroupMemberRepository extends JpaRepository<Evangelis
 
     Optional<EvangelismGroupMember> findByGroupAndTeacherId(EvangelismGroup group, Long teacherId);
 
-    void deleteByGroupId(Long groupId);
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("DELETE FROM EvangelismGroupMember m WHERE m.group.id = :groupId")
+    void deleteByGroupId(@org.springframework.data.repository.query.Param("groupId") Long groupId);
 }

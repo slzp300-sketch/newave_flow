@@ -95,6 +95,7 @@ function useTTSSubmitted() {
   return submitted
 }
 
+
 // ────────── 전도 상태 훅 ──────────
 function useEvangelismStatus() {
   const { data } = useQuery({
@@ -138,19 +139,17 @@ function TeacherView({ navigate }) {
   const isEvangelismActive = evangelism?.nextSchedule?.status === 'ACTIVE'
 
   const tasks = [
-    { id: 'attendance',  icon: Users,        color: 'bg-blue-50 text-blue-600',      title: '출석 체크',      desc: '학생들의 출결 현황을 기록하세요',   done: false,              path: '/attendance' },
+    { id: 'attendance', icon: Users,        color: 'bg-blue-50 text-blue-600',      title: '출석 체크',      desc: '학생들의 출결 현황을 기록하세요',                         done: false, path: '/attendance' },
     {
-      id: 'checklist',
+      id: 'tts',
       icon: CheckSquare,
       color: ttsSubmitted ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600',
       title: 'TTS 체크',
-      desc: ttsSubmitted
-        ? '이번 주 TTS 제출 완료!'
-        : (submissionOpen ? '이번 주 TTS를 제출해 주세요' : '이번 주 활동을 기록해 주세요 (토-화 제출)'),
+      desc: ttsSubmitted ? '이번 주 TTS 제출 완료!' : (submissionOpen ? '이번 주 TTS를 제출해 주세요' : '이번 주 활동을 기록해 주세요 (토-화 제출)'),
       done: ttsSubmitted,
-      path: '/checklist'
+      path: '/tts'
     },
-    { id: 'meeting',     icon: CalendarCheck, color: 'bg-violet-50 text-violet-600',  title: '주간 모임 체크', desc: '기도회 · 교사회의 참석을 체크하세요', done: false,             path: '/meeting' },
+    { id: 'meeting',    icon: CalendarCheck, color: 'bg-violet-50 text-violet-600', title: '주간 모임 체크', desc: '기도회 · 교사회의 참석을 체크하세요',                   done: false, path: '/meeting' },
     {
       id: 'evangelism',
       icon: MapPin,
@@ -161,16 +160,8 @@ function TeacherView({ navigate }) {
       path: '/evangelism',
       badge: isEvangelismActive ? '당번' : null,
     },
-    { 
-      id: 'minutes',     
-      icon: FileText,     
-      color: 'bg-violet-50 text-violet-600', 
-      title: '회의록 및 영상', 
-      desc: '미참석 회의록 확인 및 영상 시청', 
-      done: false, 
-      path: '/minutes' 
-    },
-    { id: 'events',      icon: Calendar,     color: 'bg-rose-50 text-rose-600',       title: '행사 일정',      desc: '등록된 교회 행사를 확인하세요',       done: false,             path: '/events' },
+    { id: 'minutes',    icon: FileText,      color: 'bg-violet-50 text-violet-600', title: '회의록 및 영상', desc: '미참석 회의록 확인 및 영상 시청',                         done: false, path: '/minutes' },
+    { id: 'events',     icon: Calendar,      color: 'bg-rose-50 text-rose-600',     title: '행사 일정',     desc: '등록된 교회 행사를 확인하세요',                            done: false, path: '/events' },
   ]
 
   return (
@@ -195,7 +186,7 @@ function TeacherView({ navigate }) {
           </div>
           <ChevronRight size={16} className="text-rose-300 group-hover:translate-x-1 transition-transform" />
         </div>
-        
+
         <div className="flex flex-col gap-2">
           {weeklyEvents.length === 0 ? (
             <p className="text-xs text-gray-400 font-bold py-2">이번 주 예정된 일정이 없습니다.</p>

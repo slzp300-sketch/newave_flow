@@ -9,5 +9,7 @@ public interface EvangelismAssignmentRepository extends JpaRepository<Evangelism
 
     List<EvangelismAssignment> findByScheduleId(Long scheduleId);
 
-    void deleteByScheduleId(Long scheduleId);
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("DELETE FROM EvangelismAssignment a WHERE a.schedule.id = :scheduleId")
+    void deleteByScheduleId(@org.springframework.data.repository.query.Param("scheduleId") Long scheduleId);
 }
