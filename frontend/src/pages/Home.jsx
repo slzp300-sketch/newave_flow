@@ -2,10 +2,11 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, Users, FileText, Calendar, CheckSquare, CalendarCheck, Sparkles, CheckCircle2, MapPin } from 'lucide-react'
+import { ChevronRight, Users, FileText, Calendar, CheckSquare, CalendarCheck, Sparkles, CheckCircle2, MapPin, BookOpen, ClipboardList } from 'lucide-react'
 import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
 import { evangelismApi } from '../api/evangelism'
+import { eventApi } from '../api/event'
 import { 
   formatDate, toApiDate, greetingByTime, getTTSWeekRange, 
   getCurrentWeekRange, canSubmitTTS 
@@ -96,6 +97,16 @@ function useTTSSubmitted() {
 }
 
 
+// ────────── 행사 출석 체크 훅 ──────────
+function useAttendanceRequiredEvents() {
+  const { data = [] } = useQuery({
+    queryKey: ['attendance-required-events'],
+    queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+  return data
+}
+
 // ────────── 전도 상태 훅 ──────────
 function useEvangelismStatus() {
   const { data } = useQuery({
@@ -109,10 +120,11 @@ function useEvangelismStatus() {
 // ────────── 교사 뷰 ──────────
 function TeacherView({ navigate }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
-  const ttsSubmitted    = useTTSSubmitted()
-  const weekRange       = getCurrentWeekRange()
-  const submissionOpen  = canSubmitTTS()
-  const evangelism      = useEvangelismStatus()
+  const ttsSubmitted          = useTTSSubmitted()
+  const weekRange             = getCurrentWeekRange()
+  const submissionOpen        = canSubmitTTS()
+  const evangelism            = useEvangelismStatus()
+  const attendanceEvents      = useAttendanceRequiredEvents()
 
   useEffect(() => {
     fetchWeeklyEvents()
@@ -160,8 +172,18 @@ function TeacherView({ navigate }) {
       path: '/evangelism',
       badge: isEvangelismActive ? '당번' : null,
     },
-    { id: 'minutes',    icon: FileText,      color: 'bg-violet-50 text-violet-600', title: '회의록 및 영상', desc: '미참석 회의록 확인 및 영상 시청',                         done: false, path: '/minutes' },
-    { id: 'events',     icon: Calendar,      color: 'bg-rose-50 text-rose-600',     title: '행사 일정',     desc: '등록된 교회 행사를 확인하세요',                            done: false, path: '/events' },
+    { id: 'minutes',    icon: FileText,      color: 'bg-violet-50 text-violet-600', title: '회의록 및 영상', desc: '미참석 회의록 확인 및 영상 시청',  done: false, path: '/minutes' },
+    { id: 'events',     icon: Calendar,      color: 'bg-rose-50 text-rose-600',     title: '행사 일정',     desc: '등록된 교회 행사를 확인하세요',     done: false, path: '/events' },
+    ...(attendanceEvents.length > 0 ? [{
+      id: 'event-attendance',
+      icon: ClipboardList,
+      color: 'bg-emerald-50 text-emerald-600',
+      title: '행사 출석 체크',
+      desc: `출석 체크가 필요한 행사 ${attendanceEvents.length}건`,
+      done: false,
+      path: attendanceEvents.length === 1 ? `/event-attendance/${attendanceEvents[0].id}` : '/event-attendance',
+      badge: `${attendanceEvents.length}건`,
+    }] : []),
   ]
 
   return (
@@ -325,44 +347,28 @@ function AdminView({ navigate, today }) {
         </div>
       </Card>
 
-      {/* 대시보드 링크 */}
-      <Card onClick={() => navigate('/admin')} className="flex items-center justify-between p-5 premium-gradient group">
-        <div>
-          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">Detail View</p>
-          <p className="text-white text-[15px] font-black mt-1">전체 운영 현황 대시보드</p>
-        </div>
-        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-          <ChevronRight size={20} />
-        </div>
-      </Card>
+      <SectionLabel>관리 메뉴</SectionLabel>
 
-      {/* 전도 로테이션 관리 */}
-      <Card onClick={() => navigate('/admin/evangelism')} className="flex items-center justify-between p-5 group">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center">
-            <MapPin size={20} className="text-orange-500" />
+      {[
+        { path: '/admin/evangelism', icon: MapPin,    bg: 'bg-primary-50', color: 'text-primary-600', title: '전도 관리',      desc: '전도 조 편성 및 일정 관리' },
+        { path: '/admin/minutes',    icon: FileText,  bg: 'bg-violet-50',  color: 'text-violet-600',  title: '회의록 관리',    desc: '회의록 등록 · 영상 공유 · 확인 현황' },
+        { path: '/admin/calendar',   icon: Calendar,  bg: 'bg-rose-50',    color: 'text-rose-600',    title: '일정 관리',      desc: '월별 부서 일정 등록 및 수정' },
+        { path: '/admin/prayer',           icon: BookOpen,     bg: 'bg-amber-50',   color: 'text-amber-600',   title: '기도모임 관리',  desc: '불참 명단 및 필사 제출 현황' },
+        { path: '/admin/event-attendance', icon: ClipboardList, bg: 'bg-emerald-50', color: 'text-emerald-600', title: '행사 출석 관리',  desc: '행사별 반 학생 출석 현황 확인' },
+      ].map(({ path, icon: Icon, bg, color, title, desc }) => (
+        <Card key={path} onClick={() => navigate(path)} className="flex items-center justify-between p-5 group">
+          <div className="flex items-center gap-4">
+            <div className={`w-11 h-11 rounded-2xl ${bg} flex items-center justify-center`}>
+              <Icon size={20} className={color} />
+            </div>
+            <div>
+              <p className="font-black text-gray-900 text-sm">{title}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">{desc}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-black text-gray-900 text-sm">전도 로테이션 관리</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">조 구성 · 일정 등록 및 수정</p>
-          </div>
-        </div>
-        <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
-      </Card>
-      
-      {/* 회의록 및 영상 관리 */}
-      <Card onClick={() => navigate('/admin/minutes')} className="flex items-center justify-between p-5 group">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl bg-violet-50 flex items-center justify-center">
-            <FileText size={20} className="text-violet-600" />
-          </div>
-          <div>
-            <p className="font-black text-gray-900 text-sm">회의록 및 영상 관리</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">회의록 등록 · 녹화 영상 공유 · 확인 현황</p>
-          </div>
-        </div>
-        <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
-      </Card>
+          <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
+        </Card>
+      ))}
       
       {/* 미제출 목록 피크 */}
       {!isLoading && data?.notSubmitted?.filter((_, idx) => idx < 3).length > 0 && (

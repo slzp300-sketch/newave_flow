@@ -11,6 +11,7 @@ import { attendanceApi } from '../api/attendance'
 import { classesApi } from '../api/classes'
 import { reportsApi } from '../api/reports'
 import { toApiDate, getMostRecentSunday, isSundayOrMonday, formatDate } from '../utils/date'
+import useAuthStore from '../store/authStore'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
@@ -23,13 +24,14 @@ const STATUS_CONFIG = {
 export default function AttendancePage() {
   const qc    = useQueryClient()
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const today = toApiDate(getMostRecentSunday())
   const isWindowOpen = isSundayOrMonday()
   const [localEdit, setLocalEdit] = useState(false)
 
   // 1. 담당 반 목록
   const { data: classes = [], isLoading: classLoading } = useQuery({
-    queryKey: ['my-classes'],
+    queryKey: ['my-classes', user?.id],
     queryFn:  () => classesApi.getMyClasses().then(r => r.data),
   })
 

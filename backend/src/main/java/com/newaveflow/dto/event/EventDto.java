@@ -4,6 +4,7 @@ import com.newaveflow.entity.Event;
 import com.newaveflow.entity.MeetingAttendance;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 
 public class EventDto {
 
@@ -15,7 +16,8 @@ public class EventDto {
             String startTime,
             String endTime,
             String color,
-            String eventType
+            String eventType,
+            boolean attendanceRequired
     ) {
         public static EventResponse from(Event event) {
             return new EventResponse(
@@ -26,7 +28,8 @@ public class EventDto {
                     event.getStartTime(),
                     event.getEndTime(),
                     event.getColor(),
-                    event.getEventType().name()
+                    event.getEventType().name(),
+                    event.isAttendanceRequired()
             );
         }
     }
@@ -38,11 +41,43 @@ public class EventDto {
             String startTime,
             String endTime,
             String color,
-            @NotNull String eventType
+            @NotNull String eventType,
+            Boolean attendanceRequired
     ) {}
 
     public record EventAttendanceRequest(
             @NotNull String status
+    ) {}
+
+    // 학생 출석 단건
+    public record StudentAttendanceItem(
+            @NotNull Long studentId,
+            @NotNull String status  // PRESENT / ABSENT
+    ) {}
+
+    // 배치 요청
+    public record StudentAttendanceBatchRequest(
+            @NotNull List<StudentAttendanceItem> records
+    ) {}
+
+    // 학생 출석 응답 단건
+    public record StudentAttendanceRecord(
+            Long studentId,
+            String studentName,
+            String grade,
+            Long classGroupId,
+            String classGroupName,
+            String status  // null = 미제출
+    ) {}
+
+    // 반별 출석 요약 (관리자용)
+    public record ClassAttendanceSummary(
+            Long classGroupId,
+            String classGroupName,
+            long totalCount,
+            long presentCount,
+            long absentCount,
+            List<StudentAttendanceRecord> records
     ) {}
 
     public record MeetingAttendanceRequest(

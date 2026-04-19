@@ -40,6 +40,10 @@ public class Event {
     @Column(nullable = false, length = 20)
     private EventType eventType;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean attendanceRequired = false;
+
     public enum EventType {
         SPECIAL, MEETING, REGULAR, CHURCH_WIDE
     }

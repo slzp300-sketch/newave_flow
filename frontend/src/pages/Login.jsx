@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
@@ -8,6 +9,7 @@ import Button from '../components/common/Button'
 export default function Login() {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
+  const queryClient = useQueryClient()
 
   const [form, setForm]       = useState({ email: '', password: '' })
   const [showPw, setShowPw]   = useState(false)
@@ -20,6 +22,7 @@ export default function Login() {
     setLoading(true)
     try {
       const { data } = await authApi.login(form.email, form.password)
+      queryClient.clear()
       setAuth(data.user, data.accessToken, data.refreshToken)
       navigate('/', { replace: true })
     } catch (err) {

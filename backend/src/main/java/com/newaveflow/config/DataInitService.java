@@ -36,6 +36,8 @@ public class DataInitService {
     private final EventAttendanceRepository eventAttendanceRepository;
     private final MeetingMinuteRepository meetingMinuteRepository;
     private final MeetingMinuteConfirmRepository meetingMinuteConfirmRepository;
+    private final PrayerVoteRepository prayerVoteRepository;
+    private final EventStudentAttendanceRepository eventStudentAttendanceRepository;
     private final PasswordEncoder passwordEncoder;
     private final RosterDataInitService rosterDataInitService;
 
@@ -43,8 +45,10 @@ public class DataInitService {
     public void init() {
         // Force a total reset once to ensure all mappings are perfect
         log.info("Performing a fresh initialization of users and roster...");
+        eventStudentAttendanceRepository.deleteAll();
+        prayerVoteRepository.deleteAll();
         teacherClassRepository.deleteAll();
-        attendanceRepository.deleteAll(); // Attendance depends on students/teachers
+        attendanceRepository.deleteAll();
         dailyReportRepository.deleteAll();
         studentRepository.deleteAll();
         classGroupRepository.deleteAll();

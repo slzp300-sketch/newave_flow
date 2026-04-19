@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { LogOut, User, Mail, Phone, Shield, ChevronRight } from 'lucide-react'
 import useAuthStore from '../store/authStore'
 import { authApi } from '../api/auth'
@@ -16,6 +17,7 @@ const ROLE_MAP = {
 export default function ProfilePage() {
   const navigate       = useNavigate()
   const { user, clearAuth } = useAuthStore()
+  const queryClient    = useQueryClient()
   const [loading, setLoading] = useState(false)
   const [confirm, setConfirm] = useState(false)
 
@@ -24,6 +26,7 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     setLoading(true)
     try { await authApi.logout() } catch {}
+    queryClient.clear()
     clearAuth()
     navigate('/login', { replace: true })
   }

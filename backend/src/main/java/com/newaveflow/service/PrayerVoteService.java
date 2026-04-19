@@ -1,0 +1,71 @@
+package com.newaveflow.service;
+
+import com.newaveflow.entity.PrayerVote;
+import com.newaveflow.entity.User;
+import com.newaveflow.exception.AppException;
+import com.newaveflow.repository.PrayerVoteRepository;
+import com.newaveflow.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PrayerVoteService {
+
+    private final PrayerVoteRepository prayerVoteRepository;
+    private final UserRepository userRepository;
+
+    // 해당 날짜가 속한 주의 월요일
+    public static LocalDate getWeekStart(LocalDate date) {
+        return date.with(DayOfWeek.MONDAY);
+    }
+
+    // 투표 가능 여부: 월~목
+    public static boolean isVoteWindowOpen(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        return day == DayOfWeek.MONDAY || day == DayOfWeek.TUESDAY
+            || day == DayOfWeek.WEDNESDAY || day == DayOfWeek.THURSDAY;
+    }
+
+    public Optional<PrayerVote> getMyVote(Long teacherId, LocalDate weekStart) {
+        return prayerVoteRepository.findByTeacherIdAndWeekStart(teacherId, weekStart);
+    }
+
+    @Transactional
+    public PrayerVote saveVote(Long teacherId, LocalDate weekStart, String statusStr, String reason) {
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+
+        PrayerVote.Status status = PrayerVote.Status.valueOf(statusStr);
+
+        PrayerVote vote = prayerVoteRepository.findByTeacherIdAndWeekStart(teacherId, weekStart)
+                .orElseGet(() -> PrayerVote.builder()
+                        .teacher(teacher)
+                        .weekStart(weekStart)
+                        .status(status)
+                        .build());
+
+        vote.update(status, reason);
+        return prayerVoteRepository.save(vote);
+    }
+
+    public List<PrayerVote> getAbsentList(LocalDate weekStart) {
+        return prayerVoteRepository.findAbsentByWeekStart(weekStart);
+    }
+
+    @Transactional
+    public PrayerVote toggleScriptureSubmitted(Long voteId, boolean submitted) {
+        PrayerVote vote = prayerVoteRepository.findById(voteId)
+                .orElseThrow(() -> AppException.notFound("투표 기록을 찾을 수 없습니다."));
+        if (submitted) vote.markScriptureSubmitted();
+        else vote.unmarkScriptureSubmitted();
+        return prayerVoteRepository.save(vote);
+    }
+}

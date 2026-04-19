@@ -16,8 +16,12 @@ import EvangelismPage        from '../pages/EvangelismPage'
 import EvangelismAdminPage   from '../pages/EvangelismAdminPage'
 import MeetingMinutesPage    from '../pages/MeetingMinutesPage'
 import MeetingMinutesAdminPage from '../pages/MeetingMinutesAdminPage'
-import WeeklyCheckPage from '../pages/WeeklyCheckPage'
-import RosterPage from '../pages/RosterPage'
+import PrayerAbsentAdminPage  from '../pages/PrayerAbsentAdminPage'
+import WeeklyCheckPage          from '../pages/WeeklyCheckPage'
+import RosterPage               from '../pages/RosterPage'
+import EventAttendanceListPage  from '../pages/EventAttendanceListPage'
+import EventAttendancePage      from '../pages/EventAttendancePage'
+import EventAttendanceAdminPage from '../pages/EventAttendanceAdminPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -48,8 +52,10 @@ const router = createBrowserRouter([
           { path: '/minutes',    element: <MeetingMinutesPage /> },
           { path: '/events',     element: <CalendarPage /> },
           { path: '/students/:id',  element: <StudentDetailPage /> },
-          { path: '/evangelism',    element: <EvangelismPage /> },
-          { path: '/roster',        element: <RosterPage /> },
+          { path: '/evangelism',         element: <EvangelismPage /> },
+          { path: '/roster',             element: <RosterPage /> },
+          { path: '/event-attendance',   element: <EventAttendanceListPage /> },
+          { path: '/event-attendance/:id', element: <EventAttendancePage /> },
           {
             element: <RequireRole roles={['PASTOR', 'EXECUTIVE']} />,
             children: [
@@ -57,6 +63,8 @@ const router = createBrowserRouter([
               { path: '/admin/calendar',    element: <CalendarAdminPage /> },
               { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },
               { path: '/admin/minutes',     element: <MeetingMinutesAdminPage /> },
+              { path: '/admin/prayer',           element: <PrayerAbsentAdminPage /> },
+              { path: '/admin/event-attendance', element: <EventAttendanceAdminPage /> },
             ],
           },
         ],

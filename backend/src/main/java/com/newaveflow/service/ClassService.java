@@ -7,6 +7,7 @@ import com.newaveflow.entity.TeacherClass;
 import com.newaveflow.repository.ClassGroupRepository;
 import com.newaveflow.repository.StudentRepository;
 import com.newaveflow.repository.TeacherClassRepository;
+import com.newaveflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class ClassService {
     private final ClassGroupRepository classGroupRepository;
     private final StudentRepository studentRepository;
     private final TeacherClassRepository teacherClassRepository;
+    private final UserRepository userRepository;
 
     public List<ClassDto> getAllRosterData() {
         List<com.newaveflow.entity.ClassGroup> classes = classGroupRepository.findAll();

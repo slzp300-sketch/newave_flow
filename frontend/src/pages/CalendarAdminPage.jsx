@@ -49,7 +49,8 @@ export default function CalendarAdminPage() {
     startTime: '',
     endTime: '',
     color: '',
-    eventType: 'REGULAR'
+    eventType: 'REGULAR',
+    attendanceRequired: false,
   })
 
   const { data: events = [], refetch } = useQuery({
@@ -94,7 +95,8 @@ export default function CalendarAdminPage() {
       startTime: event.startTime || '',
       endTime: event.endTime || '',
       color: event.color || '',
-      eventType: event.eventType
+      eventType: event.eventType,
+      attendanceRequired: event.attendanceRequired ?? false,
     })
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -122,7 +124,8 @@ export default function CalendarAdminPage() {
       startTime: '',
       endTime: '',
       color: '',
-      eventType: 'REGULAR'
+      eventType: 'REGULAR',
+      attendanceRequired: false,
     })
   }
 
@@ -243,6 +246,30 @@ export default function CalendarAdminPage() {
                     placeholder="일정 세부 사항을 입력해주세요"
                     className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium resize-none outline-none"
                   />
+                </div>
+
+                {/* 출석 체크 활성화 토글 */}
+                <div
+                  onClick={() => setFormData(d => ({ ...d, attendanceRequired: !d.attendanceRequired }))}
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    formData.attendanceRequired
+                      ? 'border-emerald-300 bg-emerald-50'
+                      : 'border-gray-100 bg-gray-50'
+                  }`}
+                >
+                  <div>
+                    <p className={`text-sm font-black ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
+                      출석 체크 활성화
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">선생님들이 반 아이들 출석을 체크하도록 합니다</p>
+                  </div>
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
+                    formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'
+                  }`}>
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                      formData.attendanceRequired ? 'left-5' : 'left-0.5'
+                    }`} />
+                  </div>
                 </div>
 
                 <div className="flex gap-3">
