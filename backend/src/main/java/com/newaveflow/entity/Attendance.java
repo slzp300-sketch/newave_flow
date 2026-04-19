@@ -44,6 +44,9 @@ public class Attendance {
     private Status status = Status.ABSENT;
 
     @Column(length = 255)
+    private String absentReason;
+
+    @Column(length = 255)
     private String note;
 
     @CreatedDate
@@ -57,8 +60,9 @@ public class Attendance {
         PRESENT, ABSENT, LATE
     }
 
-    public void updateStatus(Status status, String note) {
+    public void updateStatus(Status status, String absentReason, String note) {
         this.status = status;
+        this.absentReason = absentReason;
         this.note = note;
     }
 }

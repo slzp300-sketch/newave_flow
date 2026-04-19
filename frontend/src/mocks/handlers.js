@@ -1,5 +1,6 @@
 import { http, HttpResponse, delay } from 'msw'
 import { format, addDays, nextSaturday } from 'date-fns'
+import { ROSTER_DATA } from '../data/rosterData'
 
 const today = format(new Date(), 'yyyy-MM-dd')
 
@@ -458,5 +459,27 @@ export const handlers = [
       .filter(s => s.assignments.some(a => a.teacherId === uid))
       .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))
     return HttpResponse.json(result)
+  }),
+
+  // ── 교적부 ──
+  http.get('/api/roster', async () => {
+    await delay(150)
+    return HttpResponse.json(ROSTER_DATA)
+  }),
+
+  http.get('/api/roster/:grade', async ({ params }) => {
+    await delay(150)
+    const grade = decodeURIComponent(params.grade)
+    const classes = ROSTER_DATA[grade]
+    if (!classes) return HttpResponse.json({ error: 'Not found' }, { status: 404 })
+    return HttpResponse.json(classes)
+  }),
+
+  http.get('/api/roster/:grade/:classId', async ({ params }) => {
+    await delay(150)
+    const grade = decodeURIComponent(params.grade)
+    const cls = (ROSTER_DATA[grade] ?? []).find(c => c.id === params.classId)
+    if (!cls) return HttpResponse.json({ error: 'Not found' }, { status: 404 })
+    return HttpResponse.json(cls)
   }),
 ]

@@ -1,0 +1,4054 @@
+{
+  "중1": [
+    {
+      "id": "m1-1",
+      "name": "1반",
+      "gender": "여",
+      "teacherName": "정미리암",
+      "students": [
+        {
+          "id": "m1-1-1",
+          "name": "김예온",
+          "gender": "여",
+          "birth": "2013-04-07",
+          "school": "안곡중",
+          "phone": "010-6743-0407",
+          "baptism": false,
+          "parent": "정서현",
+          "parentPhone": "010-2441-1836",
+          "address": "일산동구 약산길 12-1"
+        },
+        {
+          "id": "m1-1-2",
+          "name": "유리한",
+          "gender": "여",
+          "birth": "2013-11-04",
+          "school": "감정중",
+          "phone": "010-4977-2233",
+          "baptism": false,
+          "parent": "한지혜",
+          "parentPhone": "010-4977-2233",
+          "address": "김포시 중봉로1-1 신안3차 309동401호"
+        },
+        {
+          "id": "m1-1-3",
+          "name": "이가연",
+          "gender": "여",
+          "birth": "2013-09-05",
+          "school": "부천중",
+          "phone": "010-5362-6876",
+          "baptism": false,
+          "parent": "유혜정",
+          "parentPhone": "010-5362-6876",
+          "address": "부천시 원미구 중동로 108 팰리스카운티 106동 1023호"
+        },
+        {
+          "id": "m1-1-4",
+          "name": "이수아",
+          "gender": "여",
+          "birth": "2013-06-22",
+          "school": null,
+          "phone": "010-7920-5848",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-7756-5848",
+          "address": null
+        },
+        {
+          "id": "m1-1-5",
+          "name": "장하엘",
+          "gender": "여",
+          "birth": "2013-02-14",
+          "school": "한국기독국제학교",
+          "phone": "010-8364-8036",
+          "baptism": false,
+          "parent": "이지윤",
+          "parentPhone": "010-9141-8036",
+          "address": "식사동 위시티"
+        },
+        {
+          "id": "m1-1-6",
+          "name": "정예슬",
+          "gender": "여",
+          "birth": "2013-03-18",
+          "school": "아둘람CA",
+          "phone": "010-8510-6234",
+          "baptism": false,
+          "parent": "이미영",
+          "parentPhone": "010-8510-6234",
+          "address": "일산 센트럴아이파크"
+        }
+      ]
+    },
+    {
+      "id": "m1-2",
+      "name": "2반",
+      "gender": "여",
+      "teacherName": "선하경",
+      "students": [
+        {
+          "id": "m1-2-1",
+          "name": "김다연",
+          "gender": "여",
+          "birth": "2013-02-21",
+          "school": null,
+          "phone": "010-7257-0232",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-7677-2220",
+          "address": null
+        },
+        {
+          "id": "m1-2-2",
+          "name": "김다인",
+          "gender": "여",
+          "birth": "2013-04-26",
+          "school": "안곡중",
+          "phone": "010-6672-9527",
+          "baptism": true,
+          "parent": "김일규/최지혜",
+          "parentPhone": "010-3029-9527,010-3160-9799",
+          "address": "고양시 일산동구 중산동 하늘마을5단지 505동 701호"
+        },
+        {
+          "id": "m1-2-3",
+          "name": "안세연",
+          "gender": "여",
+          "birth": "2013-05-04",
+          "school": "안곡중",
+          "phone": "010-2469-4917",
+          "baptism": true,
+          "parent": "안근정/김예슬",
+          "parentPhone": "010-7169-4017",
+          "address": "고양시 일산동구 중산로 70 111동 2903호"
+        },
+        {
+          "id": "m1-2-4",
+          "name": "유하라",
+          "gender": "여",
+          "birth": "2013-10-30",
+          "school": "호곡중",
+          "phone": "010-3139-0739",
+          "baptism": false,
+          "parent": "유호선/김현영",
+          "parentPhone": "010-7128-2856,010-6250-0739",
+          "address": "고양시 일산서구 탄현동 탄현로 133 임광진흥 아파트 111동 1201호"
+        }
+      ]
+    },
+    {
+      "id": "m1-3",
+      "name": "3반",
+      "gender": "여",
+      "teacherName": "남수애",
+      "students": [
+        {
+          "id": "m1-3-1",
+          "name": "김아일",
+          "gender": "여",
+          "birth": "2013-05-31",
+          "school": "원흥중",
+          "phone": "010-5694-7173",
+          "baptism": false,
+          "parent": "김지현",
+          "parentPhone": "010-5510-7172",
+          "address": "경기도 고양시 덕양구 원항1로 11"
+        },
+        {
+          "id": "m1-3-2",
+          "name": "김윤지",
+          "gender": "여",
+          "birth": "2013-04-18",
+          "school": "정발중",
+          "phone": "010-4206-6959",
+          "baptism": false,
+          "parent": "김정화",
+          "parentPhone": "010-2079-6959",
+          "address": "일산동구 산두로180"
+        },
+        {
+          "id": "m1-3-3",
+          "name": "이나연",
+          "gender": "여",
+          "birth": "2013-05-27",
+          "school": "향산중",
+          "phone": "010-9273-4554",
+          "baptism": false,
+          "parent": "이유숙",
+          "parentPhone": "010-3342-0020",
+          "address": "경기도 김포시 고촌읍 상미1로7"
+        }
+      ]
+    },
+    {
+      "id": "m1-4",
+      "name": "4반",
+      "gender": "여",
+      "teacherName": "백영주",
+      "students": [
+        {
+          "id": "m1-4-1",
+          "name": "백진주",
+          "gender": "여",
+          "birth": "2013-05-23",
+          "school": null,
+          "phone": "010-8077-3004",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-6344-3004",
+          "address": null
+        },
+        {
+          "id": "m1-4-2",
+          "name": "송아현",
+          "gender": "여",
+          "birth": "2013-02-09",
+          "school": "대화중학교",
+          "phone": "010-5572-8918",
+          "baptism": false,
+          "parent": "정은정",
+          "parentPhone": "010-3917-2282",
+          "address": "경기도 고양시 일산서구"
+        },
+        {
+          "id": "m1-4-3",
+          "name": "유주아",
+          "gender": "여",
+          "birth": "2013-02-22",
+          "school": "글로벌리더스크리스천스쿨",
+          "phone": "010-7602-7812",
+          "baptism": true,
+          "parent": "유재은",
+          "parentPhone": "010-5356-3630",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m1-4-4",
+          "name": "이소현",
+          "gender": "여",
+          "birth": "2013-11-28",
+          "school": "정발중학교",
+          "phone": "010-2199-6920",
+          "baptism": true,
+          "parent": "이정희",
+          "parentPhone": "010-4658-6920",
+          "address": "산두로 248"
+        },
+        {
+          "id": "m1-4-5",
+          "name": "정가엘",
+          "gender": "여",
+          "birth": "2013-12-07",
+          "school": "안곡중학교",
+          "phone": "010-9556-0199",
+          "baptism": true,
+          "parent": "정미리암/정수현",
+          "parentPhone": "010-9556-0199,010-2650-0152",
+          "address": "하늘마을 5단지"
+        },
+        {
+          "id": "m1-4-6",
+          "name": "최단비",
+          "gender": "여",
+          "birth": "2013-10-05",
+          "school": "오마중학교",
+          "phone": "010-5511-2103",
+          "baptism": true,
+          "parent": "김혜진",
+          "parentPhone": "010-3487-4298",
+          "address": "경기도 고양시 일산서구"
+        }
+      ]
+    },
+    {
+      "id": "m1-5",
+      "name": "5반",
+      "gender": "여",
+      "teacherName": "김소희",
+      "students": [
+        {
+          "id": "m1-5-1",
+          "name": "김태은",
+          "gender": "여",
+          "birth": "2013-01-22",
+          "school": "안곡중학교",
+          "phone": "010-7184-1606",
+          "baptism": false,
+          "parent": null,
+          "parentPhone": null,
+          "address": "하늘마을 5단지"
+        },
+        {
+          "id": "m1-5-2",
+          "name": "백주은",
+          "gender": "여",
+          "birth": "2013-07-02",
+          "school": "하나로스쿨",
+          "phone": null,
+          "baptism": true,
+          "parent": null,
+          "parentPhone": "010-2394-0514",
+          "address": "김포시 통진읍"
+        },
+        {
+          "id": "m1-5-3",
+          "name": "이예인",
+          "gender": "여",
+          "birth": "2013-11-30",
+          "school": "아둘람CA",
+          "phone": "010-5802-1288",
+          "baptism": true,
+          "parent": null,
+          "parentPhone": "010-6649-7119",
+          "address": "일산서구"
+        },
+        {
+          "id": "m1-5-4",
+          "name": "이하미",
+          "gender": "여",
+          "birth": "2013-11-30",
+          "school": "발산중학교",
+          "phone": "010-7602-1331",
+          "baptism": true,
+          "parent": null,
+          "parentPhone": "010-3460-0212",
+          "address": "강선마을"
+        },
+        {
+          "id": "m1-5-5",
+          "name": "최리유",
+          "gender": "여",
+          "birth": "2013-10-11",
+          "school": "염창중학교",
+          "phone": "010-5562-7130",
+          "baptism": true,
+          "parent": null,
+          "parentPhone": "010-5737-7130",
+          "address": "강서구"
+        },
+        {
+          "id": "m1-5-6",
+          "name": "허민정",
+          "gender": "여",
+          "birth": "2013-03-02",
+          "school": null,
+          "phone": "010-9970-5443",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-4598-5443",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m1-6",
+      "name": "6반",
+      "gender": "여",
+      "teacherName": "고현주",
+      "students": [
+        {
+          "id": "m1-6-1",
+          "name": "김유경",
+          "gender": "여",
+          "birth": "2013-09-30",
+          "school": "아둘람CA",
+          "phone": null,
+          "baptism": false,
+          "parent": "최지숙",
+          "parentPhone": "010-3955-6117",
+          "address": "하늘마을1로25 504-1902"
+        },
+        {
+          "id": "m1-6-2",
+          "name": "이심온",
+          "gender": "여",
+          "birth": "2013-10-28",
+          "school": "발산중",
+          "phone": "010-6830-8291",
+          "baptism": true,
+          "parent": "신윤경",
+          "parentPhone": "010-3517-4435",
+          "address": "강선로9 1901-1202"
+        },
+        {
+          "id": "m1-6-3",
+          "name": "이주하",
+          "gender": "여",
+          "birth": "2013-07-10",
+          "school": "도래울중",
+          "phone": "010-5659-2132",
+          "baptism": true,
+          "parent": "최미선",
+          "parentPhone": "010-7730-0931",
+          "address": "덕양구 도래울안길59-1 201호"
+        },
+        {
+          "id": "m1-6-4",
+          "name": "임예나",
+          "gender": "여",
+          "birth": "2013-03-10",
+          "school": "산들중",
+          "phone": "010-9290-7110",
+          "baptism": true,
+          "parent": "정주윤",
+          "parentPhone": "010-8212-7110",
+          "address": "파주시 청암로28 818-702"
+        },
+        {
+          "id": "m1-6-5",
+          "name": "정다인",
+          "gender": "여",
+          "birth": "2013-10-20",
+          "school": "계원예중",
+          "phone": "010-7616-4374",
+          "baptism": true,
+          "parent": "이윤희",
+          "parentPhone": "010-8685-4374",
+          "address": "용인시 수지구 대지로187 죽전프리미어포레"
+        }
+      ]
+    },
+    {
+      "id": "m1-7",
+      "name": "7반",
+      "gender": "남",
+      "teacherName": "김원자",
+      "students": [
+        {
+          "id": "m1-7-1",
+          "name": "서하율",
+          "gender": "남",
+          "birth": "2013-11-12",
+          "school": null,
+          "phone": "010-5065-5818",
+          "baptism": true,
+          "parent": "서지은",
+          "parentPhone": "010-9977-5818",
+          "address": null
+        },
+        {
+          "id": "m1-7-2",
+          "name": "송진혁",
+          "gender": "남",
+          "birth": "2013-01-30",
+          "school": "백마중",
+          "phone": "010-8398-0594",
+          "baptism": true,
+          "parent": "김미소",
+          "parentPhone": "010-8728-5885",
+          "address": "경기도 고양시 일산동구"
+        },
+        {
+          "id": "m1-7-3",
+          "name": "이현동",
+          "gender": "남",
+          "birth": "2013-05-08",
+          "school": "양일중",
+          "phone": "010-8486-5733",
+          "baptism": true,
+          "parent": "김진석",
+          "parentPhone": "010-3242-3785",
+          "address": "위시티로"
+        },
+        {
+          "id": "m1-7-4",
+          "name": "조우진",
+          "gender": "남",
+          "birth": "2013-09-26",
+          "school": "KCIS",
+          "phone": "010-9043-3269",
+          "baptism": true,
+          "parent": null,
+          "parentPhone": "010-3420-3269",
+          "address": "일산동구"
+        },
+        {
+          "id": "m1-7-5",
+          "name": "신유빈",
+          "gender": "남",
+          "birth": "2013-09-20",
+          "school": "아둘람 크리스천 아카데미",
+          "phone": "010-2138-0030",
+          "baptism": true,
+          "parent": "이정현",
+          "parentPhone": "010-2417-4948",
+          "address": "일산동구"
+        },
+        {
+          "id": "m1-7-6",
+          "name": "오준영",
+          "gender": "남",
+          "birth": "2013-10-24",
+          "school": null,
+          "phone": "010-9558-4549",
+          "baptism": true,
+          "parent": "이진주",
+          "parentPhone": "010-5055-7575",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m1-8",
+      "name": "8반",
+      "gender": "남",
+      "teacherName": "박성진",
+      "students": [
+        {
+          "id": "m1-8-1",
+          "name": "권상은",
+          "gender": "남",
+          "birth": "2013-11-22",
+          "school": null,
+          "phone": "010-3307-6908",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-3307-3304",
+          "address": null
+        },
+        {
+          "id": "m1-8-2",
+          "name": "김준하",
+          "gender": "남",
+          "birth": "2013-05-17",
+          "school": null,
+          "phone": "010-9931-7548",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-5830-9294",
+          "address": null
+        },
+        {
+          "id": "m1-8-3",
+          "name": "변현수",
+          "gender": "남",
+          "birth": "2013-01-22",
+          "school": null,
+          "phone": null,
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-5323-6067",
+          "address": null
+        },
+        {
+          "id": "m1-8-4",
+          "name": "우민준",
+          "gender": "남",
+          "birth": "2013-11-07",
+          "school": null,
+          "phone": "010-8214-6559",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-8866-2486",
+          "address": null
+        },
+        {
+          "id": "m1-8-5",
+          "name": "이건희",
+          "gender": "남",
+          "birth": "2013-02-05",
+          "school": null,
+          "phone": "010-2541-1039",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-3007-1039",
+          "address": null
+        },
+        {
+          "id": "m1-8-6",
+          "name": "최이랑",
+          "gender": "남",
+          "birth": "2013-04-03",
+          "school": null,
+          "phone": "010-4827-0430",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m1-9",
+      "name": "9반",
+      "gender": "남",
+      "teacherName": "윤성필",
+      "students": [
+        {
+          "id": "m1-9-1",
+          "name": "고하준",
+          "gender": "남",
+          "birth": "2013-05-14",
+          "school": "양일중",
+          "phone": "010-5969-0440",
+          "baptism": false,
+          "parent": "어머니",
+          "parentPhone": "010-9757-8028",
+          "address": null
+        },
+        {
+          "id": "m1-9-2",
+          "name": "김용준",
+          "gender": "남",
+          "birth": "2013-03-21",
+          "school": null,
+          "phone": "010-5637-1931",
+          "baptism": null,
+          "parent": "어머니",
+          "parentPhone": "010-2757-1702",
+          "address": null
+        },
+        {
+          "id": "m1-9-3",
+          "name": "서은종",
+          "gender": "남",
+          "birth": "2013-05-12",
+          "school": "중산중",
+          "phone": "010-2103-2922",
+          "baptism": false,
+          "parent": "이현숙",
+          "parentPhone": "010-7540-2922",
+          "address": "경기도 고양시 일산동구"
+        },
+        {
+          "id": "m1-9-4",
+          "name": "원성찬",
+          "gender": "남",
+          "birth": "2013-01-04",
+          "school": null,
+          "phone": "010-9679-4433",
+          "baptism": null,
+          "parent": "원용성",
+          "parentPhone": "010-9056-4433",
+          "address": "경기도 고양시 일산동구"
+        },
+        {
+          "id": "m1-9-5",
+          "name": "유주찬",
+          "gender": "남",
+          "birth": "2013-02-22",
+          "school": "GLCS",
+          "phone": "010-5883-6228",
+          "baptism": true,
+          "parent": "유재은",
+          "parentPhone": "010-5356-3630",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m1-9-6",
+          "name": "이주원",
+          "gender": "남",
+          "birth": "2013-08-19",
+          "school": "대송중",
+          "phone": "010-8412-1873",
+          "baptism": true,
+          "parent": "어머니",
+          "parentPhone": "010-3977-1873",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m1-10",
+      "name": "10반",
+      "gender": "남",
+      "teacherName": "이한형",
+      "students": [
+        {
+          "id": "m1-10-1",
+          "name": "김주원",
+          "gender": "남",
+          "birth": "2013-09-10",
+          "school": "다율중",
+          "phone": "010-7590-4457",
+          "baptism": true,
+          "parent": "박민예",
+          "parentPhone": "010-7287-4457",
+          "address": "파주시 청암로"
+        },
+        {
+          "id": "m1-10-2",
+          "name": "자요한",
+          "gender": "남",
+          "birth": "2013-07-20",
+          "school": "양일중",
+          "phone": "010-7790-5062",
+          "baptism": false,
+          "parent": "자치호/박용희",
+          "parentPhone": "010-7144-7478",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m1-10-3",
+          "name": "최호경",
+          "gender": "남",
+          "birth": "2013-01-02",
+          "school": "안곡중",
+          "phone": "010-2434-8462",
+          "baptism": true,
+          "parent": "최동규/한지혜",
+          "parentPhone": "010-6555-3214",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m1-10-4",
+          "name": "신희락",
+          "gender": "남",
+          "birth": "2013-04-08",
+          "school": "안곡중",
+          "phone": "010-7582-7690",
+          "baptism": false,
+          "parent": "신정진/조지선",
+          "parentPhone": "010-9312-5490",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m1-10-5",
+          "name": "이하윤",
+          "gender": "남",
+          "birth": "2013-08-27",
+          "school": "안곡중",
+          "phone": "010-2143-0179",
+          "baptism": false,
+          "parent": "이주섭/김수정",
+          "parentPhone": "010-9368-0179",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m1-10-6",
+          "name": "이예준",
+          "gender": "남",
+          "birth": "2013-12-04",
+          "school": "신일중",
+          "phone": "010-2353-9833",
+          "baptism": false,
+          "parent": "이재우/조아라",
+          "parentPhone": "010-8708-2737",
+          "address": "고양시 일산서구"
+        }
+      ]
+    },
+    {
+      "id": "m1-11",
+      "name": "11반",
+      "gender": "남",
+      "teacherName": "박지형",
+      "students": [
+        {
+          "id": "m1-11-1",
+          "name": "안현서",
+          "gender": "남",
+          "birth": "2013-06-19",
+          "school": null,
+          "phone": "010-3475-0982",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-2541-0982",
+          "address": null
+        },
+        {
+          "id": "m1-11-2",
+          "name": "이윤제",
+          "gender": "남",
+          "birth": "2013-03-25",
+          "school": null,
+          "phone": "010-6653-8544",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-6598-8544",
+          "address": null
+        },
+        {
+          "id": "m1-11-3",
+          "name": "전규진",
+          "gender": "남",
+          "birth": "2013-09-26",
+          "school": null,
+          "phone": "010-2625-9040",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-5713-0120",
+          "address": null
+        },
+        {
+          "id": "m1-11-4",
+          "name": "최충원",
+          "gender": "남",
+          "birth": "2013-07-18",
+          "school": null,
+          "phone": "010-2368-2035",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-2035-2299",
+          "address": null
+        },
+        {
+          "id": "m1-11-5",
+          "name": "김믿음",
+          "gender": "남",
+          "birth": "2013-01-07",
+          "school": null,
+          "phone": "010-6563-1535",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-4938-1535",
+          "address": null
+        },
+        {
+          "id": "m1-11-6",
+          "name": "김희범",
+          "gender": "남",
+          "birth": "2013-05-01",
+          "school": null,
+          "phone": null,
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-9264-6241",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m1-12",
+      "name": "12반",
+      "gender": "남",
+      "teacherName": "최민규",
+      "students": [
+        {
+          "id": "m1-12-1",
+          "name": "이윤우",
+          "gender": "남",
+          "birth": "2013-01-21",
+          "school": "운정중학교",
+          "phone": "010-5634-5838",
+          "baptism": false,
+          "parent": "이준/이소은",
+          "parentPhone": "010-9939-3679",
+          "address": "파주시 야당동"
+        },
+        {
+          "id": "m1-12-2",
+          "name": "하민",
+          "gender": "남",
+          "birth": "2013-09-25",
+          "school": "덕이중학교",
+          "phone": "010-5015-0931",
+          "baptism": true,
+          "parent": "하승범/김선미",
+          "parentPhone": "010-6305-0063",
+          "address": "일산서구 덕이동"
+        },
+        {
+          "id": "m1-12-3",
+          "name": "황에녹",
+          "gender": "남",
+          "birth": "2013-08-16",
+          "school": "홈스쿨",
+          "phone": "010-6315-0816",
+          "baptism": true,
+          "parent": "장하모리",
+          "parentPhone": "010-9866-0505",
+          "address": "파주시 숲속노을로"
+        },
+        {
+          "id": "m1-12-4",
+          "name": "김하엘",
+          "gender": "남",
+          "birth": "2013-02-09",
+          "school": "인천하늘중학교",
+          "phone": null,
+          "baptism": true,
+          "parent": "김재일/나양란",
+          "parentPhone": "010-7452-4200",
+          "address": "인천광역시 중구"
+        },
+        {
+          "id": "m1-12-5",
+          "name": "이승찬",
+          "gender": "남",
+          "birth": "2013-10-21",
+          "school": "발산중학교",
+          "phone": "010-3639-2101",
+          "baptism": false,
+          "parent": "이규협/조경미",
+          "parentPhone": "010-8860-6439",
+          "address": "일산서구 강선로"
+        }
+      ]
+    }
+  ],
+  "중2": [
+    {
+      "id": "m2-1",
+      "name": "1반",
+      "gender": "여",
+      "teacherName": "김보경",
+      "students": [
+        {
+          "id": "m2-1-1",
+          "name": "송채린",
+          "gender": "여",
+          "birth": "2012-09-18",
+          "school": "마전중학교",
+          "phone": "010-6512-1977",
+          "baptism": true,
+          "parent": "김상필/임새봄",
+          "parentPhone": "010-7977-0908,010-4161-2857",
+          "address": "서구 완정로 117번길 9 양지마을타운하우스"
+        },
+        {
+          "id": "m2-1-2",
+          "name": "양하랑",
+          "gender": "여",
+          "birth": "2012-03-01",
+          "school": "송산중학교",
+          "phone": "010-2356-1953",
+          "baptism": true,
+          "parent": "양정원/이경미",
+          "parentPhone": "010-9114-0618,010-4702-6952",
+          "address": "고양시 일산서구 가좌3로 45"
+        },
+        {
+          "id": "m2-1-3",
+          "name": "이은빈",
+          "gender": "여",
+          "birth": "2012-05-02",
+          "school": "수명중학교",
+          "phone": "010-8346-5536",
+          "baptism": true,
+          "parent": "이재연/오유화",
+          "parentPhone": "010-4216-5536",
+          "address": "강서구 수명로"
+        },
+        {
+          "id": "m2-1-4",
+          "name": "최리안",
+          "gender": "여",
+          "birth": "2012-01-20",
+          "school": "염창중",
+          "phone": "010-8129-7130",
+          "baptism": true,
+          "parent": "김미선",
+          "parentPhone": "010-5737-7130",
+          "address": "서울 강서구 양천로"
+        },
+        {
+          "id": "m2-1-5",
+          "name": "최신비",
+          "gender": "여",
+          "birth": "2012-12-24",
+          "school": "한빛중학교",
+          "phone": "010-5047-3805",
+          "baptism": true,
+          "parent": "김수연",
+          "parentPhone": "010-9347-3805",
+          "address": "파주시 한빛로"
+        },
+        {
+          "id": "m2-1-6",
+          "name": "한설혜",
+          "gender": "여",
+          "birth": "2012-07-22",
+          "school": "KCIS",
+          "phone": "010-5913-3065",
+          "baptism": false,
+          "parent": "채혜란",
+          "parentPhone": "010-5915-3065",
+          "address": "고양시 대산로"
+        }
+      ]
+    },
+    {
+      "id": "m2-2",
+      "name": "2반",
+      "gender": "여",
+      "teacherName": "조채원",
+      "students": [
+        {
+          "id": "m2-2-1",
+          "name": "권지수",
+          "gender": "여",
+          "birth": "2012-12-25",
+          "school": "저동중",
+          "phone": "010-3003-2512",
+          "baptism": false,
+          "parent": "육종미",
+          "parentPhone": "010-3107-5858,010-2216-2884",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m2-2-2",
+          "name": "김세아",
+          "gender": "여",
+          "birth": "2012-06-19",
+          "school": "저동중",
+          "phone": "010-2742-2664",
+          "baptism": true,
+          "parent": "김신영",
+          "parentPhone": "010-2742-2664",
+          "address": "일산동구 산두로"
+        },
+        {
+          "id": "m2-2-3",
+          "name": "김수아",
+          "gender": "여",
+          "birth": "2012-07-16",
+          "school": "풍산중",
+          "phone": "010-5901-2016",
+          "baptism": true,
+          "parent": "김광규/김은선",
+          "parentPhone": "010-2124-2046,010-2276-4471",
+          "address": "일산동구 숲속마을"
+        },
+        {
+          "id": "m2-2-4",
+          "name": "이다예",
+          "gender": "여",
+          "birth": "2012-07-29",
+          "school": "발산중학교",
+          "phone": "010-7730-1779",
+          "baptism": true,
+          "parent": "이동형/황은진",
+          "parentPhone": "010-3497-1779,010-5596-1784",
+          "address": "고양시 일산서구"
+        },
+        {
+          "id": "m2-2-5",
+          "name": "이소율",
+          "gender": "여",
+          "birth": "2012-01-11",
+          "school": "한빛중학교",
+          "phone": "010-5093-0522",
+          "baptism": true,
+          "parent": "이주영/김기선",
+          "parentPhone": "010-5550-3190,010-8705-9433",
+          "address": "파주시 한울로"
+        },
+        {
+          "id": "m2-2-6",
+          "name": "서문효진",
+          "gender": "여",
+          "birth": null,
+          "school": "신능중학교",
+          "phone": "010-4131-3018",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m2-3",
+      "name": "3반",
+      "gender": "여",
+      "teacherName": "박혜실",
+      "students": [
+        {
+          "id": "m2-3-1",
+          "name": "도아윤",
+          "gender": "여",
+          "birth": "2012-06-12",
+          "school": "계산여중",
+          "phone": "010-7942-5407",
+          "baptism": true,
+          "parent": "한미영",
+          "parentPhone": "010-5613-5407",
+          "address": "인천 계양구"
+        },
+        {
+          "id": "m2-3-2",
+          "name": "박지율",
+          "gender": "여",
+          "birth": "2012-07-05",
+          "school": "성사중학교",
+          "phone": "010-7449-3038",
+          "baptism": true,
+          "parent": "박상윤/신현정",
+          "parentPhone": "010-8925-3038,010-3733-9429",
+          "address": "고양시 덕양구"
+        },
+        {
+          "id": "m2-3-3",
+          "name": "서현희",
+          "gender": "여",
+          "birth": "2012-08-23",
+          "school": "봉일천중학교",
+          "phone": "010-8653-1434",
+          "baptism": true,
+          "parent": "정은채",
+          "parentPhone": "010-2298-1434",
+          "address": "파주시 대원로"
+        },
+        {
+          "id": "m2-3-4",
+          "name": "유라희",
+          "gender": "여",
+          "birth": "2012-03-16",
+          "school": "호곡중학교",
+          "phone": "010-2796-4085",
+          "baptism": true,
+          "parent": "류재권/최란",
+          "parentPhone": "010-2079-4085",
+          "address": "고양시 일산서구"
+        },
+        {
+          "id": "m2-3-5",
+          "name": "이예은",
+          "gender": "여",
+          "birth": "2012-07-17",
+          "school": "계산여중",
+          "phone": "010-7520-9062",
+          "baptism": true,
+          "parent": "이승배/김유미",
+          "parentPhone": "010-9153-8198",
+          "address": "인천 계양구"
+        },
+        {
+          "id": "m2-3-6",
+          "name": "정이은",
+          "gender": "여",
+          "birth": "2012-09-06",
+          "school": "신일중학교",
+          "phone": "010-7641-3147",
+          "baptism": true,
+          "parent": "한송이",
+          "parentPhone": "010-4651-3147",
+          "address": "고양시 일산서구"
+        }
+      ]
+    },
+    {
+      "id": "m2-4",
+      "name": "4반",
+      "gender": "여",
+      "teacherName": "전유민",
+      "students": [
+        {
+          "id": "m2-4-1",
+          "name": "강수완",
+          "gender": "여",
+          "birth": "2012-02-01",
+          "school": "행신중학교",
+          "phone": "010-3143-0201",
+          "baptism": true,
+          "parent": "강보승/유혜원",
+          "parentPhone": "010-9467-3717",
+          "address": "고양시 덕양구"
+        },
+        {
+          "id": "m2-4-2",
+          "name": "고아라",
+          "gender": "여",
+          "birth": "2012-12-08",
+          "school": "KCIS",
+          "phone": "010-4486-1208",
+          "baptism": false,
+          "parent": "김소현",
+          "parentPhone": "010-5206-3060",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m2-4-3",
+          "name": "김은유",
+          "gender": "여",
+          "birth": "2012-07-17",
+          "school": "호곡중학교",
+          "phone": "010-9332-0046",
+          "baptism": true,
+          "parent": "김진성/신효진",
+          "parentPhone": "010-2621-0046,010-8984-0046",
+          "address": "일산서구"
+        },
+        {
+          "id": "m2-4-4",
+          "name": "이서율",
+          "gender": "여",
+          "birth": "2012-10-23",
+          "school": "호곡중학교",
+          "phone": "010-8379-2927",
+          "baptism": true,
+          "parent": "이구익/이유라",
+          "parentPhone": "010-2058-9222",
+          "address": "일산서구"
+        },
+        {
+          "id": "m2-4-5",
+          "name": "주하영",
+          "gender": "여",
+          "birth": "2012-02-11",
+          "school": "다율중학교",
+          "phone": "010-5743-0134",
+          "baptism": true,
+          "parent": "주원세/이진선",
+          "parentPhone": "010-6534-0134",
+          "address": "파주시"
+        },
+        {
+          "id": "m2-4-6",
+          "name": "최예슬",
+          "gender": "여",
+          "birth": "2012-09-27",
+          "school": "도래울중학교",
+          "phone": "010-2733-8475",
+          "baptism": true,
+          "parent": "성진아",
+          "parentPhone": "010-5426-8475",
+          "address": "고양시 덕양구"
+        }
+      ]
+    },
+    {
+      "id": "m2-5",
+      "name": "5반",
+      "gender": "남",
+      "teacherName": "김대곤",
+      "students": [
+        {
+          "id": "m2-5-1",
+          "name": "고승준",
+          "gender": "남",
+          "birth": "2012-10-15",
+          "school": "한빛 크리스천 스쿨",
+          "phone": "010-5912-3655",
+          "baptism": false,
+          "parent": "고태석/김은숙",
+          "parentPhone": "010-3159-3655",
+          "address": "대화동"
+        },
+        {
+          "id": "m2-5-2",
+          "name": "신성윤",
+          "gender": "남",
+          "birth": "2012-02-21",
+          "school": "백마중",
+          "phone": "010-8260-5653",
+          "baptism": true,
+          "parent": "신대웅/박소연",
+          "parentPhone": "010-3472-5653",
+          "address": "일산동구"
+        },
+        {
+          "id": "m2-5-3",
+          "name": "이영석",
+          "gender": "남",
+          "birth": "2012-11-20",
+          "school": "홍은중학교",
+          "phone": "010-8431-2381",
+          "baptism": true,
+          "parent": "강민주",
+          "parentPhone": "010-3914-2381",
+          "address": "일산동구"
+        },
+        {
+          "id": "m2-5-4",
+          "name": "조영하",
+          "gender": "남",
+          "birth": "2012-06-24",
+          "school": "금파중학교",
+          "phone": "010-9049-7088",
+          "baptism": true,
+          "parent": "조충현/양은희",
+          "parentPhone": "010-9505-7088",
+          "address": "김포시"
+        },
+        {
+          "id": "m2-5-5",
+          "name": "김유호",
+          "gender": "남",
+          "birth": null,
+          "school": null,
+          "phone": "010-4601-8801",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m2-6",
+      "name": "6반",
+      "gender": "남",
+      "teacherName": "성은규",
+      "students": [
+        {
+          "id": "m2-6-1",
+          "name": "문이든",
+          "gender": "남",
+          "birth": "2012-01-16",
+          "school": "한수중학교",
+          "phone": "010-2321-4569",
+          "baptism": true,
+          "parent": "문용성/김선영",
+          "parentPhone": "010-4000-7608,010-7320-7450",
+          "address": "고양시 일산서구 강선로 33"
+        },
+        {
+          "id": "m2-6-2",
+          "name": "장태수",
+          "gender": "남",
+          "birth": "2012-10-29",
+          "school": "무원중학교",
+          "phone": "010-6398-3228",
+          "baptism": true,
+          "parent": "정묘화",
+          "parentPhone": "010-4754-3223",
+          "address": "고양시 행신동 무원마을"
+        },
+        {
+          "id": "m2-6-3",
+          "name": "전은찬",
+          "gender": "남",
+          "birth": "2012-07-10",
+          "school": "신일중",
+          "phone": "010-3940-7021",
+          "baptism": true,
+          "parent": "전안재/김지혜",
+          "parentPhone": "010-9513-0906",
+          "address": "일산서구 강선로"
+        },
+        {
+          "id": "m2-6-4",
+          "name": "정세혁",
+          "gender": "남",
+          "birth": "2012-04-02",
+          "school": "안곡중",
+          "phone": "010-6627-0761",
+          "baptism": true,
+          "parent": "정현진/최현주",
+          "parentPhone": "010-6236-0761",
+          "address": "일산서구 일중로"
+        },
+        {
+          "id": "m2-6-5",
+          "name": "정예준",
+          "gender": "남",
+          "birth": "2012-06-30",
+          "school": "WGS",
+          "phone": "010-7730-7510",
+          "baptism": true,
+          "parent": "정성곤/고규빈",
+          "parentPhone": "010-4372-7519",
+          "address": "파주시 초롱꽃로"
+        }
+      ]
+    },
+    {
+      "id": "m2-7",
+      "name": "7반",
+      "gender": "남",
+      "teacherName": "박혜영",
+      "students": [
+        {
+          "id": "m2-7-1",
+          "name": "김주원",
+          "gender": "남",
+          "birth": "2012-07-13",
+          "school": "효성중학교",
+          "phone": "010-7425-8539",
+          "baptism": true,
+          "parent": "김동욱/박진",
+          "parentPhone": "010-8752-8539,010-5065-5649",
+          "address": "인천 계양구"
+        },
+        {
+          "id": "m2-7-2",
+          "name": "박주윤",
+          "gender": "남",
+          "birth": "2012-07-31",
+          "school": "은여울중학교",
+          "phone": "010-5652-7443",
+          "baptism": true,
+          "parent": "송순옥",
+          "parentPhone": "010-2374-1197",
+          "address": "김포시 한강"
+        },
+        {
+          "id": "m2-7-3",
+          "name": "이정진",
+          "gender": "남",
+          "birth": "2012-11-24",
+          "school": "안곡중",
+          "phone": "010-2873-1327",
+          "baptism": true,
+          "parent": "이요한/김신혜",
+          "parentPhone": "010-6720-0549",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "m2-7-4",
+          "name": "최민제",
+          "gender": "남",
+          "birth": "2012-03-05",
+          "school": "고양제일중",
+          "phone": "010-9011-5281",
+          "baptism": true,
+          "parent": "최정남/빙진주",
+          "parentPhone": "010-9011-8879",
+          "address": "일산동구 설문동"
+        },
+        {
+          "id": "m2-7-5",
+          "name": "홍승현",
+          "gender": "남",
+          "birth": "2012-07-12",
+          "school": "양일중학교",
+          "phone": "010-6202-5802",
+          "baptism": false,
+          "parent": "홍서윤",
+          "parentPhone": "010-5181-8205",
+          "address": "식사동"
+        }
+      ]
+    },
+    {
+      "id": "m2-8",
+      "name": "8반",
+      "gender": "남",
+      "teacherName": "박동식",
+      "students": [
+        {
+          "id": "m2-8-1",
+          "name": "김승주",
+          "gender": "남",
+          "birth": "2012-05-21",
+          "school": "한가람중",
+          "phone": "010-5616-4429",
+          "baptism": true,
+          "parent": "김덕수/김연희",
+          "parentPhone": "010-9414-4429",
+          "address": "파주시 가온로"
+        },
+        {
+          "id": "m2-8-2",
+          "name": "박지우",
+          "gender": "남",
+          "birth": "2012-09-14",
+          "school": "덕이중",
+          "phone": "010-5930-2566",
+          "baptism": false,
+          "parent": "김지영",
+          "parentPhone": "010-5112-2566",
+          "address": "고양시 덕이동"
+        },
+        {
+          "id": "m2-8-3",
+          "name": "변지혁",
+          "gender": "남",
+          "birth": "2012-09-03",
+          "school": "금파중",
+          "phone": "010-9379-5706",
+          "baptism": true,
+          "parent": "변성호/이희선",
+          "parentPhone": "010-9079-5716",
+          "address": "김포시 걸포"
+        },
+        {
+          "id": "m2-8-4",
+          "name": "장순형",
+          "gender": "남",
+          "birth": "2012-08-20",
+          "school": "WGS",
+          "phone": "010-7306-1920",
+          "baptism": false,
+          "parent": "장지영/염수진",
+          "parentPhone": "010-5024-4537",
+          "address": "문발동"
+        },
+        {
+          "id": "m2-8-5",
+          "name": "장윤호",
+          "gender": "남",
+          "birth": "2012-07-28",
+          "school": "아라중",
+          "phone": "010-7592-7398",
+          "baptism": false,
+          "parent": "장현승/김미나",
+          "parentPhone": "010-7748-7398",
+          "address": "인천 서구"
+        }
+      ]
+    }
+  ],
+  "중3": [
+    {
+      "id": "m3-1",
+      "name": "1반",
+      "gender": "여",
+      "teacherName": "최윤정",
+      "students": [
+        {
+          "id": "m3-1-1",
+          "name": "박시연",
+          "gender": "여",
+          "birth": "2011-06-23",
+          "school": "한수중학교",
+          "phone": "010-5589-6528",
+          "baptism": null,
+          "parent": "곽혜민",
+          "parentPhone": "010-9833-5608",
+          "address": "고양시 일산서구 킨텍스로 240"
+        },
+        {
+          "id": "m3-1-2",
+          "name": "윤은혜",
+          "gender": "여",
+          "birth": "2011-01-23",
+          "school": null,
+          "phone": "010-4924-3765",
+          "baptism": null,
+          "parent": "정희라",
+          "parentPhone": "010-4051-3765",
+          "address": null
+        },
+        {
+          "id": "m3-1-3",
+          "name": "이수민",
+          "gender": "",
+          "birth": null,
+          "school": null,
+          "phone": "010-9497-3734",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": "010-2855-9785",
+          "address": null
+        },
+        {
+          "id": "m3-1-4",
+          "name": "이아연",
+          "gender": "여",
+          "birth": "2011-07-01",
+          "school": "부천중학교",
+          "phone": "010-8291-0332",
+          "baptism": null,
+          "parent": "유혜정",
+          "parentPhone": "010-5362-6876",
+          "address": "부천시 중동로"
+        },
+        {
+          "id": "m3-1-5",
+          "name": "이지호",
+          "gender": "여",
+          "birth": "2011-06-28",
+          "school": "심학중학교",
+          "phone": "010-2769-6477",
+          "baptism": true,
+          "parent": "이경종/김정례",
+          "parentPhone": "010-2768-6477,010-9864-6477",
+          "address": "파주시 숲속노을로"
+        },
+        {
+          "id": "m3-1-6",
+          "name": "한서윤",
+          "gender": "여",
+          "birth": "2011-06-11",
+          "school": "풍동중학교",
+          "phone": "010-6321-1536",
+          "baptism": true,
+          "parent": "한상욱/최주미",
+          "parentPhone": "010-9075-8717,010-4397-9933",
+          "address": "고양시 일산동구"
+        }
+      ]
+    },
+    {
+      "id": "m3-2",
+      "name": "2반",
+      "gender": "여",
+      "teacherName": "권민경",
+      "students": [
+        {
+          "id": "m3-2-1",
+          "name": "강민서A",
+          "gender": "여",
+          "birth": "2011-08-02",
+          "school": "신원중학교",
+          "phone": "010-5644-8262",
+          "baptism": true,
+          "parent": "강성권/이혜미",
+          "parentPhone": "010-5166-8262",
+          "address": "고양시 덕양구"
+        },
+        {
+          "id": "m3-2-2",
+          "name": "김수인",
+          "gender": "여",
+          "birth": "2011-04-27",
+          "school": "신일중학교",
+          "phone": "010-7403-3833",
+          "baptism": true,
+          "parent": "김용주/김혜진",
+          "parentPhone": "010-3298-7334,010-7334-3833",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-2-3",
+          "name": "문정인",
+          "gender": "여",
+          "birth": "2011-06-22",
+          "school": "KCIS",
+          "phone": "010-2343-0755",
+          "baptism": null,
+          "parent": "김인환",
+          "parentPhone": "010-9972-0058",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-2-4",
+          "name": "소하진",
+          "gender": "여",
+          "birth": "2011-04-28",
+          "school": "다산중학교",
+          "phone": "010-3819-2764",
+          "baptism": true,
+          "parent": "소준환/송현진",
+          "parentPhone": "010-5316-7213",
+          "address": "서울 은평구"
+        },
+        {
+          "id": "m3-2-5",
+          "name": "송유나",
+          "gender": "여",
+          "birth": "2011-09-12",
+          "school": "안곡중학교",
+          "phone": "010-2978-4629",
+          "baptism": null,
+          "parent": "송윤수/김은혜",
+          "parentPhone": "010-2991-4629",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-2-6",
+          "name": "허예진",
+          "gender": "여",
+          "birth": "2011-11-21",
+          "school": null,
+          "phone": "010-4136-7735",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "m3-3",
+      "name": "3반",
+      "gender": "여",
+      "teacherName": "박진원",
+      "students": [
+        {
+          "id": "m3-3-1",
+          "name": "김주혜",
+          "gender": "여",
+          "birth": "2011-11-27",
+          "school": "Juniper Christian school",
+          "phone": "010-5565-7535",
+          "baptism": true,
+          "parent": "김진환/박차라",
+          "parentPhone": "010-5313-7749",
+          "address": "일산"
+        },
+        {
+          "id": "m3-3-2",
+          "name": "박지호",
+          "gender": "여",
+          "birth": "2011-04-08",
+          "school": "인천하늘중",
+          "phone": "010-9639-6041",
+          "baptism": null,
+          "parent": "박종석/김미란",
+          "parentPhone": "010-9210-8163,010-2251-6041",
+          "address": "인천 중구"
+        },
+        {
+          "id": "m3-3-3",
+          "name": "백성주",
+          "gender": "여",
+          "birth": "2011-05-31",
+          "school": "장성중학교",
+          "phone": "010-8186-2026",
+          "baptism": true,
+          "parent": "백승렬/임소희",
+          "parentPhone": "010-4551-2006",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-3-4",
+          "name": "이윤지",
+          "gender": "여",
+          "birth": "2011-01-20",
+          "school": "백신중학교",
+          "phone": "010-7588-0236",
+          "baptism": true,
+          "parent": "이경민/봉선경",
+          "parentPhone": "010-5113-6210,010-9780-8668",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-3-5",
+          "name": "이희우",
+          "gender": "여",
+          "birth": "2011-03-21",
+          "school": "풍동중학교",
+          "phone": "010-4570-6248",
+          "baptism": true,
+          "parent": "조은정",
+          "parentPhone": "010-8803-7623",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-3-6",
+          "name": "정서현",
+          "gender": "여",
+          "birth": "2011-09-30",
+          "school": "양일중학교",
+          "phone": "010-9269-0139",
+          "baptism": false,
+          "parent": "주성숙",
+          "parentPhone": "010-3224-0139,010-7165-0139",
+          "address": "일산동구"
+        }
+      ]
+    },
+    {
+      "id": "m3-4",
+      "name": "4반",
+      "gender": "여",
+      "teacherName": "이은채",
+      "students": [
+        {
+          "id": "m3-4-1",
+          "name": "강민서B",
+          "gender": "",
+          "birth": null,
+          "school": null,
+          "phone": "010-6654-3613",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        },
+        {
+          "id": "m3-4-2",
+          "name": "고하윤",
+          "gender": "여",
+          "birth": "2011-07-26",
+          "school": "양일중학교",
+          "phone": "010-5821-8028",
+          "baptism": false,
+          "parent": "고정빈/이미애",
+          "parentPhone": "010-9757-8028",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-4-3",
+          "name": "류예서",
+          "gender": "여",
+          "birth": "2011-05-16",
+          "school": "안곡중학교",
+          "phone": "010-2154-1775",
+          "baptism": true,
+          "parent": "류문규/한미영",
+          "parentPhone": "010-9985-1287",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-4-4",
+          "name": "이지원",
+          "gender": "",
+          "birth": null,
+          "school": null,
+          "phone": "010-4148-0749",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        },
+        {
+          "id": "m3-4-5",
+          "name": "정가온",
+          "gender": "여",
+          "birth": "2011-11-21",
+          "school": "안곡중학교",
+          "phone": "010-7987-2199",
+          "baptism": true,
+          "parent": "정수현/정미리암",
+          "parentPhone": "010-2650-0152,010-9556-0199",
+          "address": "고양시"
+        }
+      ]
+    },
+    {
+      "id": "m3-5",
+      "name": "5반",
+      "gender": "여",
+      "teacherName": "김도현",
+      "students": [
+        {
+          "id": "m3-5-1",
+          "name": "강다혜",
+          "gender": "여",
+          "birth": "2011-08-23",
+          "school": "공항중학교",
+          "phone": "010-9254-3662",
+          "baptism": true,
+          "parent": "강혁진/이영호",
+          "parentPhone": "010-6271-3662,010-8581-3666",
+          "address": "서울 강서구"
+        },
+        {
+          "id": "m3-5-2",
+          "name": "경예지",
+          "gender": "여",
+          "birth": "2011-09-29",
+          "school": "신일중학교",
+          "phone": "010-7183-7696",
+          "baptism": true,
+          "parent": "경혁수/김수정",
+          "parentPhone": "010-8901-7696,010-7754-7696",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-5-3",
+          "name": "김연우",
+          "gender": "여",
+          "birth": "2011-04-03",
+          "school": "광성드림학교",
+          "phone": "010-4210-2502",
+          "baptism": true,
+          "parent": "김진우/이지현",
+          "parentPhone": "010-4222-0412,010-4372-0412",
+          "address": "파주시"
+        },
+        {
+          "id": "m3-5-4",
+          "name": "김혜민",
+          "gender": "여",
+          "birth": "2011-01-26",
+          "school": "현산중학교",
+          "phone": "010-8234-4607",
+          "baptism": false,
+          "parent": "김경철/도기숙",
+          "parentPhone": "010-8229-4607",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-5-5",
+          "name": "유은지",
+          "gender": "여",
+          "birth": "2011-10-06",
+          "school": "안곡중학교",
+          "phone": "010-2406-7959",
+          "baptism": true,
+          "parent": "구미숙",
+          "parentPhone": "010-3733-7959",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-5-6",
+          "name": "허예본",
+          "gender": "여",
+          "birth": "2011-11-21",
+          "school": "KCIS",
+          "phone": "010-4160-7735",
+          "baptism": false,
+          "parent": "김지선",
+          "parentPhone": "010-9500-5601",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-5-7",
+          "name": "김아비가일",
+          "gender": "여",
+          "birth": "2011-02-24",
+          "school": "공항중학교",
+          "phone": "010-7301-3521",
+          "baptism": null,
+          "parent": "김민형/박상아",
+          "parentPhone": "010-7168-397?",
+          "address": "서울"
+        }
+      ]
+    },
+    {
+      "id": "m3-6",
+      "name": "6반",
+      "gender": "남",
+      "teacherName": "진윤서",
+      "students": [
+        {
+          "id": "m3-6-1",
+          "name": "강민재",
+          "gender": "남",
+          "birth": null,
+          "school": null,
+          "phone": "010-7331-3613",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        },
+        {
+          "id": "m3-6-2",
+          "name": "김지용",
+          "gender": "남",
+          "birth": "2011-12-06",
+          "school": "오마중학교",
+          "phone": "010-2546-1713",
+          "baptism": true,
+          "parent": "김규령/장정아",
+          "parentPhone": "010-4112-1713,010-9539-9259",
+          "address": "고양시 일산서구"
+        },
+        {
+          "id": "m3-6-3",
+          "name": "박건희",
+          "gender": "남",
+          "birth": "2011-04-05",
+          "school": "검정고시",
+          "phone": "010-7764-5384",
+          "baptism": true,
+          "parent": "박경심",
+          "parentPhone": "010-9254-5384",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-6-4",
+          "name": "이나해",
+          "gender": "남",
+          "birth": "2011-11-15",
+          "school": "오마중학교",
+          "phone": "010-2181-9198",
+          "baptism": null,
+          "parent": "제지인",
+          "parentPhone": "010-8650-7601",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-6-5",
+          "name": "정서준",
+          "gender": "남",
+          "birth": "2011-09-30",
+          "school": "양일중학교",
+          "phone": "010-9268-0139",
+          "baptism": null,
+          "parent": "주성숙",
+          "parentPhone": "010-7165-0139,010-3224-0139",
+          "address": "일산동구"
+        }
+      ]
+    },
+    {
+      "id": "m3-7",
+      "name": "7반",
+      "gender": "남",
+      "teacherName": "김정례",
+      "students": [
+        {
+          "id": "m3-7-1",
+          "name": "김평안",
+          "gender": "남",
+          "birth": "2011-05-06",
+          "school": "저동중학교",
+          "phone": "010-3040-3908",
+          "baptism": true,
+          "parent": "장현호/손의주",
+          "parentPhone": "010-5415-8860,010-2795-0708",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-7-2",
+          "name": "김현수",
+          "gender": "남",
+          "birth": "2011-10-17",
+          "school": "안곡중학교",
+          "phone": "010-6621-6498",
+          "baptism": true,
+          "parent": "김영신/위선미",
+          "parentPhone": "010-6578-6498",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-7-3",
+          "name": "변지후",
+          "gender": "남",
+          "birth": "2011-05-20",
+          "school": "금파중학교",
+          "phone": "010-9398-5705",
+          "baptism": true,
+          "parent": "변성호/이희선",
+          "parentPhone": "010-9758-5707,010-9079-5716",
+          "address": "김포시"
+        },
+        {
+          "id": "m3-7-4",
+          "name": "원용찬",
+          "gender": "남",
+          "birth": "2011-04-05",
+          "school": "양일중",
+          "phone": "010-3276-4433",
+          "baptism": null,
+          "parent": "원용성",
+          "parentPhone": "010-9056-4433",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-7-5",
+          "name": "이동률",
+          "gender": "남",
+          "birth": "2011-11-01",
+          "school": "글로벌리더스기독학교",
+          "phone": "010-3669-1110",
+          "baptism": true,
+          "parent": "이한규/이현영",
+          "parentPhone": "010-5533-1110",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-7-6",
+          "name": "임주혁",
+          "gender": "남",
+          "birth": "2011-07-27",
+          "school": "안곡중학교",
+          "phone": "010-7917-1064",
+          "baptism": true,
+          "parent": "임훈빈/조수정",
+          "parentPhone": "010-6432-1064",
+          "address": "일산동구"
+        }
+      ]
+    },
+    {
+      "id": "m3-8",
+      "name": "8반",
+      "gender": "남",
+      "teacherName": "성태용",
+      "students": [
+        {
+          "id": "m3-8-1",
+          "name": "강민구",
+          "gender": "남",
+          "birth": "2011-07-07",
+          "school": "능곡중학교",
+          "phone": "010-4886-8974",
+          "baptism": false,
+          "parent": "강봉규/김용숙",
+          "parentPhone": "010-2212-8984,010-3637-8974",
+          "address": "고양시 덕양구"
+        },
+        {
+          "id": "m3-8-2",
+          "name": "국하윤",
+          "gender": "남",
+          "birth": "2011-10-22",
+          "school": "대화중학교",
+          "phone": "010-5540-3825",
+          "baptism": true,
+          "parent": "국길근/안혜성",
+          "parentPhone": "010-2899-5225",
+          "address": "고양시"
+        },
+        {
+          "id": "m3-8-3",
+          "name": "선하민",
+          "gender": "남",
+          "birth": "2011-03-23",
+          "school": "안곡중학교",
+          "phone": "010-5732-5205",
+          "baptism": true,
+          "parent": "선정호/이희은",
+          "parentPhone": "010-2240-1015",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-8-4",
+          "name": "윤영준",
+          "gender": "남",
+          "birth": null,
+          "school": null,
+          "phone": "010-3201-2899",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        },
+        {
+          "id": "m3-8-5",
+          "name": "채현석",
+          "gender": "남",
+          "birth": "2011-03-08",
+          "school": "향동중학교",
+          "phone": "010-9460-3859",
+          "baptism": true,
+          "parent": "채규호/우지영",
+          "parentPhone": "010-3264-1032,010-6405-8141",
+          "address": "고양시 덕양구"
+        }
+      ]
+    },
+    {
+      "id": "m3-9",
+      "name": "9반",
+      "gender": "남",
+      "teacherName": "변창균",
+      "students": [
+        {
+          "id": "m3-9-1",
+          "name": "문정혁",
+          "gender": "남",
+          "birth": "2011-06-22",
+          "school": "KCIS",
+          "phone": "010-2240-0755",
+          "baptism": true,
+          "parent": "문대희/김인환",
+          "parentPhone": "010-9758-0622,010-9972-0058",
+          "address": "일산동구"
+        },
+        {
+          "id": "m3-9-2",
+          "name": "박주호",
+          "gender": "남",
+          "birth": "2011-08-07",
+          "school": "도당중",
+          "phone": "010-5515-3095",
+          "baptism": true,
+          "parent": "박영순",
+          "parentPhone": "010-9290-3095",
+          "address": "부천시"
+        },
+        {
+          "id": "m3-9-3",
+          "name": "안유준",
+          "gender": "남",
+          "birth": "2011-12-19",
+          "school": "대화중학교",
+          "phone": "010-8967-7016",
+          "baptism": null,
+          "parent": "배아미",
+          "parentPhone": "010-8958-7016",
+          "address": "일산서구"
+        },
+        {
+          "id": "m3-9-4",
+          "name": "정예찬",
+          "gender": "남",
+          "birth": "2011-07-31",
+          "school": "고양중학교",
+          "phone": "010-4604-6175",
+          "baptism": true,
+          "parent": "정문구/박혜실",
+          "parentPhone": "010-4826-8036,010-4426-6175",
+          "address": "고양시 덕양구"
+        }
+      ]
+    }
+  ],
+  "고1": [
+    {
+      "id": "h1-1",
+      "name": "1반",
+      "gender": "여",
+      "teacherName": "고연진",
+      "students": [
+        {
+          "id": "h1-1-1",
+          "name": "이하율",
+          "gender": "여",
+          "birth": "2010-08-03",
+          "school": "고양국제고등학교",
+          "phone": "010-2293-6891",
+          "baptism": true,
+          "parent": "한경미",
+          "parentPhone": "010-4744-6891",
+          "address": null
+        },
+        {
+          "id": "h1-1-2",
+          "name": "정하윤",
+          "gender": "여",
+          "birth": "2010-09-08",
+          "school": "주엽고등학교",
+          "phone": "010-4491-8060",
+          "baptism": false,
+          "parent": "김기남",
+          "parentPhone": "010-2370-5103",
+          "address": null
+        },
+        {
+          "id": "h1-1-3",
+          "name": "이아민",
+          "gender": "여",
+          "birth": "2010-10-11",
+          "school": "홈스쿨",
+          "phone": "010-6774-1627",
+          "baptism": true,
+          "parent": "이헌승/양은경",
+          "parentPhone": "010-4012-1629",
+          "address": null
+        },
+        {
+          "id": "h1-1-4",
+          "name": "전한음",
+          "gender": "여",
+          "birth": "2010-07-21",
+          "school": "홈스쿨",
+          "phone": "010-2931-4626",
+          "baptism": true,
+          "parent": "전호철/이혜진",
+          "parentPhone": "010-2970-4626,010-2979-4626",
+          "address": null
+        },
+        {
+          "id": "h1-1-5",
+          "name": "송현지",
+          "gender": "여",
+          "birth": "2010-05-28",
+          "school": "세원고등학교",
+          "phone": "010-3192-0594",
+          "baptism": true,
+          "parent": "송창민/김미소",
+          "parentPhone": "010-4267-0594,010-8728-5885",
+          "address": null
+        },
+        {
+          "id": "h1-1-6",
+          "name": "이휘주",
+          "gender": "여",
+          "birth": "2010-12-07",
+          "school": "화정고등학교",
+          "phone": "010-4264-6452",
+          "baptism": true,
+          "parent": "이규학/양미숙",
+          "parentPhone": "010-5287-6452,010-3737-7361",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-2",
+      "name": "2반",
+      "gender": "여",
+      "teacherName": "원도현",
+      "students": [
+        {
+          "id": "h1-2-1",
+          "name": "최비취",
+          "gender": "여",
+          "birth": "2010-11-09",
+          "school": "평촌고등학교",
+          "phone": "010-4853-3233",
+          "baptism": true,
+          "parent": "최백수/전미라",
+          "parentPhone": "010-4038-8188,010-5599-1233",
+          "address": null
+        },
+        {
+          "id": "h1-2-2",
+          "name": "이온유",
+          "gender": "여",
+          "birth": "2010-06-20",
+          "school": "저현고등학교",
+          "phone": "010-5739-3785",
+          "baptism": true,
+          "parent": "이태우/김진석",
+          "parentPhone": "010-4292-5733,010-3242-3785",
+          "address": null
+        },
+        {
+          "id": "h1-2-3",
+          "name": "이채현",
+          "gender": "여",
+          "birth": "2010-05-06",
+          "school": "백석고등학교",
+          "phone": "010-8903-9136",
+          "baptism": true,
+          "parent": "권인숙",
+          "parentPhone": "010-8923-9136",
+          "address": null
+        },
+        {
+          "id": "h1-2-4",
+          "name": "박하언",
+          "gender": "여",
+          "birth": "2010-10-02",
+          "school": "주엽고등학교",
+          "phone": "010-9873-5734",
+          "baptism": true,
+          "parent": "박동훈/민혜영",
+          "parentPhone": "010-9871-5734,010-9872-5734",
+          "address": null
+        },
+        {
+          "id": "h1-2-5",
+          "name": "문송현",
+          "gender": "여",
+          "birth": "2010-07-28",
+          "school": "안곡고등학교",
+          "phone": "010-5108-2438",
+          "baptism": true,
+          "parent": "문상호/이정란",
+          "parentPhone": "010-2429-5593",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-3",
+      "name": "3반",
+      "gender": "여",
+      "teacherName": "구교선",
+      "students": [
+        {
+          "id": "h1-3-1",
+          "name": "우희원",
+          "gender": "여",
+          "birth": "2010-09-25",
+          "school": "경기예고",
+          "phone": "010-4321-7556",
+          "baptism": true,
+          "parent": "우국희/김경희",
+          "parentPhone": "010-4353-7556,010-3242-3190",
+          "address": null
+        },
+        {
+          "id": "h1-3-2",
+          "name": "이휘은",
+          "gender": "여",
+          "birth": "2010-12-07",
+          "school": "화정고",
+          "phone": "010-4592-6452",
+          "baptism": true,
+          "parent": "이규학/양미숙",
+          "parentPhone": "010-5287-6452,010-3737-7361",
+          "address": null
+        },
+        {
+          "id": "h1-3-3",
+          "name": "김지율",
+          "gender": "여",
+          "birth": "2010-12-03",
+          "school": "상원고",
+          "phone": "010-5066-5649",
+          "baptism": null,
+          "parent": "김동욱/박진",
+          "parentPhone": "010-8752-8539,010-5065-5649",
+          "address": null
+        },
+        {
+          "id": "h1-3-4",
+          "name": "이예빈",
+          "gender": "여",
+          "birth": "2010-01-05",
+          "school": "인천원당고",
+          "phone": "010-4153-5536",
+          "baptism": true,
+          "parent": "이재연/오유화",
+          "parentPhone": "010-4216-5536",
+          "address": null
+        },
+        {
+          "id": "h1-3-5",
+          "name": "김리아",
+          "gender": "여",
+          "birth": "2010-12-28",
+          "school": "풍동고",
+          "phone": "010-5940-2016",
+          "baptism": true,
+          "parent": "김광규/송미선",
+          "parentPhone": "010-2124-2016,010-2276-4471",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-4",
+      "name": "4반",
+      "gender": "여",
+      "teacherName": "김경순",
+      "students": [
+        {
+          "id": "h1-4-1",
+          "name": "임지현",
+          "gender": "여",
+          "birth": "2010-08-02",
+          "school": "일산동고등학교",
+          "phone": "010-6468-0802",
+          "baptism": true,
+          "parent": "임동설/유민아",
+          "parentPhone": "010-3045-0926,010-2617-1095",
+          "address": null
+        },
+        {
+          "id": "h1-4-2",
+          "name": "이서윤",
+          "gender": "여",
+          "birth": null,
+          "school": "신일중학교",
+          "phone": "010-9650-8458",
+          "baptism": null,
+          "parent": "엄마",
+          "parentPhone": "010-3954-8458",
+          "address": null
+        },
+        {
+          "id": "h1-4-3",
+          "name": "박성린",
+          "gender": "여",
+          "birth": "2010-04-06",
+          "school": "안곡고등학교",
+          "phone": "010-9772-1908",
+          "baptism": true,
+          "parent": "박귀영/김정옥",
+          "parentPhone": "010-2970-5690,010-5550-0318",
+          "address": null
+        },
+        {
+          "id": "h1-4-4",
+          "name": "이세연",
+          "gender": "여",
+          "birth": "2010-05-29",
+          "school": "중산고등학교",
+          "phone": "010-8014-2726",
+          "baptism": true,
+          "parent": "이윤호/이상미",
+          "parentPhone": "6241-0075,4766-3359",
+          "address": null
+        },
+        {
+          "id": "h1-4-5",
+          "name": "이루미",
+          "gender": "여",
+          "birth": "2010-05-01",
+          "school": "백신고등학교",
+          "phone": "010-7607-7891",
+          "baptism": true,
+          "parent": "이태호/박미나",
+          "parentPhone": "010-9800-0725,010-3460-0212",
+          "address": null
+        },
+        {
+          "id": "h1-4-6",
+          "name": "나아리",
+          "gender": "여",
+          "birth": "2010-07-08",
+          "school": "경기예술고등학교",
+          "phone": "010-4082-3712",
+          "baptism": true,
+          "parent": "나경식/김윤희",
+          "parentPhone": "010-3901-3712,010-3908-3712",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-5",
+      "name": "5반",
+      "gender": "여",
+      "teacherName": "김성희",
+      "students": [
+        {
+          "id": "h1-5-1",
+          "name": "한서희",
+          "gender": "여",
+          "birth": "2010-05-10",
+          "school": "심학고등학교",
+          "phone": "010-5746-8534",
+          "baptism": true,
+          "parent": "한태호/김정아",
+          "parentPhone": "010-4315-4865,010-4420-9665",
+          "address": null
+        },
+        {
+          "id": "h1-5-2",
+          "name": "이예승",
+          "gender": "여",
+          "birth": "2010",
+          "school": "주니퍼크리스천스쿨",
+          "phone": "010-7257-3136",
+          "baptism": null,
+          "parent": "김미경/이강혁",
+          "parentPhone": "010-7557-3136,010-4280-3136",
+          "address": null
+        },
+        {
+          "id": "h1-5-3",
+          "name": "경예나",
+          "gender": "여",
+          "birth": "2010-01-16",
+          "school": "고양외고",
+          "phone": "010-6286-7696",
+          "baptism": true,
+          "parent": "김수정",
+          "parentPhone": "010-7754-7696",
+          "address": null
+        },
+        {
+          "id": "h1-5-4",
+          "name": "김재희",
+          "gender": "여",
+          "birth": "2010-07-28",
+          "school": "백마고등학교",
+          "phone": "010-4913-2510",
+          "baptism": true,
+          "parent": "전진숙",
+          "parentPhone": "010-7207-7989",
+          "address": null
+        },
+        {
+          "id": "h1-5-5",
+          "name": "최아인",
+          "gender": "여",
+          "birth": "2010-04-27",
+          "school": "대화고등학교",
+          "phone": "010-4427-7018",
+          "baptism": true,
+          "parent": "최호수/김윤정",
+          "parentPhone": "010-7502-7018",
+          "address": null
+        },
+        {
+          "id": "h1-5-6",
+          "name": "조수아",
+          "gender": "여",
+          "birth": "2010-04-10",
+          "school": "가좌고등학교",
+          "phone": "010-6236-7351",
+          "baptism": true,
+          "parent": "조남신/우국희",
+          "parentPhone": "010-2842-7351",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-6",
+      "name": "6반",
+      "gender": "남",
+      "teacherName": "진종희",
+      "students": [
+        {
+          "id": "h1-6-1",
+          "name": "백주찬",
+          "gender": "남",
+          "birth": "2010-04-06",
+          "school": "기독학교",
+          "phone": "010-5368-4550",
+          "baptism": true,
+          "parent": "백승호/김윤정",
+          "parentPhone": "010-6214-4550",
+          "address": null
+        },
+        {
+          "id": "h1-6-2",
+          "name": "이규진",
+          "gender": "남",
+          "birth": "2010-10-22",
+          "school": "고촌고등학교",
+          "phone": "010-9274-4554",
+          "baptism": true,
+          "parent": "이유숙",
+          "parentPhone": "010-3342-0020",
+          "address": null
+        },
+        {
+          "id": "h1-6-3",
+          "name": "이윤형",
+          "gender": "남",
+          "birth": "2010-10-09",
+          "school": "세원고등학교",
+          "phone": "010-8928-7155",
+          "baptism": true,
+          "parent": "이민우/나정순",
+          "parentPhone": "010-7129-7155",
+          "address": null
+        },
+        {
+          "id": "h1-6-4",
+          "name": "주은찬",
+          "gender": "남",
+          "birth": "2010-03-02",
+          "school": "노원고등학교",
+          "phone": "010-6293-6347",
+          "baptism": true,
+          "parent": "주견연/김현정",
+          "parentPhone": "010-8529-6347",
+          "address": null
+        },
+        {
+          "id": "h1-6-5",
+          "name": "임성훈",
+          "gender": "남",
+          "birth": "2010-08-02",
+          "school": "일산동고등학교",
+          "phone": "010-4234-0802",
+          "baptism": true,
+          "parent": "임동설/유민아",
+          "parentPhone": "010-2617-1095",
+          "address": null
+        },
+        {
+          "id": "h1-6-6",
+          "name": "이승민",
+          "gender": "남",
+          "birth": "2009-04-08",
+          "school": "저동고등학교",
+          "phone": "010-8603-6439",
+          "baptism": true,
+          "parent": "조경미",
+          "parentPhone": "010-8860-6439",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-7",
+      "name": "7반",
+      "gender": "남",
+      "teacherName": "전용호",
+      "students": [
+        {
+          "id": "h1-7-1",
+          "name": "여준구",
+          "gender": "남",
+          "birth": "2010-10-13",
+          "school": "저동고등학교",
+          "phone": "010-8684-1825",
+          "baptism": true,
+          "parent": "여운성/이미선",
+          "parentPhone": "010-4703-9778",
+          "address": null
+        },
+        {
+          "id": "h1-7-2",
+          "name": "이찬호",
+          "gender": "남",
+          "birth": "2010-03-22",
+          "school": "중산고등학교",
+          "phone": "010-9064-2953",
+          "baptism": true,
+          "parent": "이동훈/허은애",
+          "parentPhone": "010-8998-2953",
+          "address": null
+        },
+        {
+          "id": "h1-7-3",
+          "name": "유예준",
+          "gender": "남",
+          "birth": "2010-04-23",
+          "school": "한빛고등학교",
+          "phone": "010-9664-7528",
+          "baptism": true,
+          "parent": "유성실/박혜정",
+          "parentPhone": "010-4031-8823",
+          "address": null
+        },
+        {
+          "id": "h1-7-4",
+          "name": "백온겸",
+          "gender": "남",
+          "birth": "2010-09-25",
+          "school": "김포과학기술고등학교",
+          "phone": "010-3272-2978",
+          "baptism": true,
+          "parent": "백선필/홍인옥",
+          "parentPhone": "010-3997-2978,010-2394-0514",
+          "address": null
+        },
+        {
+          "id": "h1-7-5",
+          "name": "조영유",
+          "gender": "남",
+          "birth": "2010-06-21",
+          "school": "서울예술고등학교",
+          "phone": "010-6423-7088",
+          "baptism": true,
+          "parent": "조충현/양은희",
+          "parentPhone": "010-9707-7088,010-9505-7088",
+          "address": null
+        },
+        {
+          "id": "h1-7-6",
+          "name": "손태주",
+          "gender": "남",
+          "birth": "2010-11-16",
+          "school": "고양외국어고등학교",
+          "phone": "010-2299-1620",
+          "baptism": true,
+          "parent": "손희일/이정숙",
+          "parentPhone": "010-6787-0210",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-8",
+      "name": "8반",
+      "gender": "남",
+      "teacherName": "전호철",
+      "students": [
+        {
+          "id": "h1-8-1",
+          "name": "이예성",
+          "gender": "남",
+          "birth": "2010-02-18",
+          "school": "안곡고등학교",
+          "phone": "010-4672-1779",
+          "baptism": true,
+          "parent": "이동형/황은진",
+          "parentPhone": "010-5596-1784",
+          "address": null
+        },
+        {
+          "id": "h1-8-2",
+          "name": "권주한",
+          "gender": "남",
+          "birth": "2010-10-22",
+          "school": "서울과학기술고등학교",
+          "phone": "010-8611-7618",
+          "baptism": true,
+          "parent": "권용욱/김민경",
+          "parentPhone": "010-2397-7618",
+          "address": null
+        },
+        {
+          "id": "h1-8-3",
+          "name": "김한겸",
+          "gender": "남",
+          "birth": "2010-05-19",
+          "school": "백신고등학교",
+          "phone": "010-4664-8520",
+          "baptism": true,
+          "parent": "김영광/이은지",
+          "parentPhone": "010-3470-85205",
+          "address": null
+        },
+        {
+          "id": "h1-8-4",
+          "name": "김겸",
+          "gender": "남",
+          "birth": "2010-09-03",
+          "school": "일산고등학교",
+          "phone": "010-9099-7578",
+          "baptism": true,
+          "parent": "허인숙",
+          "parentPhone": "010-2814-7578",
+          "address": null
+        },
+        {
+          "id": "h1-8-5",
+          "name": "장예준",
+          "gender": "남",
+          "birth": "2010-04-27",
+          "school": "경기영상고등학교",
+          "phone": "010-7356-7134",
+          "baptism": true,
+          "parent": "장영승/김소라",
+          "parentPhone": "010-6356-7134",
+          "address": null
+        },
+        {
+          "id": "h1-8-6",
+          "name": "여경민",
+          "gender": "남",
+          "birth": null,
+          "school": "안곡고등학교",
+          "phone": "010-7926-4655",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h1-9",
+      "name": "9반",
+      "gender": "남",
+      "teacherName": "김진석",
+      "students": [
+        {
+          "id": "h1-9-1",
+          "name": "채범석",
+          "gender": "남",
+          "birth": "2010-03-06",
+          "school": "향동고등학교",
+          "phone": "010-3650-3859",
+          "baptism": true,
+          "parent": "채규호/우지영",
+          "parentPhone": "010-6405-8141",
+          "address": null
+        },
+        {
+          "id": "h1-9-2",
+          "name": "박준영",
+          "gender": "남",
+          "birth": "2010-05-29",
+          "school": "운정고등학교",
+          "phone": "010-5756-6528",
+          "baptism": true,
+          "parent": "곽혜민",
+          "parentPhone": "010-9833-5608",
+          "address": null
+        },
+        {
+          "id": "h1-9-3",
+          "name": "신유진",
+          "gender": "남",
+          "birth": "2010-04-28",
+          "school": "선린인터넷고등학교",
+          "phone": "010-5501-6842",
+          "baptism": true,
+          "parent": "신동환/임선주",
+          "parentPhone": "010-8928-2179",
+          "address": null
+        },
+        {
+          "id": "h1-9-4",
+          "name": "최민오",
+          "gender": "남",
+          "birth": "2010-04-24",
+          "school": "주엽고등학교",
+          "phone": "010-2293-5939",
+          "baptism": true,
+          "parent": "최정훈/김혜진",
+          "parentPhone": "010-3487-4298",
+          "address": null
+        },
+        {
+          "id": "h1-9-5",
+          "name": "장하율",
+          "gender": "남",
+          "birth": "2010-08-30",
+          "school": "KCIS",
+          "phone": "010-2141-8036",
+          "baptism": true,
+          "parent": "이지운",
+          "parentPhone": "010-9141-8036",
+          "address": null
+        },
+        {
+          "id": "h1-9-6",
+          "name": "김정훈",
+          "gender": "남",
+          "birth": "2010-02-09",
+          "school": "대진고등학교",
+          "phone": "010-2591-3329",
+          "baptism": true,
+          "parent": "김진현/이경민",
+          "parentPhone": "010-2317-0711",
+          "address": null
+        }
+      ]
+    }
+  ],
+  "고2": [
+    {
+      "id": "h2-1",
+      "name": "1반",
+      "gender": "여",
+      "teacherName": "서하린",
+      "students": [
+        {
+          "id": "h2-1-1",
+          "name": "임예슬",
+          "gender": "여",
+          "birth": "2009-05-19",
+          "school": "덕원예고",
+          "phone": "010-4729-9690",
+          "baptism": true,
+          "parent": "임희철/김경숙",
+          "parentPhone": "010-8725-1628,010-3586-9690",
+          "address": "경기도 강석로"
+        },
+        {
+          "id": "h2-1-2",
+          "name": "임소은",
+          "gender": "여",
+          "birth": "2009-08-11",
+          "school": "고양외고",
+          "phone": "010-7616-1064",
+          "baptism": true,
+          "parent": "임훈빈/조수정",
+          "parentPhone": "010-8461-4584,010-6432-1064",
+          "address": "일산동구 중산로"
+        },
+        {
+          "id": "h2-1-3",
+          "name": "오하랑",
+          "gender": "여",
+          "birth": "2009-09-08",
+          "school": "춘천한샘고",
+          "phone": "010-3144-3060",
+          "baptism": true,
+          "parent": "오세진/최설희",
+          "parentPhone": "010-9325-5784,010-4381-3060",
+          "address": "춘천"
+        },
+        {
+          "id": "h2-1-4",
+          "name": "류예담",
+          "gender": "여",
+          "birth": "2009-09-14",
+          "school": "안곡고",
+          "phone": "010-6443-1775",
+          "baptism": true,
+          "parent": "류문규/한미영",
+          "parentPhone": "010-3739-1775,010-9985-1287",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-1-5",
+          "name": "소하윤",
+          "gender": "여",
+          "birth": "2009-06-24",
+          "school": "하나고",
+          "phone": "010-4765-4030",
+          "baptism": true,
+          "parent": "소준환/송현진",
+          "parentPhone": "010-5316-7213",
+          "address": "서울 은평구"
+        }
+      ]
+    },
+    {
+      "id": "h2-2",
+      "name": "2반",
+      "gender": "여",
+      "teacherName": "김민지",
+      "students": [
+        {
+          "id": "h2-2-1",
+          "name": "정선우A",
+          "gender": "여",
+          "birth": "2009-09-18",
+          "school": "덕원예고",
+          "phone": "010-8629-7588",
+          "baptism": true,
+          "parent": "정수진/유혜영",
+          "parentPhone": "010-7668-2972,010-2972-7588",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-2-2",
+          "name": "전서진",
+          "gender": "여",
+          "birth": "2009-12-09",
+          "school": "정발고",
+          "phone": "010-8407-9254",
+          "baptism": true,
+          "parent": "임혜원",
+          "parentPhone": "010-2392-9250",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-2-3",
+          "name": "백효주",
+          "gender": "여",
+          "birth": "2009-09-04",
+          "school": "정발고",
+          "phone": "010-8431-2006",
+          "baptism": true,
+          "parent": "백승열/임소희",
+          "parentPhone": "010-4551-2006,010-8457-2006",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-2-4",
+          "name": "장서영",
+          "gender": "여",
+          "birth": "2009-07-22",
+          "school": "저동고",
+          "phone": "010-3482-1611",
+          "baptism": true,
+          "parent": "장학수/이진욱",
+          "parentPhone": "010-8614-1611",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-2-5",
+          "name": "안유주",
+          "gender": "여",
+          "birth": "2009-09-05",
+          "school": "고양예고",
+          "phone": "010-3671-5896",
+          "baptism": true,
+          "parent": "안형민/배아미",
+          "parentPhone": "010-8958-7016",
+          "address": "일산서구"
+        }
+      ]
+    },
+    {
+      "id": "h2-3",
+      "name": "3반",
+      "gender": "여",
+      "teacherName": "전예은",
+      "students": [
+        {
+          "id": "h2-3-1",
+          "name": "이예영",
+          "gender": "여",
+          "birth": "2009-10-29",
+          "school": "행신고",
+          "phone": "010-5893-9309",
+          "baptism": true,
+          "parent": "이현제/이현미",
+          "parentPhone": "010-4334-4404,010-4205-9309",
+          "address": "파주시"
+        },
+        {
+          "id": "h2-3-2",
+          "name": "박새은",
+          "gender": "여",
+          "birth": "2009-05-10",
+          "school": "장성중",
+          "phone": "010-2262-5918",
+          "baptism": true,
+          "parent": "박학봉/백승연",
+          "parentPhone": "010-6253-5918",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-3-3",
+          "name": "박소율",
+          "gender": "여",
+          "birth": "2009-01-06",
+          "school": "덕이고",
+          "phone": "010-7612-2565",
+          "baptism": true,
+          "parent": "김지영",
+          "parentPhone": "010-5112-2566",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-3-4",
+          "name": "장수안",
+          "gender": "여",
+          "birth": "2009-01-13",
+          "school": "고양고",
+          "phone": "010-9180-3228",
+          "baptism": true,
+          "parent": "정묘화",
+          "parentPhone": "010-4754-3223",
+          "address": "덕양구"
+        },
+        {
+          "id": "h2-3-5",
+          "name": "권선우",
+          "gender": "여",
+          "birth": "2009-11-28",
+          "school": "주엽고",
+          "phone": "010-2432-9058",
+          "baptism": true,
+          "parent": "김자윤",
+          "parentPhone": "010-7158-8358",
+          "address": "일산서구"
+        }
+      ]
+    },
+    {
+      "id": "h2-4",
+      "name": "4반",
+      "gender": "여",
+      "teacherName": "김미옥",
+      "students": [
+        {
+          "id": "h2-4-1",
+          "name": "강선민",
+          "gender": "여",
+          "birth": "2009-01-04",
+          "school": "저동고",
+          "phone": "010-9955-6846",
+          "baptism": true,
+          "parent": "전주연",
+          "parentPhone": "010-6545-6846",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-4-2",
+          "name": "김세희",
+          "gender": "여",
+          "birth": "2009-12-05",
+          "school": "고양예고",
+          "phone": "010-8112-4213",
+          "baptism": true,
+          "parent": "김선현/강별",
+          "parentPhone": "010-3194-0303",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-4-3",
+          "name": "김지현",
+          "gender": "여",
+          "birth": "2009-06-20",
+          "school": "안곡고",
+          "phone": "010-8817-6020",
+          "baptism": true,
+          "parent": "김종남/이선옥",
+          "parentPhone": "010-3352-7815,010-2365-3422",
+          "address": "하늘마을"
+        },
+        {
+          "id": "h2-4-4",
+          "name": "박미가",
+          "gender": "여",
+          "birth": "2009-10-20",
+          "school": "신도고",
+          "phone": "010-5810-1466",
+          "baptism": false,
+          "parent": "박응진/김수연",
+          "parentPhone": "010-2762-1720,010-5053-1466",
+          "address": "서울 은평구"
+        },
+        {
+          "id": "h2-4-5",
+          "name": "박지온",
+          "gender": "여",
+          "birth": "2009-09-14",
+          "school": "안곡고",
+          "phone": "010-4467-3280",
+          "baptism": true,
+          "parent": "박훈태/박선영",
+          "parentPhone": "010-6362-3280,010-5658-3280",
+          "address": null
+        },
+        {
+          "id": "h2-4-6",
+          "name": "김성원",
+          "gender": "여",
+          "birth": "2009-02-20",
+          "school": "동패고",
+          "phone": "010-3651-6136",
+          "baptism": false,
+          "parent": "김태호/황지영",
+          "parentPhone": "010-8529-6136,010-4014-6136",
+          "address": "파주시"
+        }
+      ]
+    },
+    {
+      "id": "h2-5",
+      "name": "5반",
+      "gender": "남",
+      "teacherName": "이세원",
+      "students": [
+        {
+          "id": "h2-5-1",
+          "name": "이우진",
+          "gender": "남",
+          "birth": "2009-04-30",
+          "school": "덕이고",
+          "phone": "010-5645-5319",
+          "baptism": true,
+          "parent": "이건오/김현주",
+          "parentPhone": "010-5412-5319",
+          "address": "고양시 덕이동"
+        },
+        {
+          "id": "h2-5-2",
+          "name": "장영환",
+          "gender": "남",
+          "birth": "2009-01-01",
+          "school": "운유고",
+          "phone": "010-8231-6144",
+          "baptism": true,
+          "parent": "장성원/방혜린",
+          "parentPhone": "010-7567-8112",
+          "address": "김포시 장기동"
+        },
+        {
+          "id": "h2-5-3",
+          "name": "최은성",
+          "gender": "남",
+          "birth": null,
+          "school": "대진고",
+          "phone": "010-6207-8521",
+          "baptism": null,
+          "parent": "최동현/김현주",
+          "parentPhone": "010-7225-8521,010-8864-9088",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-5-4",
+          "name": "정택찬",
+          "gender": "남",
+          "birth": "2009-10-16",
+          "school": "동산고",
+          "phone": null,
+          "baptism": true,
+          "parent": "정호윤/이은혜",
+          "parentPhone": "010-3946-2064",
+          "address": null
+        },
+        {
+          "id": "h2-5-5",
+          "name": "송은찬",
+          "gender": "남",
+          "birth": "2009-04-25",
+          "school": "안곡고",
+          "phone": "010-8808-0657",
+          "baptism": true,
+          "parent": "송선민/김선경",
+          "parentPhone": "010-6218-0657,010-6216-0657",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h2-6",
+      "name": "6반",
+      "gender": "남",
+      "teacherName": "고태석",
+      "students": [
+        {
+          "id": "h2-6-1",
+          "name": "정유진",
+          "gender": "남",
+          "birth": "2009-12-18",
+          "school": "저동고",
+          "phone": "010-8326-9432",
+          "baptism": true,
+          "parent": "여운희",
+          "parentPhone": "010-6225-9432",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-6-2",
+          "name": "강사무엘",
+          "gender": "남",
+          "birth": "2009-11-22",
+          "school": "인천해양고",
+          "phone": "010-4027-3661",
+          "baptism": true,
+          "parent": "강혁진/이영호",
+          "parentPhone": "010-8581-3666",
+          "address": "서울 강서구"
+        },
+        {
+          "id": "h2-6-3",
+          "name": "김지후",
+          "gender": "남",
+          "birth": "2009-12-02",
+          "school": "백석고",
+          "phone": "010-2969-2463",
+          "baptism": true,
+          "parent": "김성덕/김세영",
+          "parentPhone": "010-8221-0525,010-2463-0525",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-6-4",
+          "name": "정선우B",
+          "gender": "남",
+          "birth": "2009-10-06",
+          "school": "무원고",
+          "phone": "010-7695-9271",
+          "baptism": true,
+          "parent": "한지수",
+          "parentPhone": "010-6286-9271",
+          "address": "덕양구"
+        }
+      ]
+    },
+    {
+      "id": "h2-7",
+      "name": "7반",
+      "gender": "남",
+      "teacherName": "김종국",
+      "students": [
+        {
+          "id": "h2-7-1",
+          "name": "양희수",
+          "gender": "남",
+          "birth": "2009-09-28",
+          "school": "성사고",
+          "phone": "010-2597-8250",
+          "baptism": true,
+          "parent": "양대경/김신아",
+          "parentPhone": "010-5475-8250,010-8591-8255",
+          "address": "덕양구"
+        },
+        {
+          "id": "h2-7-2",
+          "name": "진현준",
+          "gender": "남",
+          "birth": null,
+          "school": "고양예고",
+          "phone": "010-7541-7539",
+          "baptism": false,
+          "parent": "진현식/이은정",
+          "parentPhone": "010-3728-7539,010-9181-7539",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-7-3",
+          "name": "강태한",
+          "gender": "남",
+          "birth": "2009-06-20",
+          "school": null,
+          "phone": "010-5645-8262",
+          "baptism": true,
+          "parent": "강성권/이혜미",
+          "parentPhone": "010-5166-8262",
+          "address": "덕양구"
+        },
+        {
+          "id": "h2-7-4",
+          "name": "박찬휘",
+          "gender": "남",
+          "birth": "2009-03-16",
+          "school": "무원고",
+          "phone": "010-3576-6182",
+          "baptism": true,
+          "parent": "박현서/마지희",
+          "parentPhone": "010-8775-5835,010-7272-6182",
+          "address": "덕양구"
+        },
+        {
+          "id": "h2-7-5",
+          "name": "강지환",
+          "gender": "남",
+          "birth": "2009-06-21",
+          "school": "세원고",
+          "phone": "010-3559-3352",
+          "baptism": true,
+          "parent": "강석훈/박혜영",
+          "parentPhone": "010-6810-0218,010-8875-1566",
+          "address": "일산동구"
+        }
+      ]
+    },
+    {
+      "id": "h2-8",
+      "name": "8반",
+      "gender": "남",
+      "teacherName": "김성훈",
+      "students": [
+        {
+          "id": "h2-8-1",
+          "name": "이민호",
+          "gender": "남",
+          "birth": "2009-03-08",
+          "school": "운정고",
+          "phone": "010-2765-6477",
+          "baptism": true,
+          "parent": "이경종/김정례",
+          "parentPhone": "010-2768-6477,010-9864-6477",
+          "address": "파주시"
+        },
+        {
+          "id": "h2-8-2",
+          "name": "강태민",
+          "gender": "남",
+          "birth": "2009-08-13",
+          "school": "덕이고",
+          "phone": "010-5909-2927",
+          "baptism": true,
+          "parent": "강원범/김정랑",
+          "parentPhone": "010-2955-0616",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-8-3",
+          "name": "최민혁",
+          "gender": "남",
+          "birth": "2009-08-08",
+          "school": "고양외고",
+          "phone": "010-6356-8582",
+          "baptism": true,
+          "parent": "최정남/빙진주",
+          "parentPhone": "010-7189-8585,010-9011-8879",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-8-4",
+          "name": "남규식",
+          "gender": "남",
+          "birth": "2009-11-04",
+          "school": "백신고",
+          "phone": "010-2944-2583",
+          "baptism": true,
+          "parent": "남윤호/김은선",
+          "parentPhone": "010-9546-2580",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-8-5",
+          "name": "전유찬",
+          "gender": "남",
+          "birth": "2009-12-11",
+          "school": "저동고",
+          "phone": "010-5743-1207",
+          "baptism": true,
+          "parent": "전안재/김지혜",
+          "parentPhone": "010-9583-0906,010-9513-0906",
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h2-9",
+      "name": "9반",
+      "gender": "남",
+      "teacherName": "최솜이",
+      "students": [
+        {
+          "id": "h2-9-1",
+          "name": "조형찬",
+          "gender": "남",
+          "birth": "2009-02-27",
+          "school": "대화고",
+          "phone": "010-7256-6988",
+          "baptism": true,
+          "parent": "서은정",
+          "parentPhone": "010-5460-6988",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-9-2",
+          "name": "김천희",
+          "gender": "남",
+          "birth": "2009-08-20",
+          "school": "한서고",
+          "phone": "010-9931-5691",
+          "baptism": true,
+          "parent": "이주희",
+          "parentPhone": "010-6789-4185",
+          "address": "서울 강서구"
+        },
+        {
+          "id": "h2-9-3",
+          "name": "노현수",
+          "gender": "남",
+          "birth": "2009-06-28",
+          "school": "행신고",
+          "phone": "010-5816-9864",
+          "baptism": true,
+          "parent": "노치승/이정선",
+          "parentPhone": "010-3357-9864,010-3755-8802",
+          "address": "덕양구"
+        },
+        {
+          "id": "h2-9-4",
+          "name": "이세준",
+          "gender": "남",
+          "birth": "2009-04-06",
+          "school": "백신고",
+          "phone": "010-5544-6757",
+          "baptism": true,
+          "parent": "이병훈/박선화",
+          "parentPhone": "010-8138-3838,010-5757-4928",
+          "address": "일산동구"
+        },
+        {
+          "id": "h2-9-5",
+          "name": "김동민",
+          "gender": "남",
+          "birth": null,
+          "school": "경기글로벌스쿨",
+          "phone": "010-6816-1702",
+          "baptism": null,
+          "parent": "김효성",
+          "parentPhone": "010-2860-7707",
+          "address": "일산동구"
+        }
+      ]
+    },
+    {
+      "id": "h2-10",
+      "name": "10반",
+      "gender": "남",
+      "teacherName": "이동진",
+      "students": [
+        {
+          "id": "h2-10-1",
+          "name": "김민석",
+          "gender": "남",
+          "birth": "2009-08-17",
+          "school": "백신고",
+          "phone": "010-6769-5956",
+          "baptism": true,
+          "parent": "조미영",
+          "parentPhone": "010-9744-5956",
+          "address": "파주시"
+        },
+        {
+          "id": "h2-10-2",
+          "name": "이정민",
+          "gender": "남",
+          "birth": null,
+          "school": null,
+          "phone": "010-7665-2254",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        },
+        {
+          "id": "h2-10-3",
+          "name": "김원형",
+          "gender": "남",
+          "birth": "2009-04-15",
+          "school": "덕이고",
+          "phone": "010-3140-6215",
+          "baptism": true,
+          "parent": "김종국/김행미",
+          "parentPhone": "010-7141-6215",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-10-4",
+          "name": "박선율",
+          "gender": "남",
+          "birth": "2009-02-11",
+          "school": "IT비전학교",
+          "phone": "010-5728-1610",
+          "baptism": true,
+          "parent": "박남호/전선영",
+          "parentPhone": "010-3622-0386,010-4709-1610",
+          "address": "일산서구"
+        },
+        {
+          "id": "h2-10-5",
+          "name": "김민기",
+          "gender": "남",
+          "birth": "2009-08-04",
+          "school": "정발고",
+          "phone": "010-8901-0097",
+          "baptism": true,
+          "parent": null,
+          "parentPhone": "010-7924-0351",
+          "address": null
+        },
+        {
+          "id": "h2-10-6",
+          "name": "신성혁",
+          "gender": "남",
+          "birth": "2009-06-22",
+          "school": "춘천한샘고",
+          "phone": "010-5813-3925",
+          "baptism": null,
+          "parent": "김연옥",
+          "parentPhone": "010-7634-3925",
+          "address": "춘천"
+        }
+      ]
+    }
+  ],
+  "고3": [
+    {
+      "id": "h3-1",
+      "name": "1반",
+      "gender": "여",
+      "teacherName": "김하은",
+      "students": [
+        {
+          "id": "h3-1-1",
+          "name": "서영채",
+          "gender": "여",
+          "birth": "2008-09-09",
+          "school": "중산고",
+          "phone": "010-9748-9299",
+          "baptism": true,
+          "parent": "이현숙",
+          "parentPhone": "010-7540-2922",
+          "address": "고양시 일산동구"
+        },
+        {
+          "id": "h3-1-2",
+          "name": "김수민",
+          "gender": "여",
+          "birth": "2008-07-22",
+          "school": "경기예고",
+          "phone": "010-2439-4213",
+          "baptism": true,
+          "parent": "김선형/강별",
+          "parentPhone": "010-3921-8179,010-3194-0303",
+          "address": "고양시 호수로"
+        },
+        {
+          "id": "h3-1-3",
+          "name": "장예은",
+          "gender": "여",
+          "birth": "2008-02-27",
+          "school": "백암고",
+          "phone": "010-8694-1325",
+          "baptism": true,
+          "parent": "정대진/정수연",
+          "parentPhone": "010-7653-1324",
+          "address": "서울 양천구"
+        },
+        {
+          "id": "h3-1-4",
+          "name": "손서연",
+          "gender": "여",
+          "birth": "2008-08-28",
+          "school": "한국도예고",
+          "phone": "010-5405-6074",
+          "baptism": true,
+          "parent": "손석민/김정아",
+          "parentPhone": "010-5405-2908",
+          "address": "일산동구"
+        },
+        {
+          "id": "h3-1-5",
+          "name": "이윤미",
+          "gender": "여",
+          "birth": "2008-09-24",
+          "school": "백마고",
+          "phone": "010-7917-5574",
+          "baptism": null,
+          "parent": "봉선경",
+          "parentPhone": "010-9780-8668",
+          "address": "일산동구"
+        }
+      ]
+    },
+    {
+      "id": "h3-2",
+      "name": "2반",
+      "gender": "여",
+      "teacherName": "장소윤",
+      "students": [
+        {
+          "id": "h3-2-1",
+          "name": "장하은",
+          "gender": "여",
+          "birth": "2008-03-17",
+          "school": "중산고",
+          "phone": "010-9649-7136",
+          "baptism": true,
+          "parent": "장영순/김소라",
+          "parentPhone": "010-6356-7134",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-2-2",
+          "name": "김가음",
+          "gender": "여",
+          "birth": "2008-03-24",
+          "school": "일산고",
+          "phone": "010-9462-7578",
+          "baptism": true,
+          "parent": "김상호/허인숙",
+          "parentPhone": "010-4427-7578,010-2814-7578",
+          "address": "고양시"
+        },
+        {
+          "id": "h3-2-3",
+          "name": "정수아",
+          "gender": "여",
+          "birth": "2008-06-06",
+          "school": "저현고",
+          "phone": "010-2106-2513",
+          "baptism": true,
+          "parent": "정일곤/이효선",
+          "parentPhone": "010-3329-7669,010-3391-4062",
+          "address": "일산동구"
+        },
+        {
+          "id": "h3-2-4",
+          "name": "양해솔",
+          "gender": "여",
+          "birth": "2008-12-26",
+          "school": "가좌고",
+          "phone": "010-2420-1040",
+          "baptism": true,
+          "parent": "양정원/이경미",
+          "parentPhone": "010-4702-6952",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-2-5",
+          "name": "박유빈",
+          "gender": "여",
+          "birth": "2008-08-16",
+          "school": "홈스쿨",
+          "phone": "010-7342-1971",
+          "baptism": true,
+          "parent": "나은혜",
+          "parentPhone": "010-7340-1971",
+          "address": "삼송동"
+        },
+        {
+          "id": "h3-2-6",
+          "name": "고안나",
+          "gender": "여",
+          "birth": null,
+          "school": null,
+          "phone": "010-3434-3026",
+          "baptism": null,
+          "parent": null,
+          "parentPhone": null,
+          "address": null
+        }
+      ]
+    },
+    {
+      "id": "h3-3",
+      "name": "3반",
+      "gender": "여",
+      "teacherName": "황희정",
+      "students": [
+        {
+          "id": "h3-3-1",
+          "name": "김다빈",
+          "gender": "여",
+          "birth": "2008-01-06",
+          "school": "고양외고",
+          "phone": "010-2929-3329",
+          "baptism": true,
+          "parent": "김진현/이경민",
+          "parentPhone": "010-3325-5678,010-2317-0711",
+          "address": "일산동구"
+        },
+        {
+          "id": "h3-3-2",
+          "name": "김세아",
+          "gender": "여",
+          "birth": "2008-11-27",
+          "school": "검정고시",
+          "phone": "010-6271-4471",
+          "baptism": true,
+          "parent": "김광규/김은선",
+          "parentPhone": "010-2276-4471",
+          "address": "일산동구"
+        },
+        {
+          "id": "h3-3-3",
+          "name": "임서현",
+          "gender": "여",
+          "birth": "2008-09-12",
+          "school": "안곡고",
+          "phone": "010-9796-3517",
+          "baptism": true,
+          "parent": "임동복/지미란",
+          "parentPhone": "010-3340-3517",
+          "address": "일산동구"
+        },
+        {
+          "id": "h3-3-4",
+          "name": "변예주",
+          "gender": "여",
+          "birth": "2008-04-11",
+          "school": "WGS",
+          "phone": "010-9257-2789",
+          "baptism": true,
+          "parent": "안정경",
+          "parentPhone": "010-9522-2789",
+          "address": "파주시"
+        },
+        {
+          "id": "h3-3-5",
+          "name": "김아빈",
+          "gender": "여",
+          "birth": "2008-10-08",
+          "school": "성문고",
+          "phone": "010-4631-0722",
+          "baptism": true,
+          "parent": "김형준",
+          "parentPhone": "010-5897-0722",
+          "address": "안양시"
+        },
+        {
+          "id": "h3-3-6",
+          "name": "유지인",
+          "gender": "여",
+          "birth": "2009-01-01",
+          "school": "일산동고",
+          "phone": "010-9927-2856",
+          "baptism": true,
+          "parent": "김현영",
+          "parentPhone": "010-6250-0739",
+          "address": "일산서구"
+        }
+      ]
+    },
+    {
+      "id": "h3-4",
+      "name": "4반",
+      "gender": "남",
+      "teacherName": "조충성",
+      "students": [
+        {
+          "id": "h3-4-1",
+          "name": "김지성",
+          "gender": "남",
+          "birth": "2008-06-19",
+          "school": "자퇴",
+          "phone": "010-4349-1454",
+          "baptism": true,
+          "parent": "전국진",
+          "parentPhone": "010-3976-5670",
+          "address": "하늘마을"
+        },
+        {
+          "id": "h3-4-2",
+          "name": "백주영",
+          "gender": "남",
+          "birth": "2008-04-03",
+          "school": "대안학교",
+          "phone": "010-9060-4550",
+          "baptism": true,
+          "parent": "백승호/김윤정",
+          "parentPhone": "010-6214-4550",
+          "address": "일산동구"
+        },
+        {
+          "id": "h3-4-3",
+          "name": "박은호",
+          "gender": "남",
+          "birth": "2008-04-11",
+          "school": "화정고",
+          "phone": "010-6268-7989",
+          "baptism": true,
+          "parent": "박민용/양지현",
+          "parentPhone": "010-2867-7989",
+          "address": "고양시"
+        },
+        {
+          "id": "h3-4-4",
+          "name": "윤예성",
+          "gender": "남",
+          "birth": "2008-07-24",
+          "school": "안곡고",
+          "phone": "010-3169-0962",
+          "baptism": true,
+          "parent": "윤금식/신혜원",
+          "parentPhone": "010-6847-0962",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-4-5",
+          "name": "이지오",
+          "gender": "남",
+          "birth": "2008-06-05",
+          "school": "WGS",
+          "phone": "010-2112-5804",
+          "baptism": true,
+          "parent": "박은경",
+          "parentPhone": "010-4947-5804",
+          "address": "파주시"
+        }
+      ]
+    },
+    {
+      "id": "h3-5",
+      "name": "5반",
+      "gender": "남",
+      "teacherName": "이요한",
+      "students": [
+        {
+          "id": "h3-5-1",
+          "name": "김용환",
+          "gender": "남",
+          "birth": "2008-06-14",
+          "school": "백양고",
+          "phone": "010-4249-3744",
+          "baptism": true,
+          "parent": "김정옥",
+          "parentPhone": "010-9105-7818",
+          "address": "도래울"
+        },
+        {
+          "id": "h3-5-2",
+          "name": "임승진",
+          "gender": "남",
+          "birth": "2008-02-05",
+          "school": "유학중",
+          "phone": "010-8497-7565",
+          "baptism": true,
+          "parent": "임광호/남수애",
+          "parentPhone": "010-7588-5011",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-5-3",
+          "name": "설찬우",
+          "gender": "남",
+          "birth": "2008-03-29",
+          "school": "저동고",
+          "phone": "010-8214-0329",
+          "baptism": true,
+          "parent": "설재덕/설숙희",
+          "parentPhone": "010-6608-7443",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-5-4",
+          "name": "유민형",
+          "gender": "남",
+          "birth": "2008-07-31",
+          "school": "청라고",
+          "phone": "010-9422-8295",
+          "baptism": true,
+          "parent": "유기춘/김재연",
+          "parentPhone": "010-5054-8285",
+          "address": "인천"
+        },
+        {
+          "id": "h3-5-5",
+          "name": "정민제",
+          "gender": "남",
+          "birth": "2008-04-16",
+          "school": "중산고",
+          "phone": "010-4588-4550",
+          "baptism": false,
+          "parent": "최진",
+          "parentPhone": "010-3251-4550",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-5-6",
+          "name": "김동규",
+          "gender": "남",
+          "birth": "2008-01-21",
+          "school": "사이버대",
+          "phone": "010-7256-6738",
+          "baptism": true,
+          "parent": "정지윤",
+          "parentPhone": "010-7354-7654",
+          "address": "덕이동"
+        }
+      ]
+    },
+    {
+      "id": "h3-6",
+      "name": "6반",
+      "gender": "남",
+      "teacherName": "홍민혜",
+      "students": [
+        {
+          "id": "h3-6-1",
+          "name": "이예신",
+          "gender": "남",
+          "birth": "2008-09-05",
+          "school": "글로벌위즈덤",
+          "phone": "010-6513-1040",
+          "baptism": true,
+          "parent": "타교회",
+          "parentPhone": "010-5158-1040",
+          "address": "파주시"
+        },
+        {
+          "id": "h3-6-2",
+          "name": "조영웅",
+          "gender": "남",
+          "birth": "2008-08-14",
+          "school": "인천하늘고",
+          "phone": "010-5370-7088",
+          "baptism": true,
+          "parent": "조충현/양은희",
+          "parentPhone": "010-9505-7088",
+          "address": "김포시"
+        },
+        {
+          "id": "h3-6-3",
+          "name": "문영찬",
+          "gender": "남",
+          "birth": "2008-11-11",
+          "school": "안곡고",
+          "phone": "010-5804-7428",
+          "baptism": true,
+          "parent": "문세현/김민정",
+          "parentPhone": "010-9113-7428",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-6-4",
+          "name": "최드림",
+          "gender": "남",
+          "birth": "2008-08-27",
+          "school": "안양",
+          "phone": "010-3143-8188",
+          "baptism": true,
+          "parent": "최백수/전미라",
+          "parentPhone": "010-5599-1233",
+          "address": "성신로"
+        },
+        {
+          "id": "h3-6-5",
+          "name": "변현민",
+          "gender": "남",
+          "birth": "2008-12-21",
+          "school": "대안학교",
+          "phone": "010-3383-4037",
+          "baptism": true,
+          "parent": "변창균/오윤석",
+          "parentPhone": "010-5323-6067",
+          "address": "덕양구"
+        },
+        {
+          "id": "h3-6-6",
+          "name": "박건",
+          "gender": "남",
+          "birth": "2008-04-12",
+          "school": "대진고",
+          "phone": "010-5471-6144",
+          "baptism": true,
+          "parent": "박상규/예준희",
+          "parentPhone": "010-8871-6144",
+          "address": "어반스카이"
+        }
+      ]
+    },
+    {
+      "id": "h3-7",
+      "name": "7반",
+      "gender": "남",
+      "teacherName": "백승열",
+      "students": [
+        {
+          "id": "h3-7-1",
+          "name": "최태오",
+          "gender": "남",
+          "birth": "2008-10-22",
+          "school": "주엽고",
+          "phone": "010-2464-7362",
+          "baptism": true,
+          "parent": "최정훈/김혜진",
+          "parentPhone": "010-3487-4298",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-7-2",
+          "name": "이의제",
+          "gender": "남",
+          "birth": "2008-08-04",
+          "school": "홈스쿨",
+          "phone": "010-6596-8544",
+          "baptism": true,
+          "parent": "이재봉/소영재",
+          "parentPhone": "010-6598-8544",
+          "address": "식사동"
+        },
+        {
+          "id": "h3-7-3",
+          "name": "주은찬",
+          "gender": "남",
+          "birth": "2008-08-25",
+          "school": "덕이고",
+          "phone": "010-5933-6896",
+          "baptism": true,
+          "parent": "주영진/서순화",
+          "parentPhone": "010-2551-5423",
+          "address": "일산서구"
+        },
+        {
+          "id": "h3-7-4",
+          "name": "신다니엘",
+          "gender": "남",
+          "birth": "2008-05-16",
+          "school": "대일외고",
+          "phone": "010-2657-0690",
+          "baptism": true,
+          "parent": "김숙영",
+          "parentPhone": "010-3131-0690",
+          "address": "서대문구"
+        }
+      ]
+    }
+  ]
+}

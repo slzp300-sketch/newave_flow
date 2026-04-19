@@ -9,6 +9,7 @@ public record AttendanceResponse(
         String studentName,
         LocalDate attendanceDate,
         String status,
+        String absentReason,
         String note
 ) {
     public static AttendanceResponse from(Attendance a) {
@@ -17,6 +18,7 @@ public record AttendanceResponse(
                 a.getStudent().getName(),
                 a.getAttendanceDate(),
                 a.getStatus().name(),
+                a.getAbsentReason(),
                 a.getNote()
         );
     }

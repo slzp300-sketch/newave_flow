@@ -1,18 +1,20 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Users, ClipboardList, Calendar, BarChart2 } from 'lucide-react'
+import { Home, Users, ClipboardList, Calendar, BarChart2, BookOpen } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
 
 const teacherNav = [
   { to: '/',           icon: Home,          label: '홈' },
   { to: '/attendance', icon: Users,         label: '출석' },
+  { to: '/roster',     icon: BookOpen,      label: '교적부' },
   { to: '/checklist',  icon: ClipboardList, label: '주간 체크' },
   { to: '/calendar',   icon: Calendar,      label: '캘린더' },
 ]
 
 const adminNav = [
-  { to: '/',       icon: Home,      label: '홈' },
-  { to: '/admin',  icon: BarChart2, label: '현황' },
-  { to: '/calendar', icon: Calendar, label: '캘린더' },
+  { to: '/',        icon: Home,      label: '홈' },
+  { to: '/roster',  icon: BookOpen,  label: '교적부' },
+  { to: '/admin',   icon: BarChart2, label: '현황' },
+  { to: '/calendar',icon: Calendar,  label: '캘린더' },
 ]
 
 export default function BottomNav() {

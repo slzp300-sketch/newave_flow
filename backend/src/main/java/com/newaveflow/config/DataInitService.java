@@ -1,9 +1,11 @@
 package com.newaveflow.config;
 
 import com.newaveflow.entity.*;
+import com.newaveflow.entity.User.Role;
 import com.newaveflow.repository.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class DataInitService {
 
     private final ChecklistItemRepository checklistItemRepository;
@@ -34,12 +37,22 @@ public class DataInitService {
     private final MeetingMinuteRepository meetingMinuteRepository;
     private final MeetingMinuteConfirmRepository meetingMinuteConfirmRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RosterDataInitService rosterDataInitService;
 
     @PostConstruct
     public void init() {
-        if (userRepository.count() > 0) return; // 이미 초기화된 경우 건너뜀
+        // Force a total reset once to ensure all mappings are perfect
+        log.info("Performing a fresh initialization of users and roster...");
+        teacherClassRepository.deleteAll();
+        attendanceRepository.deleteAll(); // Attendance depends on students/teachers
+        dailyReportRepository.deleteAll();
+        studentRepository.deleteAll();
+        classGroupRepository.deleteAll();
+        userRepository.deleteAll();
+
         List<User> teachers = initUsers();
-        initClasses(teachers);
+        rosterDataInitService.initRosterData();
+        
         initChecklistItems();
         initEvents();
         initEvangelism(teachers);
@@ -47,20 +60,20 @@ public class DataInitService {
     }
 
     private List<User> initUsers() {
-
         String pw = passwordEncoder.encode("password123");
-
-        User pastor    = User.builder().name("김목사").email("pastor@church.com").password(pw).role(User.Role.PASTOR).build();
-        User executive = User.builder().name("이임원").email("exec@church.com").password(pw).role(User.Role.EXECUTIVE).build();
         
-        User m1 = User.builder().name("중1교사").email("m1@church.com").password(pw).role(User.Role.TEACHER).grade("중1").build();
-        User m2 = User.builder().name("중2교사").email("m2@church.com").password(pw).role(User.Role.TEACHER).grade("중2").build();
-        User m3 = User.builder().name("중3교사").email("m3@church.com").password(pw).role(User.Role.TEACHER).grade("중3").build();
-        User h1 = User.builder().name("고1교사").email("h1@church.com").password(pw).role(User.Role.TEACHER).grade("고1").build();
-        User h2 = User.builder().name("고2교사").email("h2@church.com").password(pw).role(User.Role.TEACHER).grade("고2").build();
-        User h3 = User.builder().name("고3교사").email("h3@church.com").password(pw).role(User.Role.TEACHER).grade("고3").build();
+        User admin = User.builder().name("관리자").email("admin@church.com").password(pw).role(Role.ADMIN).build();
+        User pastor = User.builder().name("목사님").email("pastor@church.com").password(pw).role(Role.PASTOR).build();
+        
+        // 학년별 1반 담임선생님들
+        User m1 = User.builder().name("정미리암").email("miriam@church.com").password(pw).role(Role.TEACHER).grade("중1").build();
+        User m2 = User.builder().name("김보경").email("bk.kim@church.com").password(pw).role(Role.TEACHER).grade("중2").build();
+        User m3 = User.builder().name("최윤정").email("yj.choi@church.com").password(pw).role(Role.TEACHER).grade("중3").build();
+        User h1 = User.builder().name("고연진").email("yj.ko@church.com").password(pw).role(Role.TEACHER).grade("고1").build();
+        User h2 = User.builder().name("서하린").email("hr.seo@church.com").password(pw).role(Role.TEACHER).grade("고2").build();
+        User h3 = User.builder().name("김하은").email("he.kim@church.com").password(pw).role(Role.TEACHER).grade("고3").build();
 
-        return userRepository.saveAll(List.of(pastor, executive, m1, m2, m3, h1, h2, h3));
+        return userRepository.saveAll(List.of(admin, pastor, m1, m2, m3, h1, h2, h3));
     }
 
     private void initClasses(List<User> users) {
@@ -68,8 +81,8 @@ public class DataInitService {
         ClassGroup class2 = ClassGroup.builder().name("고등부 1반").ageGroup("고등").description("고1").build();
         classGroupRepository.saveAll(List.of(class1, class2));
 
-        User m1 = users.stream().filter(u -> u.getEmail().equals("m1@church.com")).findFirst().orElseThrow();
-        User h1 = users.stream().filter(u -> u.getEmail().equals("h1@church.com")).findFirst().orElseThrow();
+        User m1 = users.stream().filter(u -> u.getName().equals("정미리암")).findFirst().orElseThrow();
+        User h1 = users.stream().filter(u -> u.getName().equals("고연진")).findFirst().orElseThrow();
 
         teacherClassRepository.save(TeacherClass.builder().teacher(m1).classGroup(class1).isPrimary(true).build());
         teacherClassRepository.save(TeacherClass.builder().teacher(h1).classGroup(class2).isPrimary(true).build());
@@ -136,9 +149,9 @@ public class DataInitService {
             .isActive(false)
             .build());
 
-        // 샘플 출석 데이터 (교사 m1은 참석, h1은 불참)
-        User m1_teacher = users.stream().filter(u -> u.getEmail().equals("m1@church.com")).findFirst().orElseThrow();
-        User h1_teacher = users.stream().filter(u -> u.getEmail().equals("h1@church.com")).findFirst().orElseThrow();
+        // 샘플 출석 데이터 (교사 정미리암은 참석, 고연진은 불참)
+        User m1_teacher = users.stream().filter(u -> u.getName().equals("정미리암")).findFirst().orElseThrow();
+        User h1_teacher = users.stream().filter(u -> u.getName().equals("고연진")).findFirst().orElseThrow();
 
         meetingAttendanceRepository.save(MeetingAttendance.builder()
             .teacher(m1_teacher)

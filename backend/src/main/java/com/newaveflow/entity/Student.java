@@ -33,11 +33,31 @@ public class Student {
 
     private LocalDate birthDate;
 
-    @Column(length = 50)
-    private String parentName;
+    @Column(length = 10)
+    private String gender;
+
+    @Column(length = 100)
+    private String school;
 
     @Column(length = 20)
-    private String parentPhone;
+    private String phone;
+
+    private Boolean baptism;
+
+    @Column(length = 50)
+    private String fatherName;
+
+    @Column(length = 50)
+    private String fatherPhone;
+
+    @Column(length = 50)
+    private String motherName;
+
+    @Column(length = 50)
+    private String motherPhone;
+
+    @Column(length = 255)
+    private String address;
 
     @Column(nullable = false)
     @Builder.Default

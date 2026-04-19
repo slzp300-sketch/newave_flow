@@ -14,6 +14,8 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
     Optional<DailyReport> findByTeacherIdAndClassGroupIdAndReportDate(
             Long teacherId, Long classGroupId, LocalDate date);
 
+    List<DailyReport> findByClassGroupIdAndReportDate(Long classGroupId, LocalDate date);
+
     List<DailyReport> findByReportDate(LocalDate date);
 
     @Query("""

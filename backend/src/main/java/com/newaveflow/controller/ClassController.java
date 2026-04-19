@@ -25,6 +25,11 @@ public class ClassController {
         return ResponseEntity.ok(classService.getClassesForTeacher(currentUser.getId()));
     }
 
+    @GetMapping("/roster")
+    public ResponseEntity<List<ClassDto>> getRoster() {
+        return ResponseEntity.ok(classService.getAllRosterData());
+    }
+
     @GetMapping("/{id}/students")
     public ResponseEntity<List<StudentDto>> getStudents(@PathVariable Long id) {
         return ResponseEntity.ok(classService.getStudentsInClass(id));

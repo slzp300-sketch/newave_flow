@@ -29,6 +29,9 @@ public class ClassGroup {
     @Column(length = 50)
     private String ageGroup;
 
+    @Column(length = 10)
+    private String gender;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

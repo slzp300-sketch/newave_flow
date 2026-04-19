@@ -82,4 +82,8 @@ public class ReportService {
         return new ReportSummaryResponse(
                 date, allReports.size(), submitted, notSubmitted.size(), notSubmitted);
     }
+    public DailyReport getByClassAndDate(Long classId, LocalDate date) {
+        return reportRepository.findByClassGroupIdAndReportDate(classId, date)
+                .stream().findFirst().orElse(null); // Or use findByTeacherId... if multiple teachers per class
+    }
 }

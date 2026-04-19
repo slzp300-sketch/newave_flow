@@ -19,6 +19,7 @@ public record AttendanceBatchRequest(
     public record Record(
             @NotNull Long studentId,
             @NotNull String status,
+            String absentReason,
             String note
     ) {}
 }

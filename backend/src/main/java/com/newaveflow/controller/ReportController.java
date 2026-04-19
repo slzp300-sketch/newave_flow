@@ -36,6 +36,13 @@ public class ReportController {
         return ResponseEntity.ok(reportService.submit(id, currentUser.getId()));
     }
 
+    @GetMapping("/status")
+    public ResponseEntity<DailyReport> getStatus(
+            @RequestParam Long classId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(reportService.getByClassAndDate(classId, date));
+    }
+
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('PASTOR', 'EXECUTIVE')")
     public ResponseEntity<ReportSummaryResponse> getSummary(

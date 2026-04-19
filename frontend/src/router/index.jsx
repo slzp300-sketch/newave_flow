@@ -17,6 +17,7 @@ import EvangelismAdminPage   from '../pages/EvangelismAdminPage'
 import MeetingMinutesPage    from '../pages/MeetingMinutesPage'
 import MeetingMinutesAdminPage from '../pages/MeetingMinutesAdminPage'
 import WeeklyCheckPage from '../pages/WeeklyCheckPage'
+import RosterPage from '../pages/RosterPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -48,6 +49,7 @@ const router = createBrowserRouter([
           { path: '/events',     element: <CalendarPage /> },
           { path: '/students/:id',  element: <StudentDetailPage /> },
           { path: '/evangelism',    element: <EvangelismPage /> },
+          { path: '/roster',        element: <RosterPage /> },
           {
             element: <RequireRole roles={['PASTOR', 'EXECUTIVE']} />,
             children: [

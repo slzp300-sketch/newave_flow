@@ -57,3 +57,14 @@ export const getCurrentWeekRange = () => {
 export const canSubmitTTS = () => {
   return true
 }
+
+/** 출석 체크용 가장 최근 주일(일요일) 가져오기 */
+export const getMostRecentSunday = (date = new Date()) => {
+  return startOfWeek(date, { weekStartsOn: 0 })
+}
+
+/** 현재 일요일 또는 월요일인지 확인 */
+export const isSundayOrMonday = () => {
+  const day = new Date().getDay()
+  return day === 0 || day === 1 // 0: Sunday, 1: Monday
+}

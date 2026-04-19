@@ -1,23 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Check, Clock, X, Save, ChevronDown } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Check, X, Save, ChevronDown, ChevronUp, Send, 
+  CheckCircle2, AlertCircle, MessageSquare, UserCheck, UserX,
+  History, Calendar
+} from 'lucide-react'
 import { attendanceApi } from '../api/attendance'
 import { classesApi } from '../api/classes'
-import { toApiDate } from '../utils/date'
+import { reportsApi } from '../api/reports'
+import { toApiDate, getMostRecentSunday, isSundayOrMonday, formatDate } from '../utils/date'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
 
 const STATUS_CONFIG = {
-  PRESENT: { label: '출석', bg: 'bg-emerald-500', text: 'text-white', icon: Check },
-  LATE:    { label: '지각', bg: 'bg-amber-400',   text: 'text-white', icon: Clock },
-  ABSENT:  { label: '결석', bg: 'bg-red-400',     text: 'text-white', icon: X },
+  PRESENT: { label: '출석', color: 'emerald', icon: UserCheck },
+  ABSENT:  { label: '불참', color: 'red', icon: UserX },
 }
-const STATUS_CYCLE = { PRESENT: 'LATE', LATE: 'ABSENT', ABSENT: 'PRESENT' }
 
 export default function AttendancePage() {
   const qc    = useQueryClient()
-  const today = toApiDate()
+  const navigate = useNavigate()
+  const today = toApiDate(getMostRecentSunday())
+  const isWindowOpen = isSundayOrMonday()
+  const [localEdit, setLocalEdit] = useState(false)
 
   // 1. 담당 반 목록
   const { data: classes = [], isLoading: classLoading } = useQuery({
@@ -42,34 +50,76 @@ export default function AttendancePage() {
     enabled:  !!classId,
   })
 
-  // 기존 기록 기반 초기 상태 맵 (studentId → status)
-  const existingMap = Object.fromEntries(records.map(r => [r.studentId, r.status]))
-  const [overrides, setOverrides] = useState({})
+  // 4. 제출 상태 확인
+  const { data: reportStatus } = useQuery({
+    queryKey: ['report-status', classId, today],
+    queryFn:  () => reportsApi.getByClassAndDate(classId, today).then(r => r.data),
+    enabled:  !!classId,
+  })
 
-  const getStatus = (id) => overrides[id] ?? existingMap[id] ?? 'ABSENT'
-  const toggle    = (id) => setOverrides(m => ({ ...m, [id]: STATUS_CYCLE[getStatus(id)] }))
+  const isSubmitted = reportStatus?.status === 'SUBMITTED' && !localEdit
 
-  const { mutate: saveBatch, isPending } = useMutation({
-    mutationFn: () => attendanceApi.saveBatch(
-      classId, today,
-      students.map(s => ({ studentId: s.id, status: getStatus(s.id), note: '' }))
-    ),
+  // 상태 관리: { [studentId]: { status, absentReason, note } }
+  const [formData, setFormData] = useState({})
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    if (records.length > 0) {
+      const initial = {}
+      records.forEach(r => {
+        initial[r.studentId] = {
+          status: r.status,
+          absentReason: r.absentReason || '',
+          note: r.note || ''
+        }
+      })
+      setFormData(prev => ({ ...initial, ...prev }))
+    }
+  }, [records])
+
+  const updateStudent = (id, fields) => {
+    if (isSubmitted) return
+    setFormData(prev => ({
+      ...prev,
+      [id]: { ...(prev[id] || { status: 'PRESENT', absentReason: '', note: '' }), ...fields }
+    }))
+  }
+
+  const getStudentData = (id) => formData[id] || { status: 'PRESENT', absentReason: '', note: '' }
+
+  // 5. 저장 Mutation
+  const { mutate: saveBatch, isPending: isSaving } = useMutation({
+    mutationFn: () => {
+      const batchRecords = students.map(s => {
+        const data = getStudentData(s.id)
+        return {
+          studentId: s.id,
+          status: data.status,
+          absentReason: data.status === 'ABSENT' ? data.absentReason : '',
+          note: data.note
+        }
+      })
+      return attendanceApi.saveBatch(classId, today, batchRecords)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attendance'] })
-      alert('출석이 저장되었습니다!')
+      qc.invalidateQueries({ queryKey: ['report-status'] })
+      alert('출석 정보가 임시 저장되었습니다.')
     },
   })
 
-  const counts = students.reduce((acc, s) => {
-    const st = getStatus(s.id)
-    acc[st] = (acc[st] ?? 0) + 1
-    return acc
-  }, {})
+  // 6. 최종 제출 Mutation
+  const { mutate: submitReport, isPending: isSubmitting } = useMutation({
+    mutationFn: () => attendanceApi.submit(classId, today),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['report-status'] })
+      alert('출석 제출이 완료되었습니다!')
+    },
+  })
 
-  const selectedClass = classes.find(c => c.id === classId)
+  if (classLoading) return <div className="py-20 text-center text-gray-400">불러오는 중...</div>
 
-  // 배정된 반이 없는 경우 처리
-  if (!classLoading && classes.length === 0) {
+  if (classes.length === 0) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header title="출석 체크" showBack />
@@ -77,107 +127,294 @@ export default function AttendancePage() {
           <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center text-4xl">📋</div>
           <div>
             <p className="font-black text-gray-900 text-lg">배정된 반이 없습니다</p>
-            <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-              관리자에게 반 배정을 요청해 주세요.<br/>배정 완료 후 이 화면이 활성화됩니다.
-            </p>
+            <p className="text-gray-400 text-sm mt-2 leading-relaxed">관리자에게 반 배정을 요청해 주세요.</p>
           </div>
         </div>
       </div>
     )
   }
 
+  if (isSubmitted) {
+    return (
+      <SubmittedAttendanceView 
+        classGroup={classes.find(c => c.id === classId)}
+        date={today}
+        students={students}
+        formData={formData}
+        onEdit={() => {
+          if (isWindowOpen) {
+            // Revert submission status locally? 
+            // Better to have an "Unsubmit" or just allow editing if it's the window.
+            // But user asked for "제출 완료하면 표시" like TTS.
+            // So we show the submitted view and allow re-editing only if window is open.
+            alert('제출된 내용을 수정합니다.')
+            // Here we would ideally have a way to unsubmit or just show the edit form.
+            // Let's just set a local state to override isSubmitted.
+            setLocalEdit(true)
+          } else {
+            alert('제출 기간이 아니므로 수정할 수 없습니다.')
+          }
+        }}
+        isWindowOpen={isWindowOpen}
+      />
+    )
+  }
+
   return (
-    <div>
+    <div className="pb-24">
       <Header title="출석 체크" showBack />
 
-      {/* 반 선택 */}
-      {classes.length > 1 && (
-        <div className="px-4 py-3 bg-white border-b border-gray-100">
-          <div className="relative">
+      {/* 상단 정보 */}
+      <div className="px-4 py-4 glass-effect border-b border-gray-100">
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest flex items-center gap-1">
+              <Calendar size={10} /> {formatDate(today)}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <h2 className="text-lg font-black text-gray-900">{classes.find(c => c.id === classId)?.name}</h2>
+              <span className="text-xs font-bold text-gray-400">총 {students.length}명</span>
+            </div>
+          </div>
+          {classes.length > 1 && (
             <select
-              value={classId ?? ''}
-              onChange={e => { setSelectedClassId(Number(e.target.value)); setOverrides({}) }}
-              className="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              value={classId}
+              onChange={e => setSelectedClassId(Number(e.target.value))}
+              className="text-xs font-bold bg-gray-50 px-3 py-1.5 rounded-lg border-none focus:ring-1 focus:ring-primary-500"
             >
               {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
+          )}
         </div>
-      )}
 
-      {/* 요약 */}
-      <div className="px-4 py-3 bg-white border-b border-gray-100 flex items-center gap-4">
-        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-          <div key={key} className="flex items-center gap-1.5 text-sm">
-            <span className={`w-2 h-2 rounded-full ${cfg.bg}`} />
-            <span className="text-gray-600">{cfg.label} {counts[key] ?? 0}</span>
-          </div>
-        ))}
-        <span className="ml-auto text-xs text-gray-400">
-          {selectedClass?.name} · 총 {students.length}명
-        </span>
-      </div>
-
-      {/* 학생 목록 */}
-      <div className="px-4 py-3 flex flex-col gap-2">
-        {classLoading || !classId ? (
-          <div className="py-16 text-center text-gray-400 text-sm">불러오는 중...</div>
-        ) : students.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-4xl mb-3">👤</p>
-            <p className="font-semibold text-gray-700">등록된 학생이 없습니다</p>
-            <p className="text-sm text-gray-400 mt-1">관리자에게 학생 등록을 요청해주세요</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {students.map((s, idx) => {
-              const status = getStatus(s.id)
-              const cfg    = STATUS_CONFIG[status]
-              const Icon   = cfg.icon
-              return (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                >
-                  <Card className="flex items-center gap-3">
-                    <div 
-                      onClick={() => navigate(`/students/${s.id}`)}
-                      className="flex flex-1 items-center gap-3 cursor-pointer group"
-                    >
-                      <div className="w-10 h-10 rounded-2xl premium-gradient flex items-center justify-center flex-shrink-0 shadow-lg group-active:scale-90 transition-transform">
-                        <span className="text-white font-black text-sm">{s.name[0]}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 text-sm group-hover:text-primary-600 transition-colors">{s.name}</p>
-                        <p className="text-gray-400 text-[11px] font-medium">{s.grade}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => toggle(s.id)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-black transition-all active:scale-95 shadow-sm ${cfg.bg} ${cfg.text}`}
-                    >
-                      <Icon size={13} strokeWidth={3} />
-                      {cfg.label}
-                    </button>
-                  </Card>
-                </motion.div>
-              )
-            })}
+        {!isWindowOpen && (
+          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2.5 rounded-xl text-[11px] font-bold">
+            <AlertCircle size={14} className="flex-shrink-0" />
+            <p>출석 제출 기간이 아닙니다 (매주 주일~월요일 가능). 현재는 미리 입력만 가능합니다.</p>
           </div>
         )}
       </div>
 
-      {students.length > 0 && (
-        <div className="px-4 pb-6">
-          <Button size="lg" onClick={() => saveBatch()} loading={isPending}>
-            <Save size={18} />
-            출석 저장하기
+      {/* 학생 목록 */}
+      <div className="px-4 py-4 flex flex-col gap-3">
+        {students.map((student, idx) => (
+          <StudentAttendanceCard
+            key={student.id}
+            student={student}
+            data={getStudentData(student.id)}
+            onChange={(fields) => updateStudent(student.id, fields)}
+            idx={idx}
+          />
+        ))}
+      </div>
+
+      {/* 하단 플로팅 버튼 */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 flex gap-2 z-50">
+        <Button 
+          variant="outline" 
+          className="flex-1"
+          onClick={() => saveBatch()}
+          loading={isSaving}
+        >
+          <Save size={18} />
+          임시저장
+        </Button>
+        <Button 
+          className="flex-[2] premium-gradient shadow-glow"
+          onClick={() => {
+            if (window.confirm('최종 제출하시겠습니까? 제출 후에는 기간 내에만 수정이 가능합니다.')) {
+              submitReport()
+            }
+          }}
+          disabled={!isWindowOpen}
+          loading={isSubmitting}
+        >
+          <Send size={18} />
+          최종 제출하기
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function StudentAttendanceCard({ student, data, onChange, idx }) {
+  const [isNoteOpen, setNoteOpen] = useState(false)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: idx * 0.05 }}
+    >
+      <Card className="overflow-visible">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+              data.status === 'PRESENT' ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-400'
+            }`}>
+              <span className="font-black text-sm">{student.name[0]}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-gray-900 text-sm">{student.name}</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{student.grade} · {student.school || '학교미입력'}</p>
+            </div>
+          </div>
+
+          <div className="flex bg-gray-100 p-1 rounded-xl">
+            <button
+              onClick={() => onChange({ status: 'PRESENT' })}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                data.status === 'PRESENT' 
+                  ? 'bg-white text-emerald-600 shadow-sm' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              출석
+            </button>
+            <button
+              onClick={() => onChange({ status: 'ABSENT' })}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                data.status === 'ABSENT' 
+                  ? 'bg-white text-red-500 shadow-sm' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              불참
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {data.status === 'ABSENT' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-3 pt-3 border-t border-gray-50"
+            >
+              <label className="text-[10px] font-black text-gray-400 mb-1.5 block">불참 사유</label>
+              <input
+                type="text"
+                placeholder="예: 가족여행, 학업, 몸살 등"
+                value={data.absentReason}
+                onChange={(e) => onChange({ absentReason: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-xs font-bold border-none focus:ring-1 focus:ring-red-200 placeholder:text-gray-300"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="mt-3">
+          <button
+            onClick={() => setNoteOpen(!isNoteOpen)}
+            className="flex items-center gap-1 text-[10px] font-black text-gray-400 hover:text-primary-500 transition-colors"
+          >
+            <MessageSquare size={10} />
+            특이사항 {data.note ? '(입력됨)' : '작성하기'}
+            {isNoteOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+          </button>
+          
+          <AnimatePresence>
+            {isNoteOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-2"
+              >
+                <textarea
+                  placeholder="아이의 오늘 기분이나 나눌 내용이 있다면 적어주세요."
+                  value={data.note}
+                  onChange={(e) => onChange({ note: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-50 rounded-xl text-xs font-medium border-none focus:ring-1 focus:ring-primary-100 placeholder:text-gray-300 min-h-[60px]"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </Card>
+    </motion.div>
+  )
+}
+
+function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit, isWindowOpen }) {
+  const counts = students.reduce((acc, s) => {
+    const status = formData[s.id]?.status || 'ABSENT'
+    acc[status] = (acc[status] || 0) + 1
+    return acc
+  }, { PRESENT: 0, ABSENT: 0 })
+
+  return (
+    <div className="flex flex-col min-h-screen pb-10">
+      <Header title="출석 완료" showBack />
+      
+      <div className="px-6 pt-10 pb-6 flex flex-col items-center gap-6">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200 }}
+          className="w-24 h-24 rounded-3xl premium-gradient flex items-center justify-center shadow-glow"
+        >
+          <CheckCircle2 size={48} className="text-white" />
+        </motion.div>
+
+        <div className="text-center">
+          <h2 className="text-2xl font-black text-gray-900">{classGroup?.name}</h2>
+          <p className="text-emerald-500 font-bold mt-1">출석 제출이 완료되었습니다!</p>
+          <p className="text-gray-400 text-xs mt-3">{formatDate(date)}</p>
+        </div>
+
+        <div className="w-full grid grid-cols-2 gap-3 mt-4">
+          <div className="bg-emerald-50 p-4 rounded-3xl text-center">
+            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">출석</p>
+            <p className="text-2xl font-black text-emerald-600">{counts.PRESENT}명</p>
+          </div>
+          <div className="bg-red-50 p-4 rounded-3xl text-center">
+            <p className="text-[10px] font-black text-red-300 uppercase tracking-widest mb-1">불참</p>
+            <p className="text-2xl font-black text-red-400">{counts.ABSENT}명</p>
+          </div>
+        </div>
+
+        <div className="w-full flex flex-col gap-3 mt-2">
+          <p className="text-xs font-black text-gray-400 ml-1">상세 현황</p>
+          {students.map(s => (
+            <div key={s.id} className="flex items-center justify-between px-4 py-3 bg-white border border-gray-100 rounded-2xl">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-gray-700">{s.name}</span>
+                {formData[s.id]?.status === 'ABSENT' && formData[s.id]?.absentReason && (
+                  <span className="text-[10px] text-gray-400">({formData[s.id].absentReason})</span>
+                )}
+              </div>
+              <span className={`text-xs font-black ${formData[s.id]?.status === 'PRESENT' ? 'text-emerald-500' : 'text-red-400'}`}>
+                {formData[s.id]?.status === 'PRESENT' ? '출석' : '불참'}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-col items-center gap-4">
+          {isWindowOpen ? (
+            <button
+              onClick={() => {
+                // In a real app, you might need an 'unsubmit' API or just local state
+                window.location.reload() // Simplest way to re-check if user can edit
+              }}
+              className="text-primary-600 font-bold text-sm underline underline-offset-4 active:opacity-60"
+            >
+              기록 내용 수정하기
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-medium">
+              <AlertCircle size={12} />
+              수정 가능 기간이 지났습니다 (주일~월요일)
+            </div>
+          )}
+          
+          <Button variant="outline" size="sm" onClick={() => window.history.back()}>
+            홈으로 돌아가기
           </Button>
         </div>
-      )}
+      </div>
     </div>
   )
 }

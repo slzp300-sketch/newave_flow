@@ -41,4 +41,18 @@ public class AttendanceController {
     public ResponseEntity<List<AttendanceResponse>> getStudentHistory(@PathVariable Long studentId) {
         return ResponseEntity.ok(attendanceService.getStudentAttendanceHistory(studentId));
     }
+
+    @PostMapping("/submit")
+    public ResponseEntity<Void> submitReport(
+            @RequestParam Long classId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @AuthenticationPrincipal User currentUser) {
+        attendanceService.submitReport(classId, date, currentUser.getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/window")
+    public ResponseEntity<Map<String, Boolean>> checkWindow() {
+        return ResponseEntity.ok(Map.of("open", attendanceService.isSubmissionWindowOpen()));
+    }
 }

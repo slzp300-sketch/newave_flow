@@ -11,4 +11,9 @@ export const attendanceApi = {
     client.get('/attendance/summary', { params: { date } }),
 
   getHistoryByStudent: (studentId) => client.get(`/attendance/student/${studentId}`),
+  
+  submit: (classId, date) =>
+    client.post('/attendance/submit', null, { params: { classId, date } }),
+
+  checkWindow: () => client.get('/attendance/window'),
 }
