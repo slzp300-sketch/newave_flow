@@ -1,4 +1,8 @@
-import { format, isToday, isTomorrow, isYesterday, getISOWeek, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
+import { 
+  format, isToday, isTomorrow, isYesterday, 
+  getISOWeek, getWeek, getMonth, getWeekOfMonth,
+  startOfWeek, endOfWeek, subWeeks 
+} from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export const formatDate = (date) =>
@@ -42,7 +46,9 @@ export const getTTSWeekRange = () => {
   return {
     start: format(sun, 'M/d'),
     end:   format(sat, 'M/d'),
-    weekNum: getISOWeek(sun),
+    weekNum: getWeek(sun, { weekStartsOn: 0 }),
+    month: getMonth(sun) + 1,
+    weekOfMonth: getWeekOfMonth(sun, { weekStartsOn: 0 })
   }
 }
 
@@ -53,9 +59,10 @@ export const getCurrentWeekRange = () => {
   return `${format(start, 'M/d')} ~ ${format(end, 'M/d')}`
 }
 
-/** TTS 제출 가능 여부 (상시 가능) */
+/** TTS 제출 가능 여부 (토요일 ~ 화요일) */
 export const canSubmitTTS = () => {
-  return true
+  const day = new Date().getDay()
+  return [6, 0, 1, 2].includes(day)
 }
 
 /** 출석 체크용 가장 최근 주일(일요일) 가져오기 */

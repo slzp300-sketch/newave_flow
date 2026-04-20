@@ -22,4 +22,8 @@
   .glass-effect {
     @apply backdrop-blur-lg bg-white/70 border border-white/40;
   }
+
+  .field-input {
+    @apply w-full px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium text-gray-800 outline-none;
+  }
 }

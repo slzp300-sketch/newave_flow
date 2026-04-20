@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
@@ -10,6 +10,10 @@ export default function Login() {
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   const queryClient = useQueryClient()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
   const [form, setForm]       = useState({ email: '', password: '' })
   const [showPw, setShowPw]   = useState(false)

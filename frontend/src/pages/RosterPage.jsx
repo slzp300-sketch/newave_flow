@@ -7,6 +7,7 @@ import { classesApi } from '../api/classes'
 
 const GRADES = ['중1', '중2', '중3', '고1', '고2', '고3']
 
+
 const GRADE_COLORS = {
   '중1': { bg: 'bg-blue-500',    light: 'bg-blue-50',    text: 'text-blue-600',    border: 'border-blue-300'    },
   '중2': { bg: 'bg-violet-500',  light: 'bg-violet-50',  text: 'text-violet-600',  border: 'border-violet-300'  },
@@ -30,41 +31,34 @@ function formatBirth(birth) {
   return birth.replace(/-/g, '.')
 }
 
+// ── 메인 페이지 ─────────────────────────────
 export default function RosterPage() {
+  return (
+    <div className="flex flex-col min-h-screen pb-24">
+      <Header title="교적부" />
+      <RosterTab />
+    </div>
+  )
+}
+
+// ── 교적부 탭 (기존 기능) ───────────────────
+function RosterTab() {
   const [selectedGrade, setSelectedGrade] = useState('중1')
   const [selectedClass, setSelectedClass] = useState(null)
   const [rosterData, setRosterData] = useState({})
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchRoster()
-  }, [])
-
-  const fetchRoster = async () => {
-    try {
-      setIsLoading(true)
-      const response = await classesApi.getRoster()
-      
-      // Group by grade
-      const grouped = response.data.reduce((acc, cls) => {
+    classesApi.getRoster().then(r => {
+      const grouped = r.data.reduce((acc, cls) => {
         const grade = cls.grade || '기타'
         if (!acc[grade]) acc[grade] = []
         acc[grade].push(cls)
         return acc
       }, {})
-      
       setRosterData(grouped)
-    } catch (error) {
-      console.error('Failed to fetch roster:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleGradeChange = (grade) => {
-    setSelectedGrade(grade)
-    setSelectedClass(null)
-  }
+    }).finally(() => setIsLoading(false))
+  }, [])
 
   const classes = rosterData[selectedGrade] || []
   const colors = GRADE_COLORS[selectedGrade] || GRADE_COLORS['중1']
@@ -72,36 +66,25 @@ export default function RosterPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen pb-24">
-        <Header title="교적부" />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-        </div>
+      <div className="flex-1 flex items-center justify-center mt-20">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-screen pb-24">
-      <Header title="교적부" />
-
-      {/* 학년 탭 + 통계 — 스크롤 시 고정 */}
+    <>
       <div className="sticky top-14 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
-        <div
-          className="flex overflow-x-auto px-4 pt-3 pb-2 gap-2"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
+        <div className="flex overflow-x-auto px-4 pt-3 pb-2 gap-2" style={{ scrollbarWidth: 'none' }}>
           {GRADES.map(grade => {
             const gc = GRADE_COLORS[grade]
             const isActive = selectedGrade === grade
             return (
               <button
                 key={grade}
-                onClick={() => handleGradeChange(grade)}
+                onClick={() => { setSelectedGrade(grade); setSelectedClass(null) }}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-black transition-all active:scale-95 ${
-                  isActive
-                    ? `${gc.bg} text-white shadow-md`
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  isActive ? `${gc.bg} text-white shadow-md` : 'bg-gray-100 text-gray-500'
                 }`}
               >
                 {grade}
@@ -109,7 +92,6 @@ export default function RosterPage() {
             )
           })}
         </div>
-
         <motion.div
           key={selectedGrade}
           initial={{ opacity: 0, y: -4 }}
@@ -125,82 +107,45 @@ export default function RosterPage() {
         </motion.div>
       </div>
 
-      {/* 반 카드 그리드 */}
       <div className="px-4 py-4">
         {classes.length === 0 ? (
           <GradeEmptyState grade={selectedGrade} colors={colors} />
         ) : (
-          <motion.div
-            key={selectedGrade}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-2 gap-3"
-          >
+          <motion.div key={selectedGrade} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-3">
             {classes.map((cls, idx) => (
-              <ClassCard
-                key={cls.id}
-                cls={cls}
-                grade={selectedGrade}
-                colors={colors}
-                idx={idx}
-                isSelected={selectedClass?.id === cls.id}
-                onClick={() => setSelectedClass(cls)}
-              />
+              <ClassCard key={cls.id} cls={cls} grade={selectedGrade} colors={colors} idx={idx}
+                isSelected={selectedClass?.id === cls.id} onClick={() => setSelectedClass(cls)} />
             ))}
           </motion.div>
         )}
       </div>
 
-      {/* 반 상세 바텀 시트 */}
       <AnimatePresence>
         {selectedClass && (
-          <ClassDetailSheet
-            cls={selectedClass}
-            grade={selectedGrade}
-            colors={colors}
-            onClose={() => setSelectedClass(null)}
-          />
+          <ClassDetailSheet cls={selectedClass} grade={selectedGrade} colors={colors} onClose={() => setSelectedClass(null)} />
         )}
       </AnimatePresence>
-    </div>
+    </>
   )
 }
 
+// ── 교적부 컴포넌트들 ────────────────────────
 function ClassCard({ cls, grade, colors, idx, isSelected, onClick }) {
   const count = cls.students.length
   const baptizedCount = cls.students.filter(s => s.baptism === true).length
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.04 }}
-    >
-      <Card
-        onClick={onClick}
-        className={`border-2 transition-all ${isSelected ? colors.border : 'border-transparent'}`}
-      >
-        {/* 학년 색상 + 반 번호 */}
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+      <Card onClick={onClick} className={`border-2 transition-all ${isSelected ? colors.border : 'border-transparent'}`}>
         <div className="flex items-start justify-between mb-3">
           <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center shadow-sm`}>
             <span className="text-white font-black text-sm">{cls.name.replace('반', '')}</span>
           </div>
-          {/* 성별 뱃지 */}
           <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-            cls.gender === '여'
-              ? 'bg-pink-100 text-pink-600'
-              : 'bg-blue-100 text-blue-600'
-          }`}>
-            {cls.gender}
-          </span>
+            cls.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
+          }`}>{cls.gender}</span>
         </div>
-
         <p className="font-black text-gray-900 text-sm leading-tight">{grade} {cls.name}</p>
-        {cls.teacherName && (
-          <p className="text-[11px] text-gray-500 font-medium mt-0.5">{cls.teacherName} 선생님</p>
-        )}
-
-        {/* 학생 수 / 세례 현황 */}
+        {cls.teacherName && <p className="text-[11px] text-gray-500 font-medium mt-0.5">{cls.teacherName} 선생님</p>}
         <div className="mt-2 flex items-center gap-2">
           <div className="flex items-center gap-1">
             <Users size={11} className={colors.text} />
@@ -223,32 +168,18 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
   const baptizedCount   = cls.students.filter(s => s.baptism === true).length
   const unbaptizedCount = cls.students.filter(s => s.baptism === false).length
   const unknownCount    = cls.students.filter(s => s.baptism === null).length
-
   return (
     <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose} className="fixed inset-0 bg-black/40 z-20" />
+      <div className="fixed inset-0 z-30 flex items-center justify-center px-4 pointer-events-none">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 bg-black/40 z-20"
-      />
-
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white rounded-t-3xl z-30 flex flex-col"
-        style={{ maxHeight: '85vh' }}
+        initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+        className="w-full max-w-[430px] bg-white rounded-3xl flex flex-col pointer-events-auto"
+        style={{ maxHeight: '82vh' }}
       >
-        {/* 핸들 */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-
-        {/* 시트 헤더 */}
-        <div className="px-5 py-3 border-b border-gray-100 flex-shrink-0">
+        <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
@@ -261,120 +192,73 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
                     cls.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
                   }`}>{cls.gender}</span>
                 </div>
-                <p className="text-xs text-gray-400">
-                  {cls.teacherName ? `${cls.teacherName} 선생님 · ` : ''}총 {count}명
-                </p>
+                <p className="text-xs text-gray-400">{cls.teacherName ? `${cls.teacherName} 선생님 · ` : ''}총 {count}명</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform"
-            >
+            <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
               <X size={16} className="text-gray-500" />
             </button>
           </div>
-
-          {/* 세례 현황 요약 */}
           {count > 0 && (
             <div className="flex gap-2">
               <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 font-bold">세례 {baptizedCount}명</span>
               <span className="text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 font-bold">미세례 {unbaptizedCount}명</span>
-              {unknownCount > 0 && (
-                <span className="text-[11px] px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-600 font-bold">미확인 {unknownCount}명</span>
-              )}
+              {unknownCount > 0 && <span className="text-[11px] px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-600 font-bold">미확인 {unknownCount}명</span>}
             </div>
           )}
         </div>
-
-        {/* 학생 목록 */}
         <div className="flex-1 overflow-y-auto">
-          {count === 0 ? (
-            <EmptyStudentState colors={colors} />
-          ) : (
+          {count === 0 ? <EmptyStudentState colors={colors} /> : (
             <div className="divide-y divide-gray-50">
-              {cls.students.map((student, idx) => (
-                <StudentRow key={student.id} student={student} colors={colors} idx={idx} />
-              ))}
+              {cls.students.map((student, idx) => <StudentRow key={student.id} student={student} colors={colors} idx={idx} />)}
             </div>
           )}
         </div>
       </motion.div>
+      </div>
     </>
   )
 }
 
 function StudentRow({ student, colors, idx }) {
   const age = calcAge(student.birth)
-
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: idx * 0.03 }}
-      className="flex items-start gap-3 px-5 py-3.5"
-    >
-      {/* 아바타 */}
-      <div className={`w-9 h-9 rounded-xl ${
-        student.gender === '여' ? 'bg-pink-400' : 'bg-blue-400'
-      } flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm`}>
+    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
+      className="flex items-start gap-3 px-5 py-3.5">
+      <div className={`w-9 h-9 rounded-xl ${student.gender === '여' ? 'bg-pink-400' : 'bg-blue-400'} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm`}>
         <span className="text-white font-black text-sm">{student.name[0]}</span>
       </div>
-
       <div className="flex-1 min-w-0">
-        {/* 이름 + 뱃지 */}
         <div className="flex items-center gap-1.5 flex-wrap mb-1">
           <span className="font-black text-gray-900 text-sm">{student.name}</span>
-          {student.baptism === true && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600">세례</span>
-          )}
-          {student.baptism === false && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">미세례</span>
-          )}
+          {student.baptism === true && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600">세례</span>}
+          {student.baptism === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">미세례</span>}
         </div>
-
-        {/* 학교 + 생년월일 */}
         {(student.school || student.birth) && (
           <p className="text-[11px] text-gray-500 mb-1">
             {[student.school, student.birth && `${formatBirth(student.birth)} (만 ${age}세)`].filter(Boolean).join(' · ')}
           </p>
         )}
-
-        {/* 학생 전화 */}
         {student.phone && (
-          <a
-            href={`tel:${student.phone}`}
-            className="flex items-center gap-1.5 text-[11px] text-gray-600 mb-0.5 active:text-blue-600"
-          >
-            <Phone size={10} className="flex-shrink-0" />
-            {student.phone}
+          <a href={`tel:${student.phone}`} className="flex items-center gap-1.5 text-[11px] text-gray-600 mb-0.5 active:text-blue-600">
+            <Phone size={10} className="flex-shrink-0" />{student.phone}
           </a>
         )}
-
-        {/* 부모님 */}
         {(student.fatherName || student.fatherPhone) && (
           <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-0.5">
             <Users size={10} className="flex-shrink-0" />
-            <span>
-              {[student.fatherName, student.fatherPhone].filter(Boolean).join(' · ')}
-              {student.fatherName && <span className="text-[9px] text-gray-400 ml-1">(부)</span>}
-            </span>
+            <span>{[student.fatherName, student.fatherPhone].filter(Boolean).join(' · ')}{student.fatherName && <span className="text-[9px] text-gray-400 ml-1">(부)</span>}</span>
           </div>
         )}
         {(student.motherName || student.motherPhone) && (
           <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-0.5">
             <Users size={10} className="flex-shrink-0" />
-            <span>
-              {[student.motherName, student.motherPhone].filter(Boolean).join(' · ')}
-              {student.motherName && <span className="text-[9px] text-gray-400 ml-1">(모)</span>}
-            </span>
+            <span>{[student.motherName, student.motherPhone].filter(Boolean).join(' · ')}{student.motherName && <span className="text-[9px] text-gray-400 ml-1">(모)</span>}</span>
           </div>
         )}
-
-        {/* 주소 */}
         {student.address && (
           <div className="flex items-start gap-1.5 text-[11px] text-gray-400 mt-0.5">
-            <MapPin size={10} className="flex-shrink-0 mt-0.5" />
-            <span className="leading-snug">{student.address}</span>
+            <MapPin size={10} className="flex-shrink-0 mt-0.5" /><span className="leading-snug">{student.address}</span>
           </div>
         )}
       </div>
@@ -389,9 +273,7 @@ function GradeEmptyState({ grade, colors }) {
         <BookOpen size={32} className={colors.text} />
       </div>
       <p className="font-black text-gray-700 text-base">{grade} 데이터 준비 중</p>
-      <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-        학생 명단이 곧 등록될 예정입니다
-      </p>
+      <p className="text-xs text-gray-400 mt-2">학생 명단이 곧 등록될 예정입니다</p>
     </div>
   )
 }

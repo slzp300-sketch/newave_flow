@@ -27,6 +27,9 @@ public class Event {
     @Column(nullable = false)
     private LocalDate eventDate;
 
+    @Column
+    private LocalDate endDate;
+
     @Column(length = 20)
     private String startTime;
 

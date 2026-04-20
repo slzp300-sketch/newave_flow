@@ -51,6 +51,7 @@ public class EventService {
                 .title(request.title())
                 .description(request.description())
                 .eventDate(request.eventDate())
+                .endDate(request.endDate() != null ? request.endDate() : request.eventDate())
                 .startTime(request.startTime())
                 .endTime(request.endTime())
                 .color(request.color())
@@ -67,6 +68,7 @@ public class EventService {
         event.setTitle(request.title());
         event.setDescription(request.description());
         event.setEventDate(request.eventDate());
+        event.setEndDate(request.endDate() != null ? request.endDate() : request.eventDate());
         event.setStartTime(request.startTime());
         event.setEndTime(request.endTime());
         event.setColor(request.color());
@@ -97,16 +99,29 @@ public class EventService {
 
         List<Student> students = studentRepository.findByClassGroupIdAndIsActiveTrue(classGroupId);
 
-        Map<Long, String> statusMap = eventStudentAttendanceRepository
+        class StudentStatus {
+            String status;
+            String reason;
+            StudentStatus(String status, String reason) { this.status = status; this.reason = reason; }
+        }
+
+        Map<Long, StudentStatus> statusMap = eventStudentAttendanceRepository
                 .findByEventIdAndClassGroupId(eventId, classGroupId)
                 .stream()
-                .collect(Collectors.toMap(a -> a.getStudent().getId(), EventStudentAttendance::getStatus));
+                .collect(Collectors.toMap(
+                    a -> a.getStudent().getId(), 
+                    a -> new StudentStatus(a.getStatus(), a.getAbsenceReason())
+                ));
 
         return students.stream()
-                .map(s -> new EventDto.StudentAttendanceRecord(
+                .map(s -> {
+                    StudentStatus ss = statusMap.get(s.getId());
+                    return new EventDto.StudentAttendanceRecord(
                         s.getId(), s.getName(), s.getGrade(),
                         classGroupId, classGroupName,
-                        statusMap.get(s.getId())))
+                        ss != null ? ss.status : null,
+                        ss != null ? ss.reason : null);
+                })
                 .toList();
     }
 
@@ -126,7 +141,7 @@ public class EventService {
                     eventStudentAttendanceRepository.findByEventIdAndStudentId(eventId, item.studentId());
 
             if (existing.isPresent()) {
-                existing.get().update(item.status());
+                existing.get().update(item.status(), item.absenceReason());
                 eventStudentAttendanceRepository.save(existing.get());
             } else {
                 eventStudentAttendanceRepository.save(
@@ -135,6 +150,7 @@ public class EventService {
                                 .student(student)
                                 .teacher(teacher)
                                 .status(item.status())
+                                .absenceReason(item.absenceReason())
                                 .build()
                 );
             }
@@ -156,7 +172,8 @@ public class EventService {
                             .sorted(Comparator.comparing(r -> r.getStudent().getName()))
                             .map(r -> new EventDto.StudentAttendanceRecord(
                                     r.getStudent().getId(), r.getStudent().getName(),
-                                    r.getStudent().getGrade(), cg.getId(), cg.getName(), r.getStatus()))
+                                    r.getStudent().getGrade(), cg.getId(), cg.getName(), 
+                                    r.getStatus(), r.getAbsenceReason()))
                             .toList();
                     return new EventDto.ClassAttendanceSummary(
                             cg.getId(), cg.getName(),

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Users, FileText, Calendar, BookOpen } from 'lucide-react'
+import { Users, FileText, Calendar, BookOpen, CheckSquare } from 'lucide-react'
 import Header from '../components/layout/Header'
 
 const MENU = [
@@ -35,6 +35,14 @@ const MENU = [
     iconColor: 'text-amber-600',
     title: '기도모임 관리',
     desc: '불참 명단 및 필사 제출 현황',
+  },
+  {
+    to: '/admin/tts',
+    icon: CheckSquare,
+    iconBg: 'bg-emerald-50',
+    iconColor: 'text-emerald-600',
+    title: 'TTS 점검 관리',
+    desc: '주간 TTS 질문 항목 및 제출 현황',
   },
 ]
 

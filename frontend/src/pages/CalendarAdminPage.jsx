@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect, useMemo } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   Plus, ChevronLeft, ChevronRight, PenLine, Trash2, 
   Calendar as CalendarIcon, Clock, Type, Palette, 
-  ChevronDown, ChevronUp, AlertCircle
+  ChevronDown, ChevronUp, AlertCircle, CheckCircle2
 } from 'lucide-react'
 import { 
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   isSameMonth, isToday, isSameDay, addMonths, subMonths,
-  startOfWeek, endOfWeek
+  startOfWeek, endOfWeek, getWeekOfMonth, getMonth 
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
@@ -25,7 +25,7 @@ const COLORS = [
   { name: '빨강', value: 'red', class: 'bg-red-500' },
   { name: '초록', value: 'emerald', class: 'bg-emerald-500' },
   { name: '보라', value: 'violet', class: 'bg-violet-500' },
-  { name: '주황', value: 'amber', class: 'bg-amber-500' },
+  { name: '주황', value: 'amber', class: 'bg-amber-400' },
   { name: '분홍', value: 'rose', class: 'bg-rose-500' },
 ]
 
@@ -36,7 +36,21 @@ const EVENT_TYPES = [
   { label: '전체 일정', value: 'CHURCH_WIDE' },
 ]
 
+const getEventColors = (color) => {
+  const map = {
+    blue: 'border-blue-500 bg-blue-50/30 text-blue-600',
+    red: 'border-red-500 bg-red-50/30 text-red-600',
+    emerald: 'border-emerald-500 bg-emerald-50/30 text-emerald-600',
+    violet: 'border-violet-500 bg-violet-50/30 text-violet-600',
+    amber: 'border-amber-400 bg-amber-50/30 text-amber-600',
+    rose: 'border-rose-500 bg-rose-50/30 text-rose-600',
+    indigo: 'border-indigo-500 bg-indigo-50/30 text-indigo-600',
+  }
+  return map[color] || 'border-primary-500 bg-primary-50/30 text-primary-600'
+}
+
 export default function CalendarAdminPage() {
+  const qc = useQueryClient()
   const [current, setCurrent] = useState(new Date())
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -46,19 +60,20 @@ export default function CalendarAdminPage() {
     title: '',
     description: '',
     eventDate: toApiDate(new Date()),
-    startTime: '',
-    endTime: '',
+    endDate: toApiDate(new Date()),
+    startTime: '12:00',
+    endTime: '13:00',
     color: '',
     eventType: 'REGULAR',
     attendanceRequired: false,
   })
 
-  const { data: events = [], refetch } = useQuery({
-    queryKey: ['admin-events', format(current, 'yyyy-MM')],
+  const { data: events = [] } = useQuery({
+    queryKey: ['events', format(current, 'yyyy-MM')],
     queryFn:  () => client.get('/events', {
       params: {
-        from: format(startOfMonth(subMonths(current, 1)), 'yyyy-MM-dd'),
-        to:   format(endOfMonth(addMonths(current, 1)),   'yyyy-MM-dd'),
+        from: format(startOfWeek(startOfMonth(current)), 'yyyy-MM-dd'),
+        to:   format(endOfWeek(endOfMonth(current)),   'yyyy-MM-dd'),
       }
     }).then(r => r.data),
   })
@@ -77,7 +92,7 @@ export default function CalendarAdminPage() {
         alert('일정이 등록되었습니다.')
       }
       handleCloseForm()
-      refetch()
+      qc.invalidateQueries({ queryKey: ['events'] })
     } catch (err) {
       console.error(err)
       alert('저장 중 오류가 발생했습니다.')
@@ -92,6 +107,7 @@ export default function CalendarAdminPage() {
       title: event.title,
       description: event.description || '',
       eventDate: event.eventDate,
+      endDate: event.endDate || event.eventDate,
       startTime: event.startTime || '',
       endTime: event.endTime || '',
       color: event.color || '',
@@ -107,7 +123,7 @@ export default function CalendarAdminPage() {
     try {
       await client.delete(`/events/${id}`)
       alert('삭제되었습니다.')
-      refetch()
+      qc.invalidateQueries({ queryKey: ['events'] })
     } catch (err) {
       console.error(err)
       alert('삭제 중 오류가 발생했습니다.')
@@ -121,18 +137,30 @@ export default function CalendarAdminPage() {
       title: '',
       description: '',
       eventDate: toApiDate(new Date()),
-      startTime: '',
-      endTime: '',
+      endDate: toApiDate(new Date()),
+      startTime: '12:00',
+      endTime: '13:00',
       color: '',
       eventType: 'REGULAR',
       attendanceRequired: false,
     })
   }
 
-  // 이번 달의 일정만 리스트로 표시
-  const monthlyEvents = events
-    .filter(e => isSameMonth(new Date(e.eventDate), current))
-    .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
+  // 주차별 그룹화 로직
+  const groupedEvents = useMemo(() => {
+    return events
+      .filter(e => isSameMonth(new Date(e.eventDate), current))
+      .reduce((acc, event) => {
+        const date = new Date(event.eventDate);
+        const weekNum = getWeekOfMonth(date, { weekStartsOn: 0 });
+        const month = getMonth(date) + 1;
+        const key = `${month}월 ${weekNum}주차`;
+        
+        if (!acc.has(key)) acc.set(key, []);
+        acc.get(key).push(event);
+        return acc;
+      }, new Map());
+  }, [events, current]);
 
   return (
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
@@ -177,28 +205,37 @@ export default function CalendarAdminPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">일자</label>
-                    <input 
-                      type="date" 
-                      value={formData.eventDate}
-                      onChange={e => setFormData({...formData, eventDate: e.target.value})}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">시작일</label>
+                      <input 
+                        type="date" 
+                        value={formData.eventDate}
+                        onChange={e => {
+                          const newDate = e.target.value;
+                          setFormData({
+                            ...formData, 
+                            eventDate: newDate, 
+                            // 종료일이 시작일보다 빠르거나 같았던 경우 함께 업데이트
+                            endDate: formData.endDate < newDate ? newDate : formData.endDate
+                          });
+                        }}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">종료일</label>
+                      <input 
+                        type="date" 
+                        value={formData.endDate}
+                        onChange={e => setFormData({...formData, endDate: e.target.value})}
+                        min={formData.eventDate}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">구분</label>
-                    <select 
-                      value={formData.eventType}
-                      onChange={e => setFormData({...formData, eventType: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none"
-                    >
-                      {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -206,7 +243,20 @@ export default function CalendarAdminPage() {
                     <input 
                       type="time" 
                       value={formData.startTime}
-                      onChange={e => setFormData({...formData, startTime: e.target.value})}
+                      onChange={e => {
+                        const newStartTime = e.target.value
+                        let newEndTime = formData.endTime
+                        
+                        if (newStartTime) {
+                          const [h, m] = newStartTime.split(':').map(Number)
+                          const date = new Date()
+                          date.setHours(h + 1)
+                          date.setMinutes(m)
+                          newEndTime = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+                        }
+                        
+                        setFormData({...formData, startTime: newStartTime, endTime: newEndTime})
+                      }}
                       className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
                     />
                   </div>
@@ -219,6 +269,17 @@ export default function CalendarAdminPage() {
                       className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">구분</label>
+                  <select 
+                    value={formData.eventType}
+                    onChange={e => setFormData({...formData, eventType: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none"
+                  >
+                    {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
                 </div>
 
                 <div>
@@ -283,50 +344,76 @@ export default function CalendarAdminPage() {
           </motion.div>
         )}
 
-        <div className="flex flex-col gap-3">
-          {monthlyEvents.length === 0 ? (
-            <div className="py-20 text-center text-gray-400">
+        <div className="flex flex-col gap-8">
+          {groupedEvents.size === 0 ? (
+            <div className="py-20 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
               <CalendarIcon size={48} className="mx-auto mb-3 opacity-20" />
               <p className="text-sm font-bold">이번 달에 등록된 일정이 없습니다.</p>
             </div>
           ) : (
-            monthlyEvents.map(event => (
-              <Card key={event.id} className="p-4 flex flex-col gap-3 group hover:border-primary-200 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">
-                        {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
-                      </span>
-                      <Badge variant={event.eventType === 'SPECIAL' ? 'info' : event.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
-                        {EVENT_TYPES.find(t => t.value === event.eventType)?.label}
-                      </Badge>
-                    </div>
-                    <h3 className="font-black text-gray-900 text-base">{event.title}</h3>
-                  </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => handleEdit(event)} className="p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors">
-                      <PenLine size={16} />
-                    </button>
-                    <button onClick={() => handleDelete(event.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+            Array.from(groupedEvents.keys()).map(weekKey => (
+              <div key={weekKey} className="flex flex-col gap-4">
+                <div className="flex items-center gap-3 px-1">
+                  <h3 className="text-sm font-black text-gray-900 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-50 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                    {weekKey}
+                  </h3>
+                  <div className="flex-1 h-px bg-gradient-to-r from-gray-100 to-transparent" />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-[11px] font-black text-gray-400">
-                  {(event.startTime || event.endTime) && (
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} /> {event.startTime} {event.endTime && `~ ${event.endTime}`}
-                    </span>
-                  )}
-                  {event.color && (
-                    <span className="flex items-center gap-1">
-                      <Palette size={12} /> {COLORS.find(c => c.value === event.color)?.name} 테마
-                    </span>
-                  )}
+                <div className="flex flex-col gap-4">
+                  {groupedEvents.get(weekKey).map(event => {
+                    const colors = getEventColors(event.color)
+                    return (
+                      <Card key={event.id} className={`p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
+                        <div className={`p-4 ${colors.split(' ')[1]}`}>
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-start gap-4">
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm`}>
+                                <CalendarIcon size={22} className={colors.split(' ')[2]} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <Badge variant={event.eventType === 'SPECIAL' ? 'info' : event.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
+                                    {EVENT_TYPES.find(t => t.value === event.eventType)?.label}
+                                  </Badge>
+                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                                    {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
+                                  </span>
+                                </div>
+                                <h3 className="font-black text-gray-900 text-base mb-1">{event.title}</h3>
+                                {event.description && (
+                                  <p className="text-gray-500 text-[11px] font-medium leading-relaxed mb-3">{event.description}</p>
+                                )}
+                                <div className="flex items-center gap-3 text-[11px] font-black text-gray-400">
+                                  {(event.startTime || event.endTime) && (
+                                    <span className="flex items-center gap-1">
+                                      <Clock size={12} /> {event.startTime} {event.endTime && `~ ${event.endTime}`}
+                                    </span>
+                                  )}
+                                  {event.attendanceRequired && (
+                                    <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                                      <CheckCircle2 size={10} /> 출석체크 활성
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 ml-2">
+                              <button onClick={() => handleEdit(event)} className="p-2 text-gray-400 hover:text-primary-500 hover:bg-white rounded-lg transition-colors bg-white/50 shadow-sm">
+                                <PenLine size={16} />
+                              </button>
+                              <button onClick={() => handleDelete(event.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors bg-white/50 shadow-sm">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    )
+                  })}
                 </div>
-              </Card>
+              </div>
             ))
           )}
         </div>

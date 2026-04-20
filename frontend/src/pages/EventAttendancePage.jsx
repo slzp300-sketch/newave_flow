@@ -30,6 +30,7 @@ export default function EventAttendancePage() {
 
   // 출석 상태 맵: { [studentId]: 'PRESENT' | 'ABSENT' }
   const [statusMap, setStatusMap] = useState({})
+  const [reasonMap, setReasonMap] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [editing, setEditing] = useState(false)
 
@@ -37,16 +38,20 @@ export default function EventAttendancePage() {
   useEffect(() => {
     if (students.length > 0) {
       const map = {}
+      const rMap = {}
       let hasAny = false
       students.forEach(s => {
         if (s.status) {
           map[s.studentId] = s.status
+          rMap[s.studentId] = s.absenceReason || ''
           hasAny = true
         } else {
           map[s.studentId] = 'PRESENT' // 기본값
+          rMap[s.studentId] = ''
         }
       })
       setStatusMap(map)
+      setReasonMap(rMap)
       if (hasAny) setSubmitted(true)
     }
   }, [students])
@@ -58,6 +63,10 @@ export default function EventAttendancePage() {
       setSubmitted(true)
       setEditing(false)
     },
+    onError: (err) => {
+      console.error(err)
+      alert('제출 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message))
+    }
   })
 
   const toggle = (studentId) => {
@@ -71,6 +80,7 @@ export default function EventAttendancePage() {
     const records = Object.entries(statusMap).map(([studentId, status]) => ({
       studentId: Number(studentId),
       status,
+      absenceReason: status === 'ABSENT' ? (reasonMap[studentId] || '') : '',
     }))
     saveMutation.mutate(records)
   }
@@ -78,6 +88,9 @@ export default function EventAttendancePage() {
   const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT').length
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
   const isEditable   = !submitted || editing
+
+  const missingReasons = students.filter(s => statusMap[s.studentId] === 'ABSENT' && !reasonMap[s.studentId]?.trim())
+  const canSubmit = isEditable && students.length > 0 && missingReasons.length === 0
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
@@ -153,39 +166,62 @@ export default function EventAttendancePage() {
               {students.map((student, idx) => {
                 const status = statusMap[student.studentId] ?? 'PRESENT'
                 const isPresent = status === 'PRESENT'
-                return (
-                  <motion.button
-                    key={student.studentId}
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.04 }}
-                    onClick={() => isEditable && toggle(student.studentId)}
-                    disabled={!isEditable}
-                    className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-[0.98] text-left ${
-                      isPresent
-                        ? 'border-emerald-200 bg-emerald-50'
-                        : 'border-red-200 bg-red-50'
-                    } ${!isEditable ? 'cursor-default' : 'cursor-pointer'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
-                        isPresent ? 'bg-emerald-200 text-emerald-700' : 'bg-red-200 text-red-700'
-                      }`}>
-                        {student.studentName[0]}
-                      </div>
-                      <div>
-                        <p className="font-black text-gray-900 text-sm">{student.studentName}</p>
-                        <p className="text-[10px] text-gray-400 font-medium">{student.grade}</p>
-                      </div>
+                  return (
+                    <div key={student.studentId} className="flex flex-col gap-2">
+                      <motion.button
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.04 }}
+                        onClick={() => isEditable && toggle(student.studentId)}
+                        disabled={!isEditable}
+                        className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-[0.98] text-left ${
+                          isPresent
+                            ? 'border-emerald-200 bg-emerald-50'
+                            : 'border-red-200 bg-red-50'
+                        } ${!isEditable ? 'cursor-default' : 'cursor-pointer'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
+                            isPresent ? 'bg-emerald-200 text-emerald-700' : 'bg-red-200 text-red-700'
+                          }`}>
+                            {student.studentName[0]}
+                          </div>
+                          <div>
+                            <p className="font-black text-gray-900 text-sm">{student.studentName}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">{student.grade}</p>
+                          </div>
+                        </div>
+                        <div className={`flex items-center gap-1.5 text-xs font-black ${isPresent ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {isPresent
+                            ? <><CheckCircle2 size={16} /> 출석</>
+                            : <><XCircle size={16} /> 결석</>
+                          }
+                        </div>
+                      </motion.button>
+
+                      {/* 결석 사유 입력창 */}
+                      {!isPresent && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="px-1"
+                        >
+                          <input
+                            type="text"
+                            value={reasonMap[student.studentId] || ''}
+                            onChange={(e) => setReasonMap(prev => ({ ...prev, [student.studentId]: e.target.value }))}
+                            placeholder="결석 사유를 입력해 주세요 (필수)"
+                            disabled={!isEditable}
+                            className={`w-full px-4 py-3 rounded-xl text-[11px] font-medium border transition-all ${
+                              isEditable 
+                                ? 'bg-white border-red-100 focus:border-red-300 focus:ring-4 focus:ring-red-50 outline-none' 
+                                : 'bg-gray-50 border-gray-100 text-gray-400'
+                            }`}
+                          />
+                        </motion.div>
+                      )}
                     </div>
-                    <div className={`flex items-center gap-1.5 text-xs font-black ${isPresent ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {isPresent
-                        ? <><CheckCircle2 size={16} /> 출석</>
-                        : <><XCircle size={16} /> 결석</>
-                      }
-                    </div>
-                  </motion.button>
-                )
+                  )
               })}
             </div>
           )}
@@ -193,14 +229,21 @@ export default function EventAttendancePage() {
 
         {/* 제출 버튼 */}
         {isEditable && students.length > 0 && (
-          <Button
-            size="lg"
-            onClick={handleSubmit}
-            disabled={saveMutation.isPending}
-          >
-            <CalendarCheck size={17} />
-            {saveMutation.isPending ? '저장 중...' : '출석 체크 제출'}
-          </Button>
+          <div className="flex flex-col gap-2">
+            {!canSubmit && students.length > 0 && (
+              <p className="text-[10px] font-black text-red-400 text-center">
+                결석 사유를 모두 입력해 주세요 ({missingReasons.length}명 누락)
+              </p>
+            )}
+            <Button
+              size="lg"
+              onClick={handleSubmit}
+              disabled={saveMutation.isPending || (isEditable && !canSubmit)}
+            >
+              <CalendarCheck size={17} />
+              {saveMutation.isPending ? '저장 중...' : '출석 체크 제출'}
+            </Button>
+          </div>
         )}
       </div>
     </div>

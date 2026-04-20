@@ -22,6 +22,9 @@ import RosterPage               from '../pages/RosterPage'
 import EventAttendanceListPage  from '../pages/EventAttendanceListPage'
 import EventAttendancePage      from '../pages/EventAttendancePage'
 import EventAttendanceAdminPage from '../pages/EventAttendanceAdminPage'
+import ClassManagePage                  from '../pages/ClassManagePage'
+import DeactivationRequestsAdminPage   from '../pages/DeactivationRequestsAdminPage'
+import TtsAdminPage                    from '../pages/TtsAdminPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -54,18 +57,21 @@ const router = createBrowserRouter([
           { path: '/students/:id',  element: <StudentDetailPage /> },
           { path: '/evangelism',         element: <EvangelismPage /> },
           { path: '/roster',             element: <RosterPage /> },
-          { path: '/event-attendance',   element: <EventAttendanceListPage /> },
+          { path: '/event-attendance',     element: <EventAttendanceListPage /> },
           { path: '/event-attendance/:id', element: <EventAttendancePage /> },
+          { path: '/class-manage',         element: <ClassManagePage /> },
           {
-            element: <RequireRole roles={['PASTOR', 'EXECUTIVE']} />,
+            element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
             children: [
               { path: '/admin',             element: <AdminDashboard /> },
               { path: '/admin/calendar',    element: <CalendarAdminPage /> },
               { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },
               { path: '/admin/minutes',     element: <MeetingMinutesAdminPage /> },
-              { path: '/admin/prayer',           element: <PrayerAbsentAdminPage /> },
-              { path: '/admin/event-attendance', element: <EventAttendanceAdminPage /> },
-            ],
+               { path: '/admin/prayer',           element: <PrayerAbsentAdminPage /> },
+               { path: '/admin/event-attendance',        element: <EventAttendanceAdminPage /> },
+               { path: '/admin/deactivation-requests',   element: <DeactivationRequestsAdminPage /> },
+               { path: '/admin/tts',                    element: <TtsAdminPage /> },
+             ],
           },
         ],
       },

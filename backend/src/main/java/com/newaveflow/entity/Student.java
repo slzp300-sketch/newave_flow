@@ -66,4 +66,24 @@ public class Student {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    public void update(String name, String gender, LocalDate birthDate,
+                       String school, String phone, Boolean baptism,
+                       String fatherName, String fatherPhone,
+                       String motherName, String motherPhone, String address) {
+        this.name = name;
+        this.gender = gender;
+        this.birthDate = birthDate;
+        this.school = school;
+        this.phone = phone;
+        this.baptism = baptism;
+        this.fatherName = fatherName;
+        this.fatherPhone = fatherPhone;
+        this.motherName = motherName;
+        this.motherPhone = motherPhone;
+        this.address = address;
+    }
+
+    public void deactivate() { this.isActive = false; }
+    public void activate()   { this.isActive = true; }
 }

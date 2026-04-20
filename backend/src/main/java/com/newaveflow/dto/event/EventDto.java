@@ -13,6 +13,7 @@ public class EventDto {
             String title,
             String description,
             LocalDate eventDate,
+            LocalDate endDate,
             String startTime,
             String endTime,
             String color,
@@ -25,6 +26,7 @@ public class EventDto {
                     event.getTitle(),
                     event.getDescription(),
                     event.getEventDate(),
+                    event.getEndDate(),
                     event.getStartTime(),
                     event.getEndTime(),
                     event.getColor(),
@@ -38,6 +40,7 @@ public class EventDto {
             @NotNull String title,
             String description,
             @NotNull LocalDate eventDate,
+            LocalDate endDate,
             String startTime,
             String endTime,
             String color,
@@ -52,7 +55,8 @@ public class EventDto {
     // 학생 출석 단건
     public record StudentAttendanceItem(
             @NotNull Long studentId,
-            @NotNull String status  // PRESENT / ABSENT
+            @NotNull String status,  // PRESENT / ABSENT
+            String absenceReason
     ) {}
 
     // 배치 요청
@@ -67,7 +71,8 @@ public class EventDto {
             String grade,
             Long classGroupId,
             String classGroupName,
-            String status  // null = 미제출
+            String status,  // null = 미제출
+            String absenceReason
     ) {}
 
     // 반별 출석 요약 (관리자용)

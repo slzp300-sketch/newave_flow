@@ -15,9 +15,21 @@ public record StudentDto(
         String fatherPhone,
         String motherName,
         String motherPhone,
-        String address
+        String address,
+        boolean isActive,
+        boolean hasPendingRequest,
+        String prayerRequest,
+        String sketch
 ) {
     public static StudentDto from(Student entity) {
+        return from(entity, false, null, null);
+    }
+    
+    public static StudentDto from(Student entity, boolean hasPendingRequest) {
+        return from(entity, hasPendingRequest, null, null);
+    }
+
+    public static StudentDto from(Student entity, boolean hasPendingRequest, String prayerRequest, String sketch) {
         return new StudentDto(
                 entity.getId(),
                 entity.getName(),
@@ -31,7 +43,11 @@ public record StudentDto(
                 entity.getFatherPhone(),
                 entity.getMotherName(),
                 entity.getMotherPhone(),
-                entity.getAddress()
+                entity.getAddress(),
+                entity.isActive(),
+                hasPendingRequest,
+                prayerRequest,
+                sketch
         );
     }
 }

@@ -7,6 +7,7 @@ import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
 import { evangelismApi } from '../api/evangelism'
 import { eventApi } from '../api/event'
+import { deactivationApi } from '../api/students'
 import { 
   formatDate, toApiDate, greetingByTime, getTTSWeekRange, 
   getCurrentWeekRange, canSubmitTTS 
@@ -151,7 +152,8 @@ function TeacherView({ navigate }) {
   const isEvangelismActive = evangelism?.nextSchedule?.status === 'ACTIVE'
 
   const tasks = [
-    { id: 'attendance', icon: Users,        color: 'bg-blue-50 text-blue-600',      title: '출석 체크',      desc: '학생들의 출결 현황을 기록하세요',                         done: false, path: '/attendance' },
+    { id: 'attendance',   icon: Users,        color: 'bg-blue-50 text-blue-600',    title: '출석 체크',  desc: '학생들의 출결 현황을 기록하세요',     done: false, path: '/attendance' },
+    { id: 'class-manage', icon: BookOpen,     color: 'bg-indigo-50 text-indigo-600', title: '반 관리',   desc: '학생 정보 수정 및 재적/제적 관리',    done: false, path: '/class-manage' },
     {
       id: 'tts',
       icon: CheckSquare,
@@ -213,15 +215,27 @@ function TeacherView({ navigate }) {
           {weeklyEvents.length === 0 ? (
             <p className="text-xs text-gray-400 font-bold py-2">이번 주 예정된 일정이 없습니다.</p>
           ) : (
-            weeklyEvents.slice(0, 2).map(e => (
-              <div key={e.id} className="flex items-center gap-3">
-                <span className={`w-1 h-3 rounded-full ${e.color ? `bg-${e.color}-500` : 'bg-primary-500'}`} style={{ backgroundColor: e.color }} />
-                <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
-                <span className="text-[10px] font-bold text-gray-400 ml-auto">
-                  {format(new Date(e.eventDate), 'EEE', { locale: ko })}
-                </span>
-              </div>
-            ))
+            weeklyEvents.slice(0, 2).map(e => {
+              const dotColor = {
+                blue: 'bg-blue-500',
+                red: 'bg-red-500',
+                emerald: 'bg-emerald-500',
+                violet: 'bg-violet-500',
+                amber: 'bg-amber-400',
+                rose: 'bg-rose-500',
+                indigo: 'bg-indigo-500',
+              }[e.color] || 'bg-primary-500'
+
+              return (
+                <div key={e.id} className="flex items-center gap-3">
+                  <span className={`w-1 h-3 rounded-full ${dotColor}`} />
+                  <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
+                  <span className="text-[10px] font-bold text-gray-400 ml-auto">
+                    {format(new Date(e.eventDate), 'EEE', { locale: ko })}
+                  </span>
+                </div>
+              )
+            })
           )}
           {weeklyEvents.length > 2 && (
             <p className="text-[10px] text-rose-400 font-black mt-1">+ {weeklyEvents.length - 2}개의 일정이 더 있습니다</p>
@@ -280,6 +294,11 @@ function TaskCard({ icon: Icon, color, title, desc, done, path, navigate, badge 
 // ────────── 관리자 뷰 ──────────
 function AdminView({ navigate, today }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ['deactivation-requests-pending'],
+    queryFn: () => deactivationApi.getPending().then(r => r.data),
+    staleTime: 60 * 1000,
+  })
   const { data, isLoading } = useQuery({
     queryKey: ['report-summary', today],
     queryFn:  () => reportsApi.getSummary(today).then(r => r.data),
@@ -334,15 +353,27 @@ function AdminView({ navigate, today }) {
           {weeklyEvents.length === 0 ? (
             <p className="text-xs text-gray-400 font-bold py-2">이번 주 예정된 일정이 없습니다.</p>
           ) : (
-            weeklyEvents.slice(0, 2).map(e => (
-              <div key={e.id} className="flex items-center gap-3">
-                <span className={`w-1 h-3 rounded-full ${e.color ? `bg-${e.color}-500` : 'bg-primary-500'}`} style={{ backgroundColor: e.color }} />
-                <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
-                <span className="text-[10px] font-bold text-gray-400 ml-auto">
-                  {format(new Date(e.eventDate), 'EEE', { locale: ko })}
-                </span>
-              </div>
-            ))
+            weeklyEvents.slice(0, 2).map(e => {
+              const dotColor = {
+                blue: 'bg-blue-500',
+                red: 'bg-red-500',
+                emerald: 'bg-emerald-500',
+                violet: 'bg-violet-500',
+                amber: 'bg-amber-400',
+                rose: 'bg-rose-500',
+                indigo: 'bg-indigo-500',
+              }[e.color] || 'bg-primary-500'
+
+              return (
+                <div key={e.id} className="flex items-center gap-3">
+                  <span className={`w-1 h-3 rounded-full ${dotColor}`} />
+                  <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
+                  <span className="text-[10px] font-bold text-gray-400 ml-auto">
+                    {format(new Date(e.eventDate), 'EEE', { locale: ko })}
+                  </span>
+                </div>
+              )
+            })
           )}
         </div>
       </Card>
@@ -354,15 +385,22 @@ function AdminView({ navigate, today }) {
         { path: '/admin/minutes',    icon: FileText,  bg: 'bg-violet-50',  color: 'text-violet-600',  title: '회의록 관리',    desc: '회의록 등록 · 영상 공유 · 확인 현황' },
         { path: '/admin/calendar',   icon: Calendar,  bg: 'bg-rose-50',    color: 'text-rose-600',    title: '일정 관리',      desc: '월별 부서 일정 등록 및 수정' },
         { path: '/admin/prayer',           icon: BookOpen,     bg: 'bg-amber-50',   color: 'text-amber-600',   title: '기도모임 관리',  desc: '불참 명단 및 필사 제출 현황' },
-        { path: '/admin/event-attendance', icon: ClipboardList, bg: 'bg-emerald-50', color: 'text-emerald-600', title: '행사 출석 관리',  desc: '행사별 반 학생 출석 현황 확인' },
-      ].map(({ path, icon: Icon, bg, color, title, desc }) => (
+        { path: '/admin/tts',              icon: CheckSquare,  bg: 'bg-emerald-50', color: 'text-emerald-600', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
+        { path: '/admin/event-attendance',       icon: ClipboardList, bg: 'bg-indigo-50', color: 'text-indigo-600', title: '행사 출석 관리',  desc: '행사별 반 학생 출석 현황 확인', badge: null },
+        { path: '/admin/deactivation-requests',   icon: Users,         bg: 'bg-red-50',     color: 'text-red-500',     title: '제적 승인 관리',  desc: '교사가 신청한 제적 요청 검토',   badge: pendingRequests.length > 0 ? pendingRequests.length : null },
+      ].map(({ path, icon: Icon, bg, color, title, desc, badge }) => (
         <Card key={path} onClick={() => navigate(path)} className="flex items-center justify-between p-5 group">
           <div className="flex items-center gap-4">
             <div className={`w-11 h-11 rounded-2xl ${bg} flex items-center justify-center`}>
               <Icon size={20} className={color} />
             </div>
             <div>
-              <p className="font-black text-gray-900 text-sm">{title}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-black text-gray-900 text-sm">{title}</p>
+                {badge && (
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-red-100 text-red-600">{badge}</span>
+                )}
+              </div>
               <p className="text-[11px] text-gray-400 mt-0.5">{desc}</p>
             </div>
           </div>

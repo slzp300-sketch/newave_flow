@@ -31,7 +31,11 @@ public class EventStudentAttendance {
     @Column(nullable = false, length = 20)
     private String status; // PRESENT / ABSENT
 
-    public void update(String status) {
+    @Column(length = 255)
+    private String absenceReason;
+
+    public void update(String status, String absenceReason) {
         this.status = status;
+        this.absenceReason = absenceReason;
     }
 }

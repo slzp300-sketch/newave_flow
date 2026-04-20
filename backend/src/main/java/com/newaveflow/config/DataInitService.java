@@ -38,18 +38,31 @@ public class DataInitService {
     private final MeetingMinuteConfirmRepository meetingMinuteConfirmRepository;
     private final PrayerVoteRepository prayerVoteRepository;
     private final EventStudentAttendanceRepository eventStudentAttendanceRepository;
+    private final DeactivationRequestRepository deactivationRequestRepository;
+    private final StudentMemoRepository studentMemoRepository;
     private final PasswordEncoder passwordEncoder;
     private final RosterDataInitService rosterDataInitService;
+    private final TtsRecordRepository ttsRecordRepository;
+    private final TtsQuestionRepository ttsQuestionRepository;
 
     @PostConstruct
     public void init() {
         // Force a total reset once to ensure all mappings are perfect
         log.info("Performing a fresh initialization of users and roster...");
+        deactivationRequestRepository.deleteAll();
+        studentMemoRepository.deleteAll();
         eventStudentAttendanceRepository.deleteAll();
+        eventAttendanceRepository.deleteAll();
+        meetingMinuteConfirmRepository.deleteAll();
         prayerVoteRepository.deleteAll();
         teacherClassRepository.deleteAll();
         attendanceRepository.deleteAll();
         dailyReportRepository.deleteAll();
+        meetingAttendanceRepository.deleteAll();
+        evangelismAssignmentRepository.deleteAll();
+        evangelismGroupMemberRepository.deleteAll();
+        ttsRecordRepository.deleteAll();
+        ttsQuestionRepository.deleteAll();
         studentRepository.deleteAll();
         classGroupRepository.deleteAll();
         userRepository.deleteAll();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { 
   Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
@@ -7,7 +7,7 @@ import {
 import { 
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   getDay, isSameMonth, isToday, isSameDay, addMonths, subMonths,
-  startOfWeek, endOfWeek, addDays
+  startOfWeek, endOfWeek, addDays, isWithinInterval, startOfDay
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
@@ -27,7 +27,7 @@ const COLORS = [
   { name: '빨강', value: 'red', class: 'bg-red-500' },
   { name: '초록', value: 'emerald', class: 'bg-emerald-500' },
   { name: '보라', value: 'violet', class: 'bg-violet-500' },
-  { name: '주황', value: 'amber', class: 'bg-amber-500' },
+  { name: '주황', value: 'amber', class: 'bg-amber-400' },
   { name: '분홍', value: 'rose', class: 'bg-rose-500' },
 ]
 
@@ -53,12 +53,14 @@ export default function CalendarPage() {
     title: '',
     description: '',
     eventDate: toApiDate(new Date()),
-    startTime: '',
-    endTime: '',
+    endDate: toApiDate(new Date()),
+    startTime: '12:00',
+    endTime: '13:00',
     color: '',
-    eventType: 'REGULAR'
+    eventType: 'REGULAR',
+    attendanceRequired: false,
   })
-
+  
   const { data: events = [], isLoading, refetch } = useQuery({
     queryKey: ['events', format(current, 'yyyy-MM')],
     queryFn:  () => client.get('/events', {
@@ -69,15 +71,65 @@ export default function CalendarPage() {
     }).then(r => r.data),
   })
 
+  // Lane Allocation Logic
+  const eventLanes = useMemo(() => {
+    const lanes = {};
+    const sorted = [...events].sort((a, b) => a.id - b.id);
+    const occupied = {};
+
+    sorted.forEach(ev => {
+      let lane = 0;
+      while (true) {
+        let ok = true;
+        const start = new Date(ev.eventDate);
+        const end = ev.endDate ? new Date(ev.endDate) : start;
+        const days = eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) });
+
+        for (const d of days) {
+          const key = format(d, 'yyyy-MM-dd');
+          if (occupied[key]?.[lane]) {
+            ok = false;
+            break;
+          }
+        }
+
+        if (ok) {
+          days.forEach(d => {
+            const key = format(d, 'yyyy-MM-dd');
+            if (!occupied[key]) occupied[key] = [];
+            occupied[key][lane] = ev.id;
+          });
+          lanes[ev.id] = lane;
+          break;
+        }
+        lane++;
+      }
+    });
+    return lanes;
+  }, [events]);
+
   const days = eachDayOfInterval({ 
     start: startOfWeek(startOfMonth(current)), 
     end: endOfWeek(endOfMonth(current)) 
   })
 
   const eventsOnDay = (day) =>
-    events.filter(e => isSameDay(new Date(e.eventDate), day))
+    events.filter(e => {
+      const start = new Date(e.eventDate);
+      const end = e.endDate ? new Date(e.endDate) : start;
+      return isWithinInterval(startOfDay(day), { 
+        start: startOfDay(start), 
+        end: startOfDay(end) 
+      });
+    }).sort((a, b) => a.id - b.id)
 
   const selectedEvents = eventsOnDay(selected)
+    .sort((a, b) => {
+      // 리스트는 시간순 정렬 (기존 요청 유지)
+      const timeA = a.startTime || '23:59';
+      const timeB = b.startTime || '23:59';
+      return timeA.localeCompare(timeB);
+    })
 
   const handleOpenAdd = () => {
     setEditingId(null)
@@ -85,10 +137,12 @@ export default function CalendarPage() {
       title: '',
       description: '',
       eventDate: toApiDate(selected),
-      startTime: '',
-      endTime: '',
+      endDate: toApiDate(selected),
+      startTime: '12:00',
+      endTime: '13:00',
       color: '',
-      eventType: 'REGULAR'
+      eventType: 'REGULAR',
+      attendanceRequired: false,
     })
     setShowForm(true)
   }
@@ -99,10 +153,12 @@ export default function CalendarPage() {
       title: e.title,
       description: e.description || '',
       eventDate: e.eventDate,
+      endDate: e.endDate || e.eventDate,
       startTime: e.startTime || '',
       endTime: e.endTime || '',
       color: e.color || '',
-      eventType: e.eventType
+      eventType: e.eventType,
+      attendanceRequired: e.attendanceRequired ?? false
     })
     setShowForm(true)
   }
@@ -139,15 +195,15 @@ export default function CalendarPage() {
 
   const getEventBg = (color) => {
     const map = {
-      blue: 'bg-blue-50 text-blue-700 border-blue-100',
-      red: 'bg-red-50 text-red-700 border-red-100',
-      emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-      violet: 'bg-violet-50 text-violet-700 border-violet-100',
-      amber: 'bg-amber-50 text-amber-700 border-amber-100',
-      rose: 'bg-rose-50 text-rose-700 border-rose-100',
-      indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+      blue: 'bg-blue-500 text-white border-blue-600',
+      red: 'bg-red-500 text-white border-red-600',
+      emerald: 'bg-emerald-500 text-white border-emerald-600',
+      violet: 'bg-violet-500 text-white border-violet-600',
+      amber: 'bg-amber-400 text-white border-amber-500',
+      rose: 'bg-rose-500 text-white border-rose-600',
+      indigo: 'bg-indigo-500 text-white border-indigo-600',
     }
-    return map[color] || 'bg-primary-50 text-primary-700 border-primary-100'
+    return map[color] || 'bg-primary-500 text-white border-primary-600'
   }
 
   return (
@@ -214,13 +270,37 @@ export default function CalendarPage() {
                   </span>
                 </div>
                 
-                <div className="flex flex-col gap-0.5">
-                  {dayEvents.slice(0, 2).map(e => (
-                    <div key={e.id} className={`h-3 px-1 rounded-sm text-[8px] font-black truncate border-l-2 ${getEventBg(e.color)}`}>
-                      {e.title}
+                <div className="flex flex-col gap-0.5 mt-auto relative h-[50px] justify-end">
+                  {[0, 1, 2].map(laneIndex => {
+                    const e = dayEvents.find(ev => eventLanes[ev.id] === laneIndex);
+                    if (!e) return <div key={`empty-${laneIndex}`} className="h-3.5" />; // Spacer
+
+                    const isStartOfEvent = isSameDay(day, new Date(e.eventDate));
+                    const isEndOfEvent = isSameDay(day, new Date(e.endDate));
+                    const isStartOfWeek = getDay(day) === 0;
+                    const isEndOfWeek = getDay(day) === 6;
+                    const shouldShowTitle = isStartOfEvent || isStartOfWeek;
+
+                    return (
+                      <div 
+                        key={e.id} 
+                        className={`h-3.5 px-1 text-[8px] font-black truncate transition-all flex items-center shrink-0
+                          ${getEventBg(e.color)}
+                          ${(isStartOfEvent || isStartOfWeek) ? 'rounded-l-sm border-l-2' : 'rounded-l-none border-l-0'}
+                          ${(isEndOfEvent || isEndOfWeek) ? 'rounded-r-sm' : 'rounded-r-none'}
+                          ${!isStartOfEvent && !isStartOfWeek ? '-ml-1.5' : ''}
+                          ${!isEndOfEvent && !isEndOfWeek ? '-mr-1.5' : ''}
+                        `}
+                      >
+                        {shouldShowTitle && e.title}
+                      </div>
+                    )
+                  })}
+                  {dayEvents.length > 3 && (
+                    <div className="absolute -top-4 right-0 text-[7px] font-black text-gray-400 bg-white/80 px-1 rounded-full">
+                      +{dayEvents.filter(ev => eventLanes[ev.id] >= 3).length}
                     </div>
-                  ))}
-                  {dayEvents.length > 2 && <div className="text-[7px] font-black text-gray-400 pl-1">+{dayEvents.length - 2} more</div>}
+                  )}
                 </div>
               </div>
             )
@@ -257,9 +337,17 @@ export default function CalendarPage() {
                       {EVENT_TYPES.find(t => t.value === e.eventType)?.label || '정기'}
                     </Badge>
                     <div className="flex items-center gap-1">
-                      {(e.startTime || e.endTime) && (
-                        <div className="flex items-center gap-1 text-[10px] font-black text-gray-400 mr-2">
-                          <Clock size={12} /> {e.startTime} {e.endTime && `~ ${e.endTime}`}
+                      {(e.startTime || e.endTime || (e.endDate && e.endDate !== e.eventDate)) && (
+                        <div className="flex flex-col items-end gap-0.5 mr-2">
+                          <div className="flex items-center gap-1 text-[9px] font-black text-primary-500">
+                            {format(new Date(e.eventDate), 'M/d')} 
+                            {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M/d')}`}
+                          </div>
+                          {(e.startTime || e.endTime) && (
+                            <div className="flex items-center gap-1 text-[10px] font-black text-gray-400">
+                              <Clock size={12} /> {e.startTime} {e.endTime && `~ ${e.endTime}`}
+                            </div>
+                          )}
                         </div>
                       )}
                       {isAdmin && (
@@ -296,20 +384,62 @@ export default function CalendarPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">날짜</label>
-                    <input type="date" value={formData.eventDate} onChange={e => setFormData({...formData, eventDate: e.target.value})} required className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">시작일</label>
+                    <input 
+                      type="date" 
+                      value={formData.eventDate} 
+                      onChange={e => {
+                        const newDate = e.target.value;
+                        setFormData({
+                          ...formData, 
+                          eventDate: newDate,
+                          endDate: formData.endDate < newDate ? newDate : formData.endDate
+                        });
+                      }} 
+                      required 
+                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" 
+                    />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">구분</label>
-                    <select value={formData.eventType} onChange={e => setFormData({...formData, eventType: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none">
-                      {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">종료일</label>
+                    <input 
+                      type="date" 
+                      value={formData.endDate} 
+                      onChange={e => setFormData({...formData, endDate: e.target.value})} 
+                      min={formData.eventDate}
+                      required 
+                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" 
+                    />
                   </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">구분</label>
+                  <select value={formData.eventType} onChange={e => setFormData({...formData, eventType: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none">
+                    {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">시작 시간</label>
-                    <input type="time" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
+                    <input 
+                      type="time" 
+                      value={formData.startTime} 
+                      onChange={e => {
+                        const newStartTime = e.target.value
+                        let newEndTime = formData.endTime
+                        
+                        if (newStartTime) {
+                          const [h, m] = newStartTime.split(':').map(Number)
+                          const date = new Date()
+                          date.setHours(h + 1)
+                          date.setMinutes(m)
+                          newEndTime = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+                        }
+                        
+                        setFormData({...formData, startTime: newStartTime, endTime: newEndTime})
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" 
+                    />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">종료 시간</label>
@@ -327,6 +457,29 @@ export default function CalendarPage() {
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">설명</label>
                   <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium resize-none outline-none" />
+                </div>
+                {/* 출석 체크 활성화 토글 */}
+                <div
+                  onClick={() => setFormData(d => ({ ...d, attendanceRequired: !d.attendanceRequired }))}
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    formData.attendanceRequired
+                      ? 'border-emerald-300 bg-emerald-50'
+                      : 'border-gray-100 bg-gray-50'
+                  }`}
+                >
+                  <div>
+                    <p className={`text-sm font-black ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
+                      출석 체크 활성화
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">선생님들이 반 아이들 출석을 체크하도록 합니다</p>
+                  </div>
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
+                    formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'
+                  }`}>
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                      formData.attendanceRequired ? 'left-5' : 'left-0.5'
+                    }`} />
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-2">
                   <Button type="submit" loading={submitting} className="flex-1">저장하기</Button>

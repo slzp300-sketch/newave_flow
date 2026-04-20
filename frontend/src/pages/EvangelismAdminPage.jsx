@@ -83,6 +83,7 @@ function GroupManagementTab({ teachers }) {
   const [editingName, setEditingName]   = useState('')
   const [search, setSearch]             = useState('')
   const [moving, setMoving]             = useState(false)
+  const [activeItem, setActiveItem]     = useState(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -149,8 +150,6 @@ function GroupManagementTab({ teachers }) {
       setMoving(false)
     }
   }
-
-  const [activeItem, setActiveItem] = useState(null)
 
   const handleDragStart = (event) => {
     setActiveItem(event.active.data.current)
