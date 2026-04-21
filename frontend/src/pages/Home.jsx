@@ -2,7 +2,12 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, Users, FileText, Calendar, CheckSquare, CalendarCheck, Sparkles, CheckCircle2, MapPin, BookOpen, ClipboardList } from 'lucide-react'
+import { 
+  ChevronRight, Users, FileText, Calendar, CheckSquare, 
+  CalendarCheck, Sparkles, CheckCircle2, MapPin, 
+  BookOpen, ClipboardList, Clock, Bell, LayoutGrid, 
+  ArrowUpRight, TrendingUp, UserMinus as UserMinusIcon 
+} from 'lucide-react'
 import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
 import { evangelismApi } from '../api/evangelism'
@@ -12,13 +17,12 @@ import {
   formatDate, toApiDate, greetingByTime, getTTSWeekRange, 
   getCurrentWeekRange, canSubmitTTS 
 } from '../utils/date'
-import { startOfWeek, endOfWeek, isSameDay, format } from 'date-fns'
+import { startOfWeek, endOfWeek, format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
-import { Clock, Bell } from 'lucide-react'
 
 export default function Home() {
   const { user }  = useAuthStore()
@@ -27,7 +31,7 @@ export default function Home() {
   const isTeacher = user?.role === 'TEACHER'
 
   return (
-    <div className="flex flex-col min-h-screen pb-12">
+    <div className="flex flex-col min-h-screen pb-12 bg-gray-50/50">
       <Header title="Newave Flow" showLogout={true} />
 
       {/* 프리미엄 그라데이션 배너 */}
@@ -75,13 +79,14 @@ function RoleBadge({ role }) {
   const map = { 
     TEACHER:   ['교사', 'bg-white/20 text-white'], 
     EXECUTIVE: ['임원', 'bg-emerald-400/80 text-white'], 
-    PASTOR:    ['목사님', 'bg-white text-primary-700 shadow-sm'] 
+    PASTOR:    ['목사님', 'bg-white text-primary-700 shadow-sm'],
+    ADMIN:     ['관리자', 'bg-gray-900 text-white shadow-sm']
   }
   const [label, cls] = map[role] ?? ['사용자', 'bg-white/20 text-white']
   return <span className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-xl tracking-widest ${cls}`}>{label}</span>
 }
 
-// ────────── TTS 제출 여부 확인 ──────────
+// ────────── Hooks ──────────
 function useTTSSubmitted() {
   const [submitted, setSubmitted] = useState(false)
   useEffect(() => {
@@ -97,8 +102,6 @@ function useTTSSubmitted() {
   return submitted
 }
 
-
-// ────────── 행사 출석 체크 훅 ──────────
 function useAttendanceRequiredEvents() {
   const { data = [] } = useQuery({
     queryKey: ['attendance-required-events'],
@@ -108,7 +111,6 @@ function useAttendanceRequiredEvents() {
   return data
 }
 
-// ────────── 전도 상태 훅 ──────────
 function useEvangelismStatus() {
   const { data } = useQuery({
     queryKey: ['evangelism-status'],
@@ -118,7 +120,7 @@ function useEvangelismStatus() {
   return data ?? null
 }
 
-// ────────── 교사 뷰 ──────────
+// ────────── Teacher View ──────────
 function TeacherView({ navigate }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
   const ttsSubmitted          = useTTSSubmitted()
@@ -275,7 +277,7 @@ function TaskCard({ icon: Icon, color, title, desc, done, path, navigate, badge 
           <div className="flex items-center gap-2">
             <p className="font-black text-gray-900 text-base">{title}</p>
             {badge && (
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-red-100 text-red-600">{badge}</span>
+               <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-red-100 text-red-600">{badge}</span>
             )}
           </div>
           <p className={`text-[11px] font-medium mt-0.5 ${done ? 'text-emerald-500' : 'text-gray-400'}`}>{desc}</p>
@@ -291,14 +293,16 @@ function TaskCard({ icon: Icon, color, title, desc, done, path, navigate, badge 
   )
 }
 
-// ────────── 관리자 뷰 ──────────
+// ────────── Admin View (Dashboard) ──────────
 function AdminView({ navigate, today }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
+  
   const { data: pendingRequests = [] } = useQuery({
     queryKey: ['deactivation-requests-pending'],
     queryFn: () => deactivationApi.getPending().then(r => r.data),
     staleTime: 60 * 1000,
   })
+
   const { data, isLoading } = useQuery({
     queryKey: ['report-summary', today],
     queryFn:  () => reportsApi.getSummary(today).then(r => r.data),
@@ -329,15 +333,75 @@ function AdminView({ navigate, today }) {
       animate={{ opacity: 1 }}
       className="flex flex-col gap-5"
     >
-      <SectionLabel>System Pulse</SectionLabel>
+      <SectionLabel>Today's Pulse</SectionLabel>
 
-      {/* 통계 요약 */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <StatSummary value={submitRate + '%'} label="Submission" color="text-primary-600" />
-        <StatSummary value={data?.totalTeachers ?? '-'} label="Teachers" color="text-gray-900" />
+        <Card className="p-5 flex flex-col justify-between h-36 bg-white overflow-hidden relative">
+           <div className="absolute top-0 right-0 p-4 opacity-10">
+              <TrendingUp size={48} className="text-primary-600" />
+           </div>
+           <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Reports</p>
+              <p className="text-3xl font-black text-primary-600 tracking-tighter">{submitRate}%</p>
+           </div>
+           <div className="w-full bg-primary-50 h-2 rounded-full mt-auto overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${submitRate}%` }}
+                className="h-full bg-primary-500 rounded-full" 
+              />
+           </div>
+        </Card>
+
+        <div className="grid grid-rows-2 gap-3">
+          <Card className="p-4 flex items-center justify-between group">
+             <div className="flex flex-col">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Teachers</p>
+                <p className="text-xl font-black text-gray-900">{data?.totalTeachers ?? '-'}</p>
+             </div>
+             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-500 transition-colors">
+                <Users size={16} />
+             </div>
+          </Card>
+          <Card className="p-4 flex items-center justify-between group">
+             <div className="flex flex-col">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pending</p>
+                <p className="text-xl font-black text-gray-900">{pendingRequests.length}</p>
+             </div>
+             <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${pendingRequests.length > 0 ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400'}`}>
+                <UserMinusIcon size={16} />
+             </div>
+          </Card>
+        </div>
       </div>
 
-      {/* 이번 주 일정 요약 */}
+      {/* Management Menu Navigation Card */}
+      <Card 
+        onClick={() => navigate('/admin')}
+        className="p-6 bg-gray-900 border-none shadow-xl active:scale-[0.98] transition-all relative overflow-hidden group"
+      >
+        <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500 text-white">
+           <LayoutGrid size={120} />
+        </div>
+        <div className="flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white border border-white/10">
+              <LayoutGrid size={22} />
+            </div>
+            <div>
+              <p className="text-white font-black text-lg">전체 행정 관리 메뉴</p>
+              <p className="text-white/40 text-xs font-bold mt-0.5">교육부서 모든 설정 및 데이터 관리</p>
+            </div>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white">
+             <ArrowUpRight size={18} />
+          </div>
+        </div>
+      </Card>
+
+      <SectionLabel>부서 일정</SectionLabel>
+
       <Card onClick={() => navigate('/admin/calendar')} className="p-5 bg-gradient-to-br from-rose-50 to-orange-50/50 border-rose-100 group">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -349,7 +413,7 @@ function AdminView({ navigate, today }) {
           <ChevronRight size={16} className="text-rose-300 group-hover:translate-x-1 transition-transform" />
         </div>
         
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           {weeklyEvents.length === 0 ? (
             <p className="text-xs text-gray-400 font-bold py-2">이번 주 예정된 일정이 없습니다.</p>
           ) : (
@@ -365,7 +429,7 @@ function AdminView({ navigate, today }) {
               }[e.color] || 'bg-primary-500'
 
               return (
-                <div key={e.id} className="flex items-center gap-3">
+                <div key={e.id} className="flex items-center gap-3 bg-white/40 p-2.5 rounded-xl border border-white/60">
                   <span className={`w-1 h-3 rounded-full ${dotColor}`} />
                   <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
                   <span className="text-[10px] font-bold text-gray-400 ml-auto">
@@ -377,63 +441,37 @@ function AdminView({ navigate, today }) {
           )}
         </div>
       </Card>
-
-      <SectionLabel>관리 메뉴</SectionLabel>
-
-      {[
-        { path: '/admin/evangelism', icon: MapPin,    bg: 'bg-primary-50', color: 'text-primary-600', title: '전도 관리',      desc: '전도 조 편성 및 일정 관리' },
-        { path: '/admin/minutes',    icon: FileText,  bg: 'bg-violet-50',  color: 'text-violet-600',  title: '회의록 관리',    desc: '회의록 등록 · 영상 공유 · 확인 현황' },
-        { path: '/admin/calendar',   icon: Calendar,  bg: 'bg-rose-50',    color: 'text-rose-600',    title: '일정 관리',      desc: '월별 부서 일정 등록 및 수정' },
-        { path: '/admin/prayer',           icon: BookOpen,     bg: 'bg-amber-50',   color: 'text-amber-600',   title: '기도모임 관리',  desc: '불참 명단 및 필사 제출 현황' },
-        { path: '/admin/tts',              icon: CheckSquare,  bg: 'bg-emerald-50', color: 'text-emerald-600', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
-        { path: '/admin/event-attendance',       icon: ClipboardList, bg: 'bg-indigo-50', color: 'text-indigo-600', title: '행사 출석 관리',  desc: '행사별 반 학생 출석 현황 확인', badge: null },
-        { path: '/admin/deactivation-requests',   icon: Users,         bg: 'bg-red-50',     color: 'text-red-500',     title: '제적 승인 관리',  desc: '교사가 신청한 제적 요청 검토',   badge: pendingRequests.length > 0 ? pendingRequests.length : null },
-      ].map(({ path, icon: Icon, bg, color, title, desc, badge }) => (
-        <Card key={path} onClick={() => navigate(path)} className="flex items-center justify-between p-5 group">
-          <div className="flex items-center gap-4">
-            <div className={`w-11 h-11 rounded-2xl ${bg} flex items-center justify-center`}>
-              <Icon size={20} className={color} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-black text-gray-900 text-sm">{title}</p>
-                {badge && (
-                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-lg bg-red-100 text-red-600">{badge}</span>
-                )}
-              </div>
-              <p className="text-[11px] text-gray-400 mt-0.5">{desc}</p>
-            </div>
-          </div>
-          <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
-        </Card>
-      ))}
       
-      {/* 미제출 목록 피크 */}
-      {!isLoading && data?.notSubmitted?.filter((_, idx) => idx < 3).length > 0 && (
-        <div className="flex flex-col gap-2">
-          <SectionLabel>Urgent Follow-up</SectionLabel>
-          {data.notSubmitted.slice(0, 3).map(t => (
-            <Card key={t.teacherId} className="flex items-center gap-3 py-3 px-4">
-              <div className="w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-[11px] font-black">{t.teacherName[0]}</div>
-              <p className="text-sm font-bold text-gray-700">{t.teacherName}</p>
-              <Badge variant="danger" className="ml-auto text-[9px]">미제출</Badge>
-            </Card>
-          ))}
-          {data.notSubmitted.length > 3 && (
-            <p className="text-center text-[10px] text-gray-400 font-bold mt-1">외 {data.notSubmitted.length - 3}명 더 있음</p>
-          )}
+      {/* Urgent Follow-up */}
+      {!isLoading && data?.notSubmitted?.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1">
+             <SectionLabel>Urgent Follow-up</SectionLabel>
+             <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-md">{data.notSubmitted.length}명 미제출</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            {data.notSubmitted.slice(0, 3).map(t => (
+              <Card key={t.teacherId} className="flex items-center gap-3 py-3 px-4 border-l-4 border-l-red-400">
+                <div className="w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-[11px] font-black">{t.teacherName[0]}</div>
+                <div className="flex-1">
+                   <p className="text-sm font-bold text-gray-700">{t.teacherName}</p>
+                   <p className="text-[10px] font-medium text-gray-400">{t.className}</p>
+                </div>
+                <Badge variant="danger" className="text-[9px] px-2 py-1">보고서 미작성</Badge>
+              </Card>
+            ))}
+            {data.notSubmitted.length > 3 && (
+              <button 
+                onClick={() => navigate('/admin/tts')}
+                className="text-center text-[10px] text-gray-400 font-bold mt-1 hover:text-primary-500 transition-colors"
+                >
+                외 {data.notSubmitted.length - 3}명 더 있음 (상세 보기)
+              </button>
+            )}
+          </div>
         </div>
       )}
     </motion.div>
-  )
-}
-
-function StatSummary({ value, label, color }) {
-  return (
-    <Card className="p-5 flex flex-col items-center">
-      <p className={`text-3xl font-black ${color} tracking-tighter`}>{value}</p>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">{label}</p>
-    </Card>
   )
 }
 

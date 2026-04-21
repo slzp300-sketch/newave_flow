@@ -17,6 +17,10 @@ backend/target
 # Logs
 *.log
 
+# Build artifacts
+backend/bin
+frontend/dist
+
 # Optional
 .claude
 output

@@ -1,9 +1,11 @@
 package com.newaveflow.service;
 
 import com.newaveflow.dto.classes.ClassDto;
+import com.newaveflow.dto.classes.ClassTeacherDto;
 import com.newaveflow.dto.classes.StudentDto;
 import com.newaveflow.entity.ClassGroup;
 import com.newaveflow.entity.TeacherClass;
+import com.newaveflow.entity.User;
 import com.newaveflow.repository.ClassGroupRepository;
 import com.newaveflow.repository.StudentRepository;
 import com.newaveflow.repository.TeacherClassRepository;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,13 +28,18 @@ public class ClassService {
     private final UserRepository userRepository;
 
     public List<ClassDto> getAllRosterData() {
-        List<com.newaveflow.entity.ClassGroup> classes = classGroupRepository.findAll();
+        List<ClassGroup> classes = classGroupRepository.findAll();
         List<TeacherClass> allTeacherClasses = teacherClassRepository.findAll();
         
         return classes.stream().map(cls -> {
-            String teacherName = allTeacherClasses.stream()
-                    .filter(tc -> tc.getClassGroup().getId().equals(cls.getId()) && tc.isPrimary())
-                    .map(tc -> tc.getTeacher().getName())
+            List<ClassTeacherDto> teachers = allTeacherClasses.stream()
+                    .filter(tc -> tc.getClassGroup().getId().equals(cls.getId()))
+                    .map(tc -> new ClassTeacherDto(tc.getTeacher().getId(), tc.getTeacher().getName(), tc.isPrimary()))
+                    .toList();
+
+            String primaryTeacherName = teachers.stream()
+                    .filter(ClassTeacherDto::isPrimary)
+                    .map(ClassTeacherDto::name)
                     .findFirst()
                     .orElse(null);
             
@@ -40,22 +48,18 @@ public class ClassService {
                     .map(StudentDto::from)
                     .toList();
             
-            return ClassDto.from(cls, teacherName, students);
+            return ClassDto.from(cls, primaryTeacherName, teachers, students);
         }).toList();
     }
 
     public List<ClassDto> getClassesForTeacher(Long teacherId) {
-        com.newaveflow.entity.User user = userRepository.findById(teacherId)
+        User user = userRepository.findById(teacherId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        // 관리자/임원/목회자는 전체 권한
-        if (user.getRole() == com.newaveflow.entity.User.Role.ADMIN || 
-            user.getRole() == com.newaveflow.entity.User.Role.PASTOR || 
-            user.getRole() == com.newaveflow.entity.User.Role.EXECUTIVE) {
-            return classGroupRepository.findAll()
-                    .stream()
-                    .map(ClassDto::from)
-                    .toList();
+        if (user.getRole() == User.Role.ADMIN || 
+            user.getRole() == User.Role.PASTOR || 
+            user.getRole() == User.Role.EXECUTIVE) {
+            return getAllRosterData();
         }
 
         return classGroupRepository.findByTeacherId(teacherId)
@@ -69,5 +73,46 @@ public class ClassService {
                 .stream()
                 .map(StudentDto::from)
                 .toList();
+    }
+
+    @Transactional
+    public void assignTeacher(Long classId, Long userId, boolean isPrimary) {
+        ClassGroup classGroup = classGroupRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("반을 찾을 수 없습니다."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("교사를 찾을 수 없습니다."));
+
+        if (isPrimary) {
+            // 기존 담임이 있으면 부담임으로 강등
+            teacherClassRepository.findByClassGroup_IdAndIsPrimaryTrue(classId)
+                .ifPresent(tc -> {
+                    if (!tc.getTeacher().getId().equals(userId)) {
+                        tc.setPrimary(false);
+                        teacherClassRepository.save(tc);
+                    }
+                });
+        }
+
+        Optional<TeacherClass> existing = teacherClassRepository.findByClassGroup_IdAndTeacher_Id(classId, userId);
+        
+        if (existing.isPresent()) {
+            // 기존 배정에 있으면 역할만 업데이트
+            TeacherClass tc = existing.get();
+            tc.setPrimary(isPrimary);
+            teacherClassRepository.save(tc);
+        } else {
+            // 신규 배정
+            TeacherClass newTc = TeacherClass.builder()
+                    .teacher(user)
+                    .classGroup(classGroup)
+                    .isPrimary(isPrimary)
+                    .build();
+            teacherClassRepository.save(newTc);
+        }
+    }
+
+    @Transactional
+    public void removeTeacher(Long classId, Long userId) {
+        teacherClassRepository.deleteByClassGroup_IdAndTeacher_Id(classId, userId);
     }
 }

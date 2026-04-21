@@ -7,6 +7,7 @@ import lombok.*;
 @Table(name = "teacher_classes",
        uniqueConstraints = @UniqueConstraint(columnNames = {"teacher_id", "class_group_id"}))
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor

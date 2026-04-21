@@ -7,8 +7,9 @@ public record ClassDto(
         String name,
         String grade,
         String gender,
-        String teacherName,
+        String teacherName, // Primary teacher name for backward compatibility/simplicity
         String description,
+        List<ClassTeacherDto> teachers,
         List<StudentDto> students
 ) {
     public static ClassDto from(com.newaveflow.entity.ClassGroup entity) {
@@ -17,13 +18,14 @@ public record ClassDto(
                 entity.getName(),
                 entity.getAgeGroup(),
                 entity.getGender(),
-                null, // teacherName can be filled by service
+                null,
                 entity.getDescription(),
+                List.of(),
                 List.of()
         );
     }
 
-    public static ClassDto from(com.newaveflow.entity.ClassGroup entity, String teacherName, List<StudentDto> students) {
+    public static ClassDto from(com.newaveflow.entity.ClassGroup entity, String teacherName, List<ClassTeacherDto> teachers, List<StudentDto> students) {
         return new ClassDto(
                 entity.getId(),
                 entity.getName(),
@@ -31,6 +33,7 @@ public record ClassDto(
                 entity.getGender(),
                 teacherName,
                 entity.getDescription(),
+                teachers,
                 students
         );
     }

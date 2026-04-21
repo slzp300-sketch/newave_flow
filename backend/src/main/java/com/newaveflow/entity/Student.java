@@ -84,6 +84,8 @@ public class Student {
         this.address = address;
     }
 
+    public void assignClass(ClassGroup classGroup) { this.classGroup = classGroup; }
+    public void updateGrade(String grade) { this.grade = grade; }
     public void deactivate() { this.isActive = false; }
     public void activate()   { this.isActive = true; }
 }

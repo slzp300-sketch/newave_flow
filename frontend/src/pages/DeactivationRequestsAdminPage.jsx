@@ -25,7 +25,7 @@ export default function DeactivationRequestsAdminPage() {
 
   return (
     <div className="flex flex-col min-h-screen pb-24">
-      <Header title="제적 승인 관리" />
+      <Header title="제적 승인 관리" showBack />
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center mt-20">

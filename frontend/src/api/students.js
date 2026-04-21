@@ -10,6 +10,16 @@ export const studentsApi = {
   saveMemo:            (id, data)    => client.put(`/students/${id}/memo`, data),
 }
 
+export const adminStudentsApi = {
+  getAll:       ()                     => client.get('/admin/students'),
+  create:       (data)                 => client.post('/admin/students', data),
+  update:       (id, data)             => client.put(`/admin/students/${id}`, data),
+  assignClass:  (id, classGroupId)     => client.patch(`/admin/students/${id}/class`, { classGroupId }),
+  deactivate:   (id)                   => client.patch(`/admin/students/${id}/deactivate`),
+  activate:     (id)                   => client.patch(`/admin/students/${id}/activate`),
+  bulkAdvance:  (gradeMap)             => client.post('/admin/students/bulk-advance', gradeMap),
+}
+
 export const deactivationApi = {
   getPending: ()   => client.get('/admin/deactivation-requests'),
   approve:    (id) => client.patch(`/admin/deactivation-requests/${id}/approve`),

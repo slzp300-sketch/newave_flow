@@ -45,7 +45,7 @@ export default function EvangelismAdminPage() {
 
   return (
     <div className="flex flex-col min-h-screen pb-20">
-      <Header title="전도 로테이션 관리" showBack onBack={() => navigate('/')} />
+      <Header title="전도 로테이션 관리" showBack />
 
       <div className="flex mx-4 mt-4 bg-gray-100 rounded-2xl p-1 gap-1">
         {TABS.map((t, i) => (

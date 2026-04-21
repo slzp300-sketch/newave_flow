@@ -6,9 +6,8 @@ import com.newaveflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -37,4 +36,24 @@ public class UserController {
             .toList();
         return ResponseEntity.ok(teachers);
     }
+
+    @GetMapping("")
+    public ResponseEntity<List<UserInfo>> getAllUsers() {
+        List<UserInfo> users = userRepository.findByIsActiveTrue()
+            .stream()
+            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), u.getGrade()))
+            .toList();
+        return ResponseEntity.ok(users);
+    }
+
+    @PutMapping("/{id}/role")
+    @Transactional
+    public ResponseEntity<Void> updateRole(@PathVariable Long id, @RequestBody RoleRequest request) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        user.updateRole(User.Role.valueOf(request.role()));
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    }
+
+    public record RoleRequest(String role) {}
 }

@@ -6,6 +6,7 @@ import com.newaveflow.entity.User;
 import com.newaveflow.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,8 +21,6 @@ public class ClassController {
 
     @GetMapping
     public ResponseEntity<List<ClassDto>> getClasses(@AuthenticationPrincipal User currentUser) {
-        // 임시: 현재 사용자의 아이디로 매핑된 반만 가져옵니다. 
-        // 권한이 PASTOR나 EXECUTIVE이면 전체 반을 가져오도록 Service 안에서 분기할 수도 있습니다.
         return ResponseEntity.ok(classService.getClassesForTeacher(currentUser.getId()));
     }
 
@@ -33,5 +32,24 @@ public class ClassController {
     @GetMapping("/{id}/students")
     public ResponseEntity<List<StudentDto>> getStudents(@PathVariable Long id) {
         return ResponseEntity.ok(classService.getStudentsInClass(id));
+    }
+
+    @PostMapping("/{classId}/assign-teacher/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<Void> assignTeacher(
+            @PathVariable Long classId,
+            @PathVariable Long userId,
+            @RequestParam boolean isPrimary) {
+        classService.assignTeacher(classId, userId, isPrimary);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{classId}/remove-teacher/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<Void> removeTeacher(
+            @PathVariable Long classId,
+            @PathVariable Long userId) {
+        classService.removeTeacher(classId, userId);
+        return ResponseEntity.ok().build();
     }
 }

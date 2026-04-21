@@ -25,6 +25,10 @@ import EventAttendanceAdminPage from '../pages/EventAttendanceAdminPage'
 import ClassManagePage                  from '../pages/ClassManagePage'
 import DeactivationRequestsAdminPage   from '../pages/DeactivationRequestsAdminPage'
 import TtsAdminPage                    from '../pages/TtsAdminPage'
+import AdminTeacherManagePage         from '../pages/AdminTeacherManagePage'
+import AdminClassManagePage           from '../pages/AdminClassManagePage'
+import AdminStudentManagePage         from '../pages/AdminStudentManagePage'
+import ManualPreviewPage             from '../pages/ManualPreviewPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -64,13 +68,18 @@ const router = createBrowserRouter([
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
             children: [
               { path: '/admin',             element: <AdminDashboard /> },
+              { path: '/admin/teachers',    element: <AdminTeacherManagePage /> },
               { path: '/admin/calendar',    element: <CalendarAdminPage /> },
               { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },
               { path: '/admin/minutes',     element: <MeetingMinutesAdminPage /> },
                { path: '/admin/prayer',           element: <PrayerAbsentAdminPage /> },
                { path: '/admin/event-attendance',        element: <EventAttendanceAdminPage /> },
-               { path: '/admin/deactivation-requests',   element: <DeactivationRequestsAdminPage /> },
-               { path: '/admin/tts',                    element: <TtsAdminPage /> },
+                { path: '/admin/deactivation-requests',   element: <DeactivationRequestsAdminPage /> },
+                { path: '/admin/tts',                    element: <TtsAdminPage /> },
+                { path: '/admin/teachers',               element: <AdminTeacherManagePage /> },
+                { path: '/admin/class-assignment',       element: <AdminClassManagePage /> },
+                { path: '/admin/students',               element: <AdminStudentManagePage /> },
+                { path: '/admin/manual-preview/:type',    element: <ManualPreviewPage /> },
              ],
           },
         ],

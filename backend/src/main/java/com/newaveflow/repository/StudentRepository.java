@@ -8,4 +8,6 @@ import java.util.List;
 public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findByClassGroupIdAndIsActiveTrue(Long classGroupId);
     List<Student> findByClassGroupIdOrderByIsActiveDescNameAsc(Long classGroupId);
+    List<Student> findAllByIsActiveTrueOrderByGradeAscNameAsc();
+    List<Student> findAllByOrderByGradeAscIsActiveDescNameAsc();
 }

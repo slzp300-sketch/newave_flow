@@ -50,6 +50,10 @@ public class User {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+    
+    public void updateRole(Role role) {
+        this.role = role;
+    }
 
     public enum Role {
         ADMIN, PASTOR, EXECUTIVE, TEACHER

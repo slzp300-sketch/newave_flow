@@ -39,7 +39,9 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh").permitAll()
-                .requestMatchers("/api/reports/summary", "/api/attendance/summary", "/api/admin/tts/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
+                .requestMatchers("/api/reports/summary", "/api/attendance/summary", "/api/admin/tts/**", "/api/admin/students/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users", "/api/classes").hasAnyRole("PASTOR", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/events/*/student-attendance/batch").hasAnyRole("PASTOR", "EXECUTIVE", "TEACHER", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/events/**", "/api/minutes/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
