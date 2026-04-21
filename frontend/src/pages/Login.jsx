@@ -54,12 +54,12 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">아이디</label>
             <input
-              type="email"
+              type="text"
               value={form.email}
               onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="teacher@church.com"
+              placeholder="아이디를 입력하세요"
               required
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base transition"
             />

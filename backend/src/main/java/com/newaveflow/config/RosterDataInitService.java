@@ -6,46 +6,34 @@ import com.newaveflow.entity.*;
 import com.newaveflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Profile({"dev", "local"})
 public class RosterDataInitService {
 
     private final ClassGroupRepository classGroupRepository;
     private final StudentRepository studentRepository;
-    private final TeacherClassRepository teacherClassRepository;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
 
     @Transactional
     public void initRosterData() {
-        log.info("Initializing roster data from JSON...");
+        log.info("Initializing structural roster data (Classes/Students) from JSON...");
         
-        // Clean up is handled by DataInitService before calling this, 
-        // but we ensure it here too for safety.
-        studentRepository.deleteAll();
-        teacherClassRepository.deleteAll();
-        classGroupRepository.deleteAll();
-
         try {
             InputStream is = new ClassPathResource("roster_data.json").getInputStream();
             Map<String, List<ClassJson>> rosterData = objectMapper.readValue(is, new TypeReference<>() {});
-            System.out.println("Loaded " + rosterData.size() + " grades from JSON.");
-
-            String defaultPassword = passwordEncoder.encode("password123");
-            Map<String, User> teacherMap = new HashMap<>();
+            log.info("Loaded {} grades from JSON.", rosterData.size());
 
             for (Map.Entry<String, List<ClassJson>> entry : rosterData.entrySet()) {
                 String grade = entry.getKey();
@@ -61,39 +49,7 @@ public class RosterDataInitService {
                             .build();
                     classGroup = classGroupRepository.save(classGroup);
 
-                    // 2. Create/Get Teacher
-                    if (classJson.teacherName() != null && !classJson.teacherName().isEmpty()) {
-                        User teacher = teacherMap.get(classJson.teacherName());
-                        if (teacher == null) {
-                            // First, try to find by name (to match users created in DataInitService)
-                            teacher = userRepository.findByName(classJson.teacherName()).orElse(null);
-                            
-                            if (teacher == null) {
-                                String email = "teacher_" + classJson.teacherName() + "@church.com";
-                                teacher = userRepository.findByEmail(email).orElse(null);
-                                if (teacher == null) {
-                                    teacher = User.builder()
-                                            .name(classJson.teacherName())
-                                            .email(email)
-                                            .password(defaultPassword)
-                                            .role(User.Role.TEACHER)
-                                            .grade(grade)
-                                            .build();
-                                    teacher = userRepository.save(teacher);
-                                }
-                            }
-                            teacherMap.put(classJson.teacherName(), teacher);
-                        }
-
-                        // 3. Link Teacher to Class
-                        teacherClassRepository.save(TeacherClass.builder()
-                                .teacher(teacher)
-                                .classGroup(classGroup)
-                                .isPrimary(true)
-                                .build());
-                    }
-
-                    // 4. Create Students
+                    // 2. Create Students
                     for (StudentJson studentJson : classJson.students()) {
                         String[] names = splitParentNames(studentJson.parent());
                         String[] phones = splitParentPhones(studentJson.parentPhone());
@@ -118,7 +74,7 @@ public class RosterDataInitService {
                     }
                 }
             }
-            log.info("Roster data initialization completed.");
+            log.info("Structural roster data initialization completed.");
         } catch (Exception e) {
             log.error("Failed to initialize roster data", e);
         }
@@ -141,13 +97,11 @@ public class RosterDataInitService {
     private LocalDate parseDate(String dateStr) {
         if (dateStr == null || dateStr.isEmpty()) return null;
         try {
-            // Some dates might be just year "2010"
             if (dateStr.length() == 4) {
                 return LocalDate.of(Integer.parseInt(dateStr), 1, 1);
             }
             return LocalDate.parse(dateStr);
         } catch (Exception e) {
-            log.warn("Failed to parse date: {}", dateStr);
             return null;
         }
     }
