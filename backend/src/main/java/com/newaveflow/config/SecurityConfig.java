@@ -38,18 +38,8 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/refresh").permitAll()
-                .requestMatchers("/api/reports/summary", "/api/attendance/summary", "/api/admin/tts/**", "/api/admin/students/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/users", "/api/classes").hasAnyRole("PASTOR", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/events/*/student-attendance/batch").hasAnyRole("PASTOR", "EXECUTIVE", "TEACHER", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/events/**", "/api/minutes/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/events/**", "/api/minutes/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/events/**", "/api/minutes/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/evangelism/groups", "/api/evangelism/schedules").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/evangelism/groups/**", "/api/evangelism/schedules/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/evangelism/schedules/**").hasAnyRole("PASTOR", "EXECUTIVE", "ADMIN")
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
@@ -70,13 +60,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5175", "http://localhost:3000"));
+        config.setAllowedOrigins(List.of("https://newave-flow.vercel.app", "http://localhost:5173", "http://localhost:5175", "http://localhost:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 }

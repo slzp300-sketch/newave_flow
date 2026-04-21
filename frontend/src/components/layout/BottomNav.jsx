@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, ClipboardList, Calendar, BarChart2, BookOpen } from 'lucide-react'
+import { Home, ClipboardList, Calendar, BarChart2, BookOpen, User } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
 
 const teacherNav = [
@@ -7,6 +7,7 @@ const teacherNav = [
   { to: '/roster',    icon: BookOpen,      label: '교적부' },
   { to: '/checklist', icon: ClipboardList, label: '주간 체크' },
   { to: '/calendar',  icon: Calendar,      label: '캘린더' },
+  { to: '/profile',   icon: User,          label: '마이' },
 ]
 
 const adminNav = [
@@ -14,6 +15,7 @@ const adminNav = [
   { to: '/roster',  icon: BookOpen,  label: '교적부' },
   { to: '/admin',   icon: BarChart2, label: '관리' },
   { to: '/calendar',icon: Calendar,  label: '캘린더' },
+  { to: '/profile', icon: User,      label: '마이' },
 ]
 
 export default function BottomNav() {

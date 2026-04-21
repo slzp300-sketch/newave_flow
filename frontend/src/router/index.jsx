@@ -29,6 +29,7 @@ import AdminTeacherManagePage         from '../pages/AdminTeacherManagePage'
 import AdminClassManagePage           from '../pages/AdminClassManagePage'
 import AdminStudentManagePage         from '../pages/AdminStudentManagePage'
 import ManualPreviewPage             from '../pages/ManualPreviewPage'
+import ProfilePage                   from '../pages/ProfilePage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -64,6 +65,7 @@ const router = createBrowserRouter([
           { path: '/event-attendance',     element: <EventAttendanceListPage /> },
           { path: '/event-attendance/:id', element: <EventAttendancePage /> },
           { path: '/class-manage',         element: <ClassManagePage /> },
+          { path: '/profile',              element: <ProfilePage /> },
           {
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
             children: [
