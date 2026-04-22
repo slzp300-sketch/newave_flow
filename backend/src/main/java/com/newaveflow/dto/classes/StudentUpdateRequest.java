@@ -13,5 +13,6 @@ public record StudentUpdateRequest(
         String fatherPhone,
         String motherName,
         String motherPhone,
-        String address
+        String address,
+        String profileImage
 ) {}

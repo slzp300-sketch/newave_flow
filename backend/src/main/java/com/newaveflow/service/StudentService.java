@@ -96,7 +96,7 @@ public class StudentService {
                 request.school(), request.phone(), request.baptism(),
                 request.fatherName(), request.fatherPhone(),
                 request.motherName(), request.motherPhone(),
-                request.address()
+                request.address(), request.profileImage()
         );
         return StudentDto.from(studentRepository.save(student));
     }
@@ -138,6 +138,7 @@ public class StudentService {
                 .motherName(request.motherName())
                 .motherPhone(request.motherPhone())
                 .address(request.address())
+                .profileImage(request.profileImage())
                 .build();
 
         return AdminStudentDto.from(studentRepository.save(student));
@@ -170,7 +171,7 @@ public class StudentService {
                 request.school(), request.phone(), request.baptism(),
                 request.fatherName(), request.fatherPhone(),
                 request.motherName(), request.motherPhone(),
-                request.address()
+                request.address(), request.profileImage()
         );
 
         if (request.grade() != null) {

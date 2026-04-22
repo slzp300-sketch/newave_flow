@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Users, X, Loader2, PenLine, UserX, UserCheck, Save, Clock, StickyNote } from 'lucide-react'
+import { Users, X, Loader2, PenLine, UserX, UserCheck, Save, Clock, StickyNote, Camera, Image as ImageIcon } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
@@ -205,10 +205,14 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
       transition={{ delay: idx * 0.04 }}
     >
       <Card className={`flex items-center gap-3 p-4 ${isInactive ? 'opacity-60' : ''}`}>
-        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden ${
           student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
         }`}>
-          <span className="font-black text-sm">{student.name[0]}</span>
+          {student.profileImage ? (
+            <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="font-black text-sm">{student.name[0]}</span>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -282,10 +286,14 @@ function MemoTab({ students, onEditMemo }) {
         return (
           <motion.div key={student.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}>
             <Card onClick={() => onEditMemo(student)} className="flex items-start gap-3 p-4 group">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden ${
                 student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
               }`}>
-                <span className="font-black text-sm">{student.name[0]}</span>
+                {student.profileImage ? (
+                  <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-black text-sm">{student.name[0]}</span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-black text-gray-900 text-sm">{student.name}</p>
@@ -457,6 +465,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
     motherName:  student.motherName  || '',
     motherPhone: student.motherPhone || '',
     address:     student.address     || '',
+    profileImage: student.profileImage || '',
   })
 
   const updateMutation = useMutation({
@@ -492,6 +501,46 @@ function EditStudentSheet({ student, onClose, onSaved }) {
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-5">
+            {/* 사진 업로드 */}
+            <div className="flex flex-col items-center gap-3 mb-2">
+              <div className="relative">
+                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg ${
+                  form.gender === '여' ? 'bg-pink-50 text-pink-200' : 'bg-blue-50 text-blue-200'
+                }`}>
+                  {form.profileImage ? (
+                    <img src={form.profileImage} alt="preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={32} />
+                  )}
+                </div>
+                <label className="absolute -bottom-1 -right-1 w-9 h-9 bg-primary-500 text-white rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-90 transition-all">
+                  <ImageIcon size={16} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onloadend = () => set('profileImage', reader.result)
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                </label>
+                {form.profileImage && (
+                  <button
+                    onClick={() => set('profileImage', '')}
+                    className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] font-black text-gray-300">학생 사진 (JPG, PNG)</p>
+            </div>
+
           <div className="grid grid-cols-2 gap-3">
             <FormField label="이름">
               <input value={form.name} onChange={e => set('name', e.target.value)}

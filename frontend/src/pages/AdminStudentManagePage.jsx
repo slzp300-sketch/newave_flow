@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Users, UserPlus, X, Loader2, Search,
   ChevronRight, BookOpen, RefreshCw, Check,
-  UserMinus, UserCheck, Pencil, ArrowRight
+  UserMinus, UserCheck, Pencil, ArrowRight, Camera, Image as ImageIcon
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import { adminStudentsApi } from '../api/students'
@@ -283,10 +283,14 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh }) {
       }`}
     >
       {/* 아바타 */}
-      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black flex-shrink-0 ${
+      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black flex-shrink-0 overflow-hidden ${
         s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-blue-50 text-blue-500'
       }`}>
-        {s.name[0]}
+        {s.profileImage ? (
+          <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
+        ) : (
+          s.name[0]
+        )}
       </div>
 
       {/* 정보 */}
@@ -459,9 +463,15 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
                     onClick={() => setSelectedStudent(s)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-xl text-xs font-bold text-gray-700 border border-gray-100 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   >
-                    <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black ${
-                      s.gender === '여' ? 'bg-pink-100 text-pink-500' : 'bg-blue-100 text-blue-500'
-                    }`}>{s.name[0]}</span>
+                  <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black overflow-hidden ${
+                    s.gender === '여' ? 'bg-pink-100 text-pink-500' : 'bg-blue-100 text-blue-500'
+                  }`}>
+                    {s.profileImage ? (
+                      <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
+                    ) : (
+                      s.name[0]
+                    )}
+                  </span>
                     {s.name}
                     <ArrowRight size={11} className="text-gray-300" />
                   </button>
@@ -595,6 +605,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
     motherName: student?.motherName || '',
     motherPhone: student?.motherPhone || '',
     address: student?.address || '',
+    profileImage: student?.profileImage || '',
   })
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
@@ -639,6 +650,46 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            {/* 사진 업로드 */}
+            <section className="flex flex-col items-center gap-3 py-2">
+              <div className="relative group">
+                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg ${
+                  form.gender === '여' ? 'bg-pink-50 text-pink-200' : 'bg-blue-50 text-blue-200'
+                }`}>
+                  {form.profileImage ? (
+                    <img src={form.profileImage} alt="preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={32} />
+                  )}
+                </div>
+                <label className="absolute -bottom-1 -right-1 w-9 h-9 bg-primary-500 text-white rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-90 transition-all">
+                  <ImageIcon size={16} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onloadend = () => set('profileImage', reader.result)
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                </label>
+                {form.profileImage && (
+                  <button
+                    onClick={() => set('profileImage', '')}
+                    className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] font-black text-gray-300">JPG, PNG 파일 지원</p>
+            </section>
+
             {/* 필수 정보 */}
             <section className="space-y-3">
               <SectionTitle>기본 정보</SectionTitle>

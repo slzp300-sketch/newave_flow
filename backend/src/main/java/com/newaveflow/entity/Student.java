@@ -59,6 +59,10 @@ public class Student {
     @Column(length = 255)
     private String address;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String profileImage;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean isActive = true;
@@ -70,7 +74,7 @@ public class Student {
     public void update(String name, String gender, LocalDate birthDate,
                        String school, String phone, Boolean baptism,
                        String fatherName, String fatherPhone,
-                       String motherName, String motherPhone, String address) {
+                       String motherName, String motherPhone, String address, String profileImage) {
         this.name = name;
         this.gender = gender;
         this.birthDate = birthDate;
@@ -82,6 +86,7 @@ public class Student {
         this.motherName = motherName;
         this.motherPhone = motherPhone;
         this.address = address;
+        this.profileImage = profileImage;
     }
 
     public void assignClass(ClassGroup classGroup) { this.classGroup = classGroup; }

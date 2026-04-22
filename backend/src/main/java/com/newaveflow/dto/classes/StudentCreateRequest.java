@@ -13,5 +13,6 @@ public record StudentCreateRequest(
         String fatherPhone,
         String motherName,
         String motherPhone,
-        String address
+        String address,
+        String profileImage
 ) {}

@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Users, FileText, Calendar, BookOpen, CheckSquare, UserCog, ClipboardList, UserMinus, GraduationCap, Baby } from 'lucide-react'
+import { Users, FileText, Calendar, BookOpen, CheckSquare, UserCog, ClipboardList, UserMinus, GraduationCap, UserPlus, UserCheck } from 'lucide-react'
 import Header from '../components/layout/Header'
 
 const MENU = [
   {
     to: '/admin/pending-users',
-    icon: Users,
+    icon: UserPlus,
     iconBg: 'bg-amber-50',
     iconColor: 'text-amber-600',
     title: '가입 승인 대기',
@@ -14,7 +14,7 @@ const MENU = [
   },
   {
     to: '/admin/students',
-    icon: Baby,
+    icon: GraduationCap,
     iconBg: 'bg-teal-50',
     iconColor: 'text-teal-600',
     title: '아이 관리',
@@ -22,7 +22,7 @@ const MENU = [
   },
   {
     to: '/admin/class-assignment',
-    icon: GraduationCap,
+    icon: UserCheck,
     iconBg: 'bg-indigo-50',
     iconColor: 'text-indigo-600',
     title: '반 담임/부담임 배정',

@@ -16,6 +16,7 @@ public record AdminStudentDto(
         String motherName,
         String motherPhone,
         String address,
+        String profileImage,
         boolean isActive,
         Long classGroupId,
         String classGroupName
@@ -35,6 +36,7 @@ public record AdminStudentDto(
                 entity.getMotherName(),
                 entity.getMotherPhone(),
                 entity.getAddress(),
+                entity.getProfileImage(),
                 entity.isActive(),
                 entity.getClassGroup() != null ? entity.getClassGroup().getId() : null,
                 entity.getClassGroup() != null ? entity.getClassGroup().getName() : null
