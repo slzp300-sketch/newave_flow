@@ -44,7 +44,7 @@ public class ReportController {
     }
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('PASTOR', 'EXECUTIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     public ResponseEntity<ReportSummaryResponse> getSummary(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(reportService.getSummary(date != null ? date : LocalDate.now()));

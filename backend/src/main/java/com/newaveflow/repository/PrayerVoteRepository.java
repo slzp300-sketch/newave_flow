@@ -11,11 +11,17 @@ import java.util.Optional;
 
 public interface PrayerVoteRepository extends JpaRepository<PrayerVote, Long> {
 
-    Optional<PrayerVote> findByTeacherIdAndWeekStart(Long teacherId, LocalDate weekStart);
+    @Query("SELECT v FROM PrayerVote v JOIN FETCH v.teacher t LEFT JOIN FETCH t.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE v.id = :id")
+    Optional<PrayerVote> findByIdWithTeacher(@Param("id") Long id);
+
+    @Query("SELECT v FROM PrayerVote v JOIN FETCH v.teacher t LEFT JOIN FETCH t.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE t.id = :teacherId AND v.weekStart = :weekStart")
+    Optional<PrayerVote> findByTeacherIdAndWeekStart(@Param("teacherId") Long teacherId, @Param("weekStart") LocalDate weekStart);
 
     @Query("""
         SELECT v FROM PrayerVote v
         JOIN FETCH v.teacher t
+        LEFT JOIN FETCH t.teacherClasses tc
+        LEFT JOIN FETCH tc.classGroup
         WHERE v.weekStart = :weekStart AND v.status = 'ABSENT'
         ORDER BY t.name
         """)

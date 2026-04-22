@@ -11,7 +11,18 @@ import useAuthStore from '../store/authStore'
 import { evangelismApi } from '../api/evangelism'
 import { weeklyStatusApi } from '../api/weeklyStatus'
 import { eventApi } from '../api/event'
+import { prayerVoteApi } from '../api/prayerVote'
 import { getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
+import { format } from 'date-fns'
+
+function getThisWeekMonday() {
+  const now = new Date()
+  const day = now.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diff)
+  return format(monday, 'yyyy-MM-dd')
+}
 
 // ── 날짜 / 권한 유틸 ────────────────────────
 function isVoteWindowOpen() {
@@ -35,18 +46,24 @@ function useTTSSubmitted() {
   return submitted
 }
 
-function useMeetingChecked() {
-  const [checked, setChecked] = useState(false)
+function useMeetingChecked(user) {
+  const { data: voteData } = useQuery({
+    queryKey: ['prayer-vote', getThisWeekMonday(), user?.id],
+    queryFn: () => prayerVoteApi.getMine(getThisWeekMonday()).then(r => r.data),
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  })
+
+  const [satChecked, setSatChecked] = useState(false)
   useEffect(() => {
     const { weekNum } = getTTSWeekRange()
     const year = new Date().getFullYear()
-    const prayer = localStorage.getItem(`prayer_vote_${year}_w${weekNum}`)
-    const sat    = localStorage.getItem(`sat_meeting_${year}_w${weekNum}`)
-    const p = prayer ? JSON.parse(prayer).submitted === true : false
-    const s = sat    ? JSON.parse(sat).submitted    === true : false
-    setChecked(p && s)
+    const sat = localStorage.getItem(`sat_meeting_${year}_w${weekNum}`)
+    setSatChecked(sat ? JSON.parse(sat).submitted === true : false)
   }, [])
-  return checked
+
+  // 기도모임 투표 완료 && 토요모임 제출 완료
+  return !!voteData && satChecked
 }
 
 function useWeeklyStatus() {
@@ -81,7 +98,7 @@ export default function WeeklyCheckPage() {
   const navigate      = useNavigate()
   const { user }      = useAuthStore()
   const ttsSubmitted  = useTTSSubmitted()
-  const meetingChecked = useMeetingChecked()
+  const meetingChecked = useMeetingChecked(user)
   const weeklyStatus  = useWeeklyStatus()
   const attendanceEvents = useAttendanceRequiredEvents()
   const weekRange     = getCurrentWeekRange()

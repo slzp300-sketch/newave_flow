@@ -21,6 +21,7 @@ public class PrayerVoteService {
 
     private final PrayerVoteRepository prayerVoteRepository;
     private final UserRepository userRepository;
+    private final com.newaveflow.repository.TeacherClassRepository teacherClassRepository;
 
     // 해당 날짜가 속한 주의 월요일
     public static LocalDate getWeekStart(LocalDate date) {
@@ -60,9 +61,22 @@ public class PrayerVoteService {
         return prayerVoteRepository.findAbsentByWeekStart(weekStart);
     }
 
+    public List<com.newaveflow.dto.prayer.PrayerVoteResponse> getAbsentListResponses(LocalDate weekStart) {
+        List<PrayerVote> votes = prayerVoteRepository.findAbsentByWeekStart(weekStart);
+        return votes.stream().map(v -> {
+            String className = null;
+            // 명시적으로 TeacherClass 조회
+            java.util.List<com.newaveflow.entity.TeacherClass> tcs = teacherClassRepository.findByTeacherId(v.getTeacher().getId());
+            if (tcs != null && !tcs.isEmpty()) {
+                className = tcs.get(0).getClassGroup().getDescription(); // "중3 5반" 형태로 저장되어 있음
+            }
+            return new com.newaveflow.dto.prayer.PrayerVoteResponse(v, className);
+        }).toList();
+    }
+
     @Transactional
     public PrayerVote toggleScriptureSubmitted(Long voteId, boolean submitted) {
-        PrayerVote vote = prayerVoteRepository.findById(voteId)
+        PrayerVote vote = prayerVoteRepository.findByIdWithTeacher(voteId)
                 .orElseThrow(() -> AppException.notFound("투표 기록을 찾을 수 없습니다."));
         if (submitted) vote.markScriptureSubmitted();
         else vote.unmarkScriptureSubmitted();

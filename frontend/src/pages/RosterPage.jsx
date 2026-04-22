@@ -225,8 +225,12 @@ function StudentRow({ student, colors, idx }) {
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
       className="flex items-start gap-3 px-5 py-3.5">
-      <div className={`w-9 h-9 rounded-xl ${student.gender === '여' ? 'bg-pink-400' : 'bg-blue-400'} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm`}>
-        <span className="text-white font-black text-sm">{student.name[0]}</span>
+      <div className={`w-9 h-9 rounded-xl ${student.gender === '여' ? 'bg-pink-400' : 'bg-blue-400'} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm overflow-hidden`}>
+        {student.profileImage ? (
+          <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-white font-black text-sm">{student.name[0]}</span>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap mb-1">

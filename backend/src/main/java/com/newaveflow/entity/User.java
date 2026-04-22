@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
@@ -27,6 +28,7 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(nullable = false)
     private String password;
 
@@ -43,6 +45,10 @@ public class User {
     @Column(nullable = false)
     @Builder.Default
     private boolean isActive = true;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "teacher")
+    private java.util.List<TeacherClass> teacherClasses;
 
     @CreatedDate
     @Column(updatable = false)

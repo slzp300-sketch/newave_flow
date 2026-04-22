@@ -37,8 +37,12 @@ export default function StudentDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="w-24 h-24 rounded-3xl premium-gradient flex items-center justify-center text-white shadow-glow">
-            <User size={48} />
+          <div className="w-24 h-24 rounded-3xl premium-gradient flex items-center justify-center text-white shadow-glow overflow-hidden">
+            {student?.profileImage ? (
+              <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
+            ) : (
+              <User size={48} />
+            )}
           </div>
           <div className="text-center">
             <h2 className="text-2xl font-black text-gray-900">{student?.name}</h2>
