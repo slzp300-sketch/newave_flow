@@ -12,6 +12,7 @@ import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
 import { evangelismApi } from '../api/evangelism'
 import { eventApi } from '../api/event'
+import { weeklyStatusApi } from '../api/weeklyStatus'
 import { deactivationApi } from '../api/students'
 import { 
   formatDate, toApiDate, greetingByTime, getTTSWeekRange, 
@@ -102,6 +103,29 @@ function useTTSSubmitted() {
   return submitted
 }
 
+function useWeeklyStatus() {
+  const { data } = useQuery({
+    queryKey: ['weekly-status'],
+    queryFn: () => weeklyStatusApi.getStatus().then(r => r.data),
+    staleTime: 2 * 60 * 1000,
+  })
+  return data ?? { attendanceSubmittedThisWeek: false, unconfirmedMinutesCount: 0 }
+}
+
+function useMeetingChecked() {
+  const [checked, setChecked] = useState(false)
+  useEffect(() => {
+    const { weekNum } = getTTSWeekRange()
+    const year = new Date().getFullYear()
+    const prayer = localStorage.getItem(`prayer_vote_${year}_w${weekNum}`)
+    const sat    = localStorage.getItem(`sat_meeting_${year}_w${weekNum}`)
+    const p = prayer ? JSON.parse(prayer).submitted === true : false
+    const s = sat    ? JSON.parse(sat).submitted    === true : false
+    setChecked(p && s)
+  }, [])
+  return checked
+}
+
 function useAttendanceRequiredEvents() {
   const { data = [] } = useQuery({
     queryKey: ['attendance-required-events'],
@@ -125,9 +149,16 @@ function TeacherView({ navigate }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
   const ttsSubmitted          = useTTSSubmitted()
   const weekRange             = getCurrentWeekRange()
-  const submissionOpen        = canSubmitTTS()
   const evangelism            = useEvangelismStatus()
   const attendanceEvents      = useAttendanceRequiredEvents()
+  
+  const meetingChecked        = useMeetingChecked()
+  const weeklyStatus          = useWeeklyStatus()
+  const minutesDone           = weeklyStatus.unconfirmedMinutesCount === 0
+  const eventAttendanceDone   = attendanceEvents.length === 0 ? true : false
+
+  // 주간 체크 올클리어 판별
+  const allWeeklyChecksDone = ttsSubmitted && meetingChecked && weeklyStatus.attendanceSubmittedThisWeek && minutesDone && eventAttendanceDone
 
   useEffect(() => {
     fetchWeeklyEvents()
@@ -154,18 +185,16 @@ function TeacherView({ navigate }) {
   const isEvangelismActive = evangelism?.nextSchedule?.status === 'ACTIVE'
 
   const tasks = [
-    { id: 'attendance',   icon: Users,        color: 'bg-blue-50 text-blue-600',    title: '출석 체크',  desc: '학생들의 출결 현황을 기록하세요',     done: false, path: '/attendance' },
-    { id: 'class-manage', icon: BookOpen,     color: 'bg-indigo-50 text-indigo-600', title: '반 관리',   desc: '학생 정보 수정 및 재적/제적 관리',    done: false, path: '/class-manage' },
     {
-      id: 'tts',
+      id: 'weekly-check',
       icon: CheckSquare,
-      color: ttsSubmitted ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600',
-      title: 'TTS 체크',
-      desc: ttsSubmitted ? '이번 주 TTS 제출 완료!' : (submissionOpen ? '이번 주 TTS를 제출해 주세요' : '이번 주 활동을 기록해 주세요 (토-화 제출)'),
-      done: ttsSubmitted,
-      path: '/tts'
+      color: allWeeklyChecksDone ? 'bg-emerald-100 text-emerald-600' : 'bg-primary-50 text-primary-600',
+      title: '주간 체크',
+      desc: allWeeklyChecksDone ? '이번 주 필수 체크 항목 모두 완료!' : '출석, TTS, 주간 모임 등 필수 항목을 체크하세요',
+      done: allWeeklyChecksDone,
+      path: '/checklist'
     },
-    { id: 'meeting',    icon: CalendarCheck, color: 'bg-violet-50 text-violet-600', title: '주간 모임 체크', desc: '기도회 · 교사회의 참석을 체크하세요',                   done: false, path: '/meeting' },
+    { id: 'class-manage', icon: BookOpen,     color: 'bg-indigo-50 text-indigo-600', title: '반 관리',   desc: '학생 정보 수정 및 재적/제적 관리',    done: false, path: '/class-manage' },
     {
       id: 'evangelism',
       icon: MapPin,
@@ -176,18 +205,7 @@ function TeacherView({ navigate }) {
       path: '/evangelism',
       badge: isEvangelismActive ? '당번' : null,
     },
-    { id: 'minutes',    icon: FileText,      color: 'bg-violet-50 text-violet-600', title: '회의록 및 영상', desc: '미참석 회의록 확인 및 영상 시청',  done: false, path: '/minutes' },
-    { id: 'events',     icon: Calendar,      color: 'bg-rose-50 text-rose-600',     title: '행사 일정',     desc: '등록된 교회 행사를 확인하세요',     done: false, path: '/events' },
-    ...(attendanceEvents.length > 0 ? [{
-      id: 'event-attendance',
-      icon: ClipboardList,
-      color: 'bg-emerald-50 text-emerald-600',
-      title: '행사 출석 체크',
-      desc: `출석 체크가 필요한 행사 ${attendanceEvents.length}건`,
-      done: false,
-      path: attendanceEvents.length === 1 ? `/event-attendance/${attendanceEvents[0].id}` : '/event-attendance',
-      badge: `${attendanceEvents.length}건`,
-    }] : []),
+    { id: 'events',     icon: Calendar,      color: 'bg-rose-50 text-rose-600',     title: '행사 일정',     desc: '등록된 교회 행사를 확인하세요',     done: false, path: '/events' }
   ]
 
   return (
@@ -306,6 +324,7 @@ function AdminView({ navigate, today }) {
   const { data, isLoading } = useQuery({
     queryKey: ['report-summary', today],
     queryFn:  () => reportsApi.getSummary(today).then(r => r.data),
+    staleTime: 5 * 60 * 1000,
   })
 
   useEffect(() => {

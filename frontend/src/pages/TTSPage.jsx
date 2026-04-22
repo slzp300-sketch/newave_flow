@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Send, CheckCheck, AlertCircle, Clock } from 'lucide-react'
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Send, CheckCheck, AlertCircle, Clock, Lock } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
@@ -12,6 +13,7 @@ import { ttsApi } from '../api/tts'
 const DAYS = ['월', '화', '수', '목', '금', '토']
 
 export default function TTSPage() {
+  const navigate     = useNavigate()
   const { user }     = useAuthStore()
   const queryClient  = useQueryClient()
   const weekInfo     = getTTSWeekRange()
@@ -32,7 +34,7 @@ export default function TTSPage() {
   const { data: record, isLoading: rLoading } = useQuery({
     queryKey: ['tts-my', currentYear, weekInfo.weekNum],
     queryFn: () => ttsApi.getMyTts(currentYear, weekInfo.weekNum).then(r => r.data),
-    staleTime: 0
+    staleTime: 5 * 60 * 1000
   })
 
   // 초기 상태 및 데이터 동기화
@@ -113,6 +115,27 @@ export default function TTSPage() {
     )
   }
 
+  if (!submissionOpen) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50/50">
+        <Header title={`${weekInfo.weekNum}주차 TTS`} showBack />
+        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20 mt-[-10vh]">
+          <div className="w-16 h-16 bg-white border-4 border-gray-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
+            <Lock size={28} className="text-gray-400" />
+          </div>
+          <h2 className="text-[17px] font-black text-gray-800 mb-3 text-center tracking-tight">TTS 제출 기간이 아닙니다</h2>
+          <p className="text-[13px] text-gray-500 text-center mb-8 font-medium leading-relaxed">
+            매주 <span className="text-gray-700 font-bold">토요일부터 화요일</span>까지만<br />
+            TTS를 기록하거나 수정할 수 있습니다.
+          </p>
+          <Button onClick={() => navigate(-1)} variant="secondary" className="w-full max-w-[160px] rounded-2xl border-gray-200">
+            돌아가기
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title={`${weekInfo.weekNum}주차 TTS`} showBack />
@@ -124,12 +147,6 @@ export default function TTSPage() {
             {weekInfo.start} ~ {weekInfo.end} 기간 활동 체크
           </p>
         </div>
-        {!submissionOpen && (
-          <div className="mt-3 flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-xl text-[11px] font-bold">
-            <AlertCircle size={14} />
-            제출 기간이 아닙니다 (토~화 가능)
-          </div>
-        )}
       </div>
 
       <div className="px-4 py-5 flex flex-col gap-4">

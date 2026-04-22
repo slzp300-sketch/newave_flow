@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Check, X, Save, ChevronDown, ChevronUp, Send, 
   CheckCircle2, AlertCircle, MessageSquare, UserCheck, UserX,
-  History, Calendar
+  History, Calendar, Lock
 } from 'lucide-react'
 import { attendanceApi } from '../api/attendance'
 import { classesApi } from '../api/classes'
 import { reportsApi } from '../api/reports'
-import { toApiDate, getMostRecentSunday, isSundayOrMonday, formatDate } from '../utils/date'
+import { toApiDate, getMostRecentSunday, isSundayToTuesday, formatDate } from '../utils/date'
 import useAuthStore from '../store/authStore'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
@@ -26,13 +26,14 @@ export default function AttendancePage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const today = toApiDate(getMostRecentSunday())
-  const isWindowOpen = isSundayOrMonday()
+  const isWindowOpen = isSundayToTuesday()
   const [localEdit, setLocalEdit] = useState(false)
 
   // 1. 담당 반 목록
   const { data: classes = [], isLoading: classLoading } = useQuery({
     queryKey: ['my-classes', user?.id],
     queryFn:  () => classesApi.getMyClasses().then(r => r.data),
+    staleTime: 5 * 60 * 1000,
   })
 
   const [selectedClassId, setSelectedClassId] = useState(null)
@@ -43,6 +44,7 @@ export default function AttendancePage() {
     queryKey: ['students', classId],
     queryFn:  () => classesApi.getStudents(classId).then(r => r.data),
     enabled:  !!classId,
+    staleTime: 5 * 60 * 1000,
   })
 
   // 3. 오늘 출석 기록
@@ -50,6 +52,7 @@ export default function AttendancePage() {
     queryKey: ['attendance', classId, today],
     queryFn:  () => attendanceApi.getByClass(classId, today).then(r => r.data),
     enabled:  !!classId,
+    staleTime: 5 * 60 * 1000,
   })
 
   // 4. 제출 상태 확인
@@ -57,6 +60,7 @@ export default function AttendancePage() {
     queryKey: ['report-status', classId, today],
     queryFn:  () => reportsApi.getByClassAndDate(classId, today).then(r => r.data),
     enabled:  !!classId,
+    staleTime: 5 * 60 * 1000,
   })
 
   const isSubmitted = reportStatus?.status === 'SUBMITTED' && !localEdit
@@ -131,6 +135,27 @@ export default function AttendancePage() {
             <p className="font-black text-gray-900 text-lg">배정된 반이 없습니다</p>
             <p className="text-gray-400 text-sm mt-2 leading-relaxed">관리자에게 반 배정을 요청해 주세요.</p>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isWindowOpen) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50/50">
+        <Header title="출석 체크" showBack />
+        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20 mt-[-10vh]">
+          <div className="w-16 h-16 bg-white border-4 border-gray-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
+            <Lock size={28} className="text-gray-400" />
+          </div>
+          <h2 className="text-[17px] font-black text-gray-800 mb-3 text-center tracking-tight">출결 입력 기간이 아닙니다</h2>
+          <p className="text-[13px] text-gray-500 text-center mb-8 font-medium leading-relaxed">
+            매주 <span className="text-gray-700 font-bold">주일(일요일)부터 화요일</span>까지만<br />
+            출결 현황을 기록하거나 수정할 수 있습니다.
+          </p>
+          <Button onClick={() => navigate(-1)} variant="secondary" className="w-full max-w-[160px] rounded-2xl border-gray-200">
+            돌아가기
+          </Button>
         </div>
       </div>
     )

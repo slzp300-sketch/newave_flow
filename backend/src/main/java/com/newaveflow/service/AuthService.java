@@ -73,4 +73,12 @@ public class AuthService {
         
         userRepository.save(user);
     }
+
+    public boolean checkEmailDuplicate(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    public boolean checkNameDuplicate(String name) {
+        return userRepository.existsByName(name);
+    }
 }

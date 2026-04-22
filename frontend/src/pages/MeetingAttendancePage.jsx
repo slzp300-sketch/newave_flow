@@ -77,7 +77,14 @@ export default function MeetingAttendancePage() {
 
   const saveMutation = useMutation({
     mutationFn: (payload) => prayerVoteApi.save(payload).then(r => r.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['prayer-vote', weekStart, user?.id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prayer-vote', weekStart, user?.id] })
+      setEditingPrayer(false)
+    },
+    onError: (err) => {
+      console.error('Prayer vote save error:', err)
+      alert('투표 저장 중 오류가 발생했습니다.')
+    }
   })
 
   // 로컬 폼 상태 (제출 전 임시)
@@ -93,10 +100,14 @@ export default function MeetingAttendancePage() {
   const updatePrayer = (patch) => setPrayer(d => ({ ...d, ...patch }))
 
   const submitPrayer = () => {
+    const finalReason = prayer.status === 'ABSENT' 
+      ? prayer.reason 
+      : (prayer.micAvailable === false ? prayer.micReason : '')
+
     saveMutation.mutate({
       weekStart,
       status: prayer.status,
-      reason: prayer.reason,
+      reason: finalReason,
     })
   }
 

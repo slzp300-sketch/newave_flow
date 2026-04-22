@@ -40,7 +40,7 @@ const EVENT_TYPES = [
 
 export default function CalendarPage() {
   const { user } = useAuthStore()
-  const isAdmin = user?.role === 'PASTOR' || user?.role === 'EXECUTIVE'
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'PASTOR' || user?.role === 'EXECUTIVE'
   
   const [current, setCurrent]   = useState(new Date())
   const [selected, setSelected] = useState(new Date())

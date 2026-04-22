@@ -221,7 +221,7 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
 }
 
 function StudentRow({ student, colors, idx }) {
-  const age = calcAge(student.birth)
+  const age = calcAge(student.birthDate)
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
       className="flex items-start gap-3 px-5 py-3.5">
@@ -234,9 +234,9 @@ function StudentRow({ student, colors, idx }) {
           {student.baptism === true && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600">세례</span>}
           {student.baptism === false && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">미세례</span>}
         </div>
-        {(student.school || student.birth) && (
+        {(student.school || student.birthDate) && (
           <p className="text-[11px] text-gray-500 mb-1">
-            {[student.school, student.birth && `${formatBirth(student.birth)} (만 ${age}세)`].filter(Boolean).join(' · ')}
+            {[student.school, student.birthDate && `${formatBirth(student.birthDate)} (만 ${age}세)`].filter(Boolean).join(' · ')}
           </p>
         )}
         {student.phone && (

@@ -70,8 +70,8 @@ export const getMostRecentSunday = (date = new Date()) => {
   return startOfWeek(date, { weekStartsOn: 0 })
 }
 
-/** 현재 일요일 또는 월요일인지 확인 */
-export const isSundayOrMonday = () => {
+/** 현재 일~화요일인지 확인 */
+export const isSundayToTuesday = () => {
   const day = new Date().getDay()
-  return day === 0 || day === 1 // 0: Sunday, 1: Monday
+  return day === 0 || day === 1 || day === 2 // 0: Sunday, 1: Monday, 2: Tuesday
 }

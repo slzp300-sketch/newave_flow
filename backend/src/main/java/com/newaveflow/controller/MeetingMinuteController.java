@@ -54,7 +54,7 @@ public class MeetingMinuteController {
 
     @PostMapping
     public ResponseEntity<MeetingMinute> create(@RequestBody MeetingMinuteCreateRequest request) {
-        log.info("Creating meeting minutes: {}", request);
+        log.debug("Creating meeting minutes: {}", request);
         MeetingMinute minutes = MeetingMinute.builder()
             .title(request.title())
             .content(request.content())

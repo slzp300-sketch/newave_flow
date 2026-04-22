@@ -38,4 +38,16 @@ public class AuthController {
         // 클라이언트에서 토큰 삭제 처리 (stateless)
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/check-email")
+    public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {
+        boolean isDuplicate = authService.checkEmailDuplicate(email);
+        return ResponseEntity.ok(Map.of("available", !isDuplicate));
+    }
+
+    @GetMapping("/check-name")
+    public ResponseEntity<Map<String, Boolean>> checkName(@RequestParam String name) {
+        boolean isDuplicate = authService.checkNameDuplicate(name);
+        return ResponseEntity.ok(Map.of("available", !isDuplicate));
+    }
 }

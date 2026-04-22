@@ -17,11 +17,13 @@ export default function ChecklistPage() {
   const { data: items = [] } = useQuery({
     queryKey: ['checklist-items'],
     queryFn:  () => client.get('/checklist/items').then(r => r.data),
+    staleTime: 5 * 60 * 1000,
   })
 
   const { data: records = [] } = useQuery({
     queryKey: ['checklist-records', today],
     queryFn:  () => client.get('/checklist/records', { params: { date: today } }).then(r => r.data),
+    staleTime: 5 * 60 * 1000,
   })
 
   // 기존 기록 반영

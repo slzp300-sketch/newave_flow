@@ -22,7 +22,7 @@ public class NotificationTask {
     // 매주 주일 오전 8시에 출석 체크 독려 알림 (예: 0 0 8 * * SUN)
     @Scheduled(cron = "0 0 8 * * SUN", zone = "Asia/Seoul")
     public void remindSundayAttendance() {
-        log.info("Running remindSundayAttendance task");
+        log.debug("Running remindSundayAttendance task");
         List<Long> activeUserIds = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER).stream()
                 .map(User::getId)
                 .toList();
@@ -37,7 +37,7 @@ public class NotificationTask {
     // 실제로는 미제출자를 조회해야 하나, 임시로 전체 교사에게 확인 독려.
     @Scheduled(cron = "0 0 10 * * MON", zone = "Asia/Seoul")
     public void remindMondayAttendance() {
-        log.info("Running remindMondayAttendance task");
+        log.debug("Running remindMondayAttendance task");
         List<Long> activeUserIds = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER).stream()
                 .map(User::getId)
                 .toList();

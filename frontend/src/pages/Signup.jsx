@@ -18,6 +18,57 @@ export default function Signup() {
   const [error, setError]     = useState('')
   const [success, setSuccess] = useState(false)
 
+  const [nameStatus, setNameStatus]   = useState('idle') // idle, loading, available, duplicate
+  const [emailStatus, setEmailStatus] = useState('idle')
+
+  // 이름 중복 체크 (디바운스)
+  useEffect(() => {
+    if (!form.name.trim()) {
+      setNameStatus('idle')
+      return
+    }
+    setNameStatus('loading')
+    const timer = setTimeout(async () => {
+      try {
+        const res = await authApi.checkName(form.name)
+        setNameStatus(res.data.available ? 'available' : 'duplicate')
+      } catch (err) {
+        setNameStatus('idle')
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [form.name])
+
+  // 이메일 중복 체크 (디바운스)
+  useEffect(() => {
+    if (!form.email.trim()) {
+      setEmailStatus('idle')
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(form.email)) {
+      setEmailStatus('idle')
+      return
+    }
+
+    setEmailStatus('loading')
+    const timer = setTimeout(async () => {
+      try {
+        const res = await authApi.checkEmail(form.email)
+        setEmailStatus(res.data.available ? 'available' : 'duplicate')
+      } catch (err) {
+        setEmailStatus('idle')
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [form.email])
+
+  const isSubmitDisabled = loading || 
+                           nameStatus === 'duplicate' || 
+                           emailStatus === 'duplicate' || 
+                           nameStatus === 'loading' || 
+                           emailStatus === 'loading'
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -75,8 +126,14 @@ export default function Signup() {
               onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="실명을 입력하세요"
               required
-              className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium transition"
+              className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 text-sm font-medium transition ${
+                nameStatus === 'duplicate' ? 'border-red-300 focus:ring-red-500' : 
+                nameStatus === 'available' ? 'border-emerald-300 focus:ring-emerald-500' : 'border-gray-200 focus:ring-primary-500'
+              }`}
             />
+            {nameStatus === 'duplicate' && <p className="text-red-500 text-xs font-bold mt-1.5 px-1">이미 가입된 이름입니다.</p>}
+            {nameStatus === 'available' && <p className="text-emerald-500 text-xs font-bold mt-1.5 px-1">사용 가능한 이름입니다.</p>}
+            {nameStatus === 'loading' && <p className="text-gray-400 text-xs font-bold mt-1.5 px-1">확인 중...</p>}
           </div>
 
           <div>
@@ -87,8 +144,14 @@ export default function Signup() {
               onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
               placeholder="로그인에 사용할 이메일"
               required
-              className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium transition"
+              className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 text-sm font-medium transition ${
+                emailStatus === 'duplicate' ? 'border-red-300 focus:ring-red-500' : 
+                emailStatus === 'available' ? 'border-emerald-300 focus:ring-emerald-500' : 'border-gray-200 focus:ring-primary-500'
+              }`}
             />
+            {emailStatus === 'duplicate' && <p className="text-red-500 text-xs font-bold mt-1.5 px-1">이미 사용 중인 이메일입니다.</p>}
+            {emailStatus === 'available' && <p className="text-emerald-500 text-xs font-bold mt-1.5 px-1">사용 가능한 이메일입니다.</p>}
+            {emailStatus === 'loading' && <p className="text-gray-400 text-xs font-bold mt-1.5 px-1">확인 중...</p>}
           </div>
 
           <div>
@@ -139,7 +202,7 @@ export default function Signup() {
             </div>
           )}
 
-          <Button type="submit" size="lg" loading={loading} className="mt-4 shadow-glow">
+          <Button type="submit" size="lg" loading={loading} disabled={isSubmitDisabled} className="mt-4 shadow-glow">
             가입 신청하기
           </Button>
         </form>
