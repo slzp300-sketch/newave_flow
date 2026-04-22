@@ -47,11 +47,18 @@ public class PrayerVoteController {
     public ResponseEntity<PrayerVote> saveVote(
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal User currentUser) {
-        LocalDate weekStart = LocalDate.parse(body.get("weekStart"));
-        String status = body.get("status");
-        String reason = body.getOrDefault("reason", "");
-        PrayerVote vote = prayerVoteService.saveVote(currentUser.getId(), weekStart, status, reason);
-        return ResponseEntity.ok(vote);
+        String statusStr = body.get("status");
+        if (statusStr == null || statusStr.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            LocalDate weekStart = LocalDate.parse(body.get("weekStart"));
+            String reason = body.getOrDefault("reason", "");
+            PrayerVote vote = prayerVoteService.saveVote(currentUser.getId(), weekStart, statusStr, reason);
+            return ResponseEntity.ok(vote);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     // 관리자: 불참 명단 조회 (날짜별)

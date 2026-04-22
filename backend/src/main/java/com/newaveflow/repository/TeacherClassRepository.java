@@ -3,6 +3,7 @@ package com.newaveflow.repository;
 import com.newaveflow.entity.TeacherClass;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -16,7 +17,11 @@ public interface TeacherClassRepository extends JpaRepository<TeacherClass, Long
     // New assignment logic mapping
     Optional<TeacherClass> findByClassGroup_IdAndIsPrimaryTrue(Long classGroupId);
     Optional<TeacherClass> findByClassGroup_IdAndTeacher_Id(Long classGroupId, Long teacherId);
-    
+
+    // Eager fetch for roster (avoids LazyInitializationException)
+    @Query("SELECT tc FROM TeacherClass tc JOIN FETCH tc.teacher JOIN FETCH tc.classGroup")
+    List<TeacherClass> findAllWithTeacherAndClass();
+
     @Modifying
     @Transactional
     void deleteByClassGroup_IdAndTeacher_Id(Long classGroupId, Long teacherId);

@@ -29,7 +29,8 @@ public class ClassService {
 
     public List<ClassDto> getAllRosterData() {
         List<ClassGroup> classes = classGroupRepository.findAll();
-        List<TeacherClass> allTeacherClasses = teacherClassRepository.findAll();
+        // JOIN FETCH로 teacher, classGroup을 즉시 로딩 (LazyInitializationException 방지)
+        List<TeacherClass> allTeacherClasses = teacherClassRepository.findAllWithTeacherAndClass();
         
         return classes.stream().map(cls -> {
             List<ClassTeacherDto> teachers = allTeacherClasses.stream()

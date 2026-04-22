@@ -100,9 +100,14 @@ export default function MeetingAttendancePage() {
   const updatePrayer = (patch) => setPrayer(d => ({ ...d, ...patch }))
 
   const submitPrayer = () => {
-    const finalReason = prayer.status === 'ABSENT' 
-      ? prayer.reason 
-      : (prayer.micAvailable === false ? prayer.micReason : '')
+    if (!prayer.status) {
+      alert('참석 여부를 선택해 주세요.')
+      return
+    }
+
+    const finalReason = prayer.status === 'ABSENT'
+      ? (prayer.reason || '')
+      : (prayer.micAvailable === false ? (prayer.micReason || '') : '')
 
     saveMutation.mutate({
       weekStart,
