@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.newaveflow.service.NotificationService;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ public class MeetingMinuteController {
     private final MeetingMinuteConfirmRepository meetingMinuteConfirmRepository;
     private final MeetingAttendanceRepository meetingAttendanceRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<List<MeetingMinuteDto>> getAll(@AuthenticationPrincipal User currentUser) {
@@ -59,7 +62,17 @@ public class MeetingMinuteController {
             .meetingDate(request.meetingDate())
             .isActive(request.isActive())
             .build();
-        return ResponseEntity.ok(meetingMinuteRepository.save(minutes));
+        MeetingMinute saved = meetingMinuteRepository.save(minutes);
+        
+        if (saved.isActive()) {
+            List<Long> activeUserIds = userRepository.findByIsActiveTrue().stream().map(User::getId).toList();
+            notificationService.createNotificationForUsers(activeUserIds, 
+                "새로운 회의록", 
+                "새로운 교사 회의록이 등록되었습니다.", 
+                Notification.NotificationType.MINUTE);
+        }
+
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")

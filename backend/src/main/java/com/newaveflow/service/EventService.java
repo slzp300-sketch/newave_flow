@@ -23,6 +23,7 @@ public class EventService {
     private final UserRepository userRepository;
     private final TeacherClassRepository teacherClassRepository;
     private final StudentRepository studentRepository;
+    private final NotificationService notificationService;
 
     public List<EventDto.EventResponse> getEvents(LocalDate from, LocalDate to) {
         if (from == null) from = LocalDate.now().minusMonths(6);
@@ -58,7 +59,16 @@ public class EventService {
                 .eventType(Event.EventType.valueOf(request.eventType()))
                 .attendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()))
                 .build();
-        return EventDto.EventResponse.from(eventRepository.save(event));
+        Event saved = eventRepository.save(event);
+
+        // 새 일정 등록 시 교사들에게 알림 (SYSTEM 또는 EVENT)
+        List<Long> activeUserIds = userRepository.findByIsActiveTrue().stream().map(User::getId).toList();
+        notificationService.createNotificationForUsers(activeUserIds, 
+                "새로운 부서 일정", 
+                "새로운 일정 '" + request.title() + "' 이(가) 등록되었습니다.", 
+                Notification.NotificationType.EVENT);
+
+        return EventDto.EventResponse.from(saved);
     }
 
     @Transactional

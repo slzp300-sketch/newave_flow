@@ -22,6 +22,12 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<Void> register(@Valid @RequestBody com.newaveflow.dto.auth.RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.status(201).build();
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(@RequestBody Map<String, String> body) {
         return ResponseEntity.ok(authService.refresh(body.get("refreshToken")));

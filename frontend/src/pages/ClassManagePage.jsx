@@ -6,6 +6,8 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import { studentsApi } from '../api/students'
+import { classesApi } from '../api/classes'
+import useAuthStore from '../store/authStore'
 
 export default function ClassManagePage() {
   const queryClient = useQueryClient()
@@ -14,10 +16,20 @@ export default function ClassManagePage() {
   const [deactivatingStudent, setDeactivatingStudent] = useState(null)
   const [memoStudent, setMemoStudent] = useState(null)
 
-  const { data: students = [], isLoading } = useQuery({
+  const { user } = useAuthStore()
+
+  const { data: classes = [], isLoading: classLoading } = useQuery({
+    queryKey: ['my-classes', user?.id],
+    queryFn: () => classesApi.getMyClasses().then(r => r.data),
+  })
+
+  const { data: students = [], isLoading: studentLoading } = useQuery({
     queryKey: ['my-class-students'],
     queryFn: () => studentsApi.getMyClass().then(r => r.data),
+    enabled: classes.length > 0
   })
+
+  const isLoading = classLoading || studentLoading
 
   const activateMutation = useMutation({
     mutationFn: (id) => studentsApi.activate(id),
@@ -48,6 +60,14 @@ export default function ClassManagePage() {
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center mt-20">
           <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+        </div>
+      ) : classes.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4 mt-20">
+          <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center text-4xl">📋</div>
+          <div>
+            <p className="font-black text-gray-900 text-lg">배정된 반이 없습니다</p>
+            <p className="text-gray-400 text-sm mt-2 leading-relaxed">관리자에게 반 배정을 요청해 주세요.</p>
+          </div>
         </div>
       ) : tab === 'memo' ? (
         <MemoTab students={students} onEditMemo={setMemoStudent} />

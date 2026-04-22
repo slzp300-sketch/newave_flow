@@ -1,22 +1,30 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { Send, FileText } from 'lucide-react'
 import { reportsApi } from '../api/reports'
+import { classesApi } from '../api/classes'
+import useAuthStore from '../store/authStore'
 import { toApiDate, formatDate } from '../utils/date'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
 
-const CLASS_ID = 1  // TODO: 교사 담당 반으로 교체
-
 export default function ReportPage() {
+  const { user } = useAuthStore()
   const today = toApiDate()
   const [notes, setNotes]         = useState('')
   const [reportId, setReportId]   = useState(null)
   const [submitted, setSubmitted] = useState(false)
 
+  const { data: classes = [], isLoading: classLoading } = useQuery({
+    queryKey: ['my-classes', user?.id],
+    queryFn:  () => classesApi.getMyClasses().then(r => r.data),
+  })
+
+  const classId = classes[0]?.id
+
   const { mutate: save, isPending: saving } = useMutation({
-    mutationFn: () => reportsApi.save({ classGroupId: CLASS_ID, reportDate: today, specialNotes: notes }),
+    mutationFn: () => reportsApi.save({ classGroupId: classId, reportDate: today, specialNotes: notes }),
     onSuccess:  ({ data }) => setReportId(data.id),
   })
 
@@ -33,6 +41,23 @@ export default function ReportPage() {
         </div>
         <h2 className="text-xl font-black text-gray-900">보고서 제출 완료!</h2>
         <p className="text-gray-400 text-sm">{formatDate(today)} 보고서가 제출되었습니다.</p>
+      </div>
+    )
+  }
+
+  if (classLoading) return <div className="py-20 text-center text-gray-400">불러오는 중...</div>
+
+  if (classes.length === 0) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header title="일일 보고서" showBack />
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
+          <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center text-4xl">📋</div>
+          <div>
+            <p className="font-black text-gray-900 text-lg">배정된 반이 없습니다</p>
+            <p className="text-gray-400 text-sm mt-2 leading-relaxed">관리자에게 반 배정을 요청해 주세요.</p>
+          </div>
+        </div>
       </div>
     )
   }

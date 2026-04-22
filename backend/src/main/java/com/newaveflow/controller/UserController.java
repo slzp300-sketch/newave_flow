@@ -50,7 +50,21 @@ public class UserController {
     @Transactional
     public ResponseEntity<Void> updateRole(@PathVariable Long id, @RequestBody RoleRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        user.updateRole(User.Role.valueOf(request.role()));
+        User.Role newRole = User.Role.valueOf(request.role());
+
+        if (newRole == User.Role.PASTOR || newRole == User.Role.ADMIN) {
+            long count = userRepository.findByIsActiveTrue().stream()
+                .filter(u -> u.getRole() == User.Role.PASTOR || u.getRole() == User.Role.ADMIN)
+                .count();
+
+            boolean isAlreadyPastorOrAdmin = user.getRole() == User.Role.PASTOR || user.getRole() == User.Role.ADMIN;
+
+            if (!isAlreadyPastorOrAdmin && count >= 2) {
+                throw com.newaveflow.exception.AppException.badRequest("최종관리자 및 목사님 권한은 최대 2명까지만 설정할 수 있습니다.");
+            }
+        }
+
+        user.updateRole(newRole);
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }

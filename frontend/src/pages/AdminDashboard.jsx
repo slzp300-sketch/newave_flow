@@ -5,6 +5,14 @@ import Header from '../components/layout/Header'
 
 const MENU = [
   {
+    to: '/admin/pending-users',
+    icon: Users,
+    iconBg: 'bg-amber-50',
+    iconColor: 'text-amber-600',
+    title: '가입 승인 대기',
+    desc: '신규 가입 교사 승인 및 반 배정',
+  },
+  {
     to: '/admin/students',
     icon: Baby,
     iconBg: 'bg-teal-50',

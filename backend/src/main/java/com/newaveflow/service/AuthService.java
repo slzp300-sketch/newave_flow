@@ -25,7 +25,7 @@ public class AuthService {
                 .orElseThrow(() -> AppException.unauthorized("이메일 또는 비밀번호가 올바르지 않습니다."));
 
         if (!user.isActive()) {
-            throw AppException.unauthorized("비활성화된 계정입니다. 관리자에게 문의해주세요.");
+            throw AppException.unauthorized("승인 대기 중이거나 비활성화된 계정입니다. 관리자에게 문의해주세요.");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -54,5 +54,23 @@ public class AuthService {
         String newRefreshToken = tokenProvider.createRefreshToken(userId, user.getEmail(), role);
 
         return LoginResponse.of(newAccessToken, newRefreshToken, user);
+    }
+
+    @Transactional
+    public void register(com.newaveflow.dto.auth.RegisterRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw AppException.badRequest("이미 가입된 이메일입니다.");
+        }
+
+        User user = User.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phone(request.getPhone())
+                .role(User.Role.TEACHER)
+                .isActive(false) // 관리자 승인 대기
+                .build();
+        
+        userRepository.save(user);
     }
 }

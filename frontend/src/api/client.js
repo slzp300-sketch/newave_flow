@@ -1,7 +1,9 @@
 import axios from 'axios'
 import useAuthStore from '../store/authStore'
 
-const API = "https://newaveflow-production.up.railway.app/api";
+const API = import.meta.env.PROD 
+  ? "https://newaveflow-production.up.railway.app/api" 
+  : "/api";
 
 const client = axios.create({
   baseURL: API,
@@ -21,6 +23,9 @@ client.interceptors.response.use(
   async (error) => {
     const original = error.config
     if (error.response?.status === 401 && !original._retry) {
+      if (original.url.includes('/auth/login')) {
+        return Promise.reject(error)
+      }
       original._retry = true
       const { refreshToken, setAuth, clearAuth, user } = useAuthStore.getState()
 

@@ -32,8 +32,6 @@ export default function AdminTeacherManagePage() {
     return users.filter(u => {
       // 본인 제외 (실수 방지)
       if (u.id === currentUser?.id) return false
-      // 기존 ADMIN/PASTOR 제외
-      if (u.role === 'ADMIN' || u.role === 'PASTOR') return false
       
       const searchLower = search.toLowerCase()
       return u.name.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower)
@@ -41,7 +39,15 @@ export default function AdminTeacherManagePage() {
   }, [users, search, currentUser])
 
   const handleRoleChange = (id, newRole) => {
-    if (window.confirm(`${newRole === 'PASTOR' ? '목사님' : newRole === 'EXECUTIVE' ? '임원교사' : '일반교사'} 권한을 부여하시겠습니까?`)) {
+    if (newRole === 'PASTOR') {
+      const pastorOrAdminCount = users.filter(u => u.role === 'PASTOR' || u.role === 'ADMIN').length
+      if (pastorOrAdminCount >= 2) {
+        alert('최종관리자 및 목사님 권한은 최대 2명까지만 설정할 수 있습니다.')
+        return
+      }
+    }
+
+    if (window.confirm(`${newRole === 'PASTOR' ? '목사님' : newRole === 'EXECUTIVE' ? '임원교사' : newRole === 'ADMIN' ? '최종관리자' : '일반교사'} 권한을 부여하시겠습니까?`)) {
       mutation.mutate({ id, role: newRole })
     }
   }
@@ -144,6 +150,14 @@ function UserManagementCard({ user, onUpdate, isUpdating }) {
             variant="pastor"
             onClick={() => onUpdate(user.id, 'PASTOR')}
           />
+          {user.role === 'ADMIN' && (
+            <RoleButton
+              active={true}
+              label="최종관리자"
+              variant="admin"
+              onClick={() => onUpdate(user.id, 'ADMIN')}
+            />
+          )}
         </div>
       </Card>
     </motion.div>
@@ -158,6 +172,9 @@ function RoleButton({ active, label, onClick, variant = 'default' }) {
     pastor: active
       ? 'bg-amber-500 text-white shadow-lg shadow-amber-200'
       : 'bg-amber-50 text-amber-700 hover:bg-amber-100',
+    admin: active
+      ? 'bg-purple-600 text-white shadow-lg shadow-purple-200'
+      : 'bg-purple-50 text-purple-700 hover:bg-purple-100',
   }
 
   return (
@@ -176,6 +193,7 @@ function RoleBadge({ role }) {
     TEACHER:   ['일반교사', 'bg-blue-50 text-blue-600'],
     EXECUTIVE: ['임원교사', 'bg-emerald-50 text-emerald-600'],
     PASTOR:    ['목사님', 'bg-amber-50 text-amber-600'],
+    ADMIN:     ['최종관리자', 'bg-purple-50 text-purple-600'],
   }
   const [label, cls] = map[role] ?? ['사용자', 'bg-gray-50 text-gray-600']
   return <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${cls}`}>{label}</span>

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 import AppLayout from '../components/layout/AppLayout'
 
+import Signup                from '../pages/Signup'
 import Login                 from '../pages/Login'
 import Home                  from '../pages/Home'
 import AttendancePage        from '../pages/AttendancePage'
@@ -28,8 +29,10 @@ import TtsAdminPage                    from '../pages/TtsAdminPage'
 import AdminTeacherManagePage         from '../pages/AdminTeacherManagePage'
 import AdminClassManagePage           from '../pages/AdminClassManagePage'
 import AdminStudentManagePage         from '../pages/AdminStudentManagePage'
+import AdminPendingUsersPage          from '../pages/AdminPendingUsersPage'
 import ManualPreviewPage             from '../pages/ManualPreviewPage'
 import ProfilePage                   from '../pages/ProfilePage'
+import NotificationPage              from '../pages/NotificationPage'
 
 function RequireAuth() {
   const { user } = useAuthStore()
@@ -45,6 +48,7 @@ function RequireRole({ roles }) {
 
 const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
+  { path: '/signup', element: <Signup /> },
   {
     element: <RequireAuth />,
     children: [
@@ -65,6 +69,7 @@ const router = createBrowserRouter([
           { path: '/event-attendance',     element: <EventAttendanceListPage /> },
           { path: '/event-attendance/:id', element: <EventAttendancePage /> },
           { path: '/class-manage',         element: <ClassManagePage /> },
+          { path: '/notifications',        element: <NotificationPage /> },
           { path: '/profile',              element: <ProfilePage /> },
           {
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
@@ -81,6 +86,7 @@ const router = createBrowserRouter([
                 { path: '/admin/teachers',               element: <AdminTeacherManagePage /> },
                 { path: '/admin/class-assignment',       element: <AdminClassManagePage /> },
                 { path: '/admin/students',               element: <AdminStudentManagePage /> },
+                { path: '/admin/pending-users',          element: <AdminPendingUsersPage /> },
                 { path: '/admin/manual-preview/:type',    element: <ManualPreviewPage /> },
              ],
           },

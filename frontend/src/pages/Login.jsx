@@ -98,9 +98,18 @@ export default function Login() {
         </form>
       </div>
 
-      <p className="text-primary-300 text-xs mt-6">
-        계정 문의: 담당 임원에게 연락해주세요
-      </p>
+      <div className="text-center mt-6">
+        <p className="text-primary-300 text-sm">
+          계정이 없으신가요?{' '}
+          <button 
+            type="button"
+            onClick={() => navigate('/signup')} 
+            className="text-white font-bold underline underline-offset-4"
+          >
+            회원가입
+          </button>
+        </p>
+      </div>
     </div>
   )
 }

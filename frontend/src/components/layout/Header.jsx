@@ -1,16 +1,22 @@
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, LogOut } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { ChevronLeft, LogOut, Bell } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '../../store/authStore'
+import { notificationApi } from '../../api/notifications'
 
-export default function Header({ title, showBack = false, onBack, showLogout = false, right }) {
+export default function Header({ title, showBack = false, onBack, showLogout = false, showNotification = true, right }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { clearAuth } = useAuthStore()
+  const { user, clearAuth } = useAuthStore()
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unread-notifications'],
+    queryFn: () => notificationApi.getUnreadCount().then(r => r.data),
+    enabled: !!user && showNotification,
+    refetchInterval: 30000 // 30초마다 갱신
+  })
 
   const handleLogout = () => {
-    // 헤더에서의 로그아웃은 즉시 처리가 아닌 마이페이지로 이동하거나 간소화된 흐름을 가질 수 있습니다.
-    // 여기서는 사용자 요청대로 동작 개선을 위해 QueryClient 초기화를 추가합니다.
     if (window.confirm('로그아웃 하시겠습니까?')) {
       queryClient.clear()
       clearAuth()
@@ -32,6 +38,17 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
       
       <div className="flex items-center gap-2">
         {right}
+        {user && showNotification && (
+          <button
+            onClick={() => navigate('/notifications')}
+            className="relative p-1.5 rounded-xl text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-all"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            )}
+          </button>
+        )}
         {showLogout && (
           <button
             onClick={handleLogout}
