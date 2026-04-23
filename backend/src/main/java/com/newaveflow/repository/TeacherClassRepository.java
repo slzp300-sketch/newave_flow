@@ -25,4 +25,8 @@ public interface TeacherClassRepository extends JpaRepository<TeacherClass, Long
     @Modifying
     @Transactional
     void deleteByClassGroup_IdAndTeacher_Id(Long classGroupId, Long teacherId);
+
+    @Modifying
+    @Transactional
+    void deleteByClassGroup_Id(Long classGroupId);
 }

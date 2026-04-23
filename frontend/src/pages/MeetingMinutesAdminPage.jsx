@@ -300,41 +300,67 @@ export default function MeetingMinutesAdminPage() {
                             exit={{ opacity: 0, height: 0 }}
                             className="pt-4 border-t border-gray-100 overflow-hidden"
                           >
-                            <div className="overflow-hidden rounded-2xl border border-gray-100">
-                              <table className="w-full text-xs">
-                                <thead className="bg-gray-50 text-gray-400 font-black">
-                                  <tr>
-                                    <th className="px-4 py-3 text-left">이름</th>
-                                    <th className="px-4 py-3 text-center">출석</th>
-                                    <th className="px-4 py-3 text-center">확인</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 bg-white">
-                                  {selectedStatus.data.map(s => (
-                                    <tr key={s.teacherId}>
-                                      <td className="px-4 py-3 font-bold text-gray-700">{s.teacherName}</td>
-                                      <td className="px-4 py-3 text-center">
-                                        {s.attendanceStatus === 'ATTEND' ? (
-                                          <span className="text-emerald-500 font-black">참석</span>
-                                        ) : s.attendanceStatus === 'ABSENT' ? (
-                                          <span className="text-red-400 font-black">불참</span>
-                                        ) : (
-                                          <span className="text-gray-300 font-black">-</span>
-                                        )}
-                                      </td>
-                                      <td className="px-4 py-3 text-center">
-                                        {s.confirmed || s.attendanceStatus === 'ATTEND' ? (
-                                          <CheckCircle2 size={16} className="mx-auto text-emerald-500" />
-                                        ) : (
-                                          s.attendanceStatus === 'ABSENT' ? (
-                                            <XCircle size={16} className="mx-auto text-red-300" />
-                                          ) : <span className="text-gray-200">-</span>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                            <div className="flex flex-col gap-4 p-2">
+                              {(() => {
+                                const GRADE_ORDER = ['유치', '초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '미분류']
+                                const grouped = {}
+                                selectedStatus.data.forEach(s => {
+                                  const g = s.teacherGrade || '미분류'
+                                  if (!grouped[g]) grouped[g] = []
+                                  grouped[g].push(s)
+                                })
+                                const sortedGrades = Object.keys(grouped).sort((a, b) => {
+                                  const ai = GRADE_ORDER.indexOf(a); const bi = GRADE_ORDER.indexOf(b)
+                                  if (ai === -1 && bi === -1) return a.localeCompare(b)
+                                  if (ai === -1) return 1
+                                  if (bi === -1) return -1
+                                  return ai - bi
+                                })
+
+                                return sortedGrades.map(grade => (
+                                  <div key={grade} className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-1 h-3 bg-violet-300 rounded-full" />
+                                      <h4 className="text-xs font-black text-gray-700">{grade}</h4>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {grouped[grade].map(s => (
+                                        <div key={s.teacherId} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm">
+                                          <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-black text-sm text-gray-900">{s.teacherName}</span>
+                                              {s.attendanceStatus === 'ATTEND' ? (
+                                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">참석</span>
+                                              ) : s.attendanceStatus === 'ABSENT' ? (
+                                                <span className="text-[10px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">불참</span>
+                                              ) : (
+                                                <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md">미제출</span>
+                                              )}
+                                            </div>
+                                            {s.attendanceStatus === 'ABSENT' && s.attendanceReason && (
+                                              <p className="text-[11px] text-gray-500 font-medium">사유: {s.attendanceReason}</p>
+                                            )}
+                                          </div>
+                                          <div className="flex flex-col items-end gap-1">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">회의록 확인</p>
+                                            {s.confirmed || s.attendanceStatus === 'ATTEND' ? (
+                                              <div className="flex items-center gap-1 text-emerald-500">
+                                                <CheckCircle2 size={14} />
+                                                <span className="text-[11px] font-black">{s.attendanceStatus === 'ATTEND' ? '참석자(면제)' : '확인 완료'}</span>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-center gap-1 text-red-400">
+                                                <XCircle size={14} />
+                                                <span className="text-[11px] font-black">미확인</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))
+                              })()}
                             </div>
                           </motion.div>
                         )}

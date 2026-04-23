@@ -28,7 +28,11 @@ public class MeetingAttendance {
     @Column(length = 50)
     private String status;
 
-    public void updateStatus(String status) {
+    @Column(columnDefinition = "TEXT")
+    private String reason;
+
+    public void updateStatus(String status, String reason) {
         this.status = status;
+        this.reason = reason;
     }
 }

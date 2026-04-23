@@ -61,6 +61,10 @@ public class PrayerVoteService {
         return prayerVoteRepository.findAbsentByWeekStart(weekStart);
     }
 
+    public List<PrayerVote> getAllVotes(LocalDate weekStart) {
+        return prayerVoteRepository.findAllByWeekStart(weekStart);
+    }
+
     public List<com.newaveflow.dto.prayer.PrayerVoteResponse> getAbsentListResponses(LocalDate weekStart) {
         List<PrayerVote> votes = prayerVoteRepository.findAbsentByWeekStart(weekStart);
         return votes.stream().map(v -> {

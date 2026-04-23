@@ -26,4 +26,14 @@ public interface PrayerVoteRepository extends JpaRepository<PrayerVote, Long> {
         ORDER BY t.name
         """)
     List<PrayerVote> findAbsentByWeekStart(@Param("weekStart") LocalDate weekStart);
+
+    @Query("""
+        SELECT v FROM PrayerVote v
+        JOIN FETCH v.teacher t
+        LEFT JOIN FETCH t.teacherClasses tc
+        LEFT JOIN FETCH tc.classGroup
+        WHERE v.weekStart = :weekStart
+        ORDER BY t.name
+        """)
+    List<PrayerVote> findAllByWeekStart(@Param("weekStart") LocalDate weekStart);
 }

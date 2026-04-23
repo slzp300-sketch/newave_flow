@@ -23,6 +23,7 @@ import RosterPage               from '../pages/RosterPage'
 import EventAttendanceListPage  from '../pages/EventAttendanceListPage'
 import EventAttendancePage      from '../pages/EventAttendancePage'
 import EventAttendanceAdminPage from '../pages/EventAttendanceAdminPage'
+import AdminMeetingAttendancePage from '../pages/AdminMeetingAttendancePage'
 import ClassManagePage                  from '../pages/ClassManagePage'
 import DeactivationRequestsAdminPage   from '../pages/DeactivationRequestsAdminPage'
 import TtsAdminPage                    from '../pages/TtsAdminPage'
@@ -79,12 +80,12 @@ const router = createBrowserRouter([
               { path: '/admin/calendar',    element: <CalendarAdminPage /> },
               { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },
               { path: '/admin/minutes',     element: <MeetingMinutesAdminPage /> },
-               { path: '/admin/prayer',           element: <PrayerAbsentAdminPage /> },
-               { path: '/admin/event-attendance',        element: <EventAttendanceAdminPage /> },
-                { path: '/admin/deactivation-requests',   element: <DeactivationRequestsAdminPage /> },
-                { path: '/admin/tts',                    element: <TtsAdminPage /> },
-                { path: '/admin/teachers',               element: <AdminTeacherManagePage /> },
-                { path: '/admin/class-assignment',       element: <AdminClassManagePage /> },
+              { path: '/admin/meeting-attendance', element: <AdminMeetingAttendancePage /> },
+              { path: '/admin/prayer',           element: <PrayerAbsentAdminPage /> },
+              { path: '/admin/event-attendance', element: <EventAttendanceAdminPage /> },
+              { path: '/admin/deactivation-requests', element: <DeactivationRequestsAdminPage /> },
+              { path: '/admin/tts',              element: <TtsAdminPage /> },
+              { path: '/admin/class-assignment', element: <AdminClassManagePage /> },
                 { path: '/admin/students',               element: <AdminStudentManagePage /> },
                 { path: '/admin/pending-users',          element: <AdminPendingUsersPage /> },
                 { path: '/admin/manual-preview/:type',    element: <ManualPreviewPage /> },

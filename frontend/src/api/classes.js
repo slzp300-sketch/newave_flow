@@ -8,4 +8,6 @@ export const classesApi = {
     client.post(`/classes/${classId}/assign-teacher/${userId}?isPrimary=${isPrimary}`),
   removeTeacher: (classId, userId) => 
     client.delete(`/classes/${classId}/remove-teacher/${userId}`),
+  updateTeachers: (classId, assignments) => 
+    client.put(`/classes/${classId}/teachers`, { assignments }),
 }

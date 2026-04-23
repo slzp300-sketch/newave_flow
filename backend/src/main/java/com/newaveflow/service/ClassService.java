@@ -116,4 +116,26 @@ public class ClassService {
     public void removeTeacher(Long classId, Long userId) {
         teacherClassRepository.deleteByClassGroup_IdAndTeacher_Id(classId, userId);
     }
+
+    @Transactional
+    public void updateTeachers(Long classId, com.newaveflow.dto.classes.TeacherAssignmentRequest request) {
+        ClassGroup classGroup = classGroupRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("반을 찾을 수 없습니다."));
+
+        // 기존 배정 모두 삭제
+        teacherClassRepository.deleteByClassGroup_Id(classId);
+
+        // 새로운 배정 추가
+        for (var assignment : request.assignments()) {
+            User user = userRepository.findById(assignment.userId())
+                    .orElseThrow(() -> new RuntimeException("교사를 찾을 수 없습니다. ID: " + assignment.userId()));
+
+            TeacherClass tc = TeacherClass.builder()
+                    .teacher(user)
+                    .classGroup(classGroup)
+                    .isPrimary(assignment.isPrimary())
+                    .build();
+            teacherClassRepository.save(tc);
+        }
+    }
 }

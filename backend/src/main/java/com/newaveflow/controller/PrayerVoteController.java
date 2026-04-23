@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/prayer-votes")
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class PrayerVoteController {
 
     private final PrayerVoteService prayerVoteService;
@@ -61,6 +62,24 @@ public class PrayerVoteController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    // 관리자: 전체 투표 명단 조회 (날짜별)
+    @GetMapping("/admin")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<List<PrayerVoteResponse>> getAllVotes(
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate week) {
+        log.info("Admin fetching all prayer votes for week: {}", week);
+        List<com.newaveflow.entity.PrayerVote> votes = prayerVoteService.getAllVotes(week);
+        log.info("Found {} votes for week: {}", votes.size(), week);
+        List<PrayerVoteResponse> responses = votes.stream()
+                .map(v -> {
+                    log.debug("Mapping vote for teacher: {}", v.getTeacher().getName());
+                    return new PrayerVoteResponse(v);
+                })
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     // 관리자: 불참 명단 조회 (날짜별)

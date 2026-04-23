@@ -69,8 +69,13 @@ client.interceptors.response.use(
           const { data } = await axios.post(`${API}/auth/refresh`, { refreshToken })
           setAuth(data.user ?? user, data.accessToken, data.refreshToken)
           client.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`
+          
           isRefreshing = false
           onRefreshed(data.accessToken)
+          
+          // 리프레시를 트리거한 원래 요청 재실행
+          original.headers.Authorization = `Bearer ${data.accessToken}`
+          return client(original)
         } catch (err) {
           isRefreshing = false
           refreshSubscribers = []
@@ -80,7 +85,7 @@ client.interceptors.response.use(
         }
       }
 
-      // Refresh 진행 중이면, 완료될 때까지 대기
+      // 이미 다른 요청에 의해 Refresh가 진행 중이면, 완료될 때까지 대기
       return new Promise((resolve) => {
         subscribeTokenRefresh((newToken) => {
           original.headers.Authorization = `Bearer ${newToken}`

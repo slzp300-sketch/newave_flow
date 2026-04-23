@@ -147,18 +147,9 @@ function useEvangelismStatus() {
 // ────────── Teacher View ──────────
 function TeacherView({ navigate }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
-  const ttsSubmitted          = useTTSSubmitted()
-  const weekRange             = getCurrentWeekRange()
-  const evangelism            = useEvangelismStatus()
-  const attendanceEvents      = useAttendanceRequiredEvents()
+  const [openGroup, setOpenGroup] = useState('주간 필수 보고')
   
-  const meetingChecked        = useMeetingChecked()
-  const weeklyStatus          = useWeeklyStatus()
-  const minutesDone           = weeklyStatus.unconfirmedMinutesCount === 0
-  const eventAttendanceDone   = attendanceEvents.length === 0 ? true : false
-
-  // 주간 체크 올클리어 판별
-  const allWeeklyChecksDone = ttsSubmitted && meetingChecked && weeklyStatus.attendanceSubmittedThisWeek && minutesDone && eventAttendanceDone
+  const evangelism = useEvangelismStatus()
 
   useEffect(() => {
     fetchWeeklyEvents()
@@ -175,48 +166,64 @@ function TeacherView({ navigate }) {
     }
   }
 
-  const evangelismDesc = (() => {
-    if (!evangelism?.nextSchedule) return '배정된 전도 일정을 확인하세요'
-    if (evangelism.nextSchedule.status === 'ACTIVE') return '이번 주 전도 당번입니다!'
-    const d = Math.ceil((new Date(evangelism.nextSchedule.scheduledDate) - new Date()) / 86400000)
-    return `다음 전도까지 D-${Math.max(0, d)}`
-  })()
-
   const isEvangelismActive = evangelism?.nextSchedule?.status === 'ACTIVE'
 
-  const tasks = [
+  const TEACHER_GROUPS = [
     {
-      id: 'weekly-check',
+      title: '주간 필수 보고',
       icon: CheckSquare,
-      color: allWeeklyChecksDone ? 'bg-emerald-100 text-emerald-600' : 'bg-primary-50 text-primary-600',
-      title: '주간 체크',
-      desc: allWeeklyChecksDone ? '이번 주 필수 체크 항목 모두 완료!' : '출석, TTS, 주간 모임 등 필수 항목을 체크하세요',
-      done: allWeeklyChecksDone,
-      path: '/checklist'
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+      desc: '출석체크, TTS, 주간모임',
+      items: [
+        { to: '/attendance', icon: ClipboardList, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', title: '출석', desc: '주일 예배 반 학생 출석체크' },
+        { to: '/tts', icon: CheckSquare, iconBg: 'bg-teal-50', iconColor: 'text-teal-600', title: 'TTS', desc: 'Teacher Training Sheet 작성' },
+        { to: '/meeting', icon: Users, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', title: '주간모임', desc: '기도모임 투표 및 토요일 교사회의 참석체크' },
+      ]
     },
-    { id: 'class-manage', icon: BookOpen,     color: 'bg-indigo-50 text-indigo-600', title: '반 관리',   desc: '학생 정보 수정 및 재적/제적 관리',    done: false, path: '/class-manage' },
     {
-      id: 'evangelism',
-      icon: MapPin,
-      color: isEvangelismActive ? 'bg-red-100 text-red-600' : 'bg-orange-50 text-orange-500',
-      title: '전도 로테이션',
-      desc: evangelismDesc,
-      done: false,
-      path: '/evangelism',
-      badge: isEvangelismActive ? '당번' : null,
+      title: '모임 및 일정',
+      icon: Calendar,
+      color: 'text-rose-600',
+      bg: 'bg-rose-50',
+      desc: '행사일정, 회의록, 전도 로테이션',
+      items: [
+        { to: '/events', icon: Calendar, iconBg: 'bg-rose-50', iconColor: 'text-rose-600', title: '행사일정', desc: '등록된 교회 주요 행사 확인' },
+        { to: '/minutes', icon: FileText, iconBg: 'bg-violet-50', iconColor: 'text-violet-600', title: '회의록 및 영상', desc: '교사 회의록 확인 및 영상 시청' },
+        { 
+          to: '/evangelism', icon: MapPin, 
+          iconBg: isEvangelismActive ? 'bg-red-50' : 'bg-orange-50', 
+          iconColor: isEvangelismActive ? 'text-red-600' : 'text-orange-500', 
+          title: '전도 로테이션', desc: '전도 조 편성 및 일정 확인' 
+        },
+      ]
     },
-    { id: 'events',     icon: Calendar,      color: 'bg-rose-50 text-rose-600',     title: '행사 일정',     desc: '등록된 교회 행사를 확인하세요',     done: false, path: '/events' }
+    {
+      title: '학생 및 반 관리',
+      icon: BookOpen,
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50',
+      desc: '반 관리, 행사 출석 체크',
+      items: [
+        { to: '/class-manage', icon: BookOpen, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600', title: '반관리', desc: '학생 정보 수정 및 재적/제적 관리' },
+        { to: '/event-attendance', icon: CheckCircle2, iconBg: 'bg-sky-50', iconColor: 'text-sky-600', title: '행사 출석 체크', desc: '행사별 학생 출석체크 및 관리' },
+      ]
+    }
   ]
+
+  const toggleGroup = (title) => {
+    setOpenGroup(prev => prev === title ? null : title)
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-4"
     >
       <div className="flex items-center justify-between px-1">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Weekly Summary</p>
-        <p className="text-[10px] font-bold text-gray-400">{weekRange}</p>
+        <p className="text-[10px] font-bold text-gray-400">{getCurrentWeekRange()}</p>
       </div>
 
       {/* 이번 주 일정 요약 */}
@@ -247,7 +254,7 @@ function TeacherView({ navigate }) {
               }[e.color] || 'bg-primary-500'
 
               return (
-                <div key={e.id} className="flex items-center gap-3">
+                <div key={e.id} className="flex items-center gap-3 bg-white/40 p-2.5 rounded-xl border border-white/60">
                   <span className={`w-1 h-3 rounded-full ${dotColor}`} />
                   <p className="text-xs font-black text-gray-700 truncate">{e.title}</p>
                   <span className="text-[10px] font-bold text-gray-400 ml-auto">
@@ -257,57 +264,81 @@ function TeacherView({ navigate }) {
               )
             })
           )}
-          {weeklyEvents.length > 2 && (
-            <p className="text-[10px] text-rose-400 font-black mt-1">+ {weeklyEvents.length - 2}개의 일정이 더 있습니다</p>
-          )}
         </div>
       </Card>
 
       <div className="flex items-center justify-between px-1 mt-2">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Tasks</p>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Quick Menu</p>
       </div>
 
-      {tasks.map((t, idx) => (
-        <motion.div
-          key={t.id}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: idx * 0.1 }}
-        >
-          <TaskCard {...t} navigate={navigate} />
-        </motion.div>
-      ))}
+      {TEACHER_GROUPS.map((group, idx) => {
+        const isOpen = openGroup === group.title
+        const GroupIcon = group.icon
+        
+        return (
+          <motion.div
+            key={group.title}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.1 }}
+            className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+          >
+            <button 
+              onClick={() => toggleGroup(group.title)}
+              className="w-full flex items-center justify-between p-5 active:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-4 text-left">
+                <div className={`w-12 h-12 rounded-2xl ${group.bg} flex items-center justify-center flex-shrink-0`}>
+                  <GroupIcon size={24} className={group.color} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-900">{group.title}</h3>
+                  <p className="text-[11px] font-medium text-gray-400 mt-0.5">{group.desc}</p>
+                </div>
+              </div>
+              <div className={`p-2 rounded-full transition-transform duration-300 ${isOpen ? 'rotate-180 bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
+                <motion.div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </motion.div>
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                >
+                  <div className="px-5 pb-5 pt-1 flex flex-col gap-2">
+                    {group.items.map((item) => {
+                      const ItemIcon = item.icon
+                      return (
+                        <button
+                          key={item.to}
+                          onClick={() => navigate(item.to)}
+                          className="flex items-center gap-4 p-3.5 rounded-2xl border border-gray-50 bg-gray-50/50 hover:bg-gray-100/80 active:scale-[0.98] transition-all group text-left w-full"
+                        >
+                          <div className={`w-10 h-10 rounded-xl ${item.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                            <ItemIcon size={18} className={item.iconColor} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-black text-gray-800 text-sm">{item.title}</p>
+                            <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.desc}</p>
+                          </div>
+                          <span className="text-gray-300 text-lg group-hover:text-gray-500 transition-colors">›</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )
+      })}
     </motion.div>
-  )
-}
-
-function TaskCard({ icon: Icon, color, title, desc, done, path, navigate, badge }) {
-  return (
-    <Card
-      onClick={() => navigate(path)}
-      className="group relative flex items-center justify-between p-5"
-    >
-      <div className="flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-110 ${color}`}>
-          <Icon size={22} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-black text-gray-900 text-base">{title}</p>
-            {badge && (
-               <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-red-100 text-red-600">{badge}</span>
-            )}
-          </div>
-          <p className={`text-[11px] font-medium mt-0.5 ${done ? 'text-emerald-500' : 'text-gray-400'}`}>{desc}</p>
-        </div>
-      </div>
-      <div className="flex-shrink-0 flex items-center gap-2 ml-3">
-        {done
-          ? <CheckCircle2 size={20} className="text-emerald-500" />
-          : <ChevronRight size={18} className="text-gray-300 group-hover:translate-x-1 transition-transform" />
-        }
-      </div>
-    </Card>
   )
 }
 
@@ -352,48 +383,7 @@ function AdminView({ navigate, today }) {
       animate={{ opacity: 1 }}
       className="flex flex-col gap-5"
     >
-      <SectionLabel>Today's Pulse</SectionLabel>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-5 flex flex-col justify-between h-36 bg-white overflow-hidden relative">
-           <div className="absolute top-0 right-0 p-4 opacity-10">
-              <TrendingUp size={48} className="text-primary-600" />
-           </div>
-           <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Reports</p>
-              <p className="text-3xl font-black text-primary-600 tracking-tighter">{submitRate}%</p>
-           </div>
-           <div className="w-full bg-primary-50 h-2 rounded-full mt-auto overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${submitRate}%` }}
-                className="h-full bg-primary-500 rounded-full" 
-              />
-           </div>
-        </Card>
-
-        <div className="grid grid-rows-2 gap-3">
-          <Card className="p-4 flex items-center justify-between group">
-             <div className="flex flex-col">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Teachers</p>
-                <p className="text-xl font-black text-gray-900">{data?.totalTeachers ?? '-'}</p>
-             </div>
-             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-500 transition-colors">
-                <Users size={16} />
-             </div>
-          </Card>
-          <Card className="p-4 flex items-center justify-between group">
-             <div className="flex flex-col">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pending</p>
-                <p className="text-xl font-black text-gray-900">{pendingRequests.length}</p>
-             </div>
-             <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${pendingRequests.length > 0 ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400'}`}>
-                <UserMinusIcon size={16} />
-             </div>
-          </Card>
-        </div>
-      </div>
 
       {/* Management Menu Navigation Card */}
       <Card 

@@ -447,11 +447,25 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
             className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">{cls.grade}</span>
-                <p className="font-black text-sm text-gray-900">{cls.name}</p>
+              <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md flex-shrink-0">{cls.grade}</span>
+                  <p className="font-black text-sm text-gray-900 truncate">{cls.name}</p>
+                </div>
+                {((cls.teachers || []).length > 0) && (
+                  <p className="text-[10px] text-gray-400 font-bold truncate pl-1">
+                    {(() => {
+                      const pt = cls.teachers.find(t => t.isPrimary)
+                      const st = cls.teachers.filter(t => !t.isPrimary)
+                      return [
+                        pt ? `담임: ${pt.name}` : null,
+                        st.length > 0 ? `부담임: ${st.map(t => t.name).join(', ')}` : null
+                      ].filter(Boolean).join(' / ')
+                    })()}
+                  </p>
+                )}
               </div>
-              <span className="text-[11px] text-gray-400 font-bold">{cls.students.length}명</span>
+              <span className="text-[11px] text-gray-400 font-bold flex-shrink-0">{cls.students.length}명</span>
             </div>
             <div className="p-3 flex flex-wrap gap-2">
               {cls.students.length === 0 ? (
@@ -509,13 +523,18 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
 
   const gradeGroups = useMemo(() => {
     const map = {}
-    roster.forEach(cls => {
+    // 학생의 학년과 일치하는 반만 필터링 (학년 정보가 없는 경우 전체 노출)
+    const filteredRoster = student.grade 
+      ? roster.filter(cls => cls.grade === student.grade)
+      : roster
+
+    filteredRoster.forEach(cls => {
       const g = cls.grade || '미분류'
       if (!map[g]) map[g] = []
       map[g].push(cls)
     })
     return map
-  }, [roster])
+  }, [roster, student.grade])
 
   const sortedGrades = sortGrades(Object.keys(gradeGroups))
 

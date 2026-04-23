@@ -1,7 +1,9 @@
 package com.newaveflow.controller;
 
 import com.newaveflow.dto.auth.LoginResponse.UserInfo;
+import com.newaveflow.entity.TeacherClass;
 import com.newaveflow.entity.User;
+import com.newaveflow.repository.TeacherClassRepository;
 import com.newaveflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,27 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final TeacherClassRepository teacherClassRepository;
+
+    /** User.grade가 없으면 TeacherClass → ClassGroup.ageGroup 에서 학년 추출 */
+    private String resolveGrade(User u) {
+        String g = u.getGrade();
+        if (g != null && !g.isBlank()) return g;
+        // 배정된 반의 ageGroup 에서 학년 가져오기
+        List<TeacherClass> tcs = teacherClassRepository.findByTeacherId(u.getId());
+        if (tcs == null || tcs.isEmpty()) return "미분류";
+        String ageGroup = tcs.get(0).getClassGroup().getAgeGroup();
+        return (ageGroup != null && !ageGroup.isBlank()) ? ageGroup : "미분류";
+    }
+
+    private String extractGradeFromDesc(String desc) {
+        if (desc == null || desc.isBlank()) return "미분류";
+        String clean = desc.replaceAll("\\s+", "");
+        if (clean.startsWith("유치")) return "유치";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("([초중고][1-6])").matcher(clean);
+        if (m.find()) return m.group(1);
+        return "미분류";
+    }
 
     @GetMapping("/me")
     public ResponseEntity<UserInfo> getMe(@AuthenticationPrincipal User currentUser) {
@@ -24,24 +47,26 @@ public class UserController {
         return ResponseEntity.ok(new UserInfo(
             currentUser.getId(), currentUser.getName(),
             currentUser.getEmail(), currentUser.getRole().name(),
-            currentUser.getGrade()
+            currentUser.getGrade(), currentUser.isActive()
         ));
     }
 
     @GetMapping("/teachers")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<UserInfo>> getTeachers() {
         List<UserInfo> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER)
             .stream()
-            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), u.getGrade()))
+            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive()))
             .toList();
         return ResponseEntity.ok(teachers);
     }
 
     @GetMapping("")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<UserInfo>> getAllUsers() {
         List<UserInfo> users = userRepository.findByIsActiveTrue()
             .stream()
-            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), u.getGrade()))
+            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive()))
             .toList();
         return ResponseEntity.ok(users);
     }

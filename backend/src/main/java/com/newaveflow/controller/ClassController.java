@@ -52,4 +52,13 @@ public class ClassController {
         classService.removeTeacher(classId, userId);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/{classId}/teachers")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<Void> updateTeachers(
+            @PathVariable Long classId,
+            @RequestBody com.newaveflow.dto.classes.TeacherAssignmentRequest request) {
+        classService.updateTeachers(classId, request);
+        return ResponseEntity.ok().build();
+    }
 }

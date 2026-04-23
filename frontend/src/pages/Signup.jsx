@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import { authApi } from '../api/auth'
 import Button from '../components/common/Button'
 import Header from '../components/layout/Header'
@@ -12,11 +12,13 @@ export default function Signup() {
     window.scrollTo(0, 0)
   }, [])
 
-  const [form, setForm]       = useState({ name: '', email: '', password: '', phone: '' })
-  const [showPw, setShowPw]   = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
-  const [success, setSuccess] = useState(false)
+  const [form, setForm]         = useState({ name: '', email: '', password: '', phone: '' })
+  const [confirmPw, setConfirmPw] = useState('')
+  const [showPw, setShowPw]     = useState(false)
+  const [showConfirmPw, setShowConfirmPw] = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [success, setSuccess]   = useState(false)
 
   const [nameStatus, setNameStatus]   = useState('idle') // idle, loading, available, duplicate
   const [emailStatus, setEmailStatus] = useState('idle')
@@ -63,11 +65,15 @@ export default function Signup() {
     return () => clearTimeout(timer)
   }, [form.email])
 
+  const pwMatch = confirmPw === '' ? null : form.password === confirmPw
+
   const isSubmitDisabled = loading || 
                            nameStatus === 'duplicate' || 
                            emailStatus === 'duplicate' || 
                            nameStatus === 'loading' || 
-                           emailStatus === 'loading'
+                           emailStatus === 'loading' ||
+                           !form.password ||
+                           pwMatch === false
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -173,6 +179,41 @@ export default function Signup() {
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">비밀번호 확인</label>
+            <div className="relative">
+              <input
+                type={showConfirmPw ? 'text' : 'password'}
+                value={confirmPw}
+                onChange={(e) => setConfirmPw(e.target.value)}
+                placeholder="비밀번호를 한 번 더 입력하세요"
+                required
+                className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 text-sm font-medium pr-12 transition ${
+                  pwMatch === false ? 'border-red-300 focus:ring-red-400' :
+                  pwMatch === true  ? 'border-emerald-300 focus:ring-emerald-400' :
+                                      'border-gray-200 focus:ring-primary-500'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPw(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 p-1"
+              >
+                {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {pwMatch === false && (
+              <p className="flex items-center gap-1 text-red-500 text-xs font-bold mt-1.5 px-1">
+                <XCircle size={12} /> 비밀번호가 일치하지 않습니다.
+              </p>
+            )}
+            {pwMatch === true && (
+              <p className="flex items-center gap-1 text-emerald-500 text-xs font-bold mt-1.5 px-1">
+                <CheckCircle2 size={12} /> 비밀번호가 일치합니다.
+              </p>
+            )}
           </div>
 
           <div>

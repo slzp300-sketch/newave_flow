@@ -87,20 +87,23 @@ public class EventDto {
 
     public record MeetingAttendanceRequest(
             @NotNull LocalDate meetingDate,
-            @NotNull String status
+            @NotNull String status,
+            String reason
     ) {}
 
     public record MeetingAttendanceResponse(
             Long teacherId,
             LocalDate meetingDate,
-            String status
+            String status,
+            String reason
     ) {
         public static MeetingAttendanceResponse from(MeetingAttendance attendance) {
-            if (attendance == null) return new MeetingAttendanceResponse(null, null, null);
+            if (attendance == null) return new MeetingAttendanceResponse(null, null, null, null);
             return new MeetingAttendanceResponse(
                     attendance.getTeacher().getId(),
                     attendance.getMeetingDate(),
-                    attendance.getStatus()
+                    attendance.getStatus(),
+                    attendance.getReason()
             );
         }
     }

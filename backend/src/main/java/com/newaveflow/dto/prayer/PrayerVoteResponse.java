@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PrayerVoteResponse {
     private Long id;
+    private Long teacherId;
     private String teacherName;
     private String teacherGrade;
     private LocalDate weekStart;
@@ -27,6 +28,7 @@ public class PrayerVoteResponse {
     public PrayerVoteResponse(PrayerVote vote, String explicitClassName) {
         this.id = vote.getId();
         if (vote.getTeacher() != null) {
+            this.teacherId = vote.getTeacher().getId();
             this.teacherName = vote.getTeacher().getName();
             String grade = vote.getTeacher().getGrade();
             

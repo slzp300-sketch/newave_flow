@@ -30,7 +30,9 @@ public class MeetingMinuteController {
 
     @GetMapping
     public ResponseEntity<List<MeetingMinuteDto>> getAll(@AuthenticationPrincipal User currentUser) {
-        boolean isAdmin = currentUser.getRole() == User.Role.PASTOR || currentUser.getRole() == User.Role.EXECUTIVE;
+        boolean isAdmin = currentUser.getRole() == User.Role.PASTOR || 
+                          currentUser.getRole() == User.Role.EXECUTIVE || 
+                          currentUser.getRole() == User.Role.ADMIN;
         
         List<MeetingMinute> minutes = isAdmin 
             ? meetingMinuteRepository.findAllByOrderByMeetingDateDesc()
@@ -121,12 +123,15 @@ public class MeetingMinuteController {
                 .orElse(null);
             
             String attendanceStatus = (attendance != null) ? attendance.getStatus() : "UNKNOWN";
+            String attendanceReason = (attendance != null) ? attendance.getReason() : "";
             boolean confirmed = confirmMap.containsKey(t.getId());
             
             Map<String, Object> statusMap = new HashMap<>();
             statusMap.put("teacherId", t.getId());
             statusMap.put("teacherName", t.getName());
+            statusMap.put("teacherGrade", t.getGrade());
             statusMap.put("attendanceStatus", attendanceStatus);
+            statusMap.put("attendanceReason", attendanceReason);
             statusMap.put("confirmed", confirmed);
             statusMap.put("confirmedAt", confirmed ? confirmMap.get(t.getId()).getConfirmedAt() : "");
             

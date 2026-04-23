@@ -27,10 +27,8 @@ export default function AdminClassManagePage() {
     queryFn: () => usersApi.getAll().then(r => r.data),
   })
 
-  // 모달에 전달할 최신 클래스 정보 (roster가 갱신되면 자동으로 같이 갱신됨)
   const activeClass = roster.find(c => c.id === selectedClassId)
 
-  // 학년별로 그룹화
   const groupedClasses = roster.reduce((acc, cls) => {
     if (!acc[cls.grade]) acc[cls.grade] = []
     acc[cls.grade].push(cls)
@@ -54,11 +52,16 @@ export default function AdminClassManagePage() {
     ? Object.entries(groupedClasses)
     : [[activeGrade, groupedClasses[activeGrade] || []]]
 
+  const assignedOtherClassUserIds = new Set(
+    roster
+      .filter(c => c.id !== selectedClassId)
+      .flatMap(c => (c.teachers || []).map(t => t.id))
+  )
+
   return (
     <div className="flex flex-col min-h-screen pb-24 bg-gray-50/50">
       <Header title="반 담임/부담임 관리" showBack />
 
-      {/* 학년 필터 탭 */}
       {!isLoading && (
         <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 sticky top-[64px] z-10 shadow-sm">
           {grades.map(g => (
@@ -110,13 +113,13 @@ export default function AdminClassManagePage() {
         </div>
       )}
       
-      {/* ... (Modal logic remains) */}
       <AnimatePresence>
         {activeClass && (
           <AssignmentModal 
             key={activeClass.id}
             cls={activeClass} 
             allUsers={users}
+            assignedOtherClassUserIds={assignedOtherClassUserIds}
             onClose={() => setSelectedClassId(null)}
             onUpdated={() => {
               queryClient.invalidateQueries({ queryKey: ['admin-roster-full'] })
@@ -172,34 +175,65 @@ function ClassAssignmentCard({ cls, onManage }) {
   )
 }
 
-function AssignmentModal({ cls, allUsers, onClose, onUpdated }) {
+function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, onUpdated }) {
+  const [localTeachers, setLocalTeachers] = useState(cls.teachers || [])
   const [isAdding, setIsAdding] = useState(false)
   const [search, setSearch] = useState('')
 
-  const assignMutation = useMutation({
-    mutationFn: ({ userId, isPrimary }) => classesApi.assignTeacher(cls.id, userId, isPrimary),
+  const updateMutation = useMutation({
+    mutationFn: () => {
+      const assignments = localTeachers.map(t => ({
+        userId: t.id,
+        isPrimary: !!t.isPrimary
+      }))
+      return classesApi.updateTeachers(cls.id, assignments)
+    },
     onSuccess: () => {
       onUpdated()
-      setIsAdding(false)
+      onClose()
     },
     onError: (err) => {
       console.error(err)
-      alert('교사 배정 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message))
+      alert('저장 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message))
     }
   })
 
-  const removeMutation = useMutation({
-    mutationFn: (userId) => classesApi.removeTeacher(cls.id, userId),
-    onSuccess: onUpdated,
-    onError: (err) => {
-      console.error(err)
-      alert('배정 해제 중 오류가 발생했습니다.')
+  const handleAddTeacher = (user, isPrimary) => {
+    let next = [...localTeachers]
+    if (isPrimary) {
+      // 기존 담임들을 부담임으로 강등 (하나만 담임 가능)
+      next = next.map(t => ({ ...t, isPrimary: false }))
     }
-  })
+    
+    const existingIdx = next.findIndex(t => t.id === user.id)
+    if (existingIdx > -1) {
+      // 이미 목록에 있으면 역할만 변경
+      next[existingIdx] = { ...next[existingIdx], isPrimary }
+    } else {
+      // 신규 추가
+      next.push({ id: user.id, name: user.name, isPrimary })
+    }
+    
+    setLocalTeachers(next)
+    setIsAdding(false)
+    setSearch('')
+  }
+
+  const handleRemoveTeacher = (userId) => {
+    setLocalTeachers(prev => prev.filter(t => t.id !== userId))
+  }
+
+  const handlePromote = (userId) => {
+    setLocalTeachers(prev => prev.map(t => ({
+      ...t,
+      isPrimary: t.id === userId
+    })))
+  }
 
   const filteredUsers = allUsers.filter(u => 
     u.name.toLowerCase().includes(search.toLowerCase()) &&
-    !(cls.teachers || []).some(t => t.id === u.id)
+    !localTeachers.some(t => t.id === u.id) &&
+    !assignedOtherClassUserIds.has(u.id)
   )
 
   return (
@@ -230,13 +264,13 @@ function AssignmentModal({ cls, allUsers, onClose, onUpdated }) {
             {/* 현재 배정 된 명단 */}
             <div className="space-y-3">
               <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">배정된 교사</p>
-              {(cls.teachers || []).length === 0 ? (
+              {localTeachers.length === 0 ? (
                 <div className="py-8 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-gray-300">
                   <p className="text-xs font-bold">배정된 교사가 없습니다</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {cls.teachers.map(t => (
+                  {localTeachers.map(t => (
                     <div key={t.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-xs font-black text-gray-700 shadow-sm">
@@ -254,29 +288,19 @@ function AssignmentModal({ cls, allUsers, onClose, onUpdated }) {
                       <div className="flex items-center gap-1">
                         {!t.isPrimary && (
                           <button 
-                            disabled={assignMutation.isPending}
-                            onClick={() => assignMutation.mutate({ userId: t.id, isPrimary: true })}
-                            className="p-2 text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors disabled:opacity-50"
+                            onClick={() => handlePromote(t.id)}
+                            className="p-2 text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors"
                             title="담임으로 승격"
                           >
-                            {assignMutation.isPending && assignMutation.variables?.userId === t.id ? (
-                               <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                               <CheckCircle2 size={16} />
-                            )}
+                            <CheckCircle2 size={16} />
                           </button>
                         )}
                         <button 
-                          disabled={removeMutation.isPending}
-                          onClick={() => removeMutation.mutate(t.id)}
-                          className="p-2 text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50"
+                          onClick={() => handleRemoveTeacher(t.id)}
+                          className="p-2 text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
                           title="배정 해제"
                         >
-                          {removeMutation.isPending && removeMutation.variables === t.id ? (
-                             <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                             <UserMinus size={16} />
-                          )}
+                          <UserMinus size={16} />
                         </button>
                       </div>
                     </div>
@@ -327,22 +351,16 @@ function AssignmentModal({ cls, allUsers, onClose, onUpdated }) {
                         </div>
                         <div className="flex gap-1">
                           <button 
-                            disabled={assignMutation.isPending}
-                            onClick={() => assignMutation.mutate({ userId: u.id, isPrimary: true })}
-                            className="px-3 py-1.5 bg-primary-500 text-white rounded-xl text-[10px] font-black disabled:opacity-50 flex items-center gap-1"
+                            onClick={() => handleAddTeacher(u, true)}
+                            className="px-3 py-1.5 bg-primary-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1"
                           >
-                            {assignMutation.isPending && assignMutation.variables?.userId === u.id && assignMutation.variables?.isPrimary ? (
-                               <Loader2 size={12} className="animate-spin" />
-                            ) : '담임 추가'}
+                            담임 추가
                           </button>
                           <button 
-                            disabled={assignMutation.isPending}
-                            onClick={() => assignMutation.mutate({ userId: u.id, isPrimary: false })}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black disabled:opacity-50 flex items-center gap-1"
+                            onClick={() => handleAddTeacher(u, false)}
+                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black flex items-center gap-1"
                           >
-                            {assignMutation.isPending && assignMutation.variables?.userId === u.id && !assignMutation.variables?.isPrimary ? (
-                               <Loader2 size={12} className="animate-spin" />
-                            ) : '부담임'}
+                            부담임
                           </button>
                         </div>
                       </div>
@@ -354,7 +372,14 @@ function AssignmentModal({ cls, allUsers, onClose, onUpdated }) {
           </div>
 
           <div className="p-6 bg-gray-50/50 flex gap-4">
-             <Button variant="ghost" onClick={onClose} className="flex-1">닫기</Button>
+             <Button variant="ghost" onClick={onClose} className="flex-1" disabled={updateMutation.isPending}>취소</Button>
+             <Button 
+                className="flex-[2]" 
+                onClick={() => updateMutation.mutate()}
+                loading={updateMutation.isPending}
+             >
+               저장하기
+             </Button>
           </div>
         </div>
       </motion.div>

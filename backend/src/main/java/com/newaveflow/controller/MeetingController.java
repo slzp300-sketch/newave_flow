@@ -36,4 +36,11 @@ public class MeetingController {
         
         return ResponseEntity.ok(meetingService.saveMeetingAttendance(currentUser.getId(), request));
     }
+
+    @GetMapping("/attendance/admin")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<java.util.List<MeetingAttendanceResponse>> getAdminMeetingAttendance(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(meetingService.getAdminMeetingAttendance(date));
+    }
 }

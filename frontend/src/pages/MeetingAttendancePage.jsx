@@ -9,9 +9,10 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import { getTTSWeekRange } from '../utils/date'
-import { getISOWeek, startOfWeek, addWeeks, format } from 'date-fns'
+import { getISOWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import { prayerVoteApi } from '../api/prayerVote'
+import client from '../api/client'
 
 // 마이크 로테이션: 주차 % 3 → 0: 중1/고1, 1: 중2/고2, 2: 중3/고3
 const ROTATION_LABELS = [
@@ -64,6 +65,11 @@ export default function MeetingAttendancePage() {
   const userGrade = user?.grade
   const isMicTurn = userGrade && micGroup.grades.includes(userGrade)
   const weekStart = getThisWeekMonday()
+  const mondayDate = new Date(weekStart)
+  const tueDate = format(addDays(mondayDate, 1), 'M/d')
+  const thuDate = format(addDays(mondayDate, 3), 'M/d')
+  const satDate = format(addDays(mondayDate, 5), 'yyyy-MM-dd')
+  const satDateLabel = format(addDays(mondayDate, 5), 'M/d')
   const voteOpen  = isVoteWindowOpen()
 
   const queryClient = useQueryClient()
@@ -124,30 +130,51 @@ export default function MeetingAttendancePage() {
         )))
   )
 
-  // ── 토요일 교사회의: localStorage ──
-  const satKey = getSatKey()
-  const [sat, setSat]               = useState(buildSatState)
-  const [satSubmitted, setSatSub]   = useState(false)
+  // ── 토요일 교사회의: 백엔드 연동 ──
+  const { data: satData, isLoading: satLoading } = useQuery({
+    queryKey: ['meeting-attendance', satDate, user?.id],
+    queryFn: () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data),
+    enabled: !!user,
+  })
+
+  const saveSatMutation = useMutation({
+    mutationFn: (payload) => client.post('/meetings/attendance', payload).then(r => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meeting-attendance', satDate, user?.id] })
+      setEditingSat(false)
+    },
+    onError: (err) => {
+      console.error('Sat meeting save error:', err)
+      alert('저장 중 오류가 발생했습니다.')
+    }
+  })
+
+  const [sat, setSat] = useState({ status: null, reason: '' })
+  const [editingSat, setEditingSat] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem(satKey)
-    if (saved) {
-      const s = JSON.parse(saved)
-      if (s.submitted) { setSat(s.data); setSatSub(true) }
-      else if (s.data) setSat(s.data)
+    if (satData?.status) {
+      setSat({ status: satData.status, reason: satData.reason || '' })
+      setEditingSat(false)
+    } else {
+      setEditingSat(true)
     }
-  }, [satKey])
+  }, [satData])
 
-  useEffect(() => {
-    if (!satSubmitted) {
-      localStorage.setItem(satKey, JSON.stringify({ submitted: false, data: sat }))
-    }
-  }, [sat, satSubmitted, satKey])
-
-  const updateSat  = (patch) => setSat(d => ({ ...d, ...patch }))
-  const submitSat  = () => { localStorage.setItem(satKey, JSON.stringify({ submitted: true, data: sat })); setSatSub(true) }
-  const editSat    = () => setSatSub(false)
-  const satValid   = sat.status !== null && (sat.status === 'ATTEND' || sat.reason.trim() !== '')
+  const updateSat = (patch) => setSat(d => ({ ...d, ...patch }))
+  
+  const submitSat = () => {
+    if (!sat.status) return alert('참석 여부를 선택해주세요.')
+    saveSatMutation.mutate({
+      meetingDate: satDate,
+      status: sat.status,
+      reason: sat.status === 'ABSENT' ? sat.reason : ''
+    })
+  }
+  
+  const editSat = () => setEditingSat(true)
+  const satValid = sat.status !== null && (sat.status === 'ATTEND' || sat.reason.trim() !== '')
+  const satSubmitted = satData?.status && !editingSat
 
   // 현재 제출된 투표가 있고, 수정 모드 아님
   const prayerSubmitted = !!voteData && !editingPrayer
@@ -202,6 +229,8 @@ export default function MeetingAttendancePage() {
               valid={prayerValid}
               isMicTurn={isMicTurn}
               saving={saveMutation.isPending}
+              tueDate={tueDate}
+              thuDate={thuDate}
             />
           )}
         </motion.div>
@@ -215,7 +244,13 @@ export default function MeetingAttendancePage() {
           {satSubmitted ? (
             <SatSubmittedCard sat={sat} onEdit={editSat} />
           ) : (
-            <SatForm sat={sat} update={updateSat} onSubmit={submitSat} valid={satValid} />
+            <SatForm 
+              sat={sat} 
+              update={updateSat} 
+              onSubmit={submitSat} 
+              valid={satValid} 
+              satDateLabel={satDateLabel} 
+            />
           )}
         </motion.div>
 
@@ -258,7 +293,7 @@ function SectionLabel({ icon, children, color }) {
 }
 
 // ── 기도모임 폼 ─────────────────────────────
-function PrayerForm({ prayer, micLabel, update, onSubmit, valid, isMicTurn, saving }) {
+function PrayerForm({ prayer, micLabel, update, onSubmit, valid, isMicTurn, saving, tueDate, thuDate }) {
   return (
     <Card className="flex flex-col gap-5">
       <div className="bg-violet-50 rounded-2xl px-4 py-3 border border-violet-100 flex items-center justify-between">
@@ -274,8 +309,8 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, valid, isMicTurn, savi
       <div>
         <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">기도모임 참석 투표</p>
         <div className="grid grid-cols-3 gap-2">
-          <VoteButton active={prayer.status === 'TUE'} onClick={() => update({ status: 'TUE', reason: '' })} label="화요일" sub="온라인" color="violet" />
-          <VoteButton active={prayer.status === 'THU'} onClick={() => update({ status: 'THU', reason: '' })} label="목요일" sub="온라인" color="violet" />
+          <VoteButton active={prayer.status === 'TUE'} onClick={() => update({ status: 'TUE', reason: '' })} label={`${tueDate}(화)`} sub="온라인" color="violet" />
+          <VoteButton active={prayer.status === 'THU'} onClick={() => update({ status: 'THU', reason: '' })} label={`${thuDate}(목)`} sub="온라인" color="violet" />
           <VoteButton active={prayer.status === 'ABSENT'} onClick={() => update({ status: 'ABSENT', micAvailable: null, micReason: '' })} label="둘 다" sub="불참" color="red" />
         </div>
       </div>
@@ -379,7 +414,7 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit, isMicTurn }) {
 }
 
 // ── 토요일 교사회의 폼 ──────────────────────
-function SatForm({ sat, update, onSubmit, valid }) {
+function SatForm({ sat, update, onSubmit, valid, satDateLabel }) {
   return (
     <Card className="flex flex-col gap-5">
       <div className="bg-blue-50 rounded-2xl px-4 py-3 border border-blue-100">
@@ -388,7 +423,7 @@ function SatForm({ sat, update, onSubmit, valid }) {
       </div>
 
       <div>
-        <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">교사 회의 참석 여부</p>
+        <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">교사 회의 참석 여부 ({satDateLabel} 토요일)</p>
         <div className="grid grid-cols-2 gap-3">
           <AttendButton active={sat.status === 'ATTEND'} onClick={() => update({ status: 'ATTEND', reason: '' })} color="blue" label="참석" />
           <AttendButton active={sat.status === 'ABSENT'} onClick={() => update({ status: 'ABSENT' })} color="red" label="불참" />

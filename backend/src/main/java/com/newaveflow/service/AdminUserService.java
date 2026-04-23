@@ -26,7 +26,7 @@ public class AdminUserService {
 
     public List<UserInfo> getPendingUsers() {
         return userRepository.findByIsActiveFalse().stream()
-                .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), u.getGrade()))
+                .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), u.getGrade(), u.isActive()))
                 .toList();
     }
 
