@@ -10,23 +10,29 @@ export default function usePullToRefresh() {
     let pulling = false
 
     const handleStart = (pageY) => {
-      if (window.scrollY === 0) {
+      // iOS에서 window.scrollY가 0일 때의 정밀도 보정
+      if (window.scrollY <= 0) {
         startY = pageY
         pulling = true
       }
     }
 
-    const handleMove = (pageY) => {
+    const handleMove = (e, pageY) => {
       if (!pulling) return
-      // 아래로 당기는 중일 때 추가적인 시각적 처리가 필요하면 여기에 작성
+      const diff = pageY - startY
+      
+      // 최상단에서 아래로 당길 때만 기본 스크롤 동작 방지 (iOS 바운스 방지)
+      if (diff > 0 && window.scrollY <= 0) {
+        if (e.cancelable) e.preventDefault()
+      }
     }
 
     const handleEnd = async (pageY) => {
       if (!pulling) return
       const diff = pageY - startY
 
-      // 100px 이상 당겼을 때 새로고침 트리거
-      if (diff > 100 && window.scrollY === 0) {
+      // 모바일 감도 조절 (80px로 하향 조정)
+      if (diff > 80 && window.scrollY <= 0) {
         setIsRefreshing(true)
         try {
           await queryClient.refetchQueries()
@@ -40,16 +46,17 @@ export default function usePullToRefresh() {
       pulling = false
     }
 
-    // 터치 이벤트 핸들러
     const onTouchStart = (e) => handleStart(e.touches[0].pageY)
+    const onTouchMove = (e) => handleMove(e, e.touches[0].pageY)
     const onTouchEnd = (e) => handleEnd(e.changedTouches[0].pageY)
 
-    // 마우스 이벤트 핸들러 (PC 시뮬레이션용)
     const onMouseDown = (e) => handleStart(e.pageY)
-    const onMouseMove = (e) => handleMove(e.pageY)
+    const onMouseMove = (e) => handleMove(e, e.pageY)
     const onMouseUp = (e) => handleEnd(e.pageY)
 
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    // iOS에서 preventDefault를 사용하기 위해 passive: false 설정
+    window.addEventListener('touchstart', onTouchStart, { passive: false })
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('touchend', onTouchEnd)
     
     window.addEventListener('mousedown', onMouseDown)
@@ -58,6 +65,7 @@ export default function usePullToRefresh() {
 
     return () => {
       window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('touchend', onTouchEnd)
       window.removeEventListener('mousedown', onMouseDown)
       window.removeEventListener('mousemove', onMouseMove)
