@@ -5,31 +5,32 @@ const API = import.meta.env.PROD
   ? "https://newaveflow-production.up.railway.app/api" 
   : "/api";
 
+const getInitialToken = () => {
+  try {
+    const authStorage = localStorage.getItem('newave-auth')
+    if (authStorage) {
+      const { state } = JSON.parse(authStorage)
+      return state?.accessToken
+    }
+  } catch (error) {
+    console.error("Initial token fetch failed", error)
+  }
+  return null
+}
+
 const client = axios.create({
   baseURL: API,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': getInitialToken() ? `Bearer ${getInitialToken()}` : undefined
+  },
 })
 
 // 요청 인터셉터
 client.interceptors.request.use((config) => {
-  try {
-    const state = useAuthStore.getState()
-    const token = state.accessToken
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    } else {
-      // 스토어에 없으면 로컬스토리지에서라도 직접 확인 (초기화 찰나의 순간 대비)
-      const authStorage = localStorage.getItem('newave-auth')
-      if (authStorage) {
-        const { state: savedState } = JSON.parse(authStorage)
-        if (savedState?.accessToken) {
-          config.headers.Authorization = `Bearer ${savedState.accessToken}`
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Auth interceptor error:", error)
+  const token = useAuthStore.getState().accessToken || getInitialToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })

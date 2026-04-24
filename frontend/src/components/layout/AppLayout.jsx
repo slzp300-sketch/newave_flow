@@ -1,5 +1,4 @@
 import { Outlet, useLocation, ScrollRestoration } from 'react-router-dom'
-import { useEffect } from 'react'
 import BottomNav from './BottomNav'
 import usePullToRefresh from '../../hooks/usePullToRefresh'
 
