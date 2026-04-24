@@ -9,41 +9,27 @@ export default function usePullToRefresh() {
     let startY = 0
     let pulling = false
 
-    const handleTouchStart = (e) => {
-      // 스크롤이 최상단일 때만 Pull-to-Refresh 트리거 가능
+    const handleStart = (pageY) => {
       if (window.scrollY === 0) {
-        startY = e.touches[0].pageY
+        startY = pageY
         pulling = true
-      } else {
-        pulling = false
       }
     }
 
-    const handleTouchMove = (e) => {
+    const handleMove = (pageY) => {
       if (!pulling) return
-      
-      const currentY = e.touches[0].pageY
-      const diff = currentY - startY
-
-      // 아래로 70px 이상 당겼을 때 새로고침 준비 (시각적 피드백은 브라우저 기본 UI에 의존하거나 CSS로 추가 가능)
-      if (diff > 70 && !isRefreshing) {
-        // 실제 새로고침 동작은 touch-action: pan-down 이 설정된 모바일 브라우저에서 기본적으로 동작함
-        // 하지만 특정 환경에서 수동으로 트리거하고 싶을 경우 아래 로직 사용
-      }
+      // 아래로 당기는 중일 때 추가적인 시각적 처리가 필요하면 여기에 작성
     }
 
-    const handleTouchEnd = async (e) => {
+    const handleEnd = async (pageY) => {
       if (!pulling) return
-      
-      const endY = e.changedTouches[0].pageY
-      const diff = endY - startY
+      const diff = pageY - startY
 
-      if (diff > 80 && window.scrollY === 0) {
+      // 100px 이상 당겼을 때 새로고침 트리거
+      if (diff > 100 && window.scrollY === 0) {
         setIsRefreshing(true)
         try {
-          // React Query의 모든 활성 쿼리를 새로고침
           await queryClient.refetchQueries()
-          // 필요한 경우 햅틱 피드백이나 진동 추가 가능
           if (window.navigator.vibrate) {
             window.navigator.vibrate(10)
           }
@@ -54,16 +40,30 @@ export default function usePullToRefresh() {
       pulling = false
     }
 
-    window.addEventListener('touchstart', handleTouchStart, { passive: true })
-    window.addEventListener('touchmove', handleTouchMove, { passive: true })
-    window.addEventListener('touchend', handleTouchEnd)
+    // 터치 이벤트 핸들러
+    const onTouchStart = (e) => handleStart(e.touches[0].pageY)
+    const onTouchEnd = (e) => handleEnd(e.changedTouches[0].pageY)
+
+    // 마우스 이벤트 핸들러 (PC 시뮬레이션용)
+    const onMouseDown = (e) => handleStart(e.pageY)
+    const onMouseMove = (e) => handleMove(e.pageY)
+    const onMouseUp = (e) => handleEnd(e.pageY)
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchend', onTouchEnd)
+    
+    window.addEventListener('mousedown', onMouseDown)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
 
     return () => {
-      window.removeEventListener('touchstart', handleTouchStart)
-      window.removeEventListener('touchmove', handleTouchMove)
-      window.removeEventListener('touchend', handleTouchEnd)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchend', onTouchEnd)
+      window.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
     }
-  }, [queryClient, isRefreshing])
+  }, [queryClient])
 
   return isRefreshing
 }
