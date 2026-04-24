@@ -36,7 +36,11 @@ import ProfilePage                   from '../pages/ProfilePage'
 import NotificationPage              from '../pages/NotificationPage'
 
 function RequireAuth() {
-  const { user } = useAuthStore()
+  const { user, isHydrated } = useAuthStore()
+  
+  // 인증 정보가 로컬 스토리지로부터 복원될 때까지 대기
+  if (!isHydrated) return null
+  
   return user ? <Outlet /> : <Navigate to="/login" replace />
 }
 

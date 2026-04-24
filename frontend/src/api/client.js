@@ -70,19 +70,21 @@ client.interceptors.response.use(
         isRefreshing = true
         try {
           const { data } = await axios.post(`${API}/auth/refresh`, { refreshToken })
-          setAuth(data.user ?? user, data.accessToken, data.refreshToken)
-          client.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`
+          const { user: refreshedUser, accessToken: newAccess, refreshToken: newRefresh } = data
+          
+          // 스토어 업데이트
+          useAuthStore.getState().setAuth(refreshedUser || user, newAccess, newRefresh)
           
           isRefreshing = false
-          onRefreshed(data.accessToken)
+          onRefreshed(newAccess)
           
-          // 리프레시를 트리거한 원래 요청 재실행
-          original.headers.Authorization = `Bearer ${data.accessToken}`
+          // 원래 요청 재실행
+          original.headers.Authorization = `Bearer ${newAccess}`
           return client(original)
         } catch (err) {
           isRefreshing = false
           refreshSubscribers = []
-          clearAuth()
+          useAuthStore.getState().clearAuth()
           window.location.href = '/login'
           return Promise.reject(err)
         }

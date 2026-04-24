@@ -8,6 +8,8 @@ const useAuthStore = create(
       accessToken:  null,
       refreshToken: null,
 
+      isHydrated: false,
+
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken }),
 
@@ -15,6 +17,8 @@ const useAuthStore = create(
         set({ user: null, accessToken: null, refreshToken: null }),
 
       updateAccessToken: (accessToken) => set({ accessToken }),
+      
+      setHydrated: () => set({ isHydrated: true }),
     }),
     {
       name: 'newave-auth',
@@ -23,6 +27,9 @@ const useAuthStore = create(
         accessToken:  state.accessToken,
         refreshToken: state.refreshToken,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated()
+      },
     }
   )
 )
