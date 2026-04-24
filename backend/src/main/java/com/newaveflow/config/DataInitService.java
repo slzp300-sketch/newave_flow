@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@Profile({"dev", "local"}) // Only run during development
+@Profile({"dev", "local", "prod"})
 public class DataInitService {
 
     private final UserRepository userRepository;

@@ -12,7 +12,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-@Profile({"dev", "local"})
+@Profile({"dev", "local", "prod"})
 public class TtsDataInitializer implements CommandLineRunner {
 
     private final TtsQuestionRepository questionRepository;
