@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 export default function usePullToRefresh() {
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [pullDistance, setPullDistance] = useState(0)
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -10,7 +11,6 @@ export default function usePullToRefresh() {
     let pulling = false
 
     const handleStart = (pageY) => {
-      // iOS에서 window.scrollY가 0일 때의 정밀도 보정
       if (window.scrollY <= 0) {
         startY = pageY
         pulling = true
@@ -21,19 +21,24 @@ export default function usePullToRefresh() {
       if (!pulling) return
       const diff = pageY - startY
       
-      // 최상단에서 아래로 당길 때만 기본 스크롤 동작 방지 (iOS 바운스 방지)
       if (diff > 0 && window.scrollY <= 0) {
         if (e.cancelable) e.preventDefault()
+        // 최대 150px까지만 저항감을 주며 당겨지도록 계산
+        const resistance = 0.5
+        const distance = Math.min(diff * resistance, 150)
+        setPullDistance(distance)
       }
     }
 
     const handleEnd = async (pageY) => {
       if (!pulling) return
       const diff = pageY - startY
+      const resistance = 0.5
+      const distance = diff * resistance
 
-      // 모바일 감도 조절 (80px로 하향 조정)
-      if (diff > 80 && window.scrollY <= 0) {
+      if (distance > 70 && window.scrollY <= 0) {
         setIsRefreshing(true)
+        setPullDistance(70) // 로딩 중 위치 고정
         try {
           await queryClient.refetchQueries()
           if (window.navigator.vibrate) {
@@ -41,7 +46,10 @@ export default function usePullToRefresh() {
           }
         } finally {
           setIsRefreshing(false)
+          setPullDistance(0)
         }
+      } else {
+        setPullDistance(0)
       }
       pulling = false
     }
@@ -73,5 +81,5 @@ export default function usePullToRefresh() {
     }
   }, [queryClient])
 
-  return isRefreshing
+  return { isRefreshing, pullDistance }
 }
