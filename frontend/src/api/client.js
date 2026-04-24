@@ -53,12 +53,20 @@ client.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config
+
+    // 네트워크 오류 (백엔드 응답 없음) → 1회 재시도
+    if (!error.response && !original._networkRetry) {
+      original._networkRetry = true
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      return client(original)
+    }
+
     if (error.response?.status === 401 && !original._retry) {
       if (original.url.includes('/auth/login') || original.url.includes('/auth/refresh')) {
         return Promise.reject(error)
       }
       original._retry = true
-      const { refreshToken, setAuth, clearAuth, user } = useAuthStore.getState()
+      const { refreshToken, clearAuth, user } = useAuthStore.getState()
 
       if (!refreshToken) {
         clearAuth()

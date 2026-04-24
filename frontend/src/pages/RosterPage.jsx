@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, X, BookOpen, Phone, MapPin, Loader2 } from 'lucide-react'
 import Header from '../components/layout/Header'
@@ -47,8 +47,11 @@ function RosterTab() {
   const [selectedClass, setSelectedClass] = useState(null)
   const [rosterData, setRosterData] = useState({})
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
+    setIsLoading(true)
+    setHasError(false)
     classesApi.getRoster().then(r => {
       const grouped = r.data.reduce((acc, cls) => {
         const grade = cls.grade || '기타'
@@ -57,8 +60,14 @@ function RosterTab() {
         return acc
       }, {})
       setRosterData(grouped)
+    }).catch(() => {
+      setHasError(true)
     }).finally(() => setIsLoading(false))
   }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const classes = rosterData[selectedGrade] || []
   const colors = GRADE_COLORS[selectedGrade] || GRADE_COLORS['중1']
@@ -68,6 +77,20 @@ function RosterTab() {
     return (
       <div className="flex-1 flex items-center justify-center mt-20">
         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (hasError) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center mt-20 gap-4">
+        <p className="text-gray-500 font-bold text-sm">데이터를 불러올 수 없습니다</p>
+        <button
+          onClick={loadData}
+          className="px-5 py-2.5 bg-blue-500 text-white text-sm font-bold rounded-xl active:scale-95 transition-transform"
+        >
+          다시 시도
+        </button>
       </div>
     )
   }
