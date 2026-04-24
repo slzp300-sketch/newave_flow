@@ -42,17 +42,17 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:newave_flow}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:newave_flow}
+    username: ${PGUSER:postgres}
+    password: ${PGPASSWORD:password}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   servlet:
     multipart:
       max-file-size: 20MB
