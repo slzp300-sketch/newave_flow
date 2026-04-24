@@ -10,24 +10,26 @@ const client = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// 앱 초기화 시 동기적으로 로컬스토리지에서 직접 토큰 읽어 헤더 세팅
-try {
-  const authStorage = localStorage.getItem('newave-auth')
-  if (authStorage) {
-    const { state } = JSON.parse(authStorage)
-    if (state?.accessToken) {
-      client.defaults.headers.common['Authorization'] = `Bearer ${state.accessToken}`
-    }
-  }
-} catch (error) {
-  console.error("Failed to parse auth storage on init", error)
-}
-
 // 요청 인터셉터
 client.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  try {
+    const state = useAuthStore.getState()
+    const token = state.accessToken
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    } else {
+      // 스토어에 없으면 로컬스토리지에서라도 직접 확인 (초기화 찰나의 순간 대비)
+      const authStorage = localStorage.getItem('newave-auth')
+      if (authStorage) {
+        const { state: savedState } = JSON.parse(authStorage)
+        if (savedState?.accessToken) {
+          config.headers.Authorization = `Bearer ${savedState.accessToken}`
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Auth interceptor error:", error)
   }
   return config
 })
