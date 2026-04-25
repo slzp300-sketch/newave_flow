@@ -49,9 +49,9 @@ export default function AppLayout() {
         )}
       </div>
 
-      <main 
+      <main
         className="flex-1 pb-20 max-w-mobile mx-auto w-full transition-transform duration-150"
-        style={{ transform: `translateY(${pullDistance * 0.4}px)` }}
+        style={pullDistance > 0 ? { transform: `translateY(${pullDistance * 0.4}px)` } : undefined}
       >
         <Outlet />
       </main>

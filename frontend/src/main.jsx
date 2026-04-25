@@ -1,14 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './queryClient'
 import App from './App'
 import './index.css'
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 1000 * 60 * 5, retry: 1 },
-  },
-})
 
 async function prepare() {
   // 개발 환경에서도 실제 백엔드 명세와 연동하기 위해 MSW 비활성화

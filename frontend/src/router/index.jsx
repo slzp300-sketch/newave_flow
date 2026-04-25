@@ -1,7 +1,9 @@
+import axios from 'axios'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 import useAuthStore from '../store/authStore'
+import { queryClient } from '../queryClient'
 import AppLayout from '../components/layout/AppLayout'
 import client from '../api/client'
 
@@ -36,6 +38,21 @@ import AdminPendingUsersPage          from '../pages/AdminPendingUsersPage'
 import ManualPreviewPage             from '../pages/ManualPreviewPage'
 import ProfilePage                   from '../pages/ProfilePage'
 import NotificationPage              from '../pages/NotificationPage'
+
+const API = import.meta.env.PROD
+  ? 'https://newaveflow-production.up.railway.app/api'
+  : '/api'
+
+// JWT payload의 exp(초 단위)를 보고 만료됐거나 bufferMs 이내에 만료되는지 확인
+function isTokenExpiredOrExpiring(token, bufferMs = 5 * 60 * 1000) {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const { exp } = JSON.parse(atob(base64))
+    return !exp || Date.now() > exp * 1000 - bufferMs
+  } catch {
+    return true
+  }
+}
 
 // 세션 내 워밍업 완료 여부 (페이지 리로드 시 초기화됨)
 let sessionWarmedUp = false
@@ -83,20 +100,38 @@ function RequireAuth() {
       }
     }, 70000)
 
-    // 백엔드 깨우기 — 성공할 때까지 3초 간격으로 재시도
     const tryWarmup = async () => {
+      // 1단계: 백엔드 헬스체크 — 응답할 때까지 3초 간격 재시도
       while (mounted) {
         try {
           await client.get('/health')
-          if (mounted) {
-            sessionWarmedUp = true
-            setWarming(false)
-          }
-          return
+          break
         } catch {
           if (!mounted) return
           await new Promise(r => setTimeout(r, 3000))
         }
+      }
+
+      if (!mounted) return
+
+      // 2단계: 토큰 만료 선제 확인
+      // /health는 인증 불필요라 토큰 만료를 감지 못함. 만료됐거나 5분 내 만료 예정이면
+      // 페이지 렌더 전에 미리 갱신하여 데이터 로딩 실패를 방지한다.
+      const { accessToken: tok, refreshToken: rtok, setAuth, clearAuth } = useAuthStore.getState()
+      if (tok && isTokenExpiredOrExpiring(tok)) {
+        try {
+          const { data } = await axios.post(`${API}/auth/refresh`, { refreshToken: rtok })
+          setAuth(data.user, data.accessToken, data.refreshToken)
+          queryClient.clear()
+        } catch {
+          // 리프레시 토큰도 만료된 경우 — auth 초기화 후 렌더 시 /login으로 이동
+          clearAuth()
+        }
+      }
+
+      if (mounted) {
+        sessionWarmedUp = true
+        setWarming(false)
       }
     }
 
