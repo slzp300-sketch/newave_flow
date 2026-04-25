@@ -194,8 +194,8 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} className="fixed inset-0 bg-black/40 z-20" />
-      <div className="fixed inset-0 z-30 flex items-center justify-center px-4 pointer-events-none">
+        onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
+      <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }}
         transition={{ type: 'spring', damping: 30, stiffness: 350 }}

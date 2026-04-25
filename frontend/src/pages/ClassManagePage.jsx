@@ -337,11 +337,11 @@ function MemoSheet({ student, onClose, onSaved }) {
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} className="fixed inset-0 bg-black/40 z-20" />
+        onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed inset-0 z-30 flex items-center justify-center px-4"
+        className="fixed inset-0 z-[70] flex items-center justify-center px-4"
       >
         <div className="w-full max-w-[430px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '80vh' }}>
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
@@ -406,12 +406,12 @@ function DeactivationReasonModal({ student, onClose, onSubmitted }) {
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} className="fixed inset-0 bg-black/40 z-20" />
+        onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
         transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-        className="fixed inset-0 z-30 flex items-center justify-center px-6"
+        className="fixed inset-0 z-[70] flex items-center justify-center px-6"
       >
         <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 flex flex-col gap-4">
           <div className="flex items-start justify-between">
@@ -485,12 +485,12 @@ function EditStudentSheet({ student, onClose, onSaved }) {
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} className="fixed inset-0 bg-black/40 z-20" />
+        onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed inset-0 z-30 flex items-center justify-center px-4"
+        className="fixed inset-0 z-[70] flex items-center justify-center px-4"
       >
         <div className="w-full max-w-[430px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '90vh' }}>
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
