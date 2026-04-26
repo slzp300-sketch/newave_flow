@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Check, X, Save, ChevronDown, ChevronUp, Send, 
+import {
+  Check, X, ChevronDown, ChevronUp, Send,
   CheckCircle2, AlertCircle, MessageSquare, UserCheck, UserX,
   History, Calendar, Lock
 } from 'lucide-react'
@@ -93,9 +93,9 @@ export default function AttendancePage() {
 
   const getStudentData = (id) => formData[id] || { status: 'PRESENT', absentReason: '', note: '' }
 
-  // 5. 저장 Mutation
-  const { mutate: saveBatch, isPending: isSaving } = useMutation({
-    mutationFn: () => {
+  // 5. 제출 Mutation (저장 후 제출 순서로 처리)
+  const { mutate: submitReport, isPending: isSubmitting } = useMutation({
+    mutationFn: async () => {
       const batchRecords = students.map(s => {
         const data = getStudentData(s.id)
         return {
@@ -105,21 +105,13 @@ export default function AttendancePage() {
           note: data.note
         }
       })
-      return attendanceApi.saveBatch(classId, today, batchRecords)
+      await attendanceApi.saveBatch(classId, today, batchRecords)
+      return attendanceApi.submit(classId, today)
     },
     onSuccess: () => {
+      setLocalEdit(false)
       qc.invalidateQueries({ queryKey: ['attendance'] })
       qc.invalidateQueries({ queryKey: ['report-status'] })
-      alert('출석 정보가 임시 저장되었습니다.')
-    },
-  })
-
-  // 6. 최종 제출 Mutation
-  const { mutate: submitReport, isPending: isSubmitting } = useMutation({
-    mutationFn: () => attendanceApi.submit(classId, today),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['report-status'] })
-      alert('출석 제출이 완료되었습니다!')
     },
   })
 
@@ -168,20 +160,7 @@ export default function AttendancePage() {
         date={today}
         students={students}
         formData={formData}
-        onEdit={() => {
-          if (isWindowOpen) {
-            // Revert submission status locally? 
-            // Better to have an "Unsubmit" or just allow editing if it's the window.
-            // But user asked for "제출 완료하면 표시" like TTS.
-            // So we show the submitted view and allow re-editing only if window is open.
-            alert('제출된 내용을 수정합니다.')
-            // Here we would ideally have a way to unsubmit or just show the edit form.
-            // Let's just set a local state to override isSubmitted.
-            setLocalEdit(true)
-          } else {
-            alert('제출 기간이 아니므로 수정할 수 없습니다.')
-          }
-        }}
+        onEdit={() => setLocalEdit(true)}
         isWindowOpen={isWindowOpen}
       />
     )
@@ -236,29 +215,19 @@ export default function AttendancePage() {
       </div>
 
       {/* 하단 플로팅 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 flex gap-2 z-50">
-        <Button 
-          variant="outline" 
-          className="flex-1"
-          onClick={() => saveBatch()}
-          loading={isSaving}
-        >
-          <Save size={18} />
-          임시저장
-        </Button>
-        <Button 
-          className="flex-[2] premium-gradient shadow-glow"
-          onClick={() => {
-            if (window.confirm('최종 제출하시겠습니까? 제출 후에는 기간 내에만 수정이 가능합니다.')) {
-              submitReport()
-            }
-          }}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 z-50">
+        <Button
+          className="w-full premium-gradient shadow-glow"
+          onClick={() => submitReport()}
           disabled={!isWindowOpen}
           loading={isSubmitting}
         >
           <Send size={18} />
-          최종 제출하기
+          제출하기
         </Button>
+        <p className="text-center text-[10px] text-gray-400 mt-2 font-medium">
+          제출 후에도 기간 내에는 수정이 가능합니다
+        </p>
       </div>
     </div>
   )
@@ -422,21 +391,14 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
         <div className="mt-6 flex flex-col items-center gap-4">
           {isWindowOpen ? (
             <button
-              onClick={() => {
-                // In a real app, you might need an 'unsubmit' API or just local state
-                window.location.reload() // Simplest way to re-check if user can edit
-              }}
+              onClick={onEdit}
               className="text-primary-600 font-bold text-sm underline underline-offset-4 active:opacity-60"
             >
-              기록 내용 수정하기
+              수정하기
             </button>
           ) : (
-            <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-medium">
-              <AlertCircle size={12} />
-              수정 가능 기간이 지났습니다 (주일~월요일)
-            </div>
+            <p className="text-[11px] text-gray-400 font-medium">제출 기간이 종료되었습니다.</p>
           )}
-          
           <Button variant="outline" size="sm" onClick={() => window.history.back()}>
             홈으로 돌아가기
           </Button>

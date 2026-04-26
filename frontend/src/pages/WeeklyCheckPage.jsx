@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   Users, FileText, Calendar, CheckSquare, CalendarCheck,
-  ChevronRight, AlertCircle, Sparkles, CheckCircle2
+  ChevronRight, AlertCircle, Sparkles, CheckCircle2, Mic2
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import useAuthStore from '../store/authStore'
@@ -12,8 +12,10 @@ import { evangelismApi } from '../api/evangelism'
 import { weeklyStatusApi } from '../api/weeklyStatus'
 import { eventApi } from '../api/event'
 import { prayerVoteApi } from '../api/prayerVote'
+import { ttsApi } from '../api/tts'
+import client from '../api/client'
 import { getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 
 function getThisWeekMonday() {
   const now = new Date()
@@ -32,6 +34,15 @@ function isVoteWindowOpen() {
 function isSundayToTuesday() {
   const day = new Date().getDay()
   return day === 0 || day === 1 || day === 2 // Sun=0, Mon=1, Tue=2
+}
+function isSatMeetingWindowOpen() {
+  const now = new Date()
+  const day  = now.getDay()
+  const hour = now.getHours()
+  if (day === 0)             return false       // 일: 닫힘
+  if (day >= 1 && day <= 5)  return true        // 월~금: 열림
+  if (day === 6)             return hour < 12   // 토: 정오 이전만 열림
+  return false
 }
 
 // ── localStorage 상태 훅 ────────────────────────
@@ -97,8 +108,34 @@ function useEvangelismStatus() {
 export default function WeeklyCheckPage() {
   const navigate      = useNavigate()
   const { user }      = useAuthStore()
-  const ttsSubmitted  = useTTSSubmitted()
-  const meetingChecked = useMeetingChecked(user)
+  const { weekNum: ttsWeekNum } = getTTSWeekRange()
+  const currentYear = new Date().getFullYear()
+  const { data: ttsRecord } = useQuery({
+    queryKey: ['tts-my', currentYear, ttsWeekNum],
+    queryFn: () => ttsApi.getMyTts(currentYear, ttsWeekNum).then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+  const ttsSubmitted = ttsRecord?.submitted ?? false
+
+  // 기도모임 투표 완료 여부 (API)
+  const weekMonday = getThisWeekMonday()
+  const { data: prayerVoteData } = useQuery({
+    queryKey: ['prayer-vote', weekMonday, user?.id],
+    queryFn:  () => prayerVoteApi.getMine(weekMonday).then(r => r.data),
+    enabled:  !!user,
+    staleTime: 2 * 60 * 1000,
+  })
+  const prayerDone = !!prayerVoteData
+
+  // 교사회의 체크 완료 여부 (API)
+  const satDate = format(addDays(new Date(weekMonday), 5), 'yyyy-MM-dd')
+  const { data: satData } = useQuery({
+    queryKey: ['meeting-attendance', satDate, user?.id],
+    queryFn:  () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data),
+    enabled:  !!user,
+    staleTime: 2 * 60 * 1000,
+  })
+  const satDone = !!satData?.status
   const weeklyStatus  = useWeeklyStatus()
   const attendanceEvents = useAttendanceRequiredEvents()
   const weekRange     = getCurrentWeekRange()
@@ -108,6 +145,7 @@ export default function WeeklyCheckPage() {
   // 각 파트별 활성화 상태
   const ttsOpen = canSubmitTTS()
   const meetingOpen = isVoteWindowOpen()
+  const satWindowOpen = isSatMeetingWindowOpen()
   const attendanceOpen = isSundayToTuesday()
   const eventAttendanceOpen = attendanceEvents.length > 0
   const minutesOpen = true // 회의록은 상시 열림
@@ -134,14 +172,28 @@ export default function WeeklyCheckPage() {
       path: '/tts',
     },
     {
-      id: 'meeting',
+      id: 'prayer',
+      icon: Users,
+      color: prayerDone ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600',
+      title: '기도모임 투표',
+      desc: prayerDone ? '✅ 기도모임 투표 완료되었습니다.' : (meetingOpen ? '온라인 기도모임 참석 여부를 투표하세요' : '⚠️ 투표 기간이 아닙니다 (월~목 가능).'),
+      done: prayerDone,
+      disabled: !prayerDone && !meetingOpen,
+      path: '/meeting/prayer',
+    },
+    {
+      id: 'sat-meeting',
       icon: CalendarCheck,
-      color: meetingChecked ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600',
-      title: '주간 모임 체크',
-      desc: meetingChecked ? '✅ 기도회/교사회의 참석 여부 제출 완료' : (meetingOpen ? '기도회/교사회의 참석을 체크하세요' : '⚠️ 주간 모임 체크 기간이 아닙니다 (월~목 가능).'),
-      done: meetingChecked,
-      disabled: !meetingChecked && !meetingOpen,
-      path: '/meeting',
+      color: satDone ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-50 text-blue-600',
+      title: '교사회의 체크',
+      desc: satDone
+        ? '✅ 교사 회의 참석 여부 제출 완료'
+        : satWindowOpen
+          ? '토요일 교사 회의 참석 여부를 제출하세요'
+          : '⚠️ 제출 기간이 아닙니다 (월~토 정오 가능).',
+      done: satDone,
+      disabled: !satDone && !satWindowOpen,
+      path: '/meeting/sat',
     },
     {
       id: 'minutes',

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import { authApi } from '../api/auth'
 import Button from '../components/common/Button'
 import Header from '../components/layout/Header'
+import EmailInput from '../components/common/EmailInput'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -22,6 +23,10 @@ export default function Signup() {
 
   const [nameStatus, setNameStatus]   = useState('idle') // idle, loading, available, duplicate
   const [emailStatus, setEmailStatus] = useState('idle')
+
+  const [phone1, setPhone1] = useState('')
+  const [phone2, setPhone2] = useState('')
+  const phone2Ref = useRef(null)
 
   // 이름 중복 체크 (디바운스)
   useEffect(() => {
@@ -81,13 +86,16 @@ export default function Signup() {
     setLoading(true)
 
     const payload = { ...form }
-    if (payload.phone) {
-      if (payload.phone.length !== 8) {
-        setError('전화번호 8자리를 모두 입력해주세요.')
+    const rawPhone = phone1 + phone2
+    if (rawPhone) {
+      if (rawPhone.length !== 8) {
+        setError('전화번호 앞뒤 4자리를 모두 입력해주세요.')
         setLoading(false)
         return
       }
-      payload.phone = `010-${payload.phone.slice(0, 4)}-${payload.phone.slice(4)}`
+      payload.phone = `010-${phone1}-${phone2}`
+    } else {
+      payload.phone = ''
     }
 
     try {
@@ -144,16 +152,9 @@ export default function Signup() {
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">이메일 (아이디)</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="로그인에 사용할 이메일"
-              required
-              className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 text-sm font-medium transition ${
-                emailStatus === 'duplicate' ? 'border-red-300 focus:ring-red-500' : 
-                emailStatus === 'available' ? 'border-emerald-300 focus:ring-emerald-500' : 'border-gray-200 focus:ring-primary-500'
-              }`}
+            <EmailInput
+              onChange={(email) => setForm(f => ({ ...f, email }))}
+              status={emailStatus}
             />
             {emailStatus === 'duplicate' && <p className="text-red-500 text-xs font-bold mt-1.5 px-1">이미 사용 중인 이메일입니다.</p>}
             {emailStatus === 'available' && <p className="text-emerald-500 text-xs font-bold mt-1.5 px-1">사용 가능한 이메일입니다.</p>}
@@ -219,20 +220,32 @@ export default function Signup() {
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">전화번호</label>
             <div className="flex items-center gap-2">
-              <div className="px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 shrink-0 select-none">
+              <div className="flex-[3] px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 select-none text-center">
                 010
               </div>
-              <span className="text-gray-400 font-bold">-</span>
+              <span className="text-gray-400 font-bold shrink-0">-</span>
               <input
                 type="tel"
-                maxLength={8}
-                value={form.phone}
+                maxLength={4}
+                value={phone1}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setForm(f => ({ ...f, phone: val }))
+                  const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 4)
+                  setPhone1(val)
+                  if (val.length === 4) phone2Ref.current?.focus()
                 }}
-                placeholder="12345678"
-                className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium transition tracking-widest"
+                className="flex-[4] min-w-0 px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium transition tracking-widest"
+              />
+              <span className="text-gray-400 font-bold shrink-0">-</span>
+              <input
+                ref={phone2Ref}
+                type="tel"
+                maxLength={4}
+                value={phone2}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 4)
+                  setPhone2(val)
+                }}
+                className="flex-[4] min-w-0 px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium transition tracking-widest"
               />
             </div>
           </div>

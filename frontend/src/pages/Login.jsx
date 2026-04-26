@@ -5,6 +5,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
 import Button from '../components/common/Button'
+import EmailInput from '../components/common/EmailInput'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -55,14 +56,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">아이디</label>
-            <input
-              type="text"
-              value={form.email}
-              onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="아이디를 입력하세요"
-              required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base transition"
-            />
+            <EmailInput onChange={(email) => setForm(f => ({ ...f, email }))} />
           </div>
 
           <div>

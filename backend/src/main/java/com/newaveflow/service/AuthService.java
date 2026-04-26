@@ -21,7 +21,7 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
 
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailIgnoreCase(request.email())
                 .orElseThrow(() -> AppException.unauthorized("이메일 또는 비밀번호가 올바르지 않습니다."));
 
         if (!user.isActive()) {
@@ -58,13 +58,14 @@ public class AuthService {
 
     @Transactional
     public void register(com.newaveflow.dto.auth.RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw AppException.badRequest("이미 가입된 이메일입니다.");
         }
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
                 .role(User.Role.TEACHER)
@@ -75,7 +76,7 @@ public class AuthService {
     }
 
     public boolean checkEmailDuplicate(String email) {
-        return userRepository.existsByEmail(email);
+        return userRepository.existsByEmailIgnoreCase(email.trim().toLowerCase());
     }
 
     public boolean checkNameDuplicate(String name) {

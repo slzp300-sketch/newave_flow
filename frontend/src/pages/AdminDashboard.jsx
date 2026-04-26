@@ -51,7 +51,7 @@ const MENU_GROUPS = [
 ]
 
 export default function AdminDashboard() {
-  const [openGroup, setOpenGroup] = useState(MENU_GROUPS[0].title)
+  const [openGroup, setOpenGroup] = useState(null)
 
   const toggleGroup = (title) => {
     setOpenGroup(prev => prev === title ? null : title)

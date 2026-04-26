@@ -15,6 +15,8 @@ import AdminDashboard        from '../pages/AdminDashboard'
 import CalendarPage          from '../pages/CalendarPage'
 import CalendarAdminPage     from '../pages/CalendarAdminPage'
 import MeetingAttendancePage from '../pages/MeetingAttendancePage'
+import PrayerMeetingPage    from '../pages/PrayerMeetingPage'
+import SatMeetingPage       from '../pages/SatMeetingPage'
 import StudentDetailPage     from '../pages/StudentDetailPage'
 import TTSPage               from '../pages/TTSPage'
 import EvangelismPage        from '../pages/EvangelismPage'
@@ -170,7 +172,9 @@ const router = createBrowserRouter([
           { path: '/calendar',   element: <CalendarPage /> },
           { path: '/checklist',  element: <WeeklyCheckPage /> },
           { path: '/tts',        element: <TTSPage /> },
-          { path: '/meeting',    element: <MeetingAttendancePage /> },
+          { path: '/meeting',         element: <MeetingAttendancePage /> },
+          { path: '/meeting/prayer',  element: <PrayerMeetingPage /> },
+          { path: '/meeting/sat',     element: <SatMeetingPage /> },
           { path: '/minutes',    element: <MeetingMinutesPage /> },
           { path: '/events',     element: <CalendarPage /> },
           { path: '/students/:id',  element: <StudentDetailPage /> },

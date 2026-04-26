@@ -39,6 +39,10 @@ public class DataInitService {
 
     @PostConstruct
     public void init() {
+        // 기존 DB의 관리자 이메일 마이그레이션 (slzp300 → admin@naver.com)
+        int migrated = userRepository.updateEmailByExactMatch("slzp300", "admin@naver.com");
+        if (migrated > 0) log.info("Admin email migrated: slzp300 → admin@naver.com");
+
         // IMPORTANT: Only clear and seed if the database is essentially new
         if (userRepository.count() > 0) {
             log.info("Database already initialized. Skipping data seeding.");
@@ -76,17 +80,17 @@ public class DataInitService {
     }
 
     private void initAdminUser() {
-        log.info("Creating primary admin account: slzp300");
+        log.info("Creating primary admin account: admin@naver.com");
         String encodedPassword = passwordEncoder.encode("zd53738445");
-        
+
         User admin = User.builder()
                 .name("최종 관리자")
-                .email("slzp300")
+                .email("admin@naver.com")
                 .password(encodedPassword)
                 .role(Role.ADMIN)
                 .isActive(true)
                 .build();
-        
+
         userRepository.save(admin);
     }
 }

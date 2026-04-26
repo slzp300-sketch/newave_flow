@@ -2,23 +2,25 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  ChevronRight, Users, FileText, Calendar, CheckSquare, 
-  CalendarCheck, Sparkles, CheckCircle2, MapPin, 
-  BookOpen, ClipboardList, Clock, Bell, LayoutGrid, 
-  ArrowUpRight, TrendingUp, UserMinus as UserMinusIcon 
+import {
+  ChevronRight, Users, FileText, Calendar, CheckSquare,
+  CalendarCheck, Sparkles, CheckCircle2, MapPin,
+  BookOpen, ClipboardList, Clock, Bell, LayoutGrid,
+  ArrowUpRight, TrendingUp, UserMinus as UserMinusIcon
 } from 'lucide-react'
 import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
 import { evangelismApi } from '../api/evangelism'
 import { eventApi } from '../api/event'
 import { weeklyStatusApi } from '../api/weeklyStatus'
+import { ttsApi } from '../api/tts'
+import { prayerVoteApi } from '../api/prayerVote'
 import { deactivationApi } from '../api/students'
 import { 
   formatDate, toApiDate, greetingByTime, getTTSWeekRange, 
   getCurrentWeekRange, canSubmitTTS 
 } from '../utils/date'
-import { startOfWeek, endOfWeek, format } from 'date-fns'
+import { startOfWeek, endOfWeek, format, addDays } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
 import Header from '../components/layout/Header'
@@ -147,9 +149,48 @@ function useEvangelismStatus() {
 // ────────── Teacher View ──────────
 function TeacherView({ navigate }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
-  const [openGroup, setOpenGroup] = useState('주간 필수 보고')
+  const [openGroup, setOpenGroup] = useState(null)
   
-  const evangelism = useEvangelismStatus()
+  const evangelism    = useEvangelismStatus()
+  const weeklyStatus  = useWeeklyStatus()
+  const { user: authUser } = useAuthStore()
+
+  const { weekNum: ttsWeekNum } = getTTSWeekRange()
+  const currentYear = new Date().getFullYear()
+
+  const { data: ttsRecord } = useQuery({
+    queryKey: ['tts-my', currentYear, ttsWeekNum],
+    queryFn: () => ttsApi.getMyTts(currentYear, ttsWeekNum).then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // 기도모임 투표 완료 여부
+  const weekMonday = (() => {
+    const now = new Date(); const day = now.getDay()
+    const diff = day === 0 ? -6 : 1 - day
+    const m = new Date(now); m.setDate(now.getDate() + diff)
+    return format(m, 'yyyy-MM-dd')
+  })()
+  const { data: prayerVoteData } = useQuery({
+    queryKey: ['prayer-vote', weekMonday, authUser?.id],
+    queryFn:  () => prayerVoteApi.getMine(weekMonday).then(r => r.data),
+    enabled:  !!authUser,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // 교사회의 체크 완료 여부
+  const satDate = format(addDays(new Date(weekMonday), 5), 'yyyy-MM-dd')
+  const { data: satData } = useQuery({
+    queryKey: ['meeting-attendance', satDate, authUser?.id],
+    queryFn:  () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data),
+    enabled:  !!authUser,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const attendanceDone = weeklyStatus.attendanceSubmittedThisWeek
+  const ttsDone        = ttsRecord?.submitted ?? false
+  const prayerDone     = !!prayerVoteData
+  const satDone        = !!satData?.status
 
   useEffect(() => {
     fetchWeeklyEvents()
@@ -176,9 +217,10 @@ function TeacherView({ navigate }) {
       bg: 'bg-emerald-50',
       desc: '출석체크, TTS, 주간모임',
       items: [
-        { to: '/attendance', icon: ClipboardList, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', title: '출석', desc: '주일 예배 반 학생 출석체크' },
-        { to: '/tts', icon: CheckSquare, iconBg: 'bg-teal-50', iconColor: 'text-teal-600', title: 'TTS', desc: 'Teacher Training Sheet 작성' },
-        { to: '/meeting', icon: Users, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', title: '주간모임', desc: '기도모임 투표 및 토요일 교사회의 참석체크' },
+        { to: '/attendance',      icon: ClipboardList, iconBg: 'bg-emerald-50',  iconColor: 'text-emerald-600', title: '출석',        desc: '주일 예배 반 학생 출석체크', done: attendanceDone },
+        { to: '/tts',             icon: CheckSquare,   iconBg: 'bg-teal-50',     iconColor: 'text-teal-600',    title: 'TTS',         desc: 'Teacher Training Sheet 작성', done: ttsDone },
+        { to: '/meeting/prayer',  icon: Users,         iconBg: 'bg-violet-50',   iconColor: 'text-violet-600',  title: '기도모임 투표', desc: '온라인 기도모임 참석 투표 (월~목)', done: prayerDone },
+        { to: '/meeting/sat',     icon: CalendarCheck, iconBg: 'bg-blue-50',     iconColor: 'text-blue-600',    title: '교사회의 체크', desc: '토요일 교사 회의 참석 여부 제출', done: satDone },
       ]
     },
     {
@@ -318,7 +360,11 @@ function TeacherView({ navigate }) {
                         <button
                           key={item.to}
                           onClick={() => navigate(item.to)}
-                          className="flex items-center gap-4 p-3.5 rounded-2xl border border-gray-50 bg-gray-50/50 hover:bg-gray-100/80 active:scale-[0.98] transition-all group text-left w-full"
+                          className={`flex items-center gap-4 p-3.5 rounded-2xl border active:scale-[0.98] transition-all group text-left w-full ${
+                            item.done
+                              ? 'bg-emerald-50/60 border-emerald-100'
+                              : 'border-gray-50 bg-gray-50/50 hover:bg-gray-100/80'
+                          }`}
                         >
                           <div className={`w-10 h-10 rounded-xl ${item.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
                             <ItemIcon size={18} className={item.iconColor} />
@@ -327,7 +373,10 @@ function TeacherView({ navigate }) {
                             <p className="font-black text-gray-800 text-sm">{item.title}</p>
                             <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.desc}</p>
                           </div>
-                          <span className="text-gray-300 text-lg group-hover:text-gray-500 transition-colors">›</span>
+                          {item.done
+                            ? <CheckCircle2 size={18} className="text-emerald-500 flex-shrink-0" />
+                            : <span className="text-gray-300 text-lg group-hover:text-gray-500 transition-colors">›</span>
+                          }
                         </button>
                       )
                     })}
