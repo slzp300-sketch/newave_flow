@@ -29,13 +29,22 @@ public class EventStudentAttendance {
     private User teacher;
 
     @Column(nullable = false, length = 20)
-    private String status; // PRESENT / ABSENT
+    private String status; // PRESENT / PARTIAL / ABSENT
 
     @Column(length = 255)
     private String absenceReason;
 
-    public void update(String status, String absenceReason) {
+    @Column
+    private java.time.LocalDate partialFromDate;
+
+    @Column(length = 255)
+    private String partialNote;
+
+    public void update(String status, String absenceReason,
+                       java.time.LocalDate partialFromDate, String partialNote) {
         this.status = status;
         this.absenceReason = absenceReason;
+        this.partialFromDate = partialFromDate;
+        this.partialNote = partialNote;
     }
 }

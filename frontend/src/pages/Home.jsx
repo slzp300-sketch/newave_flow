@@ -31,7 +31,7 @@ export default function Home() {
   const { user }  = useAuthStore()
   const navigate  = useNavigate()
   const today     = toApiDate()
-  const isTeacher = user?.role === 'TEACHER'
+  const isTeacher = user?.role === 'TEACHER' || user?.role === 'EXECUTIVE'
 
   return (
     <div className="flex flex-col min-h-screen pb-12 bg-gray-50/50">

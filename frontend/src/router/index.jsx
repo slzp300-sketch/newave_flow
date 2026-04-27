@@ -37,6 +37,8 @@ import AdminTeacherManagePage         from '../pages/AdminTeacherManagePage'
 import AdminClassManagePage           from '../pages/AdminClassManagePage'
 import AdminStudentManagePage         from '../pages/AdminStudentManagePage'
 import AdminPendingUsersPage          from '../pages/AdminPendingUsersPage'
+import AdminStudentAttendancePage    from '../pages/AdminStudentAttendancePage'
+import ExecutiveManagePage          from '../pages/ExecutiveManagePage'
 import ManualPreviewPage             from '../pages/ManualPreviewPage'
 import ProfilePage                   from '../pages/ProfilePage'
 import NotificationPage              from '../pages/NotificationPage'
@@ -198,6 +200,8 @@ const router = createBrowserRouter([
               { path: '/admin/event-attendance', element: <EventAttendanceAdminPage /> },
               { path: '/admin/deactivation-requests', element: <DeactivationRequestsAdminPage /> },
               { path: '/admin/tts',              element: <TtsAdminPage /> },
+              { path: '/admin/student-attendance', element: <AdminStudentAttendancePage /> },
+              { path: '/executive',              element: <ExecutiveManagePage /> },
               { path: '/admin/class-assignment', element: <AdminClassManagePage /> },
                 { path: '/admin/students',               element: <AdminStudentManagePage /> },
                 { path: '/admin/pending-users',          element: <AdminPendingUsersPage /> },

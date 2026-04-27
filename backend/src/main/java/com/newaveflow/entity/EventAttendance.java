@@ -27,6 +27,18 @@ public class EventAttendance {
     @Column(length = 50)
     private String status;
 
+    @Column
+    private java.time.LocalDate partialFromDate;
+
+    @Column(length = 255)
+    private String partialNote;
+
+    public void update(String status, java.time.LocalDate partialFromDate, String partialNote) {
+        this.status = status;
+        this.partialFromDate = partialFromDate;
+        this.partialNote = partialNote;
+    }
+
     public void updateStatus(String status) {
         this.status = status;
     }

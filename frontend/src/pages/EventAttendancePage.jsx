@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { CheckCircle2, XCircle, Calendar, Users, PenLine, CalendarCheck, UserCheck } from 'lucide-react'
+import { CheckCircle2, XCircle, Calendar, Users, PenLine, CalendarCheck, UserCheck, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
@@ -79,24 +79,37 @@ export default function EventAttendancePage() {
   })
 
   const [pendingTeacherStatus, setPendingTeacherStatus] = useState(null)
-  const [teacherSubmitted, setTeacherSubmitted] = useState(false)
-  const [teacherEditing, setTeacherEditing] = useState(false)
+  const [partialFromDate, setPartialFromDate]           = useState('')
+  const [partialNote, setPartialNote]                   = useState('')
+  const [teacherSubmitted, setTeacherSubmitted]         = useState(false)
+  const [teacherEditing, setTeacherEditing]             = useState(false)
+
+  const isMultiDay = event?.endDate && event.endDate !== event.eventDate
 
   useEffect(() => {
     if (myTeacherAttendance?.status) {
       setPendingTeacherStatus(myTeacherAttendance.status)
+      setPartialFromDate(myTeacherAttendance.partialFromDate || '')
+      setPartialNote(myTeacherAttendance.partialNote || '')
       setTeacherSubmitted(true)
     }
   }, [myTeacherAttendance])
 
   const teacherAttendanceMutation = useMutation({
-    mutationFn: (status) => eventApi.saveTeacherAttendance(eventId, status),
+    mutationFn: () => eventApi.saveTeacherAttendance(
+      eventId, pendingTeacherStatus,
+      pendingTeacherStatus === 'PARTIAL' ? partialFromDate || null : null,
+      pendingTeacherStatus === 'PARTIAL' ? partialNote || null : null,
+    ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, user?.id] })
       setTeacherSubmitted(true)
       setTeacherEditing(false)
     },
   })
+
+  const teacherCanSubmit = pendingTeacherStatus &&
+    (pendingTeacherStatus !== 'PARTIAL' || partialFromDate)
 
   const toggle = (studentId) => {
     setStatusMap(prev => ({
@@ -151,52 +164,76 @@ export default function EventAttendancePage() {
             <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">내 출석 체크</p>
 
             {/* 제출 완료 배너 */}
-            {teacherSubmitted && !teacherEditing && (
-              <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-200">
-                <div className="flex items-center gap-2">
-                  {pendingTeacherStatus === 'PRESENT'
-                    ? <CheckCircle2 size={16} className="text-emerald-600" />
-                    : <XCircle size={16} className="text-red-500" />}
-                  <span className={`text-xs font-black ${pendingTeacherStatus === 'PRESENT' ? 'text-emerald-700' : 'text-red-600'}`}>
-                    {pendingTeacherStatus === 'PRESENT' ? '참석으로 제출 완료' : '불참으로 제출 완료'}
-                  </span>
+            {teacherSubmitted && !teacherEditing && pendingTeacherStatus && (
+              <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${
+                pendingTeacherStatus === 'PRESENT' ? 'bg-emerald-50 border-emerald-200' :
+                pendingTeacherStatus === 'PARTIAL' ? 'bg-amber-50 border-amber-200' :
+                'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    {pendingTeacherStatus === 'PRESENT' && <CheckCircle2 size={16} className="text-emerald-600" />}
+                    {pendingTeacherStatus === 'PARTIAL' && <Clock size={16} className="text-amber-500" />}
+                    {pendingTeacherStatus === 'ABSENT'  && <XCircle size={16} className="text-red-500" />}
+                    <span className={`text-xs font-black ${
+                      pendingTeacherStatus === 'PRESENT' ? 'text-emerald-700' :
+                      pendingTeacherStatus === 'PARTIAL' ? 'text-amber-700' : 'text-red-600'
+                    }`}>
+                      {{ PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }[pendingTeacherStatus]}으로 제출 완료
+                    </span>
+                  </div>
+                  {pendingTeacherStatus === 'PARTIAL' && (partialFromDate || partialNote) && (
+                    <p className="text-[10px] text-gray-500 font-medium pl-6">
+                      {partialFromDate && `${partialFromDate}부터`}{partialNote && ` · ${partialNote}`}
+                    </p>
+                  )}
                 </div>
-                <button onClick={() => setTeacherEditing(true)} className="text-[11px] text-emerald-600 font-black flex items-center gap-1">
+                <button onClick={() => setTeacherEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
                   <PenLine size={12} /> 수정
                 </button>
               </div>
             )}
 
-            {/* 참석/불참 선택 + 제출 */}
+            {/* 상태 선택 + 제출 */}
             {(!teacherSubmitted || teacherEditing) && (
               <div className="flex flex-col gap-3">
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setPendingTeacherStatus('PRESENT')}
-                    className={`flex-1 py-3 rounded-2xl border-2 text-sm font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
-                      pendingTeacherStatus === 'PRESENT'
-                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                        : 'border-gray-100 bg-gray-50 text-gray-400'
-                    }`}
-                  >
-                    <CheckCircle2 size={16} /> 참석
-                  </button>
-                  <button
-                    onClick={() => setPendingTeacherStatus('ABSENT')}
-                    className={`flex-1 py-3 rounded-2xl border-2 text-sm font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
-                      pendingTeacherStatus === 'ABSENT'
-                        ? 'border-red-300 bg-red-50 text-red-600'
-                        : 'border-gray-100 bg-gray-50 text-gray-400'
-                    }`}
-                  >
-                    <XCircle size={16} /> 불참
-                  </button>
+                <div className={`grid gap-2 ${isMultiDay ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  {(isMultiDay ? ['PRESENT','PARTIAL','ABSENT'] : ['PRESENT','ABSENT']).map(key => (
+                    <button key={key} onClick={() => setPendingTeacherStatus(key)}
+                      className={`py-3 rounded-2xl border-2 text-xs font-black flex flex-col items-center gap-1 active:scale-[0.98] transition-all ${
+                        pendingTeacherStatus === key
+                          ? key === 'PRESENT' ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                          : key === 'PARTIAL' ? 'border-amber-400 bg-amber-50 text-amber-700'
+                          : 'border-red-300 bg-red-50 text-red-600'
+                          : 'border-gray-100 bg-gray-50 text-gray-400'
+                      }`}>
+                      {key === 'PRESENT' && <CheckCircle2 size={15} />}
+                      {key === 'PARTIAL' && <Clock size={15} />}
+                      {key === 'ABSENT'  && <XCircle size={15} />}
+                      {{ PRESENT:'참석', PARTIAL:'부분참석', ABSENT:'불참' }[key]}
+                    </button>
+                  ))}
                 </div>
-                <Button
-                  size="lg"
-                  onClick={() => teacherAttendanceMutation.mutate(pendingTeacherStatus)}
-                  disabled={!pendingTeacherStatus || teacherAttendanceMutation.isPending}
-                >
+
+                {pendingTeacherStatus === 'PARTIAL' && (
+                  <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
+                    <div>
+                      <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
+                      <input type="date" value={partialFromDate} min={event?.eventDate} max={event?.endDate}
+                        onChange={e => setPartialFromDate(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-300" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
+                      <input type="text" value={partialNote} onChange={e => setPartialNote(e.target.value)}
+                        placeholder="예: 오후 2시부터 참석 가능합니다"
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200" />
+                    </div>
+                  </motion.div>
+                )}
+
+                <Button size="lg" onClick={() => teacherAttendanceMutation.mutate()}
+                  disabled={!teacherCanSubmit || teacherAttendanceMutation.isPending}>
                   <UserCheck size={17} />
                   {teacherAttendanceMutation.isPending ? '저장 중...' : '출석 제출'}
                 </Button>

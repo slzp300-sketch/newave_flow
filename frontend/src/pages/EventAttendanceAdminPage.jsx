@@ -1,12 +1,29 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Users, CheckCircle2, XCircle, Calendar, UserCheck } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { eventApi } from '../api/event'
+import { Users, CheckCircle2, XCircle, Calendar, UserCheck, ChevronRight } from 'lucide-react'
+
+const GRADE_STYLES = {
+  '중1': { bg: 'bg-rose-50', text: 'text-rose-600', accent: 'bg-rose-100', progress: 'bg-rose-400', border: 'hover:border-rose-200', btn: 'text-rose-600 bg-rose-50' },
+  '중2': { bg: 'bg-orange-50', text: 'text-orange-600', accent: 'bg-orange-100', progress: 'bg-orange-400', border: 'hover:border-orange-200', btn: 'text-orange-600 bg-orange-50' },
+  '중3': { bg: 'bg-amber-50', text: 'text-amber-600', accent: 'bg-amber-100', progress: 'bg-amber-400', border: 'hover:border-amber-200', btn: 'text-amber-600 bg-amber-50' },
+  '고1': { bg: 'bg-emerald-50', text: 'text-emerald-600', accent: 'bg-emerald-100', progress: 'bg-emerald-400', border: 'hover:border-emerald-200', btn: 'text-emerald-600 bg-emerald-50' },
+  '고2': { bg: 'bg-blue-50', text: 'text-blue-600', accent: 'bg-blue-100', progress: 'bg-blue-400', border: 'hover:border-blue-200', btn: 'text-blue-600 bg-blue-50' },
+  '고3': { bg: 'bg-violet-50', text: 'text-violet-600', accent: 'bg-violet-100', progress: 'bg-violet-400', border: 'hover:border-violet-200', btn: 'text-violet-600 bg-violet-50' },
+  '미배정': { bg: 'bg-gray-50', text: 'text-gray-600', accent: 'bg-gray-100', progress: 'bg-gray-400', border: 'hover:border-gray-200', btn: 'text-gray-600 bg-gray-50' },
+  '기타': { bg: 'bg-gray-50', text: 'text-gray-600', accent: 'bg-gray-100', progress: 'bg-gray-400', border: 'hover:border-gray-200', btn: 'text-gray-600 bg-gray-50' },
+}
+
+const getGradeStyle = (grade) => {
+  if (!grade) return GRADE_STYLES['미배정']
+  const key = Object.keys(GRADE_STYLES).find(k => grade.startsWith(k))
+  return GRADE_STYLES[key] || GRADE_STYLES['기타']
+}
 
 export default function EventAttendanceAdminPage() {
   const [selectedEventId, setSelectedEventId] = useState(null)
@@ -75,7 +92,17 @@ export default function EventAttendanceAdminPage() {
 
   // 교사 학년별 그룹화
   const teacherGradeSummary = teacherSummary.reduce((acc, t) => {
-    const g = t.grade?.trim() || '미배정'
+    let rawGrade = t.grade?.trim() || '미배정'
+    let g = rawGrade
+    
+    // '중1-1' 또는 '중등1부' 등에서 '중1' 형태만 추출하여 그룹화
+    if (g !== '미배정') {
+      const match = g.match(/^[중고][123]/)
+      if (match) {
+        g = match[0]
+      }
+    }
+
     if (!acc[g]) acc[g] = { grade: g, total: 0, present: 0, absent: 0, teachers: [] }
     acc[g].total++
     if (t.status === 'PRESENT') acc[g].present++
@@ -181,18 +208,22 @@ export default function EventAttendanceAdminPage() {
             {activeTab === 'teacher' && showTeacherTab && (
               <>
                 {/* 전체 통계 */}
-                <div className="grid grid-cols-3 gap-3">
-                  <Card className="text-center py-4">
-                    <p className="text-2xl font-black text-gray-900">{teacherSummary.length}</p>
-                    <p className="text-[10px] font-black text-gray-400 mt-1">전체</p>
+                <div className="grid grid-cols-4 gap-2">
+                  <Card className="text-center py-3">
+                    <p className="text-xl font-black text-gray-900">{teacherSummary.length}</p>
+                    <p className="text-[9px] font-black text-gray-400 mt-0.5">전체</p>
                   </Card>
-                  <Card className="text-center py-4">
-                    <p className="text-2xl font-black text-emerald-500">{teacherSummary.filter(t => t.status === 'PRESENT').length}</p>
-                    <p className="text-[10px] font-black text-gray-400 mt-1">참석</p>
+                  <Card className="text-center py-3">
+                    <p className="text-xl font-black text-emerald-500">{teacherSummary.filter(t => t.status === 'PRESENT').length}</p>
+                    <p className="text-[9px] font-black text-gray-400 mt-0.5">참석</p>
                   </Card>
-                  <Card className="text-center py-4">
-                    <p className="text-2xl font-black text-red-400">{teacherSummary.filter(t => t.status === 'ABSENT').length}</p>
-                    <p className="text-[10px] font-black text-gray-400 mt-1">불참</p>
+                  <Card className="text-center py-3">
+                    <p className="text-xl font-black text-amber-500">{teacherSummary.filter(t => t.status === 'PARTIAL').length}</p>
+                    <p className="text-[9px] font-black text-gray-400 mt-0.5">부분참석</p>
+                  </Card>
+                  <Card className="text-center py-3">
+                    <p className="text-xl font-black text-red-400">{teacherSummary.filter(t => t.status === 'ABSENT').length}</p>
+                    <p className="text-[9px] font-black text-gray-400 mt-0.5">불참</p>
                   </Card>
                 </div>
 
@@ -215,9 +246,9 @@ export default function EventAttendanceAdminPage() {
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: idx * 0.05 }}
                           onClick={() => setSelectedTeacherGrade(g.grade)}
-                          className="glass-card p-5 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent hover:border-violet-200 transition-all active:scale-95 text-center"
+                          className={`glass-card p-5 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent transition-all active:scale-95 text-center ${getGradeStyle(g.grade).border}`}
                         >
-                          <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-600 mb-1">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-1 ${getGradeStyle(g.grade).accent} ${getGradeStyle(g.grade).text}`}>
                             <UserCheck size={24} />
                           </div>
                           <div>
@@ -228,7 +259,7 @@ export default function EventAttendanceAdminPage() {
                           </div>
                           <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
                             <div
-                              className="h-full bg-violet-400 rounded-full"
+                              className={`h-full rounded-full ${getGradeStyle(g.grade).progress}`}
                               style={{ width: `${g.total > 0 ? (g.present / g.total) * 100 : 0}%` }}
                             />
                           </div>
@@ -242,7 +273,7 @@ export default function EventAttendanceAdminPage() {
                     <div className="flex items-center justify-between px-1">
                       <button
                         onClick={() => setSelectedTeacherGrade(null)}
-                        className="flex items-center gap-1.5 text-xs font-black text-violet-600 bg-violet-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+                        className={`flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedTeacherGrade).btn}`}
                       >
                         ← {selectedTeacherGrade} 전체
                       </button>
@@ -256,27 +287,34 @@ export default function EventAttendanceAdminPage() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.04 }}
-                          className={`flex items-center justify-between px-3 py-2.5 rounded-2xl ${
+                          className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
                             teacher.status === 'PRESENT' ? 'bg-emerald-50/60' :
+                            teacher.status === 'PARTIAL' ? 'bg-amber-50/60' :
                             teacher.status === 'ABSENT'  ? 'bg-red-50/60' : 'bg-gray-50'
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             <span className={`text-[10px] font-black w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                               teacher.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                              teacher.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                               teacher.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
                               'bg-gray-200 text-gray-500'
                             }`}>{(teacher.teacherName || '?')[0]}</span>
                             <div>
                               <p className="text-sm font-black text-gray-800">{teacher.teacherName}</p>
-                              {teacher.grade && (
-                                <p className="text-[10px] text-gray-400 font-medium">{teacher.grade}</p>
+                              {teacher.grade && <p className="text-[10px] text-gray-400 font-medium">{teacher.grade}</p>}
+                              {teacher.status === 'PARTIAL' && (teacher.partialFromDate || teacher.partialNote) && (
+                                <p className="text-[10px] text-amber-600 font-medium mt-0.5">
+                                  {teacher.partialFromDate && `${teacher.partialFromDate}부터`}
+                                  {teacher.partialNote && ` · ${teacher.partialNote}`}
+                                </p>
                               )}
                             </div>
                           </div>
-                          {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500" /> :
-                           teacher.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400" /> :
-                           <span className="text-[10px] text-gray-400 font-bold">미제출</span>}
+                          {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :
+                           teacher.status === 'PARTIAL' ? <span className="text-[10px] text-amber-600 font-black flex-shrink-0">부분참석</span> :
+                           teacher.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
+                           <span className="text-[10px] text-gray-400 font-bold flex-shrink-0">미제출</span>}
                         </motion.div>
                       ))}
                     </Card>
@@ -288,18 +326,22 @@ export default function EventAttendanceAdminPage() {
             {/* 학생 출석 탭 */}
             {activeTab === 'student' && showStudentTab && (<>
             {/* 전체 통계 */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-2">
               <Card className="text-center py-4">
-                <p className="text-2xl font-black text-gray-900">{totalStudents}</p>
-                <p className="text-[10px] font-black text-gray-400 mt-1">전체</p>
+                <p className="text-xl font-black text-gray-900">{totalStudents}</p>
+                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">전체</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-2xl font-black text-emerald-500">{totalPresent}</p>
-                <p className="text-[10px] font-black text-gray-400 mt-1">출석</p>
+                <p className="text-xl font-black text-emerald-500">{summary.reduce((acc, c) => acc + c.records.filter(r => r.status === 'PRESENT').length, 0)}</p>
+                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">출석</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-2xl font-black text-red-400">{totalAbsent}</p>
-                <p className="text-[10px] font-black text-gray-400 mt-1">결석</p>
+                <p className="text-xl font-black text-amber-500">{summary.reduce((acc, c) => acc + c.records.filter(r => r.status === 'PARTIAL').length, 0)}</p>
+                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">부분참석</p>
+              </Card>
+              <Card className="text-center py-4">
+                <p className="text-xl font-black text-red-400">{totalAbsent}</p>
+                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">결석</p>
               </Card>
             </div>
 
@@ -323,9 +365,9 @@ export default function EventAttendanceAdminPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: idx * 0.05 }}
                       onClick={() => setSelectedGrade(g.grade)}
-                      className="glass-card p-5 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent hover:border-emerald-200 transition-all active:scale-95 text-center"
+                      className={`glass-card p-5 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent transition-all active:scale-95 text-center ${getGradeStyle(g.grade).border}`}
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-1">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-1 ${getGradeStyle(g.grade).accent} ${getGradeStyle(g.grade).text}`}>
                         <Users size={24} />
                       </div>
                       <div>
@@ -336,7 +378,7 @@ export default function EventAttendanceAdminPage() {
                       </div>
                       <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
                         <div 
-                          className="h-full bg-emerald-400"
+                          className={`h-full ${getGradeStyle(g.grade).progress}`}
                           style={{ width: `${(g.presentCount / g.totalCount) * 100}%` }}
                         />
                       </div>
@@ -350,7 +392,7 @@ export default function EventAttendanceAdminPage() {
                 <div className="flex items-center justify-between px-1">
                   <button 
                     onClick={() => setSelectedGrade(null)}
-                    className="flex items-center gap-1.5 text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+                    className={`flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedGrade).btn}`}
                   >
                     ← {selectedGrade} 전체
                   </button>
@@ -402,15 +444,17 @@ export default function EventAttendanceAdminPage() {
                           {cls.records.map(student => (
                             <div
                               key={student.studentId}
-                              className={`flex items-center justify-between px-3 py-2.5 rounded-2xl ${
-                                student.status === 'PRESENT' ? 'bg-emerald-50/50' : 'bg-red-50/50'
+                              className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
+                                student.status === 'PRESENT' ? 'bg-emerald-50/50' :
+                                student.status === 'PARTIAL' ? 'bg-amber-50/50' :
+                                'bg-red-50/50'
                               }`}
                             >
                               <div className="flex items-center gap-3">
-                                <span className={`text-[10px] font-black w-6 h-6 rounded-xl flex items-center justify-center ${
-                                  student.status === 'PRESENT'
-                                    ? 'bg-emerald-200 text-emerald-700'
-                                    : 'bg-red-200 text-red-700'
+                                <span className={`text-[10px] font-black w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                  student.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                                  student.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
+                                  'bg-red-200 text-red-700'
                                 }`}>{student.studentName[0]}</span>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-bold text-gray-700">{student.studentName}</span>
@@ -419,11 +463,17 @@ export default function EventAttendanceAdminPage() {
                                       사유: {student.absenceReason}
                                     </p>
                                   )}
+                                  {student.status === 'PARTIAL' && (student.partialFromDate || student.partialNote) && (
+                                    <p className="text-[10px] text-amber-600 font-medium mt-0.5 leading-tight">
+                                      {student.partialFromDate && `${student.partialFromDate}부터`}
+                                      {student.partialNote && ` · ${student.partialNote}`}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
-                              {student.status === 'PRESENT'
-                                ? <CheckCircle2 size={16} className="text-emerald-500" />
-                                : <XCircle size={16} className="text-red-400" />
+                              {student.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :
+                               student.status === 'PARTIAL' ? <Clock size={16} className="text-amber-500 flex-shrink-0" /> :
+                               <XCircle size={16} className="text-red-400 flex-shrink-0" />
                               }
                             </div>
                           ))}

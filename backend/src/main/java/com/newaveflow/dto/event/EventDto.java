@@ -57,18 +57,30 @@ public class EventDto {
             Long teacherId,
             String teacherName,
             String grade,
-            String status
+            String status,
+            LocalDate partialFromDate,
+            String partialNote
+    ) {}
+
+    public record TeacherAttendanceStatusResponse(
+            String status,
+            LocalDate partialFromDate,
+            String partialNote
     ) {}
 
     public record EventAttendanceRequest(
-            @NotNull String status
+            @NotNull String status,
+            LocalDate partialFromDate,
+            String partialNote
     ) {}
 
     // 학생 출석 단건
     public record StudentAttendanceItem(
             @NotNull Long studentId,
-            @NotNull String status,  // PRESENT / ABSENT
-            String absenceReason
+            @NotNull String status,  // PRESENT / PARTIAL / ABSENT
+            String absenceReason,
+            LocalDate partialFromDate,
+            String partialNote
     ) {}
 
     // 배치 요청
@@ -84,7 +96,9 @@ public class EventDto {
             Long classGroupId,
             String classGroupName,
             String status,  // null = 미제출
-            String absenceReason
+            String absenceReason,
+            LocalDate partialFromDate,
+            String partialNote
     ) {}
 
     // 반별 출석 요약 (관리자용)

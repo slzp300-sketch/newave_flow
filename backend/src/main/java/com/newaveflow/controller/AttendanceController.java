@@ -1,5 +1,6 @@
 package com.newaveflow.controller;
 
+import com.newaveflow.dto.attendance.AdminWeeklyAttendanceDto;
 import com.newaveflow.dto.attendance.AttendanceBatchRequest;
 import com.newaveflow.dto.attendance.AttendanceResponse;
 import com.newaveflow.entity.User;
@@ -54,5 +55,19 @@ public class AttendanceController {
     @GetMapping("/window")
     public ResponseEntity<Map<String, Boolean>> checkWindow() {
         return ResponseEntity.ok(Map.of("open", attendanceService.isSubmissionWindowOpen()));
+    }
+
+    @GetMapping("/admin/weekly")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<List<AdminWeeklyAttendanceDto.ClassSummary>> getAdminWeeklySummary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(attendanceService.getAdminWeeklySummary(date));
+    }
+
+    @GetMapping("/admin/absent")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<List<AdminWeeklyAttendanceDto.AbsentStudent>> getAdminAbsentList(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(attendanceService.getAdminAbsentList(date));
     }
 }

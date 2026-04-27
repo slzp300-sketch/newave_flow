@@ -112,28 +112,21 @@ public class EventService {
 
         List<Student> students = studentRepository.findByClassGroupIdAndIsActiveTrue(classGroupId);
 
-        class StudentStatus {
-            String status;
-            String reason;
-            StudentStatus(String status, String reason) { this.status = status; this.reason = reason; }
-        }
-
-        Map<Long, StudentStatus> statusMap = eventStudentAttendanceRepository
+        Map<Long, EventStudentAttendance> attMap = eventStudentAttendanceRepository
                 .findByEventIdAndClassGroupId(eventId, classGroupId)
                 .stream()
-                .collect(Collectors.toMap(
-                    a -> a.getStudent().getId(), 
-                    a -> new StudentStatus(a.getStatus(), a.getAbsenceReason())
-                ));
+                .collect(Collectors.toMap(a -> a.getStudent().getId(), a -> a));
 
         return students.stream()
                 .map(s -> {
-                    StudentStatus ss = statusMap.get(s.getId());
+                    EventStudentAttendance att = attMap.get(s.getId());
                     return new EventDto.StudentAttendanceRecord(
                         s.getId(), s.getName(), s.getGrade(),
                         classGroupId, classGroupName,
-                        ss != null ? ss.status : null,
-                        ss != null ? ss.reason : null);
+                        att != null ? att.getStatus() : null,
+                        att != null ? att.getAbsenceReason() : null,
+                        att != null ? att.getPartialFromDate() : null,
+                        att != null ? att.getPartialNote() : null);
                 })
                 .toList();
     }
@@ -154,7 +147,8 @@ public class EventService {
                     eventStudentAttendanceRepository.findByEventIdAndStudentId(eventId, item.studentId());
 
             if (existing.isPresent()) {
-                existing.get().update(item.status(), item.absenceReason());
+                existing.get().update(item.status(), item.absenceReason(),
+                        item.partialFromDate(), item.partialNote());
                 eventStudentAttendanceRepository.save(existing.get());
             } else {
                 eventStudentAttendanceRepository.save(
@@ -164,6 +158,8 @@ public class EventService {
                                 .teacher(teacher)
                                 .status(item.status())
                                 .absenceReason(item.absenceReason())
+                                .partialFromDate(item.partialFromDate())
+                                .partialNote(item.partialNote())
                                 .build()
                 );
             }
@@ -171,14 +167,17 @@ public class EventService {
     }
 
     // ── 교사 본인 출석 조회 ──
-    public Optional<String> getMyTeacherAttendance(Long eventId, Long teacherId) {
+    public EventDto.TeacherAttendanceStatusResponse getMyTeacherAttendance(Long eventId, Long teacherId) {
         return eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId)
-                .map(EventAttendance::getStatus);
+                .map(a -> new EventDto.TeacherAttendanceStatusResponse(
+                        a.getStatus(), a.getPartialFromDate(), a.getPartialNote()))
+                .orElse(new EventDto.TeacherAttendanceStatusResponse(null, null, null));
     }
 
     // ── 교사 본인 출석 저장 ──
     @Transactional
-    public void saveTeacherAttendance(Long eventId, Long teacherId, String status) {
+    public void saveTeacherAttendance(Long eventId, Long teacherId,
+                                      String status, java.time.LocalDate partialFromDate, String partialNote) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
         User teacher = userRepository.findById(teacherId)
@@ -186,7 +185,7 @@ public class EventService {
 
         Optional<EventAttendance> existing = eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId);
         if (existing.isPresent()) {
-            existing.get().updateStatus(status);
+            existing.get().update(status, partialFromDate, partialNote);
             eventAttendanceRepository.save(existing.get());
         } else {
             eventAttendanceRepository.save(
@@ -194,6 +193,8 @@ public class EventService {
                             .event(event)
                             .teacher(teacher)
                             .status(status)
+                            .partialFromDate(partialFromDate)
+                            .partialNote(partialNote)
                             .build()
             );
         }
@@ -202,14 +203,38 @@ public class EventService {
     // ── 교사 출석 전체 요약 (관리자) ──
     public List<EventDto.TeacherAttendanceRecord> getTeacherAttendanceSummary(Long eventId) {
         List<User> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER);
+        
+        // 교사들의 반 배정 정보 조회 (한 번에 조회하여 성능 최적화)
+        List<TeacherClass> allTeacherClasses = teacherClassRepository.findAllWithTeacherAndClass();
+        Map<Long, String> teacherGradeMap = allTeacherClasses.stream()
+                .filter(TeacherClass::isPrimary)
+                .collect(Collectors.toMap(
+                        tc -> tc.getTeacher().getId(),
+                        tc -> {
+                            String desc = tc.getClassGroup().getDescription();
+                            return (desc != null && !desc.isBlank()) ? desc : tc.getClassGroup().getName();
+                        },
+                        (v1, v2) -> v1
+                ));
+
         List<EventAttendance> records = eventAttendanceRepository.findAllByEventIdWithTeacher(eventId);
-        Map<Long, String> statusMap = records.stream()
-                .collect(Collectors.toMap(a -> a.getTeacher().getId(), EventAttendance::getStatus));
+        Map<Long, EventAttendance> attendanceMap = records.stream()
+                .collect(Collectors.toMap(a -> a.getTeacher().getId(), a -> a));
 
         return teachers.stream()
-                .map(t -> new EventDto.TeacherAttendanceRecord(
-                        t.getId(), t.getName(), t.getGrade(), statusMap.get(t.getId())
-                ))
+                .map(t -> {
+                    String grade = t.getGrade();
+                    if (grade == null || grade.isBlank()) {
+                        grade = teacherGradeMap.get(t.getId());
+                    }
+                    EventAttendance att = attendanceMap.get(t.getId());
+                    return new EventDto.TeacherAttendanceRecord(
+                            t.getId(), t.getName(), grade,
+                            att != null ? att.getStatus() : null,
+                            att != null ? att.getPartialFromDate() : null,
+                            att != null ? att.getPartialNote() : null
+                    );
+                })
                 .sorted(Comparator.comparing(r -> r.teacherName() != null ? r.teacherName() : ""))
                 .toList();
     }
@@ -230,13 +255,15 @@ public class EventService {
                 .map(entry -> {
                     ClassGroup cg = entry.getKey();
                     List<EventStudentAttendance> recs = entry.getValue();
-                    long presentCount = recs.stream().filter(r -> "PRESENT".equals(r.getStatus())).count();
+                    long presentCount = recs.stream()
+                            .filter(r -> "PRESENT".equals(r.getStatus()) || "PARTIAL".equals(r.getStatus())).count();
                     List<EventDto.StudentAttendanceRecord> studentRecords = recs.stream()
                             .sorted(Comparator.comparing(r -> r.getStudent().getName()))
                             .map(r -> new EventDto.StudentAttendanceRecord(
                                     r.getStudent().getId(), r.getStudent().getName(),
-                                    r.getStudent().getGrade(), cg.getId(), cg.getName(), 
-                                    r.getStatus(), r.getAbsenceReason()))
+                                    r.getStudent().getGrade(), cg.getId(), cg.getName(),
+                                    r.getStatus(), r.getAbsenceReason(),
+                                    r.getPartialFromDate(), r.getPartialNote()))
                             .toList();
                     return new EventDto.ClassAttendanceSummary(
                             cg.getId(), cg.getName(),

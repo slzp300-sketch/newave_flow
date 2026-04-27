@@ -2,6 +2,7 @@ package com.newaveflow.service;
 
 import com.newaveflow.dto.attendance.AttendanceBatchRequest;
 import com.newaveflow.dto.attendance.AttendanceResponse;
+import com.newaveflow.dto.attendance.AdminWeeklyAttendanceDto;
 import com.newaveflow.entity.*;
 import com.newaveflow.exception.AppException;
 import com.newaveflow.repository.*;
@@ -106,5 +107,35 @@ public class AttendanceService {
         LocalDate now = LocalDate.now();
         java.time.DayOfWeek day = now.getDayOfWeek();
         return day == java.time.DayOfWeek.SUNDAY || day == java.time.DayOfWeek.MONDAY;
+    }
+
+    // ── 관리자: 주간 결석자 목록 ──
+    public List<AdminWeeklyAttendanceDto.AbsentStudent> getAdminAbsentList(LocalDate date) {
+        return attendanceRepository.findAbsentByDate(date)
+                .stream()
+                .map(a -> new AdminWeeklyAttendanceDto.AbsentStudent(
+                        a.getClassGroup().getAgeGroup(),
+                        a.getClassGroup().getName(),
+                        a.getStudent().getName(),
+                        a.getStatus().name(),
+                        a.getAbsentReason()
+                ))
+                .toList();
+    }
+
+    // ── 관리자: 주간 출석 요약 (반별) ──
+    public List<AdminWeeklyAttendanceDto.ClassSummary> getAdminWeeklySummary(LocalDate date) {
+        return dailyReportRepository.findByDateWithDetails(date)
+                .stream()
+                .map(r -> new AdminWeeklyAttendanceDto.ClassSummary(
+                        r.getClassGroup().getId(),
+                        r.getClassGroup().getName(),
+                        r.getClassGroup().getAgeGroup(),
+                        r.getTotalStudents(),
+                        r.getPresentCount(),
+                        r.getAbsentCount(),
+                        r.getStatus() == DailyReport.Status.SUBMITTED
+                ))
+                .toList();
     }
 }

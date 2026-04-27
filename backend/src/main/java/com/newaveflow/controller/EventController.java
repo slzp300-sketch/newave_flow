@@ -84,13 +84,10 @@ public class EventController {
 
     // 교사: 내 출석 조회
     @GetMapping("/{id}/teacher-attendance")
-    public ResponseEntity<java.util.Map<String, Object>> getMyTeacherAttendance(
+    public ResponseEntity<EventDto.TeacherAttendanceStatusResponse> getMyTeacherAttendance(
             @PathVariable Long id,
             @AuthenticationPrincipal User currentUser) {
-        String status = eventService.getMyTeacherAttendance(id, currentUser.getId()).orElse(null);
-        java.util.Map<String, Object> result = new java.util.HashMap<>();
-        result.put("status", status);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(eventService.getMyTeacherAttendance(id, currentUser.getId()));
     }
 
     // 교사: 내 출석 제출/수정
@@ -99,7 +96,8 @@ public class EventController {
             @PathVariable Long id,
             @RequestBody EventDto.EventAttendanceRequest request,
             @AuthenticationPrincipal User currentUser) {
-        eventService.saveTeacherAttendance(id, currentUser.getId(), request.status());
+        eventService.saveTeacherAttendance(id, currentUser.getId(),
+                request.status(), request.partialFromDate(), request.partialNote());
         return ResponseEntity.ok().build();
     }
 

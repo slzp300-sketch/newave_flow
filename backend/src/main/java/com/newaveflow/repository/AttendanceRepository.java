@@ -35,4 +35,14 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
         """)
     long countPresentByClassAndDate(@Param("classId") Long classId,
                                     @Param("date") LocalDate date);
+
+    @Query("""
+        SELECT a FROM Attendance a
+        JOIN FETCH a.student s
+        JOIN FETCH a.classGroup c
+        WHERE a.attendanceDate = :date
+          AND a.status IN ('ABSENT', 'LATE')
+        ORDER BY c.ageGroup, c.name, s.name
+        """)
+    List<Attendance> findAbsentByDate(@Param("date") LocalDate date);
 }

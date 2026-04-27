@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar, CheckCircle2, XCircle, Users, PenLine,
-  CalendarCheck, UserCheck, ChevronDown
+  CalendarCheck, UserCheck, ChevronDown, Clock
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -13,12 +13,24 @@ import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
 
+const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
+const STATUS_COLOR = {
+  PRESENT: { btn: 'border-emerald-400 bg-emerald-50 text-emerald-700', banner: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: <CheckCircle2 size={16} className="text-emerald-600" /> },
+  PARTIAL: { btn: 'border-amber-400 bg-amber-50 text-amber-700',   banner: 'bg-amber-50 border-amber-200 text-amber-700',   icon: <Clock size={16} className="text-amber-500" /> },
+  ABSENT:  { btn: 'border-red-300 bg-red-50 text-red-600',         banner: 'bg-red-50 border-red-200 text-red-600',         icon: <XCircle size={16} className="text-red-500" /> },
+}
+
 // ── 교사 본인 출석 체크 섹션 ──────────────────────────────
-function TeacherSelfCheck({ eventId, userId }) {
+function TeacherSelfCheck({ event, userId }) {
+  const eventId = event.id
+  const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
-  const [pending, setPending] = useState(null)
-  const [submitted, setSubmitted] = useState(false)
-  const [editing, setEditing] = useState(false)
+
+  const [pending, setPending]             = useState(null)
+  const [partialFromDate, setPartialFromDate] = useState('')
+  const [partialNote, setPartialNote]     = useState('')
+  const [submitted, setSubmitted]         = useState(false)
+  const [editing, setEditing]             = useState(false)
 
   const { data: myAtt } = useQuery({
     queryKey: ['event-teacher-attendance', eventId, userId],
@@ -29,12 +41,18 @@ function TeacherSelfCheck({ eventId, userId }) {
   useEffect(() => {
     if (myAtt?.status) {
       setPending(myAtt.status)
+      setPartialFromDate(myAtt.partialFromDate || '')
+      setPartialNote(myAtt.partialNote || '')
       setSubmitted(true)
     }
   }, [myAtt])
 
   const saveMutation = useMutation({
-    mutationFn: (status) => eventApi.saveTeacherAttendance(eventId, status),
+    mutationFn: () => eventApi.saveTeacherAttendance(
+      eventId, pending,
+      pending === 'PARTIAL' ? partialFromDate || null : null,
+      pending === 'PARTIAL' ? partialNote || null : null,
+    ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, userId] })
       setSubmitted(true)
@@ -42,62 +60,86 @@ function TeacherSelfCheck({ eventId, userId }) {
     },
   })
 
+  const canSubmit = pending && (pending !== 'PARTIAL' || partialFromDate)
   const isEditable = !submitted || editing
+  const statusKeys = isMultiDay ? ['PRESENT', 'PARTIAL', 'ABSENT'] : ['PRESENT', 'ABSENT']
 
   return (
     <div className="flex flex-col gap-3">
       <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">내 출석 체크</p>
 
       {/* 제출 완료 배너 */}
-      {submitted && !editing && (
-        <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-200">
-          <div className="flex items-center gap-2">
-            {pending === 'PRESENT'
-              ? <CheckCircle2 size={16} className="text-emerald-600" />
-              : <XCircle size={16} className="text-red-500" />}
-            <span className={`text-xs font-black ${pending === 'PRESENT' ? 'text-emerald-700' : 'text-red-600'}`}>
-              {pending === 'PRESENT' ? '참석으로 제출 완료' : '불참으로 제출 완료'}
-            </span>
+      {submitted && !editing && pending && (
+        <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${STATUS_COLOR[pending]?.banner || 'bg-gray-50 border-gray-200'}`}>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              {STATUS_COLOR[pending]?.icon}
+              <span className="text-xs font-black">{STATUS_LABEL[pending]}으로 제출 완료</span>
+            </div>
+            {pending === 'PARTIAL' && (partialFromDate || partialNote) && (
+              <p className="text-[10px] text-gray-500 font-medium pl-6">
+                {partialFromDate && `${partialFromDate}부터`}{partialNote && ` · ${partialNote}`}
+              </p>
+            )}
           </div>
-          <button
-            onClick={() => setEditing(true)}
-            className="text-[11px] text-emerald-600 font-black flex items-center gap-1"
-          >
+          <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
             <PenLine size={12} /> 수정
           </button>
         </div>
       )}
 
-      {/* 참석/불참 선택 */}
+      {/* 상태 선택 버튼 */}
       {isEditable && (
         <div className="flex flex-col gap-3">
-          <div className="flex gap-3">
-            <button
-              onClick={() => setPending('PRESENT')}
-              className={`flex-1 py-3 rounded-2xl border-2 text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
-                pending === 'PRESENT'
-                  ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                  : 'border-gray-100 bg-gray-50 text-gray-400'
-              }`}
-            >
-              <CheckCircle2 size={16} /> 참석
-            </button>
-            <button
-              onClick={() => setPending('ABSENT')}
-              className={`flex-1 py-3 rounded-2xl border-2 text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
-                pending === 'ABSENT'
-                  ? 'border-red-300 bg-red-50 text-red-600'
-                  : 'border-gray-100 bg-gray-50 text-gray-400'
-              }`}
-            >
-              <XCircle size={16} /> 불참
-            </button>
+          <div className={`grid gap-2 ${statusKeys.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            {statusKeys.map(key => (
+              <button
+                key={key}
+                onClick={() => setPending(key)}
+                className={`py-3 rounded-2xl border-2 text-xs font-black flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] ${
+                  pending === key ? STATUS_COLOR[key].btn : 'border-gray-100 bg-gray-50 text-gray-400'
+                }`}
+              >
+                {key === 'PRESENT' && <CheckCircle2 size={15} />}
+                {key === 'PARTIAL' && <Clock size={15} />}
+                {key === 'ABSENT'  && <XCircle size={15} />}
+                {STATUS_LABEL[key]}
+              </button>
+            ))}
           </div>
-          <Button
-            size="lg"
-            onClick={() => saveMutation.mutate(pending)}
-            disabled={!pending || saveMutation.isPending}
-          >
+
+          {/* 부분참석 상세 입력 */}
+          {pending === 'PARTIAL' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="flex flex-col gap-2"
+            >
+              <div>
+                <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
+                <input
+                  type="date"
+                  value={partialFromDate}
+                  min={event.eventDate}
+                  max={event.endDate}
+                  onChange={e => setPartialFromDate(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
+                <input
+                  type="text"
+                  value={partialNote}
+                  onChange={e => setPartialNote(e.target.value)}
+                  placeholder="예: 오후 2시부터 참석 가능합니다"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200"
+                />
+              </div>
+            </motion.div>
+          )}
+
+          <Button size="lg" onClick={() => saveMutation.mutate()} disabled={!canSubmit || saveMutation.isPending}>
             <UserCheck size={17} />
             {saveMutation.isPending ? '저장 중...' : '출석 제출'}
           </Button>
@@ -107,13 +149,18 @@ function TeacherSelfCheck({ eventId, userId }) {
   )
 }
 
-// ── 학생 출석 체크 섹션 ────────────────────���───────────────
-function StudentAttendanceCheck({ eventId, userId }) {
+// ── 학생 출석 체크 섹션 ─────────────────────────────────────
+function StudentAttendanceCheck({ event, userId }) {
+  const eventId  = event.id
+  const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
-  const [statusMap, setStatusMap] = useState({})
-  const [reasonMap, setReasonMap] = useState({})
-  const [submitted, setSubmitted] = useState(false)
-  const [editing, setEditing] = useState(false)
+
+  const [statusMap,          setStatusMap]          = useState({})
+  const [reasonMap,          setReasonMap]          = useState({})
+  const [partialFromDateMap, setPartialFromDateMap] = useState({})
+  const [partialNoteMap,     setPartialNoteMap]     = useState({})
+  const [submitted,          setSubmitted]          = useState(false)
+  const [editing,            setEditing]            = useState(false)
 
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['event-attendance', eventId, userId],
@@ -123,14 +170,17 @@ function StudentAttendanceCheck({ eventId, userId }) {
 
   useEffect(() => {
     if (students.length > 0) {
-      const map = {}, rMap = {}
+      const sMap = {}, rMap = {}, pDateMap = {}, pNoteMap = {}
       let hasAny = false
       students.forEach(s => {
-        if (s.status) { map[s.studentId] = s.status; rMap[s.studentId] = s.absenceReason || ''; hasAny = true }
-        else { map[s.studentId] = 'PRESENT'; rMap[s.studentId] = '' }
+        sMap[s.studentId]     = s.status || 'PRESENT'
+        rMap[s.studentId]     = s.absenceReason || ''
+        pDateMap[s.studentId] = s.partialFromDate || ''
+        pNoteMap[s.studentId] = s.partialNote || ''
+        if (s.status) hasAny = true
       })
-      setStatusMap(map)
-      setReasonMap(rMap)
+      setStatusMap(sMap); setReasonMap(rMap)
+      setPartialFromDateMap(pDateMap); setPartialNoteMap(pNoteMap)
       if (hasAny) setSubmitted(true)
     }
   }, [students])
@@ -139,26 +189,33 @@ function StudentAttendanceCheck({ eventId, userId }) {
     mutationFn: (records) => eventApi.saveStudentAttendance(eventId, records),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['event-attendance', eventId, userId] })
-      setSubmitted(true)
-      setEditing(false)
+      setSubmitted(true); setEditing(false)
     },
     onError: (err) => alert('제출 중 오류: ' + (err.response?.data?.message || err.message)),
   })
 
-  const toggle = (sid) => setStatusMap(p => ({ ...p, [sid]: p[sid] === 'PRESENT' ? 'ABSENT' : 'PRESENT' }))
+  const setStatus = (sid, status) => setStatusMap(p => ({ ...p, [sid]: status }))
+  const toggleSimple = (sid) => setStatusMap(p => ({ ...p, [sid]: p[sid] === 'PRESENT' ? 'ABSENT' : 'PRESENT' }))
+
   const handleSubmit = () => {
     const records = Object.entries(statusMap).map(([sid, status]) => ({
       studentId: Number(sid), status,
       absenceReason: status === 'ABSENT' ? (reasonMap[sid] || '') : '',
+      partialFromDate: status === 'PARTIAL' ? (partialFromDateMap[sid] || null) : null,
+      partialNote:     status === 'PARTIAL' ? (partialNoteMap[sid] || null) : null,
     }))
     saveMutation.mutate(records)
   }
 
-  const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT').length
+  const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT' || s === 'PARTIAL').length
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
   const isEditable   = !submitted || editing
-  const missingReasons = students.filter(s => statusMap[s.studentId] === 'ABSENT' && !reasonMap[s.studentId]?.trim())
-  const canSubmit = isEditable && students.length > 0 && missingReasons.length === 0
+
+  const missingReasons  = students.filter(s => statusMap[s.studentId] === 'ABSENT' && !reasonMap[s.studentId]?.trim())
+  const missingPartials = isMultiDay
+    ? students.filter(s => statusMap[s.studentId] === 'PARTIAL' && !partialFromDateMap[s.studentId])
+    : []
+  const canSubmit = isEditable && students.length > 0 && missingReasons.length === 0 && missingPartials.length === 0
 
   return (
     <div className="flex flex-col gap-3">
@@ -206,48 +263,86 @@ function StudentAttendanceCheck({ eventId, userId }) {
       ) : (
         <div className="flex flex-col gap-2">
           {students.map((student, idx) => {
-            const status = statusMap[student.studentId] ?? 'PRESENT'
-            const isPresent = status === 'PRESENT'
+            const sid    = student.studentId
+            const status = statusMap[sid] ?? 'PRESENT'
             return (
-              <div key={student.studentId} className="flex flex-col gap-2">
-                <motion.button
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.03 }}
-                  onClick={() => isEditable && toggle(student.studentId)}
-                  disabled={!isEditable}
-                  className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.98] text-left ${
-                    isPresent ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'
-                  } ${!isEditable ? 'cursor-default' : 'cursor-pointer'}`}
-                >
+              <motion.div key={sid} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} transition={{ delay: idx * 0.03 }}
+                className="flex flex-col gap-1.5"
+              >
+                {/* 학생 카드 */}
+                <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 ${
+                  status === 'PRESENT' ? 'border-emerald-200 bg-emerald-50' :
+                  status === 'PARTIAL' ? 'border-amber-200 bg-amber-50' :
+                  'border-red-200 bg-red-50'
+                }`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
-                      isPresent ? 'bg-emerald-200 text-emerald-700' : 'bg-red-200 text-red-700'
+                      status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                      status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
+                      'bg-red-200 text-red-700'
                     }`}>{student.studentName[0]}</div>
                     <div>
                       <p className="font-black text-gray-900 text-sm">{student.studentName}</p>
                       <p className="text-[10px] text-gray-400 font-medium">{student.grade}</p>
                     </div>
                   </div>
-                  <span className={`text-xs font-black flex items-center gap-1 ${isPresent ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {isPresent ? <><CheckCircle2 size={14} /> 출석</> : <><XCircle size={14} /> 결석</>}
-                  </span>
-                </motion.button>
-                {!isPresent && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-1">
-                    <input
-                      type="text"
-                      value={reasonMap[student.studentId] || ''}
-                      onChange={e => setReasonMap(p => ({ ...p, [student.studentId]: e.target.value }))}
-                      placeholder="결석 사유를 입력해 주세요 (필수)"
-                      disabled={!isEditable}
+
+                  {/* 단일 일정: 클릭 토글 / 다중 일정: 버튼 그룹 */}
+                  {isMultiDay && isEditable ? (
+                    <div className="flex gap-1">
+                      {['PRESENT','PARTIAL','ABSENT'].map(k => (
+                        <button key={k} onClick={() => setStatus(sid, k)}
+                          className={`text-[9px] font-black px-2 py-1.5 rounded-lg transition-all ${
+                            status === k
+                              ? k === 'PRESENT' ? 'bg-emerald-200 text-emerald-800'
+                              : k === 'PARTIAL' ? 'bg-amber-200 text-amber-800'
+                              : 'bg-red-200 text-red-800'
+                              : 'bg-white/70 text-gray-400'
+                          }`}>
+                          {{ PRESENT:'출석', PARTIAL:'부분', ABSENT:'결석' }[k]}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <button onClick={() => isEditable && toggleSimple(sid)} disabled={!isEditable}
+                      className={`text-xs font-black flex items-center gap-1 ${
+                        status === 'PRESENT' ? 'text-emerald-600' : 'text-red-500'
+                      } ${!isEditable ? 'cursor-default' : ''}`}>
+                      {status === 'PRESENT' ? <><CheckCircle2 size={14} /> 출석</> : <><XCircle size={14} /> 결석</>}
+                    </button>
+                  )}
+                </div>
+
+                {/* 결석 사유 */}
+                {status === 'ABSENT' && (
+                  <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1">
+                    <input type="text" value={reasonMap[sid] || ''}
+                      onChange={e => setReasonMap(p => ({ ...p, [sid]: e.target.value }))}
+                      placeholder="결석 사유를 입력해 주세요 (필수)" disabled={!isEditable}
                       className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-medium border transition-all ${
                         isEditable ? 'bg-white border-red-100 focus:border-red-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
-                      }`}
-                    />
+                      }`} />
                   </motion.div>
                 )}
-              </div>
+
+                {/* 부분참석 입력 (다중 일정만) */}
+                {isMultiDay && status === 'PARTIAL' && (
+                  <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1 flex flex-col gap-1.5">
+                    <input type="date" value={partialFromDateMap[sid] || ''}
+                      min={event.eventDate} max={event.endDate} disabled={!isEditable}
+                      onChange={e => setPartialFromDateMap(p => ({ ...p, [sid]: e.target.value }))}
+                      className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold border transition-all ${
+                        isEditable ? 'bg-amber-50/40 border-amber-200 focus:ring-2 focus:ring-amber-200 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
+                      }`} />
+                    <input type="text" value={partialNoteMap[sid] || ''}
+                      onChange={e => setPartialNoteMap(p => ({ ...p, [sid]: e.target.value }))}
+                      placeholder="세부 시간 / 메모 (선택)" disabled={!isEditable}
+                      className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-medium border transition-all ${
+                        isEditable ? 'bg-white border-amber-100 focus:border-amber-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
+                      }`} />
+                  </motion.div>
+                )}
+              </motion.div>
             )
           })}
         </div>
@@ -256,7 +351,8 @@ function StudentAttendanceCheck({ eventId, userId }) {
       {/* 제출 버튼 */}
       {isEditable && students.length > 0 && (
         <div className="flex flex-col gap-2">
-          {!canSubmit && <p className="text-[10px] font-black text-red-400 text-center">결석 사유를 모두 입력해 주세요 ({missingReasons.length}명 누락)</p>}
+          {missingReasons.length > 0 && <p className="text-[10px] font-black text-red-400 text-center">결석 사유를 모두 입력해 주세요 ({missingReasons.length}명 누락)</p>}
+          {missingPartials.length > 0 && <p className="text-[10px] font-black text-amber-500 text-center">부분참석 날짜를 모두 입력해 주세요 ({missingPartials.length}명 누락)</p>}
           <Button size="lg" onClick={handleSubmit} disabled={saveMutation.isPending || !canSubmit}>
             <CalendarCheck size={17} />
             {saveMutation.isPending ? '저장 중...' : '출석 체크 제출'}
@@ -274,9 +370,9 @@ function EventPanel({ event, user }) {
 
   return (
     <div className="flex flex-col gap-5 px-4 pb-4 pt-2">
-      {needsTeacher && <TeacherSelfCheck eventId={event.id} userId={user?.id} />}
+      {needsTeacher && <TeacherSelfCheck event={event} userId={user?.id} />}
       {needsTeacher && needsStudent && <div className="border-t border-gray-100" />}
-      {needsStudent && <StudentAttendanceCheck eventId={event.id} userId={user?.id} />}
+      {needsStudent && <StudentAttendanceCheck event={event} userId={user?.id} />}
     </div>
   )
 }
