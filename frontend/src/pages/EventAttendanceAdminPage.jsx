@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Users, CheckCircle2, XCircle, Calendar } from 'lucide-react'
+import { Users, CheckCircle2, XCircle, Calendar, UserCheck } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
@@ -10,8 +10,10 @@ import { eventApi } from '../api/event'
 
 export default function EventAttendanceAdminPage() {
   const [selectedEventId, setSelectedEventId] = useState(null)
-  const [selectedGrade, setSelectedGrade] = useState(null)
+  const [selectedGrade, setSelectedGrade] = useState(null)         // 학생 학년
+  const [selectedTeacherGrade, setSelectedTeacherGrade] = useState(null) // 교사 학년
   const [expandedClassId, setExpandedClassId] = useState(null)
+  const [activeTab, setActiveTab] = useState('student') // 'student' | 'teacher'
 
   const { data: events = [], isLoading: eventsLoading } = useQuery({
     queryKey: ['attendance-required-events'],
@@ -24,7 +26,16 @@ export default function EventAttendanceAdminPage() {
     enabled: !!selectedEventId,
   })
 
+  const { data: teacherSummary = [], isLoading: teacherSummaryLoading } = useQuery({
+    queryKey: ['teacher-attendance-summary', selectedEventId],
+    queryFn: () => eventApi.getTeacherAttendanceSummary(selectedEventId).then(r => r.data),
+    enabled: !!selectedEventId,
+  })
+
   const selectedEvent = events.find(e => e.id === selectedEventId)
+  const showTeacherTab = selectedEvent?.attendanceTarget === 'TEACHER_ONLY' || selectedEvent?.attendanceTarget === 'BOTH'
+  const showStudentTab = !selectedEvent || selectedEvent?.attendanceTarget === 'STUDENT_ONLY' || selectedEvent?.attendanceTarget === 'BOTH'
+
   const totalStudents = summary.reduce((acc, c) => acc + Number(c.totalCount), 0)
   const totalPresent  = summary.reduce((acc, c) => acc + Number(c.presentCount), 0)
   const totalAbsent   = summary.reduce((acc, c) => acc + Number(c.absentCount), 0)
@@ -60,14 +71,41 @@ export default function EventAttendanceAdminPage() {
   })
   const currentGradeData = selectedGrade ? gradeSummary[selectedGrade] : null
 
+  const TEACHER_GRADE_ORDER = ['중1', '중2', '중3', '고1', '고2', '고3', '미배정']
+
+  // 교사 학년별 그룹화
+  const teacherGradeSummary = teacherSummary.reduce((acc, t) => {
+    const g = t.grade?.trim() || '미배정'
+    if (!acc[g]) acc[g] = { grade: g, total: 0, present: 0, absent: 0, teachers: [] }
+    acc[g].total++
+    if (t.status === 'PRESENT') acc[g].present++
+    if (t.status === 'ABSENT')  acc[g].absent++
+    acc[g].teachers.push(t)
+    return acc
+  }, {})
+
+  const teacherGradeList = Object.values(teacherGradeSummary).sort((a, b) => {
+    const ai = TEACHER_GRADE_ORDER.indexOf(a.grade)
+    const bi = TEACHER_GRADE_ORDER.indexOf(b.grade)
+    if (ai !== -1 && bi !== -1) return ai - bi
+    if (ai !== -1) return -1
+    if (bi !== -1) return 1
+    return a.grade.localeCompare(b.grade)
+  })
+
+  const currentTeacherGradeData = selectedTeacherGrade ? teacherGradeSummary[selectedTeacherGrade] : null
+
   // 행사 선택 시 상태 초기화
   const handleEventSelect = (id) => {
     if (selectedEventId === id) {
       setSelectedEventId(null)
     } else {
       setSelectedEventId(id)
+      const ev = events.find(e => e.id === id)
+      setActiveTab(ev?.attendanceTarget === 'TEACHER_ONLY' ? 'teacher' : 'student')
     }
     setSelectedGrade(null)
+    setSelectedTeacherGrade(null)
     setExpandedClassId(null)
   }
 
@@ -117,6 +155,138 @@ export default function EventAttendanceAdminPage() {
         {/* 선택된 행사 결과 */}
         {selectedEventId && (
           <>
+            {/* 탭 (학생/교사) */}
+            {showStudentTab && showTeacherTab && (
+              <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
+                <button
+                  onClick={() => { setActiveTab('student'); setSelectedGrade(null) }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                    activeTab === 'student' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                  }`}
+                >
+                  <Users size={13} /> 학생 출석
+                </button>
+                <button
+                  onClick={() => { setActiveTab('teacher'); setSelectedTeacherGrade(null) }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                    activeTab === 'teacher' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                  }`}
+                >
+                  <UserCheck size={13} /> 교사 출석
+                </button>
+              </div>
+            )}
+
+            {/* 교사 출석 탭 */}
+            {activeTab === 'teacher' && showTeacherTab && (
+              <>
+                {/* 전체 통계 */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Card className="text-center py-4">
+                    <p className="text-2xl font-black text-gray-900">{teacherSummary.length}</p>
+                    <p className="text-[10px] font-black text-gray-400 mt-1">전체</p>
+                  </Card>
+                  <Card className="text-center py-4">
+                    <p className="text-2xl font-black text-emerald-500">{teacherSummary.filter(t => t.status === 'PRESENT').length}</p>
+                    <p className="text-[10px] font-black text-gray-400 mt-1">참석</p>
+                  </Card>
+                  <Card className="text-center py-4">
+                    <p className="text-2xl font-black text-red-400">{teacherSummary.filter(t => t.status === 'ABSENT').length}</p>
+                    <p className="text-[10px] font-black text-gray-400 mt-1">불참</p>
+                  </Card>
+                </div>
+
+                {teacherSummaryLoading ? (
+                  <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
+                ) : teacherSummary.length === 0 ? (
+                  <Card className="py-10 text-center flex flex-col items-center gap-2">
+                    <UserCheck size={28} className="text-gray-200" />
+                    <p className="text-sm font-black text-gray-400">아직 제출된 출석 데이터가 없습니다</p>
+                  </Card>
+                ) : !selectedTeacherGrade ? (
+                  /* 학년 카드 뷰 */
+                  <div className="flex flex-col gap-3">
+                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {teacherGradeList.map((g, idx) => (
+                        <motion.button
+                          key={g.grade}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          onClick={() => setSelectedTeacherGrade(g.grade)}
+                          className="glass-card p-5 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent hover:border-violet-200 transition-all active:scale-95 text-center"
+                        >
+                          <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-600 mb-1">
+                            <UserCheck size={24} />
+                          </div>
+                          <div>
+                            <p className="font-black text-gray-900 text-lg leading-tight">{g.grade}</p>
+                            <p className="text-[10px] text-gray-400 font-bold mt-1">
+                              {g.present} / {g.total} 참석
+                            </p>
+                          </div>
+                          <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                            <div
+                              className="h-full bg-violet-400 rounded-full"
+                              style={{ width: `${g.total > 0 ? (g.present / g.total) * 100 : 0}%` }}
+                            />
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* 선택된 학년의 교사 목록 뷰 */
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between px-1">
+                      <button
+                        onClick={() => setSelectedTeacherGrade(null)}
+                        className="flex items-center gap-1.5 text-xs font-black text-violet-600 bg-violet-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+                      >
+                        ← {selectedTeacherGrade} 전체
+                      </button>
+                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">교사 현황</p>
+                    </div>
+
+                    <Card className="flex flex-col gap-1.5 p-3">
+                      {currentTeacherGradeData?.teachers.map((teacher, idx) => (
+                        <motion.div
+                          key={teacher.teacherId}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.04 }}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-2xl ${
+                            teacher.status === 'PRESENT' ? 'bg-emerald-50/60' :
+                            teacher.status === 'ABSENT'  ? 'bg-red-50/60' : 'bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`text-[10px] font-black w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                              teacher.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                              teacher.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
+                              'bg-gray-200 text-gray-500'
+                            }`}>{(teacher.teacherName || '?')[0]}</span>
+                            <div>
+                              <p className="text-sm font-black text-gray-800">{teacher.teacherName}</p>
+                              {teacher.grade && (
+                                <p className="text-[10px] text-gray-400 font-medium">{teacher.grade}</p>
+                              )}
+                            </div>
+                          </div>
+                          {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500" /> :
+                           teacher.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400" /> :
+                           <span className="text-[10px] text-gray-400 font-bold">미제출</span>}
+                        </motion.div>
+                      ))}
+                    </Card>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* 학생 출석 탭 */}
+            {activeTab === 'student' && showStudentTab && (<>
             {/* 전체 통계 */}
             <div className="grid grid-cols-3 gap-3">
               <Card className="text-center py-4">
@@ -264,6 +434,8 @@ export default function EventAttendanceAdminPage() {
                 ))}
               </div>
             )}
+            </>)}
+
           </>
         )}
       </div>

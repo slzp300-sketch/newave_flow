@@ -81,4 +81,33 @@ public class EventController {
             @PathVariable Long id) {
         return ResponseEntity.ok(eventService.getStudentAttendanceSummary(id));
     }
+
+    // 교사: 내 출석 조회
+    @GetMapping("/{id}/teacher-attendance")
+    public ResponseEntity<java.util.Map<String, Object>> getMyTeacherAttendance(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+        String status = eventService.getMyTeacherAttendance(id, currentUser.getId()).orElse(null);
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("status", status);
+        return ResponseEntity.ok(result);
+    }
+
+    // 교사: 내 출석 제출/수정
+    @PostMapping("/{id}/teacher-attendance")
+    public ResponseEntity<Void> saveTeacherAttendance(
+            @PathVariable Long id,
+            @RequestBody EventDto.EventAttendanceRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        eventService.saveTeacherAttendance(id, currentUser.getId(), request.status());
+        return ResponseEntity.ok().build();
+    }
+
+    // 관리자: 교사 출석 요약 조회
+    @GetMapping("/{id}/teacher-attendance/summary")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<List<EventDto.TeacherAttendanceRecord>> getTeacherAttendanceSummary(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(eventService.getTeacherAttendanceSummary(id));
+    }
 }

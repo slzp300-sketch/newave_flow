@@ -27,4 +27,16 @@ public interface MeetingMinuteConfirmRepository extends JpaRepository<MeetingMin
         )
         """)
     long countUnconfirmedForUser(@org.springframework.data.repository.query.Param("user") com.newaveflow.entity.User user);
+
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT COUNT(c) > 0 FROM MeetingMinuteConfirm c
+        WHERE c.user = :user
+        AND c.minutes.meetingDate BETWEEN :start AND :end
+        AND c.minutes.isActive = true
+        """)
+    boolean existsByUserAndMeetingDateBetween(
+        @org.springframework.data.repository.query.Param("user") com.newaveflow.entity.User user,
+        @org.springframework.data.repository.query.Param("start") java.time.LocalDate start,
+        @org.springframework.data.repository.query.Param("end") java.time.LocalDate end
+    );
 }

@@ -47,7 +47,16 @@ public class Event {
     @Builder.Default
     private boolean attendanceRequired = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    @Builder.Default
+    private AttendanceTarget attendanceTarget = AttendanceTarget.STUDENT_ONLY;
+
     public enum EventType {
         SPECIAL, MEETING, REGULAR, CHURCH_WIDE
+    }
+
+    public enum AttendanceTarget {
+        STUDENT_ONLY, TEACHER_ONLY, BOTH
     }
 }

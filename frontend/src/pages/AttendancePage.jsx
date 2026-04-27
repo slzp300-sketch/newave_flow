@@ -112,6 +112,7 @@ export default function AttendancePage() {
       setLocalEdit(false)
       qc.invalidateQueries({ queryKey: ['attendance'] })
       qc.invalidateQueries({ queryKey: ['report-status'] })
+      qc.invalidateQueries({ queryKey: ['weekly-status'] })
     },
   })
 

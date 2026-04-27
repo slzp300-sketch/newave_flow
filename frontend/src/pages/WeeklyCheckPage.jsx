@@ -83,7 +83,12 @@ function useWeeklyStatus() {
     queryFn: () => weeklyStatusApi.getStatus().then(r => r.data),
     staleTime: 2 * 60 * 1000,
   })
-  return data ?? { attendanceSubmittedThisWeek: false, unconfirmedMinutesCount: 0 }
+  return data ?? {
+    attendanceSubmittedThisWeek: false,
+    unconfirmedMinutesCount: 0,
+    currentWeekMinutesExists: false,
+    currentWeekMinutesConfirmed: false,
+  }
 }
 
 function useAttendanceRequiredEvents() {
@@ -140,8 +145,6 @@ export default function WeeklyCheckPage() {
   const attendanceEvents = useAttendanceRequiredEvents()
   const weekRange     = getCurrentWeekRange()
 
-  const minutesDone = weeklyStatus.unconfirmedMinutesCount === 0
-
   // 각 파트별 활성화 상태
   const ttsOpen = canSubmitTTS()
   const meetingOpen = isVoteWindowOpen()
@@ -195,16 +198,20 @@ export default function WeeklyCheckPage() {
       disabled: !satDone && !satWindowOpen,
       path: '/meeting/sat',
     },
-    {
+    ...(satData?.status === 'ABSENT' ? [{
       id: 'minutes',
       icon: FileText,
-      color: minutesDone ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600',
+      color: weeklyStatus.currentWeekMinutesConfirmed ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600',
       title: '회의록 및 영상',
-      desc: minutesDone ? '✅ 모든 회의록을 확인하셨습니다.' : `미확인 회의록 ${weeklyStatus.unconfirmedMinutesCount}건이 있습니다.`,
-      done: minutesDone,
-      disabled: false,
+      desc: weeklyStatus.currentWeekMinutesConfirmed
+        ? '✅ 이번 주 회의록을 확인하셨습니다.'
+        : weeklyStatus.currentWeekMinutesExists
+          ? '이번 주 회의록 확인이 필요합니다.'
+          : '⚠️ 이번 주 회의록이 아직 업로드되지 않았습니다.',
+      done: weeklyStatus.currentWeekMinutesConfirmed,
+      disabled: !weeklyStatus.currentWeekMinutesExists,
       path: '/minutes',
-    },
+    }] : []),
     {
       id: 'event-attendance',
       icon: Calendar,

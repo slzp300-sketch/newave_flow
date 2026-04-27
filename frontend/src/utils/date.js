@@ -32,6 +32,20 @@ export const greetingByTime = () => {
 /** 현재 날짜의 주차 (ISO 기준) */
 export const getCurrentWeekNumber = () => getISOWeek(new Date())
 
+/** 현재 주간 범위 (항상 이번 주, Mon/Tue 시프트 없음) */
+export const getThisWeekInfo = () => {
+  const now = new Date()
+  const sun = startOfWeek(now, { weekStartsOn: 0 })
+  const sat = endOfWeek(now, { weekStartsOn: 0 })
+  return {
+    start: format(sun, 'M/d'),
+    end:   format(sat, 'M/d'),
+    weekNum: getWeek(sun, { weekStartsOn: 0 }),
+    month: getMonth(sun) + 1,
+    weekOfMonth: getWeekOfMonth(sun, { weekStartsOn: 0 })
+  }
+}
+
 /** TTS 주간 범위 (일요일 ~ 토요일) */
 export const getTTSWeekRange = () => {
   const now = new Date()

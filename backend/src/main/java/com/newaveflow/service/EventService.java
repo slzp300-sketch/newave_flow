@@ -48,6 +48,7 @@ public class EventService {
 
     @Transactional
     public EventDto.EventResponse createEvent(EventDto.EventCreateRequest request) {
+        Event.AttendanceTarget target = parseAttendanceTarget(request.attendanceTarget());
         Event event = Event.builder()
                 .title(request.title())
                 .description(request.description())
@@ -58,6 +59,7 @@ public class EventService {
                 .color(request.color())
                 .eventType(Event.EventType.valueOf(request.eventType()))
                 .attendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()))
+                .attendanceTarget(target)
                 .build();
         Event saved = eventRepository.save(event);
 
@@ -84,6 +86,7 @@ public class EventService {
         event.setColor(request.color());
         event.setEventType(Event.EventType.valueOf(request.eventType()));
         event.setAttendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()));
+        event.setAttendanceTarget(parseAttendanceTarget(request.attendanceTarget()));
         return EventDto.EventResponse.from(eventRepository.save(event));
     }
 
@@ -165,6 +168,56 @@ public class EventService {
                 );
             }
         }
+    }
+
+    // ── 교사 본인 출석 조회 ──
+    public Optional<String> getMyTeacherAttendance(Long eventId, Long teacherId) {
+        return eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId)
+                .map(EventAttendance::getStatus);
+    }
+
+    // ── 교사 본인 출석 저장 ──
+    @Transactional
+    public void saveTeacherAttendance(Long eventId, Long teacherId, String status) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+
+        Optional<EventAttendance> existing = eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId);
+        if (existing.isPresent()) {
+            existing.get().updateStatus(status);
+            eventAttendanceRepository.save(existing.get());
+        } else {
+            eventAttendanceRepository.save(
+                    EventAttendance.builder()
+                            .event(event)
+                            .teacher(teacher)
+                            .status(status)
+                            .build()
+            );
+        }
+    }
+
+    // ── 교사 출석 전체 요약 (관리자) ──
+    public List<EventDto.TeacherAttendanceRecord> getTeacherAttendanceSummary(Long eventId) {
+        List<User> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER);
+        List<EventAttendance> records = eventAttendanceRepository.findAllByEventIdWithTeacher(eventId);
+        Map<Long, String> statusMap = records.stream()
+                .collect(Collectors.toMap(a -> a.getTeacher().getId(), EventAttendance::getStatus));
+
+        return teachers.stream()
+                .map(t -> new EventDto.TeacherAttendanceRecord(
+                        t.getId(), t.getName(), t.getGrade(), statusMap.get(t.getId())
+                ))
+                .sorted(Comparator.comparing(r -> r.teacherName() != null ? r.teacherName() : ""))
+                .toList();
+    }
+
+    private Event.AttendanceTarget parseAttendanceTarget(String value) {
+        if (value == null) return Event.AttendanceTarget.STUDENT_ONLY;
+        try { return Event.AttendanceTarget.valueOf(value); }
+        catch (IllegalArgumentException e) { return Event.AttendanceTarget.STUDENT_ONLY; }
     }
 
     // ── 학생 출석 전체 요약 (관리자) ──

@@ -7,4 +7,5 @@ import java.util.List;
 public interface MeetingMinuteRepository extends JpaRepository<MeetingMinute, Long> {
     List<MeetingMinute> findAllByOrderByMeetingDateDesc();
     List<MeetingMinute> findAllByIsActiveTrueOrderByMeetingDateDesc();
+    boolean existsByMeetingDateBetweenAndIsActiveTrue(java.time.LocalDate start, java.time.LocalDate end);
 }

@@ -5,7 +5,7 @@ import { CheckCircle2, CalendarCheck, MessageSquare, PenLine, Lock, Clock } from
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
-import { getTTSWeekRange } from '../utils/date'
+import { getThisWeekInfo } from '../utils/date'
 import { format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import client from '../api/client'
@@ -34,7 +34,7 @@ function getThisWeekMonday() {
 
 export default function SatMeetingPage() {
   const { user }   = useAuthStore()
-  const weekInfo   = getTTSWeekRange()
+  const weekInfo   = getThisWeekInfo()
   const mondayDate = new Date(getThisWeekMonday())
   const satDate    = format(addDays(mondayDate, 5), 'yyyy-MM-dd')
   const satDateLabel = format(addDays(mondayDate, 5), 'M/d')

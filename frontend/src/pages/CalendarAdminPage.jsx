@@ -66,6 +66,7 @@ export default function CalendarAdminPage() {
     color: '',
     eventType: 'REGULAR',
     attendanceRequired: false,
+    attendanceTarget: 'STUDENT_ONLY',
   })
 
   const { data: events = [] } = useQuery({
@@ -113,6 +114,7 @@ export default function CalendarAdminPage() {
       color: event.color || '',
       eventType: event.eventType,
       attendanceRequired: event.attendanceRequired ?? false,
+      attendanceTarget: event.attendanceTarget || 'STUDENT_ONLY',
     })
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -143,6 +145,7 @@ export default function CalendarAdminPage() {
       color: '',
       eventType: 'REGULAR',
       attendanceRequired: false,
+      attendanceTarget: 'STUDENT_ONLY',
     })
   }
 
@@ -322,7 +325,7 @@ export default function CalendarAdminPage() {
                     <p className={`text-sm font-black ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
                       출석 체크 활성화
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">선생님들이 반 아이들 출석을 체크하도록 합니다</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
                     formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'
@@ -332,6 +335,33 @@ export default function CalendarAdminPage() {
                     }`} />
                   </div>
                 </div>
+
+                {/* 출석 대상 선택 (출석 체크 활성화 시에만 표시) */}
+                {formData.attendanceRequired && (
+                  <div>
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">출석 대상</label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: 'STUDENT_ONLY', label: '학생만' },
+                        { value: 'TEACHER_ONLY', label: '교사만' },
+                        { value: 'BOTH',         label: '학생 + 교사' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
+                            formData.attendanceTarget === opt.value
+                              ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                              : 'border-gray-100 bg-gray-50 text-gray-400'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <Button type="submit" size="lg" loading={submitting}>

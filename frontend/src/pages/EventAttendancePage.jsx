@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, XCircle, Calendar, Users, PenLine, CalendarCheck } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { CheckCircle2, XCircle, Calendar, Users, PenLine, CalendarCheck, UserCheck } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
@@ -22,10 +22,19 @@ export default function EventAttendancePage() {
     queryFn: () => eventApi.getEvent(eventId).then(r => r.data),
   })
 
+  const needsStudentCheck = !event || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
+  const needsTeacherCheck = event?.attendanceTarget === 'TEACHER_ONLY' || event?.attendanceTarget === 'BOTH'
+
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['event-attendance', eventId, user?.id],
     queryFn: () => eventApi.getMyClassAttendance(eventId).then(r => r.data),
-    enabled: !!user,
+    enabled: !!user && needsStudentCheck,
+  })
+
+  const { data: myTeacherAttendance } = useQuery({
+    queryKey: ['event-teacher-attendance', eventId, user?.id],
+    queryFn: () => eventApi.getMyTeacherAttendance(eventId).then(r => r.data),
+    enabled: !!user && needsTeacherCheck,
   })
 
   // 출석 상태 맵: { [studentId]: 'PRESENT' | 'ABSENT' }
@@ -67,6 +76,26 @@ export default function EventAttendancePage() {
       console.error(err)
       alert('제출 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message))
     }
+  })
+
+  const [pendingTeacherStatus, setPendingTeacherStatus] = useState(null)
+  const [teacherSubmitted, setTeacherSubmitted] = useState(false)
+  const [teacherEditing, setTeacherEditing] = useState(false)
+
+  useEffect(() => {
+    if (myTeacherAttendance?.status) {
+      setPendingTeacherStatus(myTeacherAttendance.status)
+      setTeacherSubmitted(true)
+    }
+  }, [myTeacherAttendance])
+
+  const teacherAttendanceMutation = useMutation({
+    mutationFn: (status) => eventApi.saveTeacherAttendance(eventId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, user?.id] })
+      setTeacherSubmitted(true)
+      setTeacherEditing(false)
+    },
   })
 
   const toggle = (studentId) => {
@@ -115,6 +144,69 @@ export default function EventAttendancePage() {
       )}
 
       <div className="px-4 py-5 flex flex-col gap-4">
+
+        {/* 교사 본인 출석 체크 */}
+        {needsTeacherCheck && (
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">내 출석 체크</p>
+
+            {/* 제출 완료 배너 */}
+            {teacherSubmitted && !teacherEditing && (
+              <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                <div className="flex items-center gap-2">
+                  {pendingTeacherStatus === 'PRESENT'
+                    ? <CheckCircle2 size={16} className="text-emerald-600" />
+                    : <XCircle size={16} className="text-red-500" />}
+                  <span className={`text-xs font-black ${pendingTeacherStatus === 'PRESENT' ? 'text-emerald-700' : 'text-red-600'}`}>
+                    {pendingTeacherStatus === 'PRESENT' ? '참석으로 제출 완료' : '불참으로 제출 완료'}
+                  </span>
+                </div>
+                <button onClick={() => setTeacherEditing(true)} className="text-[11px] text-emerald-600 font-black flex items-center gap-1">
+                  <PenLine size={12} /> 수정
+                </button>
+              </div>
+            )}
+
+            {/* 참석/불참 선택 + 제출 */}
+            {(!teacherSubmitted || teacherEditing) && (
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setPendingTeacherStatus('PRESENT')}
+                    className={`flex-1 py-3 rounded-2xl border-2 text-sm font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+                      pendingTeacherStatus === 'PRESENT'
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                        : 'border-gray-100 bg-gray-50 text-gray-400'
+                    }`}
+                  >
+                    <CheckCircle2 size={16} /> 참석
+                  </button>
+                  <button
+                    onClick={() => setPendingTeacherStatus('ABSENT')}
+                    className={`flex-1 py-3 rounded-2xl border-2 text-sm font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+                      pendingTeacherStatus === 'ABSENT'
+                        ? 'border-red-300 bg-red-50 text-red-600'
+                        : 'border-gray-100 bg-gray-50 text-gray-400'
+                    }`}
+                  >
+                    <XCircle size={16} /> 불참
+                  </button>
+                </div>
+                <Button
+                  size="lg"
+                  onClick={() => teacherAttendanceMutation.mutate(pendingTeacherStatus)}
+                  disabled={!pendingTeacherStatus || teacherAttendanceMutation.isPending}
+                >
+                  <UserCheck size={17} />
+                  {teacherAttendanceMutation.isPending ? '저장 중...' : '출석 제출'}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 학생 출석 섹션 */}
+        {needsStudentCheck && (<>
 
         {/* 통계 */}
         {students.length > 0 && (
@@ -245,6 +337,8 @@ export default function EventAttendancePage() {
             </Button>
           </div>
         )}
+
+        </>)}
       </div>
     </div>
   )

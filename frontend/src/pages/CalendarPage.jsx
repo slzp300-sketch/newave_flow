@@ -59,6 +59,7 @@ export default function CalendarPage() {
     color: '',
     eventType: 'REGULAR',
     attendanceRequired: false,
+    attendanceTarget: 'STUDENT_ONLY',
   })
   
   const { data: events = [], isLoading, refetch } = useQuery({
@@ -143,6 +144,7 @@ export default function CalendarPage() {
       color: '',
       eventType: 'REGULAR',
       attendanceRequired: false,
+      attendanceTarget: 'STUDENT_ONLY',
     })
     setShowForm(true)
   }
@@ -158,7 +160,8 @@ export default function CalendarPage() {
       endTime: e.endTime || '',
       color: e.color || '',
       eventType: e.eventType,
-      attendanceRequired: e.attendanceRequired ?? false
+      attendanceRequired: e.attendanceRequired ?? false,
+      attendanceTarget: e.attendanceTarget || 'STUDENT_ONLY',
     })
     setShowForm(true)
   }
@@ -371,7 +374,7 @@ export default function CalendarPage() {
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-black text-gray-900">{editingId ? '일정 수정' : '새 일정 등록'}</h3>
                 <button onClick={() => setShowForm(false)} className="p-2 bg-gray-50 rounded-full text-gray-400"><X size={20} /></button>
@@ -471,7 +474,7 @@ export default function CalendarPage() {
                     <p className={`text-sm font-black ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
                       출석 체크 활성화
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">선생님들이 반 아이들 출석을 체크하도록 합니다</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
                     formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'
@@ -481,6 +484,34 @@ export default function CalendarPage() {
                     }`} />
                   </div>
                 </div>
+
+                {/* 출석 대상 선택 */}
+                {formData.attendanceRequired && (
+                  <div>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">출석 대상</label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: 'STUDENT_ONLY', label: '학생만' },
+                        { value: 'TEACHER_ONLY', label: '교사만' },
+                        { value: 'BOTH',         label: '학생 + 교사' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
+                            formData.attendanceTarget === opt.value
+                              ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                              : 'border-gray-100 bg-gray-50 text-gray-400'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2 mt-2">
                   <Button type="submit" loading={submitting} className="flex-1">저장하기</Button>
                   <Button variant="ghost" onClick={() => setShowForm(false)}>취소</Button>

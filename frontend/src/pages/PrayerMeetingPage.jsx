@@ -8,7 +8,7 @@ import {
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
-import { getTTSWeekRange } from '../utils/date'
+import { getThisWeekInfo } from '../utils/date'
 import { getISOWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import { prayerVoteApi } from '../api/prayerVote'
@@ -46,7 +46,7 @@ function getMicRotationIndex() {
 
 export default function PrayerMeetingPage() {
   const { user }   = useAuthStore()
-  const weekInfo   = getTTSWeekRange()
+  const weekInfo   = getThisWeekInfo()
   const micIdx     = getMicRotationIndex()
   const micGroup   = ROTATION_LABELS[micIdx]
   const userGrade  = user?.grade

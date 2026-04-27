@@ -10,4 +10,7 @@ public interface EventAttendanceRepository extends JpaRepository<EventAttendance
 
     @org.springframework.transaction.annotation.Transactional
     void deleteAllByEventId(Long eventId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a FROM EventAttendance a JOIN FETCH a.teacher WHERE a.event.id = :eventId")
+    java.util.List<EventAttendance> findAllByEventIdWithTeacher(@org.springframework.data.repository.query.Param("eventId") Long eventId);
 }

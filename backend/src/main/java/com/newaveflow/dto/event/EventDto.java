@@ -18,7 +18,8 @@ public class EventDto {
             String endTime,
             String color,
             String eventType,
-            boolean attendanceRequired
+            boolean attendanceRequired,
+            String attendanceTarget
     ) {
         public static EventResponse from(Event event) {
             return new EventResponse(
@@ -31,7 +32,10 @@ public class EventDto {
                     event.getEndTime(),
                     event.getColor(),
                     event.getEventType().name(),
-                    event.isAttendanceRequired()
+                    event.isAttendanceRequired(),
+                    event.getAttendanceTarget() != null
+                            ? event.getAttendanceTarget().name()
+                            : Event.AttendanceTarget.STUDENT_ONLY.name()
             );
         }
     }
@@ -45,7 +49,15 @@ public class EventDto {
             String endTime,
             String color,
             @NotNull String eventType,
-            Boolean attendanceRequired
+            Boolean attendanceRequired,
+            String attendanceTarget
+    ) {}
+
+    public record TeacherAttendanceRecord(
+            Long teacherId,
+            String teacherName,
+            String grade,
+            String status
     ) {}
 
     public record EventAttendanceRequest(

@@ -64,7 +64,9 @@ export default function AdminMeetingAttendancePage() {
     staleTime: 0,
   })
 
-  const targetMinute = allMinutes.find(m => m.meetingDate === selectedDate)
+  // selectedDate는 토요일 → 해당 주(일~토) 범위 안의 활성 회의록을 찾음
+  const weekStart = format(addDays(new Date(selectedDate + 'T00:00:00'), -6), 'yyyy-MM-dd')
+  const targetMinute = allMinutes.find(m => m.isActive && m.meetingDate >= weekStart && m.meetingDate <= selectedDate)
 
   const { data: minuteStatusList = [], isRefetching: isMinuteRefetching } = useQuery({
     queryKey: ['admin-minute-status', targetMinute?.id],

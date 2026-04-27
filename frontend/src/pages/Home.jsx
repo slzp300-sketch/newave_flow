@@ -221,6 +221,20 @@ function TeacherView({ navigate }) {
         { to: '/tts',             icon: CheckSquare,   iconBg: 'bg-teal-50',     iconColor: 'text-teal-600',    title: 'TTS',         desc: 'Teacher Training Sheet 작성', done: ttsDone },
         { to: '/meeting/prayer',  icon: Users,         iconBg: 'bg-violet-50',   iconColor: 'text-violet-600',  title: '기도모임 투표', desc: '온라인 기도모임 참석 투표 (월~목)', done: prayerDone },
         { to: '/meeting/sat',     icon: CalendarCheck, iconBg: 'bg-blue-50',     iconColor: 'text-blue-600',    title: '교사회의 체크', desc: '토요일 교사 회의 참석 여부 제출', done: satDone },
+        ...(satData?.status === 'ABSENT' ? [{
+          to: '/minutes',
+          icon: FileText,
+          iconBg: weeklyStatus.currentWeekMinutesConfirmed ? 'bg-emerald-50' : 'bg-violet-50',
+          iconColor: weeklyStatus.currentWeekMinutesConfirmed ? 'text-emerald-600' : 'text-violet-600',
+          title: '회의록 및 영상',
+          desc: weeklyStatus.currentWeekMinutesConfirmed
+            ? '이번 주 회의록 확인 완료'
+            : weeklyStatus.currentWeekMinutesExists
+              ? '이번 주 회의록 확인이 필요합니다'
+              : '⚠️ 이번 주 회의록이 아직 업로드되지 않았습니다',
+          done: weeklyStatus.currentWeekMinutesConfirmed,
+          disabled: !weeklyStatus.currentWeekMinutesExists,
+        }] : []),
       ]
     },
     {
@@ -359,11 +373,14 @@ function TeacherView({ navigate }) {
                       return (
                         <button
                           key={item.to}
-                          onClick={() => navigate(item.to)}
-                          className={`flex items-center gap-4 p-3.5 rounded-2xl border active:scale-[0.98] transition-all group text-left w-full ${
-                            item.done
-                              ? 'bg-emerald-50/60 border-emerald-100'
-                              : 'border-gray-50 bg-gray-50/50 hover:bg-gray-100/80'
+                          onClick={() => { if (!item.disabled) navigate(item.to) }}
+                          disabled={item.disabled}
+                          className={`flex items-center gap-4 p-3.5 rounded-2xl border transition-all group text-left w-full ${
+                            item.disabled
+                              ? 'border-gray-100 bg-gray-50/30 opacity-50 cursor-not-allowed'
+                              : item.done
+                                ? 'bg-emerald-50/60 border-emerald-100 active:scale-[0.98]'
+                                : 'border-gray-50 bg-gray-50/50 hover:bg-gray-100/80 active:scale-[0.98]'
                           }`}
                         >
                           <div className={`w-10 h-10 rounded-xl ${item.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
