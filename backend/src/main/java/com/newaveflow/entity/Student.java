@@ -59,8 +59,7 @@ public class Student {
     @Column(length = 255)
     private String address;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String profileImage;
 
     @Column(nullable = false)
