@@ -6,7 +6,7 @@ import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { eventApi } from '../api/event'
-import { Users, CheckCircle2, XCircle, Calendar, UserCheck, ChevronRight } from 'lucide-react'
+import { Users, CheckCircle2, XCircle, Calendar, UserCheck, ChevronRight, Clock } from 'lucide-react'
 
 const GRADE_STYLES = {
   '중1': { bg: 'bg-rose-50', text: 'text-rose-600', accent: 'bg-rose-100', progress: 'bg-rose-400', border: 'hover:border-rose-200', btn: 'text-rose-600 bg-rose-50' },
@@ -50,7 +50,9 @@ export default function EventAttendanceAdminPage() {
   })
 
   const selectedEvent = events.find(e => e.id === selectedEventId)
-  const showTeacherTab = selectedEvent?.attendanceTarget === 'TEACHER_ONLY' || selectedEvent?.attendanceTarget === 'BOTH'
+  const showTeacherTab = selectedEvent?.attendanceTarget === 'TEACHER_ONLY'
+    || selectedEvent?.attendanceTarget === 'BOTH'
+    || teacherSummary.some(t => t.status !== null)   // 실제 제출 데이터가 있으면 탭 표시
   const showStudentTab = !selectedEvent || selectedEvent?.attendanceTarget === 'STUDENT_ONLY' || selectedEvent?.attendanceTarget === 'BOTH'
 
   const totalStudents = summary.reduce((acc, c) => acc + Number(c.totalCount), 0)
@@ -419,7 +421,10 @@ export default function EventAttendanceAdminPage() {
                           <div>
                             <p className="font-black text-gray-900 text-base">{cls.classGroupName}</p>
                             <p className="text-[10px] text-gray-400 font-bold">
-                              {cls.presentCount}명 출석 · {cls.absentCount}명 결석
+                              {cls.presentCount}명 출석
+                              {cls.records.filter(r => r.status === 'PARTIAL').length > 0 &&
+                                ` · ${cls.records.filter(r => r.status === 'PARTIAL').length}명 부분참석`}
+                              {' · '}{cls.absentCount}명 결석
                             </p>
                           </div>
                         </div>

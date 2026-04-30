@@ -14,8 +14,8 @@ const executiveNav = [
   { to: '/',           icon: Home,          label: '홈' },
   { to: '/roster',     icon: BookOpen,      label: '교적부' },
   { to: '/checklist',  icon: ClipboardList, label: '주간 체크' },
-  { to: '/calendar',   icon: Calendar,      label: '캘린더' },
   { to: '/executive',  icon: BarChart2,     label: '관리' },
+  { to: '/profile',    icon: User,          label: '마이' },
 ]
 
 const adminNav = [

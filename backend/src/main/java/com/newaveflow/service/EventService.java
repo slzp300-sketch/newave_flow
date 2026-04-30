@@ -59,6 +59,7 @@ public class EventService {
                 .color(request.color())
                 .eventType(Event.EventType.valueOf(request.eventType()))
                 .attendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()))
+                .attendanceDeadline(Boolean.TRUE.equals(request.attendanceRequired()) ? request.attendanceDeadline() : null)
                 .attendanceTarget(target)
                 .build();
         Event saved = eventRepository.save(event);
@@ -86,6 +87,7 @@ public class EventService {
         event.setColor(request.color());
         event.setEventType(Event.EventType.valueOf(request.eventType()));
         event.setAttendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()));
+        event.setAttendanceDeadline(Boolean.TRUE.equals(request.attendanceRequired()) ? request.attendanceDeadline() : null);
         event.setAttendanceTarget(parseAttendanceTarget(request.attendanceTarget()));
         return EventDto.EventResponse.from(eventRepository.save(event));
     }
@@ -202,8 +204,26 @@ public class EventService {
 
     // ── 교사 출석 전체 요약 (관리자) ──
     public List<EventDto.TeacherAttendanceRecord> getTeacherAttendanceSummary(Long eventId) {
+        // 실제 출석 기록이 있는 사람 (역할 무관) + TEACHER 롤 전체 (미제출 포함)
+        List<EventAttendance> records = eventAttendanceRepository.findAllByEventIdWithTeacher(eventId);
+        Map<Long, EventAttendance> attendanceMap = records.stream()
+                .collect(Collectors.toMap(a -> a.getTeacher().getId(), a -> a));
+
+        // TEACHER 롤 전체 (미제출자 포함)
         List<User> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER);
-        
+
+        // 출석 제출한 사람 중 TEACHER가 아닌 사람 (EXECUTIVE, PASTOR 등) 추가
+        Set<Long> teacherIds = teachers.stream().map(User::getId).collect(Collectors.toSet());
+        List<User> extraSubmitters = records.stream()
+                .map(EventAttendance::getTeacher)
+                .filter(u -> !teacherIds.contains(u.getId()))
+                .distinct()
+                .toList();
+
+        // 합산 목록 구성
+        List<User> allUsers = new java.util.ArrayList<>(teachers);
+        allUsers.addAll(extraSubmitters);
+
         // 교사들의 반 배정 정보 조회 (한 번에 조회하여 성능 최적화)
         List<TeacherClass> allTeacherClasses = teacherClassRepository.findAllWithTeacherAndClass();
         Map<Long, String> teacherGradeMap = allTeacherClasses.stream()
@@ -217,11 +237,7 @@ public class EventService {
                         (v1, v2) -> v1
                 ));
 
-        List<EventAttendance> records = eventAttendanceRepository.findAllByEventIdWithTeacher(eventId);
-        Map<Long, EventAttendance> attendanceMap = records.stream()
-                .collect(Collectors.toMap(a -> a.getTeacher().getId(), a -> a));
-
-        return teachers.stream()
+        return allUsers.stream()
                 .map(t -> {
                     String grade = t.getGrade();
                     if (grade == null || grade.isBlank()) {

@@ -66,6 +66,7 @@ export default function CalendarAdminPage() {
     color: '',
     eventType: 'REGULAR',
     attendanceRequired: false,
+    attendanceDeadline: '',
     attendanceTarget: 'STUDENT_ONLY',
   })
 
@@ -114,6 +115,7 @@ export default function CalendarAdminPage() {
       color: event.color || '',
       eventType: event.eventType,
       attendanceRequired: event.attendanceRequired ?? false,
+      attendanceDeadline: event.attendanceDeadline || '',
       attendanceTarget: event.attendanceTarget || 'STUDENT_ONLY',
     })
     setShowForm(true)
@@ -145,6 +147,7 @@ export default function CalendarAdminPage() {
       color: '',
       eventType: 'REGULAR',
       attendanceRequired: false,
+      attendanceDeadline: '',
       attendanceTarget: 'STUDENT_ONLY',
     })
   }
@@ -336,29 +339,54 @@ export default function CalendarAdminPage() {
                   </div>
                 </div>
 
-                {/* 출석 대상 선택 (출석 체크 활성화 시에만 표시) */}
+                {/* 출석 대상 선택 + 마감일 (출석 체크 활성화 시에만 표시) */}
                 {formData.attendanceRequired && (
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">출석 대상</label>
-                    <div className="flex gap-2">
-                      {[
-                        { value: 'STUDENT_ONLY', label: '학생만' },
-                        { value: 'TEACHER_ONLY', label: '교사만' },
-                        { value: 'BOTH',         label: '학생 + 교사' },
-                      ].map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
-                            formData.attendanceTarget === opt.value
-                              ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                              : 'border-gray-100 bg-gray-50 text-gray-400'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
+                  <div className="flex flex-col gap-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                    <div>
+                      <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-2 block">출석 대상</label>
+                      <div className="flex gap-2">
+                        {[
+                          { value: 'STUDENT_ONLY', label: '학생만' },
+                          { value: 'TEACHER_ONLY', label: '교사만' },
+                          { value: 'BOTH',         label: '학생 + 교사' },
+                        ].map(opt => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
+                              formData.attendanceTarget === opt.value
+                                ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
+                                : 'border-gray-100 bg-white text-gray-400'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-2 block">
+                        출석 제출 마감일 <span className="text-gray-400 font-medium normal-case">(선택)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.attendanceDeadline}
+                        onChange={e => setFormData(d => ({ ...d, attendanceDeadline: e.target.value }))}
+                        min={toApiDate(new Date())}
+                        className="w-full px-4 py-3 rounded-xl border border-emerald-100 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300"
+                      />
+                      {formData.attendanceDeadline && (
+                        <p className="text-[11px] text-emerald-600 mt-1.5 font-medium">
+                          ✓ {formData.attendanceDeadline} 까지 출석 제출 가능합니다
+                        </p>
+                      )}
+                      {!formData.attendanceDeadline && (
+                        <p className="text-[11px] text-gray-400 mt-1.5">
+                          미설정 시 마감 제한 없이 제출 가능합니다
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -415,7 +443,7 @@ export default function CalendarAdminPage() {
                                 {event.description && (
                                   <p className="text-gray-500 text-[11px] font-medium leading-relaxed mb-3">{event.description}</p>
                                 )}
-                                <div className="flex items-center gap-3 text-[11px] font-black text-gray-400">
+                                <div className="flex flex-wrap items-center gap-2 text-[11px] font-black text-gray-400">
                                   {(event.startTime || event.endTime) && (
                                     <span className="flex items-center gap-1">
                                       <Clock size={12} /> {event.startTime} {event.endTime && `~ ${event.endTime}`}
@@ -424,6 +452,11 @@ export default function CalendarAdminPage() {
                                   {event.attendanceRequired && (
                                     <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
                                       <CheckCircle2 size={10} /> 출석체크 활성
+                                    </span>
+                                  )}
+                                  {event.attendanceRequired && event.attendanceDeadline && (
+                                    <span className="flex items-center gap-1 text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">
+                                      마감 {format(new Date(event.attendanceDeadline), 'M/d', { locale: ko })}
                                     </span>
                                   )}
                                 </div>

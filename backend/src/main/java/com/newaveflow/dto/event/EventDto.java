@@ -19,6 +19,7 @@ public class EventDto {
             String color,
             String eventType,
             boolean attendanceRequired,
+            LocalDate attendanceDeadline,
             String attendanceTarget
     ) {
         public static EventResponse from(Event event) {
@@ -33,6 +34,7 @@ public class EventDto {
                     event.getColor(),
                     event.getEventType().name(),
                     event.isAttendanceRequired(),
+                    event.getAttendanceDeadline(),
                     event.getAttendanceTarget() != null
                             ? event.getAttendanceTarget().name()
                             : Event.AttendanceTarget.STUDENT_ONLY.name()
@@ -50,6 +52,7 @@ public class EventDto {
             String color,
             @NotNull String eventType,
             Boolean attendanceRequired,
+            LocalDate attendanceDeadline,
             String attendanceTarget
     ) {}
 

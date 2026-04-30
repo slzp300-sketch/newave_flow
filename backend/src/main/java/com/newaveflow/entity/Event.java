@@ -47,6 +47,9 @@ public class Event {
     @Builder.Default
     private boolean attendanceRequired = false;
 
+    @Column
+    private LocalDate attendanceDeadline;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     @Builder.Default

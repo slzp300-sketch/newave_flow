@@ -59,6 +59,7 @@ export default function CalendarPage() {
     color: '',
     eventType: 'REGULAR',
     attendanceRequired: false,
+    attendanceDeadline: '',
     attendanceTarget: 'STUDENT_ONLY',
   })
   
@@ -144,6 +145,7 @@ export default function CalendarPage() {
       color: '',
       eventType: 'REGULAR',
       attendanceRequired: false,
+      attendanceDeadline: '',
       attendanceTarget: 'STUDENT_ONLY',
     })
     setShowForm(true)
@@ -161,6 +163,7 @@ export default function CalendarPage() {
       color: e.color || '',
       eventType: e.eventType,
       attendanceRequired: e.attendanceRequired ?? false,
+      attendanceDeadline: e.attendanceDeadline || '',
       attendanceTarget: e.attendanceTarget || 'STUDENT_ONLY',
     })
     setShowForm(true)
@@ -362,7 +365,19 @@ export default function CalendarPage() {
                     </div>
                   </div>
                   <h4 className="font-black text-gray-900 text-base mb-1">{e.title}</h4>
-                  {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed">{e.description}</p>}
+                  {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
+                  {e.attendanceRequired && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                        ✓ 출석체크 활성
+                      </span>
+                      {e.attendanceDeadline && (
+                        <span className="flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
+                          마감 {format(new Date(e.attendanceDeadline), 'M월 d일', { locale: ko })}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </Card>
               </motion.div>
             ))
@@ -485,29 +500,53 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {/* 출석 대상 선택 */}
+                {/* 출석 대상 선택 + 마감일 (출석 체크 활성화 시에만 표시) */}
                 {formData.attendanceRequired && (
-                  <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">출석 대상</label>
-                    <div className="flex gap-2">
-                      {[
-                        { value: 'STUDENT_ONLY', label: '학생만' },
-                        { value: 'TEACHER_ONLY', label: '교사만' },
-                        { value: 'BOTH',         label: '학생 + 교사' },
-                      ].map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
-                            formData.attendanceTarget === opt.value
-                              ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
-                              : 'border-gray-100 bg-gray-50 text-gray-400'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
+                  <div className="flex flex-col gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                    <div>
+                      <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1.5 block">출석 대상</label>
+                      <div className="flex gap-2">
+                        {[
+                          { value: 'STUDENT_ONLY', label: '학생만' },
+                          { value: 'TEACHER_ONLY', label: '교사만' },
+                          { value: 'BOTH',         label: '학생 + 교사' },
+                        ].map(opt => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
+                              formData.attendanceTarget === opt.value
+                                ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
+                                : 'border-gray-100 bg-white text-gray-400'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1.5 block">
+                        출석 제출 마감일 <span className="text-gray-400 font-medium normal-case">(선택)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.attendanceDeadline}
+                        onChange={e => setFormData(d => ({ ...d, attendanceDeadline: e.target.value }))}
+                        min={toApiDate(new Date())}
+                        className="w-full px-4 py-3 rounded-xl border border-emerald-100 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300"
+                      />
+                      {formData.attendanceDeadline ? (
+                        <p className="text-[11px] text-emerald-600 mt-1.5 font-medium">
+                          ✓ {format(new Date(formData.attendanceDeadline), 'M월 d일', { locale: ko })} 까지 출석 제출 가능합니다
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-gray-400 mt-1.5">
+                          미설정 시 마감 제한 없이 제출 가능합니다
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

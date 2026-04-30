@@ -1,41 +1,87 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
-import { LogOut, User, Mail, Phone, Shield, ChevronRight } from 'lucide-react'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+import { LogOut, User, Mail, Shield, Lock, Eye, EyeOff, ChevronRight, CheckCircle2, XCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import useAuthStore from '../store/authStore'
 import { authApi } from '../api/auth'
+import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
-import Badge from '../components/common/Badge'
 
 const ROLE_MAP = {
-  PASTOR:    { label: '목사님',  variant: 'info',    bg: 'bg-blue-100    text-blue-700' },
-  EXECUTIVE: { label: '임원',    variant: 'warning', bg: 'bg-amber-100   text-amber-700' },
-  TEACHER:   { label: '교사',    variant: 'success', bg: 'bg-emerald-100 text-emerald-700' },
+  PASTOR:    { label: '목사님',  bg: 'bg-blue-100    text-blue-700' },
+  EXECUTIVE: { label: '임원',    bg: 'bg-amber-100   text-amber-700' },
+  TEACHER:   { label: '교사',    bg: 'bg-emerald-100 text-emerald-700' },
+  ADMIN:     { label: '관리자',  bg: 'bg-rose-100    text-rose-700' },
 }
 
 export default function ProfilePage() {
-  const navigate       = useNavigate()
+  const navigate      = useNavigate()
   const { user, clearAuth } = useAuthStore()
-  const queryClient    = useQueryClient()
-  const [loading, setLoading] = useState(false)
-  const [confirm, setConfirm] = useState(false)
+  const queryClient   = useQueryClient()
+
+  // 로그아웃
+  const [logoutConfirm, setLogoutConfirm] = useState(false)
+  const [logoutLoading, setLogoutLoading] = useState(false)
+
+  // 비밀번호 변경
+  const [pwOpen, setPwOpen]           = useState(false)
+  const [currentPw, setCurrentPw]     = useState('')
+  const [newPw, setNewPw]             = useState('')
+  const [confirmPw, setConfirmPw]     = useState('')
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew]         = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [pwResult, setPwResult]       = useState(null) // { ok, msg }
 
   const roleCfg = ROLE_MAP[user?.role] ?? ROLE_MAP.TEACHER
 
   const handleLogout = async () => {
-    setLoading(true)
+    setLogoutLoading(true)
     try { await authApi.logout() } catch {}
     queryClient.clear()
     clearAuth()
     navigate('/login', { replace: true })
   }
 
+  const pwMutation = useMutation({
+    mutationFn: () => usersApi.changePassword(currentPw, newPw),
+    onSuccess: () => {
+      setPwResult({ ok: true, msg: '비밀번호가 성공적으로 변경되었습니다.' })
+      setCurrentPw(''); setNewPw(''); setConfirmPw('')
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.message ?? '비밀번호 변경에 실패했습니다.'
+      setPwResult({ ok: false, msg })
+    },
+  })
+
+  const handlePwSubmit = (e) => {
+    e.preventDefault()
+    setPwResult(null)
+    if (newPw.length < 8) {
+      setPwResult({ ok: false, msg: '새 비밀번호는 8자 이상이어야 합니다.' })
+      return
+    }
+    if (newPw !== confirmPw) {
+      setPwResult({ ok: false, msg: '새 비밀번호가 일치하지 않습니다.' })
+      return
+    }
+    pwMutation.mutate()
+  }
+
+  const closePwPanel = () => {
+    setPwOpen(false)
+    setPwResult(null)
+    setCurrentPw(''); setNewPw(''); setConfirmPw('')
+  }
+
   return (
     <div className="min-h-screen bg-surface">
       <Header title="내 정보" />
 
-      {/* 프로필 카드 */}
+      {/* 프로필 헤더 */}
       <div className="bg-gradient-to-br from-primary-600 to-primary-800 px-6 pt-8 pb-14">
         <div className="flex flex-col items-center gap-3">
           <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur flex items-center justify-center border-2 border-white/40">
@@ -56,10 +102,108 @@ export default function ProfilePage() {
         {/* 계정 정보 */}
         <Card className="flex flex-col gap-0 overflow-hidden !p-0">
           <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">계정 정보</p>
+          <InfoRow icon={User}   label="이름"   value={user?.name} />
+          <InfoRow icon={Mail}   label="이메일"  value={user?.email}    divider />
+          <InfoRow icon={Shield} label="권한"   value={roleCfg.label}  divider />
+        </Card>
 
-          <InfoRow icon={User}   label="이름"  value={user?.name} />
-          <InfoRow icon={Mail}   label="이메일" value={user?.email} divider />
-          <InfoRow icon={Shield} label="권한"  value={roleCfg.label} divider />
+        {/* 비밀번호 변경 */}
+        <Card className="!p-0 overflow-hidden">
+          <button
+            onClick={() => { setPwOpen(v => !v); setPwResult(null) }}
+            className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+                <Lock size={15} className="text-primary-500" />
+              </div>
+              <span className="text-sm font-bold text-gray-800">비밀번호 변경</span>
+            </div>
+            <motion.div
+              animate={{ rotate: pwOpen ? 90 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronRight size={18} className="text-gray-300" />
+            </motion.div>
+          </button>
+
+          <AnimatePresence>
+            {pwOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden"
+              >
+                <form onSubmit={handlePwSubmit} className="px-4 pb-5 pt-1 flex flex-col gap-3 border-t border-gray-50">
+                  <PwInput
+                    label="현재 비밀번호"
+                    value={currentPw}
+                    onChange={setCurrentPw}
+                    show={showCurrent}
+                    onToggle={() => setShowCurrent(v => !v)}
+                    id="current-pw"
+                  />
+                  <PwInput
+                    label="새 비밀번호 (8자 이상)"
+                    value={newPw}
+                    onChange={setNewPw}
+                    show={showNew}
+                    onToggle={() => setShowNew(v => !v)}
+                    id="new-pw"
+                  />
+                  <PwInput
+                    label="새 비밀번호 확인"
+                    value={confirmPw}
+                    onChange={setConfirmPw}
+                    show={showConfirm}
+                    onToggle={() => setShowConfirm(v => !v)}
+                    id="confirm-pw"
+                  />
+
+                  {/* 결과 메시지 */}
+                  <AnimatePresence>
+                    {pwResult && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className={`flex items-center gap-2 text-xs font-semibold px-3 py-2.5 rounded-xl ${
+                          pwResult.ok
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-red-50 text-red-600'
+                        }`}
+                      >
+                        {pwResult.ok
+                          ? <CheckCircle2 size={14} className="shrink-0" />
+                          : <XCircle size={14} className="shrink-0" />
+                        }
+                        {pwResult.msg}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={closePwPanel}
+                      className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-semibold text-sm active:bg-gray-200 transition-colors"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={pwMutation.isPending || !currentPw || !newPw || !confirmPw}
+                      className="flex-1 py-3 rounded-xl bg-primary-500 text-white font-bold text-sm active:bg-primary-600 disabled:opacity-50 transition-colors"
+                    >
+                      {pwMutation.isPending ? '변경 중...' : '변경하기'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Card>
 
         {/* 앱 정보 */}
@@ -76,9 +220,9 @@ export default function ProfilePage() {
         </Card>
 
         {/* 로그아웃 */}
-        {!confirm ? (
+        {!logoutConfirm ? (
           <button
-            onClick={() => setConfirm(true)}
+            onClick={() => setLogoutConfirm(true)}
             className="w-full flex items-center justify-center gap-2.5 bg-white border border-red-200 text-red-500 font-bold py-4 rounded-2xl active:bg-red-50 transition-colors"
           >
             <LogOut size={18} />
@@ -91,17 +235,17 @@ export default function ProfilePage() {
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => setConfirm(false)}
+                onClick={() => setLogoutConfirm(false)}
                 className="flex-1 py-3 rounded-xl bg-white border border-gray-200 text-gray-600 font-semibold text-sm active:bg-gray-50"
               >
                 취소
               </button>
               <button
                 onClick={handleLogout}
-                disabled={loading}
+                disabled={logoutLoading}
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm active:bg-red-600 disabled:opacity-60"
               >
-                {loading ? '처리 중...' : '로그아웃'}
+                {logoutLoading ? '처리 중...' : '로그아웃'}
               </button>
             </div>
           </Card>
@@ -120,6 +264,32 @@ function InfoRow({ icon: Icon, label, value, divider = false }) {
       <div className="flex-1 min-w-0">
         <p className="text-xs text-gray-400 mb-0.5">{label}</p>
         <p className="text-sm font-semibold text-gray-800 truncate">{value ?? '-'}</p>
+      </div>
+    </div>
+  )
+}
+
+function PwInput({ label, value, onChange, show, onToggle, id }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-xs font-semibold text-gray-500">{label}</label>
+      <div className="flex items-center bg-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+        <input
+          id={id}
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="flex-1 bg-transparent px-3.5 py-3 text-sm text-gray-800 outline-none"
+          placeholder="••••••••"
+          autoComplete="current-password"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="px-3 py-3 text-gray-400 active:text-gray-600"
+        >
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
       </div>
     </div>
   )

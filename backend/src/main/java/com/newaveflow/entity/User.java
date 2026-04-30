@@ -61,6 +61,10 @@ public class User {
         this.role = role;
     }
 
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
     public void approve() {
         this.isActive = true;
     }

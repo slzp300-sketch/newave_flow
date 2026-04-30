@@ -5,6 +5,7 @@ import com.newaveflow.entity.TeacherClass;
 import com.newaveflow.entity.User;
 import com.newaveflow.repository.TeacherClassRepository;
 import com.newaveflow.repository.UserRepository;
+import com.newaveflow.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +21,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final TeacherClassRepository teacherClassRepository;
+    private final AuthService authService;
 
     /** User.grade가 없으면 TeacherClass → ClassGroup.ageGroup 에서 학년 추출 */
     private String resolveGrade(User u) {
@@ -71,6 +73,16 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    @PutMapping("/me/password")
+    @Transactional
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal User currentUser,
+            @RequestBody PasswordChangeRequest request) {
+        if (currentUser == null) return ResponseEntity.status(401).build();
+        authService.changePassword(currentUser.getId(), request.currentPassword(), request.newPassword());
+        return ResponseEntity.ok().build();
+    }
+
     @PutMapping("/{id}/role")
     @Transactional
     public ResponseEntity<Void> updateRole(@PathVariable Long id, @RequestBody RoleRequest request) {
@@ -95,4 +107,5 @@ public class UserController {
     }
 
     public record RoleRequest(String role) {}
+    public record PasswordChangeRequest(String currentPassword, String newPassword) {}
 }

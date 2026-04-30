@@ -82,4 +82,21 @@ public class AuthService {
     public boolean checkNameDuplicate(String name) {
         return userRepository.existsByName(name);
     }
+
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> AppException.badRequest("사용자를 찾을 수 없습니다."));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw AppException.badRequest("현재 비밀번호가 올바르지 않습니다.");
+        }
+
+        if (newPassword.length() < 8) {
+            throw AppException.badRequest("새 비밀번호는 8자 이상이어야 합니다.");
+        }
+
+        user.updatePassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
 }

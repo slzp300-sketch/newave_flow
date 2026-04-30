@@ -58,7 +58,8 @@ function isTokenExpiredOrExpiring(token, bufferMs = 5 * 60 * 1000) {
   }
 }
 
-// 세션 내 워밍업 완료 여부 (페이지 리로드 시 초기화됨)
+// 세션 내 서버 워밍업 완료 여부 (페이지 리로드 시 초기화됨)
+// ※ 토큰 갱신과 분리: 워밍업은 서버 헬스체크만 담당
 let sessionWarmedUp = false
 
 function ConnectingScreen({ slow }) {
@@ -83,9 +84,19 @@ function ConnectingScreen({ slow }) {
 
 function RequireAuth() {
   const { user, isHydrated, accessToken } = useAuthStore()
-  const [warming, setWarming] = useState(() => !!(user && accessToken && !sessionWarmedUp))
+
+  // 서버 워밍업이 필요한 경우: 로그인 상태인데 아직 워밍업 안 된 경우
+  const needsWarmup = !!(user && accessToken && !sessionWarmedUp)
+
+  // 토큰 갱신이 필요한 경우: 워밍업 완료됐지만 토큰이 만료됐거나 5분 내 만료 예정
+  // sessionWarmedUp과 무관하게 항상 체크 (SPA 내 페이지 이동 시에도 동작)
+  const needsTokenRefresh = !!(user && accessToken && !needsWarmup && isTokenExpiredOrExpiring(accessToken))
+
+  const [warming, setWarming] = useState(() => needsWarmup)
+  const [refreshing, setRefreshing] = useState(() => needsTokenRefresh)
   const [slowStart, setSlowStart] = useState(false)
 
+  // ─── 서버 워밍업 (백엔드 첫 기동 시) ───
   useEffect(() => {
     if (!warming) return
 
@@ -148,7 +159,31 @@ function RequireAuth() {
     }
   }, [warming])
 
-  if (!isHydrated || warming) return <ConnectingScreen slow={slowStart} />
+  // ─── 토큰 선제 갱신 (워밍업 완료 후, 오래된 세션에서 페이지 이동 시) ───
+  useEffect(() => {
+    if (!refreshing) return
+
+    let mounted = true
+
+    const tryRefresh = async () => {
+      const { accessToken: tok, refreshToken: rtok, setAuth, clearAuth } = useAuthStore.getState()
+      if (tok && isTokenExpiredOrExpiring(tok)) {
+        try {
+          const { data } = await axios.post(`${API}/auth/refresh`, { refreshToken: rtok })
+          setAuth(data.user, data.accessToken, data.refreshToken)
+          queryClient.clear()
+        } catch {
+          clearAuth()
+        }
+      }
+      if (mounted) setRefreshing(false)
+    }
+
+    tryRefresh()
+    return () => { mounted = false }
+  }, [refreshing])
+
+  if (!isHydrated || warming || refreshing) return <ConnectingScreen slow={slowStart} />
 
   return user ? <Outlet /> : <Navigate to="/login" replace />
 }
