@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
     
-    @Query("SELECT e FROM Event e WHERE (:fromDate IS NULL OR e.eventDate >= :fromDate) AND (:toDate IS NULL OR e.eventDate <= :toDate) ORDER BY e.eventDate ASC")
+    @Query("SELECT e FROM Event e WHERE e.eventDate >= :fromDate AND e.eventDate <= :toDate ORDER BY e.eventDate ASC")
     List<Event> findByDateRange(@Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
     List<Event> findByAttendanceRequiredTrueOrderByEventDateDesc();
