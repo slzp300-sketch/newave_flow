@@ -8,7 +8,7 @@ export const eventApi = {
   saveStudentAttendance:      (id, records)    => client.post(`/events/${id}/student-attendance/batch`, { records }),
   getAttendanceSummary:       (id)             => client.get(`/events/${id}/student-attendance/summary`),
   getMyTeacherAttendance:     (id)             => client.get(`/events/${id}/teacher-attendance`),
-  saveTeacherAttendance:      (id, status, partialFromDate, partialNote) =>
-    client.post(`/events/${id}/teacher-attendance`, { status, partialFromDate, partialNote }),
+  saveTeacherAttendance:      (id, status, partialFromDate, partialNote, absenceReason) =>
+    client.post(`/events/${id}/teacher-attendance`, { status, partialFromDate, partialNote, absenceReason }),
   getTeacherAttendanceSummary:(id)             => client.get(`/events/${id}/teacher-attendance/summary`),
 }

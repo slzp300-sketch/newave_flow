@@ -112,7 +112,9 @@ public class MeetingMinuteController {
     @GetMapping("/{id}/status")
     public ResponseEntity<List<Map<String, Object>>> getStatus(@PathVariable Long id) {
         MeetingMinute minutes = meetingMinuteRepository.findById(id).orElseThrow();
-        List<User> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER);
+        List<User> teachers = userRepository.findByIsActiveTrue().stream()
+            .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+            .toList();
         
         List<MeetingMinuteConfirm> confirms = meetingMinuteConfirmRepository.findAllByMinutes(minutes);
         Map<Long, MeetingMinuteConfirm> confirmMap = confirms.stream()

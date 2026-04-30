@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery } from '@tanstack/react-query'
 import { 
   Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
@@ -44,6 +45,7 @@ export default function CalendarPage() {
   
   const [current, setCurrent]   = useState(new Date())
   const [selected, setSelected] = useState(new Date())
+  const { swipeHandlers, direction } = useSwipeMonth(current, setCurrent)
   
   // Form State
   const [showForm, setShowForm] = useState(false)
@@ -253,8 +255,24 @@ export default function CalendarPage() {
           ))}
         </div>
 
-        {/* 날짜 그리드 */}
-        <div className="grid grid-cols-7 gap-px bg-gray-50 border border-gray-50 rounded-2xl overflow-hidden shadow-inner">
+        {/* 날짜 그리드 – 좌우 스와이프로 월 이동 + 슬라이드 애니메이션 */}
+        <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+          <motion.div
+            key={format(current, 'yyyy-MM')}
+            custom={direction}
+            variants={{
+              enter: (dir) => ({ x: dir === 'left' ? '100%' : '-100%', opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit:  (dir) => ({ x: dir === 'left' ? '-100%' : '100%', opacity: 0 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+            {...swipeHandlers}
+            className="grid grid-cols-7 gap-px bg-gray-50 border border-gray-50 rounded-2xl overflow-hidden shadow-inner select-none"
+            style={{ touchAction: 'pan-y' }}
+          >
           {days.map((day) => {
             const dayEvents = eventsOnDay(day)
             const isSelected = isSameDay(day, selected)
@@ -315,7 +333,8 @@ export default function CalendarPage() {
               </div>
             )
           })}
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Selected Day Details */}

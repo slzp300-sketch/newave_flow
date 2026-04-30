@@ -68,19 +68,34 @@ public class ReportService {
 
     public ReportSummaryResponse getSummary(LocalDate date) {
         List<DailyReport> allReports = reportRepository.findByDateWithDetails(date);
-        long submitted = allReports.stream()
-                .filter(r -> r.getStatus() == DailyReport.Status.SUBMITTED).count();
+        
+        List<User> targetTeachers = userRepository.findByIsActiveTrue().stream()
+                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+                .toList();
 
-        List<ReportSummaryResponse.NotSubmittedTeacher> notSubmitted = allReports.stream()
-                .filter(r -> r.getStatus() == DailyReport.Status.DRAFT)
-                .map(r -> new ReportSummaryResponse.NotSubmittedTeacher(
-                        r.getTeacher().getId(),
-                        r.getTeacher().getName(),
-                        r.getClassGroup().getName()))
+        List<Long> submittedTeacherIds = allReports.stream()
+                .filter(r -> r.getStatus() == DailyReport.Status.SUBMITTED)
+                .map(r -> r.getTeacher().getId())
+                .toList();
+
+        long submitted = submittedTeacherIds.size();
+
+        List<ReportSummaryResponse.NotSubmittedTeacher> notSubmitted = targetTeachers.stream()
+                .filter(u -> !submittedTeacherIds.contains(u.getId()))
+                .map(u -> {
+                    String className = "미배정";
+                    if (u.getTeacherClasses() != null && !u.getTeacherClasses().isEmpty()) {
+                        className = u.getTeacherClasses().get(0).getClassGroup().getName();
+                    }
+                    return new ReportSummaryResponse.NotSubmittedTeacher(
+                            u.getId(),
+                            u.getName(),
+                            className);
+                })
                 .toList();
 
         return new ReportSummaryResponse(
-                date, allReports.size(), submitted, notSubmitted.size(), notSubmitted);
+                date, targetTeachers.size(), submitted, notSubmitted.size(), notSubmitted);
     }
     public DailyReport getByClassAndDate(Long classId, LocalDate date) {
         return reportRepository.findByClassGroupIdAndReportDate(classId, date)

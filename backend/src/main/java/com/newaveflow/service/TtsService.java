@@ -77,8 +77,8 @@ public class TtsService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAdminSummary(Integer year, Integer weekNum) {
-        List<User> teachers = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == User.Role.TEACHER)
+        List<User> teachers = userRepository.findByIsActiveTrue().stream()
+                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .collect(Collectors.toList());
 
         List<TtsRecord> records = recordRepository.findAllByWeekWithAnswers(year, weekNum);
@@ -100,8 +100,8 @@ public class TtsService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getQuarterlyScores(Integer year, Integer quarter) {
-        List<User> teachers = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == User.Role.TEACHER)
+        List<User> teachers = userRepository.findByIsActiveTrue().stream()
+                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .collect(Collectors.toList());
 
         List<TtsRecord> allRecords = recordRepository.findAllSubmittedByYearWithAnswers(year);

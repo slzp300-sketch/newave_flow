@@ -91,6 +91,7 @@ export default function EventAttendancePage() {
   const [pendingTeacherStatus, setPendingTeacherStatus] = useState(null)
   const [partialFromDate,       setPartialFromDate]      = useState('')
   const [partialNote,           setPartialNote]          = useState('')
+  const [teacherAbsenceReason,  setTeacherAbsenceReason] = useState('')
   const [teacherSubmitted,      setTeacherSubmitted]     = useState(false)
   const [teacherEditing,        setTeacherEditing]       = useState(false)
 
@@ -99,6 +100,7 @@ export default function EventAttendancePage() {
       setPendingTeacherStatus(myTeacherAttendance.status)
       setPartialFromDate(myTeacherAttendance.partialFromDate || '')
       setPartialNote(myTeacherAttendance.partialNote || '')
+      setTeacherAbsenceReason(myTeacherAttendance.absenceReason || '')
       setTeacherSubmitted(true)
     }
   }, [myTeacherAttendance])
@@ -108,6 +110,7 @@ export default function EventAttendancePage() {
       eventId, pendingTeacherStatus,
       pendingTeacherStatus === 'PARTIAL' ? partialFromDate || null : null,
       pendingTeacherStatus === 'PARTIAL' ? partialNote || null : null,
+      pendingTeacherStatus === 'ABSENT' ? teacherAbsenceReason || null : null
     ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, user?.id] })
@@ -117,7 +120,8 @@ export default function EventAttendancePage() {
   })
 
   const teacherCanSubmit = pendingTeacherStatus &&
-    (pendingTeacherStatus !== 'PARTIAL' || partialFromDate)
+    (pendingTeacherStatus !== 'PARTIAL' || partialFromDate) &&
+    (pendingTeacherStatus !== 'ABSENT' || teacherAbsenceReason.trim() !== '')
 
   // 학생 상태 설정 (3단 순환: PRESENT → PARTIAL → ABSENT, 단일 행사면 2단)
   const cycleStatus = (studentId) => {
@@ -219,6 +223,11 @@ export default function EventAttendancePage() {
                         {partialFromDate && `${partialFromDate}부터`}{partialNote && ` · ${partialNote}`}
                       </p>
                     )}
+                    {pendingTeacherStatus === 'ABSENT' && teacherAbsenceReason && (
+                      <p className="text-[10px] text-gray-500 font-medium pl-6">
+                        사유: {teacherAbsenceReason}
+                      </p>
+                    )}
                   </div>
                   {!isPastDeadline && (
                     <button onClick={() => setTeacherEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
@@ -272,6 +281,17 @@ export default function EventAttendancePage() {
                           <input type="text" value={partialNote} onChange={e => setPartialNote(e.target.value)}
                             placeholder="예: 오후 2시부터 참석 가능합니다"
                             className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200" />
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {pendingTeacherStatus === 'ABSENT' && (
+                      <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
+                        <div>
+                          <label className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
+                          <input type="text" value={teacherAbsenceReason} onChange={e => setTeacherAbsenceReason(e.target.value)}
+                            placeholder="불참 사유를 입력해 주세요"
+                            className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-sm font-medium outline-none focus:ring-2 focus:ring-red-300" />
                         </div>
                       </motion.div>
                     )}

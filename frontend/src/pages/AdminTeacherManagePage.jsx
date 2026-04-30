@@ -20,7 +20,8 @@ export default function AdminTeacherManagePage() {
   const mutation = useMutation({
     mutationFn: ({ id, role }) => usersApi.updateRole(id, role),
     onSuccess: () => {
-      queryClient.invalidateQueries(['users-management'])
+      queryClient.invalidateQueries({ queryKey: ['users-management'] })
+      queryClient.invalidateQueries({ queryKey: ['teachers'] })
     },
   })
 

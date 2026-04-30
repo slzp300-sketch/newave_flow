@@ -18,6 +18,8 @@ export default function AdminPendingUsersPage() {
     mutationFn: (userId) => adminUsersApi.approve(userId, null),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pending-users'] })
+      qc.invalidateQueries({ queryKey: ['teachers'] })
+      qc.invalidateQueries({ queryKey: ['report-summary'] })
       alert('사용자가 승인되었습니다.')
     },
     onError: (err) => {

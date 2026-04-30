@@ -1,193 +1,133 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { format, startOfMonth, endOfMonth } from 'date-fns'
-import { ko } from 'date-fns/locale'
-import {
-  Users, FileText, Calendar, BookOpen, CheckSquare,
-  UserCog, ClipboardList, UserMinus, GraduationCap,
-  UserPlus, UserCheck, Bell, ChevronRight, Megaphone
+import { 
+  Users, FileText, Calendar, BookOpen, CheckSquare, 
+  UserCog, ClipboardList, UserMinus, GraduationCap, 
+  UserPlus, UserCheck, ChevronDown
 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import Header from '../components/layout/Header'
-import client from '../api/client'
-import { adminUsersApi } from '../api/adminUsers'
-import useAuthStore from '../store/authStore'
-import { toApiDate } from '../utils/date'
 
-const QUICK_LINKS = [
-  { to: '/admin/pending-users', icon: UserPlus,     label: '가입 승인',  bg: 'bg-amber-50',   color: 'text-amber-600',   badge: true },
-  { to: '/admin/teachers',      icon: UserCog,      label: '교사 관리',  bg: 'bg-indigo-50',  color: 'text-indigo-600'  },
-  { to: '/admin/students',      icon: GraduationCap,label: '아이 관리',  bg: 'bg-teal-50',    color: 'text-teal-600'    },
-  { to: '/admin/class-assignment',icon: UserCheck,  label: '반 배정',    bg: 'bg-blue-50',    color: 'text-blue-600'    },
-  { to: '/admin/student-attendance', icon: ClipboardList, label: '출석 현황', bg: 'bg-emerald-50', color: 'text-emerald-600' },
-  { to: '/admin/event-attendance',   icon: CheckSquare,   label: '행사 출석', bg: 'bg-sky-50',     color: 'text-sky-600'    },
-  { to: '/admin/calendar',      icon: Calendar,     label: '일정 관리',  bg: 'bg-rose-50',    color: 'text-rose-500'    },
-  { to: '/admin/meeting-attendance', icon: Users,   label: '교사회의',   bg: 'bg-blue-50',    color: 'text-blue-600'    },
-  { to: '/admin/prayer',        icon: BookOpen,     label: '기도모임',   bg: 'bg-amber-50',   color: 'text-amber-600'   },
-  { to: '/admin/minutes',       icon: FileText,     label: '회의록',     bg: 'bg-violet-50',  color: 'text-violet-600'  },
-  { to: '/admin/tts',           icon: CheckSquare,  label: 'TTS 점검',   bg: 'bg-teal-50',    color: 'text-teal-600'    },
-  { to: '/admin/deactivation-requests', icon: UserMinus, label: '제적 승인', bg: 'bg-rose-50', color: 'text-rose-500'   },
+const MENU_GROUPS = [
+  {
+    title: '회원 및 조직 관리',
+    icon: UserCog,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+    desc: '신규가입, 권한, 반 배정, 제적 관리',
+    items: [
+      { to: '/admin/pending-users', icon: UserPlus, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', title: '가입 승인 대기', desc: '신규 가입 교사 승인 및 반 배정' },
+      { to: '/admin/teachers', icon: UserCog, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
+      { to: '/admin/class-assignment', icon: UserCheck, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
+      { to: '/admin/students', icon: GraduationCap, iconBg: 'bg-teal-50', iconColor: 'text-teal-600', title: '아이 관리', desc: '전체 아이 명단 및 반 배정 관리' },
+      { to: '/admin/deactivation-requests', icon: UserMinus, iconBg: 'bg-rose-50', iconColor: 'text-rose-500', title: '제적 승인 관리', desc: '교사가 신청한 제적 요청 검토' },
+    ]
+  },
+  {
+    title: '모임 및 회의 관리',
+    icon: FileText,
+    color: 'text-violet-600',
+    bg: 'bg-violet-50',
+    desc: '기도모임, 교사회의, 회의록, 일정',
+    items: [
+      { to: '/admin/prayer', icon: BookOpen, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', title: '기도모임 관리', desc: '불참 명단 및 필사 제출 현황' },
+      { to: '/admin/meeting-attendance', icon: Users, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', title: '교사회의 관리', desc: '토요일 교사회의 참석 현황' },
+      { to: '/admin/minutes', icon: FileText, iconBg: 'bg-violet-50', iconColor: 'text-violet-600', title: '회의록 관리', desc: '교사 회의록 작성 및 공개 설정' },
+      { to: '/admin/calendar', icon: Calendar, iconBg: 'bg-rose-50', iconColor: 'text-rose-600', title: '일정 관리', desc: '월별 부서 일정 등록 및 수정' },
+    ]
+  },
+  {
+    title: '출석 및 활동 관리',
+    icon: CheckSquare,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    desc: '주간 출석, 행사 출석, TTS, 전도 관리',
+    items: [
+      { to: '/admin/student-attendance', icon: ClipboardList, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', title: '출석 관리', desc: '주차별 학년/반/학생 출석 현황 확인' },
+      { to: '/admin/event-attendance', icon: ClipboardList, iconBg: 'bg-sky-50', iconColor: 'text-sky-600', title: '행사 출석 관리', desc: '행사별 반 학생 출석 현황 확인' },
+      { to: '/admin/tts', icon: CheckSquare, iconBg: 'bg-teal-50', iconColor: 'text-teal-600', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
+      { to: '/admin/evangelism', icon: Users, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '전도 관리', desc: '전도 조 편성 및 일정 관리' },
+    ]
+  }
 ]
 
 export default function AdminDashboard() {
-  const { user } = useAuthStore()
-  const today = new Date()
+  const [openGroup, setOpenGroup] = useState(null)
 
-  const { data: pendingUsers = [] } = useQuery({
-    queryKey: ['pending-users'],
-    queryFn: () => adminUsersApi.getPending().then(r => r.data),
-  })
-
-  const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers'],
-    queryFn: () => client.get('/users/teachers').then(r => r.data),
-  })
-
-  const { data: events = [] } = useQuery({
-    queryKey: ['events', format(today, 'yyyy-MM')],
-    queryFn: () => client.get('/events', {
-      params: {
-        from: toApiDate(startOfMonth(today)),
-        to:   toApiDate(endOfMonth(today)),
-      }
-    }).then(r => r.data),
-  })
-
-  const upcomingEvents = events
-    .filter(e => new Date(e.eventDate) >= today)
-    .slice(0, 3)
-
-  const STATS = [
-    { label: '승인 대기',    value: pendingUsers.length, bg: 'bg-amber-50',   color: 'text-amber-600',   icon: Bell       },
-    { label: '전체 교사',    value: teachers.length,     bg: 'bg-indigo-50',  color: 'text-indigo-600',  icon: Users      },
-    { label: '이번 달 일정', value: events.length,       bg: 'bg-rose-50',    color: 'text-rose-500',    icon: Calendar   },
-    { label: '예정 일정',    value: upcomingEvents.length, bg: 'bg-emerald-50', color: 'text-emerald-600', icon: Megaphone },
-  ]
+  const toggleGroup = (title) => {
+    setOpenGroup(prev => prev === title ? null : title)
+  }
 
   return (
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
-      <Header title="관리자 대시보드" />
+      <Header title="관리자 메뉴" showBack />
 
-      <div className="px-4 py-5 flex flex-col gap-6">
-
-        {/* 웰컴 배너 */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-3xl p-5 text-white shadow-lg shadow-primary-100"
-        >
-          <p className="text-primary-200 text-xs font-bold">
-            {format(today, 'yyyy년 M월 d일 (EEE)', { locale: ko })}
-          </p>
-          <h2 className="text-xl font-black mt-1">
-            안녕하세요, {user?.name}님 👋
-          </h2>
-          <p className="text-primary-200 text-sm mt-0.5">오늘도 수고 많으십니다.</p>
-
-          {pendingUsers.length > 0 && (
-            <Link
-              to="/admin/pending-users"
-              className="mt-3 flex items-center gap-2 bg-white/20 hover:bg-white/30 active:bg-white/10 rounded-2xl px-4 py-2.5 text-sm font-bold text-white transition-all"
+      <div className="px-4 py-5 flex flex-col gap-4">
+        {MENU_GROUPS.map((group, idx) => {
+          const isOpen = openGroup === group.title
+          const GroupIcon = group.icon
+          
+          return (
+            <motion.div
+              key={group.title}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
             >
-              <Bell size={14} />
-              승인 대기 {pendingUsers.length}명이 있습니다
-              <ChevronRight size={14} className="ml-auto" />
-            </Link>
-          )}
-        </motion.div>
-
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-2 gap-3">
-          {STATS.map((stat, i) => {
-            const Icon = stat.icon
-            return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50"
+              <button 
+                onClick={() => toggleGroup(group.title)}
+                className="w-full flex items-center justify-between p-5 active:bg-gray-50 transition-colors"
               >
-                <div className={`w-9 h-9 ${stat.bg} rounded-xl flex items-center justify-center mb-3`}>
-                  <Icon size={16} className={stat.color} />
+                <div className="flex items-center gap-4 text-left">
+                  <div className={`w-12 h-12 rounded-2xl ${group.bg} flex items-center justify-center flex-shrink-0`}>
+                    <GroupIcon size={24} className={group.color} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-gray-900">{group.title}</h3>
+                    <p className="text-[11px] font-medium text-gray-400 mt-0.5">{group.desc}</p>
+                  </div>
                 </div>
-                <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="text-[11px] font-bold text-gray-400 mt-0.5">{stat.label}</p>
-              </motion.div>
-            )
-          })}
-        </div>
+                <div className={`p-2 rounded-full transition-transform duration-300 ${isOpen ? 'rotate-180 bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
+                  <ChevronDown size={18} />
+                </div>
+              </button>
 
-        {/* 바로가기 */}
-        <div>
-          <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">바로가기</p>
-          <div className="grid grid-cols-4 gap-2.5">
-            {QUICK_LINKS.map((link, i) => {
-              const Icon = link.icon
-              const showBadge = link.badge && pendingUsers.length > 0
-              return (
-                <motion.div
-                  key={link.to}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.03 }}
-                >
-                  <Link
-                    to={link.to}
-                    className="relative flex flex-col items-center gap-1.5 bg-white rounded-2xl p-3 shadow-sm border border-gray-50 active:scale-95 hover:shadow-md transition-all"
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
                   >
-                    {showBadge && (
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 rounded-full text-[9px] text-white font-black flex items-center justify-center px-1">
-                        {pendingUsers.length}
-                      </span>
-                    )}
-                    <div className={`w-10 h-10 ${link.bg} rounded-xl flex items-center justify-center`}>
-                      <Icon size={18} className={link.color} />
+                    <div className="px-5 pb-5 pt-1 flex flex-col gap-2">
+                      {group.items.map((item) => {
+                        const ItemIcon = item.icon
+                        return (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            className="flex items-center gap-4 p-3.5 rounded-2xl border border-gray-50 bg-gray-50/50 hover:bg-gray-100/80 active:scale-[0.98] transition-all group"
+                          >
+                            <div className={`w-10 h-10 rounded-xl ${item.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                              <ItemIcon size={18} className={item.iconColor} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-black text-gray-800 text-sm">{item.title}</p>
+                              <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.desc}</p>
+                            </div>
+                            <span className="text-gray-300 text-lg group-hover:text-gray-500 transition-colors">›</span>
+                          </Link>
+                        )
+                      })}
                     </div>
-                    <p className="text-[10px] font-black text-gray-600 text-center leading-tight">{link.label}</p>
-                  </Link>
-                </motion.div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* 이번 달 예정 일정 */}
-        {upcomingEvents.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">예정 일정</p>
-              <Link to="/admin/calendar" className="text-[11px] font-bold text-primary-500">전체보기 →</Link>
-            </div>
-            <div className="flex flex-col gap-2">
-              {upcomingEvents.map((event, i) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50 flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Calendar size={16} className="text-rose-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm text-gray-800 truncate">{event.title}</p>
-                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">
-                      {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
-                      {event.startTime && ` · ${event.startTime}`}
-                    </p>
-                  </div>
-                  {event.attendanceRequired && (
-                    <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg flex-shrink-0">
-                      출석
-                    </span>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )
+        })}
       </div>
     </div>
   )

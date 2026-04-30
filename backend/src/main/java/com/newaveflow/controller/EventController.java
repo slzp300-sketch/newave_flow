@@ -97,7 +97,7 @@ public class EventController {
             @RequestBody EventDto.EventAttendanceRequest request,
             @AuthenticationPrincipal User currentUser) {
         eventService.saveTeacherAttendance(id, currentUser.getId(),
-                request.status(), request.partialFromDate(), request.partialNote());
+                request.status(), request.partialFromDate(), request.partialNote(), request.absenceReason());
         return ResponseEntity.ok().build();
     }
 

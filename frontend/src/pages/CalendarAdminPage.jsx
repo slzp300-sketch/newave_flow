@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   Plus, ChevronLeft, ChevronRight, PenLine, Trash2, 
@@ -52,6 +53,7 @@ const getEventColors = (color) => {
 export default function CalendarAdminPage() {
   const qc = useQueryClient()
   const [current, setCurrent] = useState(new Date())
+  const { swipeHandlers, direction } = useSwipeMonth(current, setCurrent)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -187,14 +189,33 @@ export default function CalendarAdminPage() {
           </Button>
         </div>
 
-        {/* 월 선택 */}
-        <div className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm">
+        {/* 월 선택 – 좌우 드래그로 월 이동 */}
+        <div
+          {...swipeHandlers}
+          className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm select-none"
+          style={{ touchAction: 'pan-y' }}
+        >
           <button onClick={() => setCurrent(subMonths(current, 1))} className="p-2 hover:bg-gray-100 rounded-xl transition-all flex-1 flex justify-center">
             <ChevronLeft size={20} />
           </button>
-          <div className="px-4 text-sm font-black text-gray-900 min-w-[100px] text-center">
-            {format(current, 'yyyy년 M월', { locale: ko })}
-          </div>
+          <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <motion.div
+              key={format(current, 'yyyy-MM')}
+              custom={direction}
+              variants={{
+                enter: (dir) => ({ x: dir === 'left' ? 30 : -30, opacity: 0 }),
+                center: { x: 0, opacity: 1 },
+                exit:  (dir) => ({ x: dir === 'left' ? -30 : 30, opacity: 0 }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.18 }}
+              className="px-4 text-sm font-black text-gray-900 min-w-[100px] text-center"
+            >
+              {format(current, 'yyyy년 M월', { locale: ko })}
+            </motion.div>
+          </AnimatePresence>
           <button onClick={() => setCurrent(addMonths(current, 1))} className="p-2 hover:bg-gray-100 rounded-xl transition-all flex-1 flex justify-center">
             <ChevronRight size={20} />
           </button>
@@ -407,7 +428,21 @@ export default function CalendarAdminPage() {
           </motion.div>
         )}
 
-        <div className="flex flex-col gap-8">
+        <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+          <motion.div
+            key={format(current, 'yyyy-MM')}
+            custom={direction}
+            variants={{
+              enter: (dir) => ({ x: dir === 'left' ? '60%' : '-60%', opacity: 0 }),
+              center: { x: 0, opacity: 1 },
+              exit:  (dir) => ({ x: dir === 'left' ? '-60%' : '60%', opacity: 0 }),
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'spring', stiffness: 280, damping: 28, mass: 0.8 }}
+            className="flex flex-col gap-8"
+          >
           {groupedEvents.size === 0 ? (
             <div className="py-20 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
               <CalendarIcon size={48} className="mx-auto mb-3 opacity-20" />
@@ -484,7 +519,8 @@ export default function CalendarAdminPage() {
               </div>
             ))
           )}
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   )

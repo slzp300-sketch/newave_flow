@@ -56,8 +56,8 @@ public class UserController {
     @GetMapping("/teachers")
     @Transactional(readOnly = true)
     public ResponseEntity<List<UserInfo>> getTeachers() {
-        List<UserInfo> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER)
-            .stream()
+        List<UserInfo> teachers = userRepository.findByIsActiveTrue().stream()
+            .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
             .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive()))
             .toList();
         return ResponseEntity.ok(teachers);

@@ -62,19 +62,22 @@ public class EventDto {
             String grade,
             String status,
             LocalDate partialFromDate,
-            String partialNote
+            String partialNote,
+            String absenceReason
     ) {}
 
     public record TeacherAttendanceStatusResponse(
             String status,
             LocalDate partialFromDate,
-            String partialNote
+            String partialNote,
+            String absenceReason
     ) {}
 
     public record EventAttendanceRequest(
             @NotNull String status,
             LocalDate partialFromDate,
-            String partialNote
+            String partialNote,
+            String absenceReason
     ) {}
 
     // 학생 출석 단건

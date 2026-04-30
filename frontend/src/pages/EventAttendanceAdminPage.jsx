@@ -311,6 +311,11 @@ export default function EventAttendanceAdminPage() {
                                   {teacher.partialNote && ` · ${teacher.partialNote}`}
                                 </p>
                               )}
+                              {teacher.status === 'ABSENT' && teacher.absenceReason && (
+                                <p className="text-[10px] text-red-400 font-medium mt-0.5">
+                                  사유: {teacher.absenceReason}
+                                </p>
+                              )}
                             </div>
                           </div>
                           {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :

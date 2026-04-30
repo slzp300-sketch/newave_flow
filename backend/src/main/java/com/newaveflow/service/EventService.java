@@ -172,14 +172,14 @@ public class EventService {
     public EventDto.TeacherAttendanceStatusResponse getMyTeacherAttendance(Long eventId, Long teacherId) {
         return eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId)
                 .map(a -> new EventDto.TeacherAttendanceStatusResponse(
-                        a.getStatus(), a.getPartialFromDate(), a.getPartialNote()))
-                .orElse(new EventDto.TeacherAttendanceStatusResponse(null, null, null));
+                        a.getStatus(), a.getPartialFromDate(), a.getPartialNote(), a.getAbsenceReason()))
+                .orElse(new EventDto.TeacherAttendanceStatusResponse(null, null, null, null));
     }
 
     // ── 교사 본인 출석 저장 ──
     @Transactional
     public void saveTeacherAttendance(Long eventId, Long teacherId,
-                                      String status, java.time.LocalDate partialFromDate, String partialNote) {
+                                      String status, java.time.LocalDate partialFromDate, String partialNote, String absenceReason) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
         User teacher = userRepository.findById(teacherId)
@@ -187,7 +187,7 @@ public class EventService {
 
         Optional<EventAttendance> existing = eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId);
         if (existing.isPresent()) {
-            existing.get().update(status, partialFromDate, partialNote);
+            existing.get().update(status, partialFromDate, partialNote, absenceReason);
             eventAttendanceRepository.save(existing.get());
         } else {
             eventAttendanceRepository.save(
@@ -197,6 +197,7 @@ public class EventService {
                             .status(status)
                             .partialFromDate(partialFromDate)
                             .partialNote(partialNote)
+                            .absenceReason(absenceReason)
                             .build()
             );
         }
@@ -209,8 +210,10 @@ public class EventService {
         Map<Long, EventAttendance> attendanceMap = records.stream()
                 .collect(Collectors.toMap(a -> a.getTeacher().getId(), a -> a));
 
-        // TEACHER 롤 전체 (미제출자 포함)
-        List<User> teachers = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER);
+        // TEACHER 및 EXECUTIVE 롤 전체 (미제출자 포함)
+        List<User> teachers = userRepository.findByIsActiveTrue().stream()
+                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+                .toList();
 
         // 출석 제출한 사람 중 TEACHER가 아닌 사람 (EXECUTIVE, PASTOR 등) 추가
         Set<Long> teacherIds = teachers.stream().map(User::getId).collect(Collectors.toSet());
@@ -248,7 +251,8 @@ public class EventService {
                             t.getId(), t.getName(), grade,
                             att != null ? att.getStatus() : null,
                             att != null ? att.getPartialFromDate() : null,
-                            att != null ? att.getPartialNote() : null
+                            att != null ? att.getPartialNote() : null,
+                            att != null ? att.getAbsenceReason() : null
                     );
                 })
                 .sorted(Comparator.comparing(r -> r.teacherName() != null ? r.teacherName() : ""))

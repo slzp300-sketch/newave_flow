@@ -33,10 +33,14 @@ public class EventAttendance {
     @Column(length = 255)
     private String partialNote;
 
-    public void update(String status, java.time.LocalDate partialFromDate, String partialNote) {
+    @Column(length = 255)
+    private String absenceReason;
+
+    public void update(String status, java.time.LocalDate partialFromDate, String partialNote, String absenceReason) {
         this.status = status;
         this.partialFromDate = partialFromDate;
         this.partialNote = partialNote;
+        this.absenceReason = absenceReason;
     }
 
     public void updateStatus(String status) {

@@ -23,7 +23,8 @@ public class NotificationTask {
     @Scheduled(cron = "0 0 8 * * SUN", zone = "Asia/Seoul")
     public void remindSundayAttendance() {
         log.debug("Running remindSundayAttendance task");
-        List<Long> activeUserIds = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER).stream()
+        List<Long> activeUserIds = userRepository.findByIsActiveTrue().stream()
+                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .map(User::getId)
                 .toList();
 
@@ -38,7 +39,8 @@ public class NotificationTask {
     @Scheduled(cron = "0 0 10 * * MON", zone = "Asia/Seoul")
     public void remindMondayAttendance() {
         log.debug("Running remindMondayAttendance task");
-        List<Long> activeUserIds = userRepository.findByRoleAndIsActiveTrue(User.Role.TEACHER).stream()
+        List<Long> activeUserIds = userRepository.findByIsActiveTrue().stream()
+                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .map(User::getId)
                 .toList();
 
