@@ -13,7 +13,6 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
     queryKey: ['unread-notifications'],
     queryFn: () => notificationApi.getUnreadCount().then(r => r.data),
     enabled: !!user && showNotification,
-    refetchInterval: 30000 // 30초마다 갱신
   })
 
   const handleLogout = () => {

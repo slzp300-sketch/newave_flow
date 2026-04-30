@@ -86,15 +86,20 @@ export default function CalendarAdminPage() {
 
     try {
       setSubmitting(true)
+      const submitData = {
+        ...formData,
+        attendanceDeadline: formData.attendanceDeadline || null,
+      }
       if (editingId) {
-        await client.put(`/events/${editingId}`, formData)
+        await client.put(`/events/${editingId}`, submitData)
         alert('일정이 수정되었습니다.')
       } else {
-        await client.post('/events', formData)
+        await client.post('/events', submitData)
         alert('일정이 등록되었습니다.')
       }
       handleCloseForm()
       qc.invalidateQueries({ queryKey: ['events'] })
+      qc.invalidateQueries({ queryKey: ['attendance-required-events'] })
     } catch (err) {
       console.error(err)
       alert('저장 중 오류가 발생했습니다.')

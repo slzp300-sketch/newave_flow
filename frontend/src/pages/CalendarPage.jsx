@@ -184,10 +184,14 @@ export default function CalendarPage() {
     e.preventDefault()
     try {
       setSubmitting(true)
+      const submitData = {
+        ...formData,
+        attendanceDeadline: formData.attendanceDeadline || null,
+      }
       if (editingId) {
-        await client.put(`/events/${editingId}`, formData)
+        await client.put(`/events/${editingId}`, submitData)
       } else {
-        await client.post('/events', formData)
+        await client.post('/events', submitData)
       }
       setShowForm(false)
       refetch()

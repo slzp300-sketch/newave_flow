@@ -43,25 +43,20 @@ export default function AdminMeetingAttendancePage() {
   const { data: attendanceList = [], isLoading: isAttLoading, isRefetching: isAttRefetching } = useQuery({
     queryKey: ['admin-meeting-attendance', selectedDate],
     queryFn: () => client.get(`/meetings/attendance/admin?date=${selectedDate}`).then(r => r.data),
-    refetchInterval: 10000,
-    refetchIntervalInBackground: true,
-    staleTime: 0,
+    refetchInterval: 60000,
   })
 
   // ── 전체 교사 명단
   const { data: teachers = [] } = useQuery({
     queryKey: ['admin-teachers-active'],
     queryFn: () => client.get('/users/teachers').then(r => r.data),
-    staleTime: 0,
-    refetchInterval: 30000,
   })
 
   // ── 회의록 확인 상태
   const { data: allMinutes = [] } = useQuery({
     queryKey: ['admin-minutes-all'],
     queryFn: () => client.get('/minutes').then(r => r.data),
-    refetchInterval: 30000,
-    staleTime: 0,
+    refetchInterval: 60000,
   })
 
   // selectedDate는 토요일 → 해당 주(일~토) 범위 안의 활성 회의록을 찾음
@@ -72,8 +67,7 @@ export default function AdminMeetingAttendancePage() {
     queryKey: ['admin-minute-status', targetMinute?.id],
     queryFn: () => client.get(`/minutes/${targetMinute.id}/status`).then(r => r.data),
     enabled: !!targetMinute,
-    refetchInterval: 10000,
-    staleTime: 0,
+    refetchInterval: 60000,
   })
 
   const isRefetching = isAttRefetching || isMinuteRefetching

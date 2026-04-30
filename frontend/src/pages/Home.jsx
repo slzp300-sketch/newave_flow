@@ -48,11 +48,7 @@ export default function Home() {
           backgroundImage: 'radial-gradient(circle at 80% 20%, white 1.5px, transparent 1px)',
           backgroundSize: '32px 32px'
         }} />
-        <motion.div
-          animate={{ rotate: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-          className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"
-        />
+        <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
         
         <p className="text-primary-100/80 text-sm font-bold tracking-wide uppercase relative flex items-center gap-2">
           <Sparkles size={14} /> {greetingByTime()}
