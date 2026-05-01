@@ -160,7 +160,6 @@ function useEvangelismStatus() {
 
 // ────────── Teacher View ──────────
 function TeacherView({ navigate }) {
-  const [weeklyEvents, setWeeklyEvents] = useState([])
   const [openGroup, setOpenGroup] = usePersistedState('openGroup', null)
   
   const evangelism    = useEvangelismStatus()
@@ -204,20 +203,16 @@ function TeacherView({ navigate }) {
   const prayerDone     = !!prayerVoteData
   const satDone        = !!satData?.status
 
-  useEffect(() => {
-    fetchWeeklyEvents()
-  }, [])
-
-  const fetchWeeklyEvents = async () => {
-    try {
+  const { data: weeklyEvents = [] } = useQuery({
+    queryKey: ['weekly-events', toApiDate(startOfWeek(new Date(), { weekStartsOn: 0 }))],
+    queryFn: async () => {
       const start = toApiDate(startOfWeek(new Date(), { weekStartsOn: 0 }))
       const end = toApiDate(endOfWeek(new Date(), { weekStartsOn: 0 }))
       const res = await client.get(`/events?from=${start}&to=${end}`)
-      setWeeklyEvents(res.data)
-    } catch (err) {
-      console.error(err)
-    }
-  }
+      return res.data
+    },
+    staleTime: 5 * 60 * 1000,
+  })
 
   const isEvangelismActive = evangelism?.nextSchedule?.status === 'ACTIVE'
 

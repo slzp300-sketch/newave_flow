@@ -51,5 +51,26 @@ public record StudentDto(
                 prayerRequest,
                 sketch
         );
+    public static StudentDto toSummary(Student entity) {
+        return new StudentDto(
+                entity.getId(),
+                entity.getName(),
+                entity.getGrade(),
+                entity.getGender(),
+                null, // birthDate
+                null, // school
+                null, // phone
+                entity.getBaptism(),
+                null, // fatherName
+                null, // fatherPhone
+                null, // motherName
+                null, // motherPhone
+                null, // address
+                null, // profileImage (TEXT data removed)
+                entity.isActive(),
+                false, // hasPendingRequest
+                null, // prayerRequest
+                null  // sketch
+        );
     }
 }

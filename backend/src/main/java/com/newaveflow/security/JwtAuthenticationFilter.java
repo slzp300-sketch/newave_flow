@@ -31,12 +31,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Long   userId = tokenProvider.getUserId(token);
             String role   = tokenProvider.getRole(token);
 
-            userRepository.findById(userId).ifPresent(user -> {
-                var auth = new UsernamePasswordAuthenticationToken(
-                        user, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            });
+            // 성능 최적화를 위해 매 API 요청마다 DB를 조회하지 않고
+            // JWT 토큰에 있는 userId와 role 정보만으로 프록시 User 객체를 생성합니다.
+            com.newaveflow.entity.User userProxy = com.newaveflow.entity.User.builder()
+                    .id(userId)
+                    .role(com.newaveflow.entity.User.Role.valueOf(role))
+                    .build();
+
+            var auth = new UsernamePasswordAuthenticationToken(
+                    userProxy, null,
+                    List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
         filterChain.doFilter(request, response);

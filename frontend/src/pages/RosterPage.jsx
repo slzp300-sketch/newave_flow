@@ -192,6 +192,24 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
   const baptizedCount   = cls.students.filter(s => s.baptism === true).length
   const unbaptizedCount = cls.students.filter(s => s.baptism === false).length
   const unknownCount    = cls.students.filter(s => s.baptism === null).length
+  
+  const [fullStudents, setFullStudents] = useState(cls.students)
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    setIsLoadingDetails(true)
+    classesApi.getStudents(cls.id)
+      .then(res => {
+        if (isMounted) setFullStudents(res.data)
+      })
+      .catch(err => console.error("Failed to load students", err))
+      .finally(() => {
+        if (isMounted) setIsLoadingDetails(false)
+      })
+    return () => { isMounted = false }
+  }, [cls.id])
+
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -231,10 +249,15 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
             </div>
           )}
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto relative">
+          {isLoadingDetails && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            </div>
+          )}
           {count === 0 ? <EmptyStudentState colors={colors} /> : (
             <div className="divide-y divide-gray-50">
-              {cls.students.map((student, idx) => <StudentRow key={student.id} student={student} colors={colors} idx={idx} />)}
+              {fullStudents.map((student, idx) => <StudentRow key={student.id} student={student} colors={colors} idx={idx} />)}
             </div>
           )}
         </div>

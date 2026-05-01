@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,14 @@ public class ClassService {
         // JOIN FETCH로 teacher, classGroup을 즉시 로딩 (LazyInitializationException 방지)
         List<TeacherClass> allTeacherClasses = teacherClassRepository.findAllWithTeacherAndClass();
         
+        // N+1 문제 해결: 모든 활성 학생을 한 번의 쿼리로 조회
+        List<com.newaveflow.entity.Student> allActiveStudents = studentRepository.findAllByIsActiveTrueOrderByGradeAscNameAsc();
+        
+        // 클래스 ID를 기준으로 학생들을 그룹화
+        Map<Long, List<com.newaveflow.entity.Student>> studentsByClassId = allActiveStudents.stream()
+                .filter(s -> s.getClassGroup() != null)
+                .collect(Collectors.groupingBy(s -> s.getClassGroup().getId()));
+        
         return classes.stream().map(cls -> {
             List<ClassTeacherDto> teachers = allTeacherClasses.stream()
                     .filter(tc -> tc.getClassGroup().getId().equals(cls.getId()))
@@ -44,9 +54,10 @@ public class ClassService {
                     .findFirst()
                     .orElse(null);
             
-            List<StudentDto> students = studentRepository.findByClassGroupIdAndIsActiveTrue(cls.getId())
+            // 미리 그룹화된 맵에서 학생 목록 조회 후 요약 정보(toSummary)로 변환 (대용량 필드 제외)
+            List<StudentDto> students = studentsByClassId.getOrDefault(cls.getId(), List.of())
                     .stream()
-                    .map(StudentDto::from)
+                    .map(StudentDto::toSummary)
                     .toList();
             
             return ClassDto.from(cls, primaryTeacherName, teachers, students);

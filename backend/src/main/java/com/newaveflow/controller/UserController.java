@@ -46,10 +46,15 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserInfo> getMe(@AuthenticationPrincipal User currentUser) {
         if (currentUser == null) return ResponseEntity.status(401).build();
+        
+        // 필터에서 DB 조회를 생략했으므로 전체 사용자 정보가 필요한 경우 명시적으로 조회합니다.
+        User fullUser = userRepository.findById(currentUser.getId())
+            .orElseThrow(() -> new com.newaveflow.exception.AppException(404, "사용자를 찾을 수 없습니다."));
+            
         return ResponseEntity.ok(new UserInfo(
-            currentUser.getId(), currentUser.getName(),
-            currentUser.getEmail(), currentUser.getRole().name(),
-            currentUser.getGrade(), currentUser.isActive()
+            fullUser.getId(), fullUser.getName(),
+            fullUser.getEmail(), fullUser.getRole().name(),
+            resolveGrade(fullUser), fullUser.isActive()
         ));
     }
 
