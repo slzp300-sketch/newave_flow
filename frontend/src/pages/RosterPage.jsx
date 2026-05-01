@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, X, BookOpen, Phone, MapPin, Loader2 } from 'lucide-react'
@@ -46,31 +47,21 @@ export default function RosterPage() {
 function RosterTab() {
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', '중1')
   const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
-  const [rosterData, setRosterData] = useState({})
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasError, setHasError] = useState(false)
-
-  const loadData = useCallback(() => {
-    setIsLoading(true)
-    setHasError(false)
-    classesApi.getRoster().then(r => {
-      const grouped = r.data.reduce((acc, cls) => {
+  const { data: groupedData = {}, isLoading, isError, refetch } = useQuery({
+    queryKey: ['roster'],
+    queryFn: async () => {
+      const r = await classesApi.getRoster()
+      return r.data.reduce((acc, cls) => {
         const grade = cls.grade || '기타'
         if (!acc[grade]) acc[grade] = []
         acc[grade].push(cls)
         return acc
       }, {})
-      setRosterData(grouped)
-    }).catch(() => {
-      setHasError(true)
-    }).finally(() => setIsLoading(false))
-  }, [])
+    },
+    staleTime: 10 * 60 * 1000 // 10분 캐싱
+  })
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
-
-  const classes = rosterData[selectedGrade] || []
+  const classes = groupedData[selectedGrade] || []
   const colors = GRADE_COLORS[selectedGrade] || GRADE_COLORS['중1']
   const totalStudents = classes.reduce((sum, c) => sum + (c.students?.length || 0), 0)
 
@@ -82,12 +73,12 @@ function RosterTab() {
     )
   }
 
-  if (hasError) {
+  if (isError) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center mt-20 gap-4">
         <p className="text-gray-500 font-bold text-sm">데이터를 불러올 수 없습니다</p>
         <button
-          onClick={loadData}
+          onClick={() => refetch()}
           className="px-5 py-2.5 bg-blue-500 text-white text-sm font-bold rounded-xl active:scale-95 transition-transform"
         >
           다시 시도

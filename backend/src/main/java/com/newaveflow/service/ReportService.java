@@ -69,7 +69,8 @@ public class ReportService {
     public ReportSummaryResponse getSummary(LocalDate date) {
         List<DailyReport> allReports = reportRepository.findByDateWithDetails(date);
         
-        List<User> targetTeachers = userRepository.findByIsActiveTrue().stream()
+        // N+1 문제 해결: 모든 활성 교사와 그들의 반 배정 정보를 한 번의 쿼리로 가져옵니다.
+        List<User> targetTeachers = userRepository.findAllActiveWithClasses().stream()
                 .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .toList();
 

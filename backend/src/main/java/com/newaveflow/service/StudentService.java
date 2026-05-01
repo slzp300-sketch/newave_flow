@@ -103,7 +103,7 @@ public class StudentService {
 
     // 관리자: 전체 학생 조회 (학년별 그룹핑, 제적 포함)
     public Map<String, List<AdminStudentDto>> getAllStudentsGroupedByGrade() {
-        return studentRepository.findAllByOrderByGradeAscIsActiveDescNameAsc()
+        return studentRepository.findAllWithClassGroup()
                 .stream()
                 .map(AdminStudentDto::from)
                 .collect(Collectors.groupingBy(

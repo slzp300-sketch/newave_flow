@@ -20,6 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRoleAndIsActiveTrue(User.Role role);
     List<User> findByIsActiveTrue();
     List<User> findByIsActiveFalse();
+    
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE u.isActive = true")
+    List<User> findAllActiveWithClasses();
 
     @Modifying
     @Transactional

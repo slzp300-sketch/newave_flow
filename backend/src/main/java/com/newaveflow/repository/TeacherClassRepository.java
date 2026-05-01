@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface TeacherClassRepository extends JpaRepository<TeacherClass, Long> {
     // Legacy mapping (no underscore) for existing services
     List<TeacherClass> findByTeacherId(Long teacherId);
+    List<TeacherClass> findByTeacherIdIn(List<Long> teacherIds);
     List<TeacherClass> findByClassGroupId(Long classGroupId);
 
     // New assignment logic mapping

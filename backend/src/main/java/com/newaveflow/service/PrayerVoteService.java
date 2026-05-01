@@ -67,12 +67,18 @@ public class PrayerVoteService {
 
     public List<com.newaveflow.dto.prayer.PrayerVoteResponse> getAbsentListResponses(LocalDate weekStart) {
         List<PrayerVote> votes = prayerVoteRepository.findAbsentByWeekStart(weekStart);
+        
+        // N+1 문제 해결을 위해 교사들의 반 배정 정보를 한 번에 조회합니다.
+        List<Long> teacherIds = votes.stream().map(v -> v.getTeacher().getId()).toList();
+        java.util.Map<Long, java.util.List<com.newaveflow.entity.TeacherClass>> teacherClassMap = 
+            teacherClassRepository.findByTeacherIdIn(teacherIds).stream()
+                .collect(java.util.stream.Collectors.groupingBy(tc -> tc.getTeacher().getId()));
+
         return votes.stream().map(v -> {
             String className = null;
-            // 명시적으로 TeacherClass 조회
-            java.util.List<com.newaveflow.entity.TeacherClass> tcs = teacherClassRepository.findByTeacherId(v.getTeacher().getId());
+            java.util.List<com.newaveflow.entity.TeacherClass> tcs = teacherClassMap.get(v.getTeacher().getId());
             if (tcs != null && !tcs.isEmpty()) {
-                className = tcs.get(0).getClassGroup().getDescription(); // "중3 5반" 형태로 저장되어 있음
+                className = tcs.get(0).getClassGroup().getDescription();
             }
             return new com.newaveflow.dto.prayer.PrayerVoteResponse(v, className);
         }).toList();

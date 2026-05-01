@@ -43,14 +43,25 @@ public class AttendanceService {
                 .findByClassGroupIdAndAttendanceDate(request.classGroupId(), request.attendanceDate())
                 .stream().collect(Collectors.toMap(a -> a.getStudent().getId(), a -> a));
 
+        // N+1 방지: 필요한 학생 정보를 한 번에 조회합니다.
+        java.util.List<Long> neededStudentIds = request.records().stream()
+                .map(AttendanceBatchRequest.Record::studentId)
+                .filter(id -> !existingMap.containsKey(id))
+                .toList();
+        
+        java.util.Map<Long, Student> studentMap = neededStudentIds.isEmpty() ? java.util.Map.of() :
+                studentRepository.findAllById(neededStudentIds).stream()
+                        .collect(Collectors.toMap(Student::getId, s -> s));
+
         for (AttendanceBatchRequest.Record rec : request.records()) {
             Attendance.Status status = Attendance.Status.valueOf(rec.status());
 
             if (existingMap.containsKey(rec.studentId())) {
                 existingMap.get(rec.studentId()).updateStatus(status, rec.absentReason(), rec.note());
             } else {
-                Student student = studentRepository.findById(rec.studentId())
-                        .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
+                Student student = studentMap.get(rec.studentId());
+                if (student == null) throw AppException.notFound("학생을 찾을 수 없습니다: " + rec.studentId());
+                
                 attendanceRepository.save(
                         Attendance.builder()
                                 .student(student)
