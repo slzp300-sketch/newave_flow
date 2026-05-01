@@ -30,6 +30,7 @@ function TeacherSelfCheck({ event, userId }) {
   const [pending, setPending]             = useState(null)
   const [partialFromDate, setPartialFromDate] = useState('')
   const [partialNote, setPartialNote]     = useState('')
+  const [absenceReason, setAbsenceReason] = useState('')
   const [submitted, setSubmitted]         = useState(false)
   const [editing, setEditing]             = useState(false)
 
@@ -44,6 +45,7 @@ function TeacherSelfCheck({ event, userId }) {
       setPending(myAtt.status)
       setPartialFromDate(myAtt.partialFromDate || '')
       setPartialNote(myAtt.partialNote || '')
+      setAbsenceReason(myAtt.absenceReason || '')
       setSubmitted(true)
     }
   }, [myAtt])
@@ -53,6 +55,7 @@ function TeacherSelfCheck({ event, userId }) {
       eventId, pending,
       pending === 'PARTIAL' ? partialFromDate || null : null,
       pending === 'PARTIAL' ? partialNote || null : null,
+      pending === 'ABSENT'  ? absenceReason || null : null,
     ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, userId] })
@@ -61,7 +64,9 @@ function TeacherSelfCheck({ event, userId }) {
     },
   })
 
-  const canSubmit = pending && (pending !== 'PARTIAL' || partialFromDate)
+  const canSubmit = pending &&
+    (pending !== 'PARTIAL' || partialFromDate) &&
+    (pending !== 'ABSENT'  || absenceReason.trim() !== '')
   const isEditable = !submitted || editing
   const statusKeys = isMultiDay ? ['PRESENT', 'PARTIAL', 'ABSENT'] : ['PRESENT', 'ABSENT']
 
@@ -81,6 +86,9 @@ function TeacherSelfCheck({ event, userId }) {
               <p className="text-[10px] text-gray-500 font-medium pl-6">
                 {partialFromDate && `${partialFromDate}부터`}{partialNote && ` · ${partialNote}`}
               </p>
+            )}
+            {pending === 'ABSENT' && absenceReason && (
+              <p className="text-[10px] text-gray-500 font-medium pl-6">사유: {absenceReason}</p>
             )}
           </div>
           <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
@@ -108,6 +116,26 @@ function TeacherSelfCheck({ event, userId }) {
               </button>
             ))}
           </div>
+
+          {/* 불참 사유 입력 */}
+          {pending === 'ABSENT' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="flex flex-col gap-2 overflow-hidden"
+            >
+              <div>
+                <label className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
+                <input
+                  type="text"
+                  value={absenceReason}
+                  onChange={e => setAbsenceReason(e.target.value)}
+                  placeholder="불참 사유를 입력해 주세요"
+                  className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-sm font-medium outline-none focus:ring-2 focus:ring-red-300"
+                />
+              </div>
+            </motion.div>
+          )}
 
           {/* 부분참석 상세 입력 */}
           {pending === 'PARTIAL' && (
