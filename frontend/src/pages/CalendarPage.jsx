@@ -64,6 +64,7 @@ export default function CalendarPage() {
     description: '',
     eventDate: toApiDate(new Date()),
     endDate: toApiDate(new Date()),
+    allDay: false,
     startTime: '12:00',
     endTime: '13:00',
     color: '',
@@ -86,7 +87,12 @@ export default function CalendarPage() {
   // Lane Allocation Logic
   const eventLanes = useMemo(() => {
     const lanes = {};
-    const sorted = [...events].sort((a, b) => a.id - b.id);
+    const sorted = [...events].sort((a, b) => {
+      const aAllDay = !a.startTime
+      const bAllDay = !b.startTime
+      if (aAllDay !== bAllDay) return aAllDay ? -1 : 1
+      return a.id - b.id
+    })
     const occupied = {};
 
     sorted.forEach(ev => {
@@ -137,10 +143,10 @@ export default function CalendarPage() {
 
   const selectedEvents = eventsOnDay(selected)
     .sort((a, b) => {
-      // 리스트는 시간순 정렬 (기존 요청 유지)
-      const timeA = a.startTime || '23:59';
-      const timeB = b.startTime || '23:59';
-      return timeA.localeCompare(timeB);
+      const aAllDay = !a.startTime
+      const bAllDay = !b.startTime
+      if (aAllDay !== bAllDay) return aAllDay ? -1 : 1
+      return (a.startTime || '').localeCompare(b.startTime || '')
     })
 
   const handleOpenAdd = () => {
@@ -150,6 +156,7 @@ export default function CalendarPage() {
       description: '',
       eventDate: toApiDate(selected),
       endDate: toApiDate(selected),
+      allDay: false,
       startTime: '12:00',
       endTime: '13:00',
       color: '',
@@ -168,8 +175,9 @@ export default function CalendarPage() {
       description: e.description || '',
       eventDate: e.eventDate,
       endDate: e.endDate || e.eventDate,
-      startTime: e.startTime || '',
-      endTime: e.endTime || '',
+      allDay: !e.startTime,
+      startTime: e.startTime || '12:00',
+      endTime: e.endTime || '13:00',
       color: e.color || '',
       eventType: e.eventType,
       attendanceRequired: e.attendanceRequired ?? false,
@@ -194,9 +202,12 @@ export default function CalendarPage() {
     e.preventDefault()
     try {
       setSubmitting(true)
+      const { allDay, ...rest } = formData
       const submitData = {
-        ...formData,
-        attendanceDeadline: formData.attendanceDeadline || null,
+        ...rest,
+        startTime: allDay ? null : rest.startTime || null,
+        endTime:   allDay ? null : rest.endTime   || null,
+        attendanceDeadline: rest.attendanceDeadline || null,
       }
       if (editingId) {
         await client.put(`/events/${editingId}`, submitData)
@@ -380,7 +391,11 @@ export default function CalendarPage() {
                             {format(new Date(e.eventDate), 'M/d')} 
                             {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M/d')}`}
                           </div>
-                          {(e.startTime || e.endTime) && (
+                          {!e.startTime ? (
+                            <div className="flex items-center gap-1 text-[10px] font-black text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
+                              하루종일
+                            </div>
+                          ) : (e.startTime || e.endTime) && (
                             <div className="flex items-center gap-1 text-[10px] font-black text-gray-400">
                               <Clock size={12} /> {e.startTime} {e.endTime && `~ ${e.endTime}`}
                             </div>
@@ -467,34 +482,64 @@ export default function CalendarPage() {
                     {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+
+                {/* 하루종일 토글 */}
+                <div
+                  onClick={() => setFormData(d => ({ ...d, allDay: !d.allDay }))}
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    formData.allDay ? 'border-primary-300 bg-primary-50' : 'border-gray-100 bg-gray-50'
+                  }`}
+                >
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">시작 시간</label>
-                    <input 
-                      type="time" 
-                      value={formData.startTime} 
-                      onChange={e => {
-                        const newStartTime = e.target.value
-                        let newEndTime = formData.endTime
-                        
-                        if (newStartTime) {
-                          const [h, m] = newStartTime.split(':').map(Number)
-                          const date = new Date()
-                          date.setHours(h + 1)
-                          date.setMinutes(m)
-                          newEndTime = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-                        }
-                        
-                        setFormData({...formData, startTime: newStartTime, endTime: newEndTime})
-                      }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" 
+                    <p className={`text-sm font-black ${formData.allDay ? 'text-primary-700' : 'text-gray-500'}`}>하루종일</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
+                  </div>
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-primary-500' : 'bg-gray-200'}`}>
+                    <motion.div
+                      animate={{ x: formData.allDay ? 20 : 2 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow"
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">종료 시간</label>
-                    <input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
-                  </div>
                 </div>
+
+                <AnimatePresence initial={false}>
+                  {!formData.allDay && (
+                    <motion.div
+                      key="time-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">시작 시간</label>
+                          <input
+                            type="time"
+                            value={formData.startTime}
+                            onChange={e => {
+                              const newStartTime = e.target.value
+                              let newEndTime = formData.endTime
+                              if (newStartTime) {
+                                const [h, m] = newStartTime.split(':').map(Number)
+                                const d = new Date(); d.setHours(h + 1); d.setMinutes(m)
+                                newEndTime = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+                              }
+                              setFormData({...formData, startTime: newStartTime, endTime: newEndTime})
+                            }}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">종료 시간</label>
+                          <input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">색상</label>
                   <div className="flex gap-2">

@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { 
-  Plus, ChevronLeft, ChevronRight, PenLine, Trash2, 
-  Calendar as CalendarIcon, Clock, Type, Palette, 
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Plus, ChevronLeft, ChevronRight, PenLine, Trash2,
+  Calendar as CalendarIcon, Clock, Type, Palette,
   ChevronDown, ChevronUp, AlertCircle, CheckCircle2
 } from 'lucide-react'
 import { 
@@ -17,7 +18,6 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import Badge from '../components/common/Badge'
-import { motion, AnimatePresence } from 'framer-motion'
 import { toApiDate } from '../utils/date'
 
 const COLORS = [
@@ -63,6 +63,7 @@ export default function CalendarAdminPage() {
     description: '',
     eventDate: toApiDate(new Date()),
     endDate: toApiDate(new Date()),
+    allDay: false,
     startTime: '12:00',
     endTime: '13:00',
     color: '',
@@ -88,9 +89,12 @@ export default function CalendarAdminPage() {
 
     try {
       setSubmitting(true)
+      const { allDay, ...rest } = formData
       const submitData = {
-        ...formData,
-        attendanceDeadline: formData.attendanceDeadline || null,
+        ...rest,
+        startTime: allDay ? null : rest.startTime || null,
+        endTime:   allDay ? null : rest.endTime   || null,
+        attendanceDeadline: rest.attendanceDeadline || null,
       }
       if (editingId) {
         await client.put(`/events/${editingId}`, submitData)
@@ -117,8 +121,9 @@ export default function CalendarAdminPage() {
       description: event.description || '',
       eventDate: event.eventDate,
       endDate: event.endDate || event.eventDate,
-      startTime: event.startTime || '',
-      endTime: event.endTime || '',
+      allDay: !event.startTime,
+      startTime: event.startTime || '12:00',
+      endTime: event.endTime || '13:00',
       color: event.color || '',
       eventType: event.eventType,
       attendanceRequired: event.attendanceRequired ?? false,
@@ -149,6 +154,7 @@ export default function CalendarAdminPage() {
       description: '',
       eventDate: toApiDate(new Date()),
       endDate: toApiDate(new Date()),
+      allDay: false,
       startTime: '12:00',
       endTime: '13:00',
       color: '',
@@ -269,39 +275,68 @@ export default function CalendarAdminPage() {
                     </div>
                   </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* 하루종일 토글 */}
+                <div
+                  onClick={() => setFormData(d => ({ ...d, allDay: !d.allDay }))}
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    formData.allDay ? 'border-primary-300 bg-primary-50' : 'border-gray-100 bg-gray-50'
+                  }`}
+                >
                   <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">시작 시간</label>
-                    <input 
-                      type="time" 
-                      value={formData.startTime}
-                      onChange={e => {
-                        const newStartTime = e.target.value
-                        let newEndTime = formData.endTime
-                        
-                        if (newStartTime) {
-                          const [h, m] = newStartTime.split(':').map(Number)
-                          const date = new Date()
-                          date.setHours(h + 1)
-                          date.setMinutes(m)
-                          newEndTime = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-                        }
-                        
-                        setFormData({...formData, startTime: newStartTime, endTime: newEndTime})
-                      }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
-                    />
+                    <p className={`text-sm font-black ${formData.allDay ? 'text-primary-700' : 'text-gray-500'}`}>하루종일</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
                   </div>
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">종료 시간</label>
-                    <input 
-                      type="time" 
-                      value={formData.endTime}
-                      onChange={e => setFormData({...formData, endTime: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-primary-500' : 'bg-gray-200'}`}>
+                    <motion.div
+                      animate={{ x: formData.allDay ? 20 : 2 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow"
                     />
                   </div>
                 </div>
+
+                <AnimatePresence initial={false}>
+                  {!formData.allDay && (
+                    <motion.div
+                      key="time-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">시작 시간</label>
+                          <input
+                            type="time"
+                            value={formData.startTime}
+                            onChange={e => {
+                              const newStartTime = e.target.value
+                              let newEndTime = formData.endTime
+                              if (newStartTime) {
+                                const [h, m] = newStartTime.split(':').map(Number)
+                                const d = new Date(); d.setHours(h + 1); d.setMinutes(m)
+                                newEndTime = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+                              }
+                              setFormData({...formData, startTime: newStartTime, endTime: newEndTime})
+                            }}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">종료 시간</label>
+                          <input
+                            type="time"
+                            value={formData.endTime}
+                            onChange={e => setFormData({...formData, endTime: e.target.value})}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div>
                   <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">구분</label>
@@ -484,7 +519,11 @@ export default function CalendarAdminPage() {
                                   <p className="text-gray-500 text-[11px] font-medium leading-relaxed mb-3">{event.description}</p>
                                 )}
                                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-black text-gray-400">
-                                  {(event.startTime || event.endTime) && (
+                                  {!event.startTime ? (
+                                    <span className="flex items-center gap-1 text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">
+                                      하루종일
+                                    </span>
+                                  ) : (event.startTime || event.endTime) && (
                                     <span className="flex items-center gap-1">
                                       <Clock size={12} /> {event.startTime} {event.endTime && `~ ${event.endTime}`}
                                     </span>
