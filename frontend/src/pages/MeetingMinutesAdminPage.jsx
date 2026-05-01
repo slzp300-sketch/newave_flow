@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, FileText, CheckCircle2, XCircle, Play, 
@@ -19,7 +20,7 @@ export default function MeetingMinutesAdminPage() {
   const [editingId, setEditingId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [selectedStatus, setSelectedStatus] = useState(null)
+  const [selectedStatus, setSelectedStatus] = usePersistedState('selectedStatus', null)
   
   const [formData, setFormData] = useState({
     title: '',

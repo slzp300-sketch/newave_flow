@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { 
@@ -52,7 +53,7 @@ const MENU_GROUPS = [
 ]
 
 export default function AdminDashboard() {
-  const [openGroup, setOpenGroup] = useState(null)
+  const [openGroup, setOpenGroup] = usePersistedState('openGroup', null)
 
   const toggleGroup = (title) => {
     setOpenGroup(prev => prev === title ? null : title)

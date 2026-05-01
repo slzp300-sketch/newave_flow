@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Users, Calendar, AlertCircle } from 'lucide-react'
 import { useState } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
@@ -174,10 +175,8 @@ function ScheduleCard({ schedule, index, myGroupId, allGroups, past = false }) {
 
 // ── 전체 조 편성표 ──────────────────────────────────────────────────────────
 function AllGroupsSection({ allGroups, myGroupId }) {
-  const [selectedIdx, setSelectedIdx] = useState(() => {
-    const myIdx = allGroups.findIndex(g => g.id === myGroupId)
-    return myIdx >= 0 ? myIdx : 0
-  })
+  const myIdx = allGroups.findIndex(g => g.id === myGroupId)
+  const [selectedIdx, setSelectedIdx] = usePersistedState('selectedIdx', myIdx >= 0 ? myIdx : 0)
 
   if (allGroups.length === 0) return null
 

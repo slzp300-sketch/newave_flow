@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, X, BookOpen, Phone, MapPin, Loader2 } from 'lucide-react'
 import Header from '../components/layout/Header'
@@ -43,8 +44,8 @@ export default function RosterPage() {
 
 // ── 교적부 탭 (기존 기능) ───────────────────
 function RosterTab() {
-  const [selectedGrade, setSelectedGrade] = useState('중1')
-  const [selectedClass, setSelectedClass] = useState(null)
+  const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', '중1')
+  const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
   const [rosterData, setRosterData] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)

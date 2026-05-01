@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
@@ -26,11 +27,11 @@ const getGradeStyle = (grade) => {
 }
 
 export default function EventAttendanceAdminPage() {
-  const [selectedEventId, setSelectedEventId] = useState(null)
-  const [selectedGrade, setSelectedGrade] = useState(null)         // 학생 학년
-  const [selectedTeacherGrade, setSelectedTeacherGrade] = useState(null) // 교사 학년
-  const [expandedClassId, setExpandedClassId] = useState(null)
-  const [activeTab, setActiveTab] = useState('student') // 'student' | 'teacher'
+  const [selectedEventId, setSelectedEventId] = usePersistedState('selectedEventId', null)
+  const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', null)
+  const [selectedTeacherGrade, setSelectedTeacherGrade] = usePersistedState('selectedTeacherGrade', null)
+  const [expandedClassId, setExpandedClassId] = usePersistedState('expandedClassId', null)
+  const [activeTab, setActiveTab] = usePersistedState('activeTab', 'student')
 
   const { data: events = [], isLoading: eventsLoading } = useQuery({
     queryKey: ['attendance-required-events'],

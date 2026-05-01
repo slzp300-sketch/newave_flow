@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { format, subWeeks, startOfWeek } from 'date-fns'
@@ -307,9 +308,9 @@ function AbsentListPanel({ date }) {
 export default function AdminStudentAttendancePage() {
   const sundays = getPastSundays()
   const [selectedDate, setSelectedDate] = useState(sundays[0])
-  const [activeTab, setActiveTab] = useState('grade') // 'grade' | 'absent'
-  const [selectedGrade, setSelectedGrade] = useState(null)
-  const [selectedClass, setSelectedClass] = useState(null)
+  const [activeTab, setActiveTab] = usePersistedState('activeTab', 'grade')
+  const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', null)
+  const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
 
   const { data: classSummaries = [], isLoading } = useQuery({
     queryKey: ['admin-weekly-attendance', selectedDate],

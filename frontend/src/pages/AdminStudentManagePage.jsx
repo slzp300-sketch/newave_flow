@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -25,13 +26,13 @@ function sortGrades(grades) {
 
 export default function AdminStudentManagePage() {
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState('list') // 'list' | 'assign'
-  const [activeGrade, setActiveGrade] = useState('전체')
+  const [tab, setTab] = usePersistedState('tab', 'list')
+  const [activeGrade, setActiveGrade] = usePersistedState('activeGrade', '전체')
   const [search, setSearch] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editStudent, setEditStudent] = useState(null)
   const [showAdvanceModal, setShowAdvanceModal] = useState(false)
-  const [showDeactivated, setShowDeactivated] = useState(false)
+  const [showDeactivated, setShowDeactivated] = usePersistedState('showDeactivated', false)
 
   const { data: grouped = {}, isLoading } = useQuery({
     queryKey: ['admin-students'],

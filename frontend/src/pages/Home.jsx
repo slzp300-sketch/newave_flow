@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronRight, Users, FileText, Calendar, CheckSquare,
@@ -160,7 +161,7 @@ function useEvangelismStatus() {
 // ────────── Teacher View ──────────
 function TeacherView({ navigate }) {
   const [weeklyEvents, setWeeklyEvents] = useState([])
-  const [openGroup, setOpenGroup] = useState(null)
+  const [openGroup, setOpenGroup] = usePersistedState('openGroup', null)
   
   const evangelism    = useEvangelismStatus()
   const weeklyStatus  = useWeeklyStatus()

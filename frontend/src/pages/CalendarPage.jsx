@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery } from '@tanstack/react-query'
 import { 
@@ -43,8 +44,15 @@ export default function CalendarPage() {
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'PASTOR' || user?.role === 'EXECUTIVE'
   
-  const [current, setCurrent]   = useState(new Date())
-  const [selected, setSelected] = useState(new Date())
+  const [currentTs, setCurrentTs] = usePersistedState('current', new Date().getTime())
+  const [selectedTs, setSelectedTs] = usePersistedState('selected', new Date().getTime())
+
+  const current  = useMemo(() => new Date(currentTs),  [currentTs])
+  const selected = useMemo(() => new Date(selectedTs), [selectedTs])
+
+  const setCurrent  = useCallback((val) => setCurrentTs(prev  => (typeof val === 'function' ? val(new Date(prev)) : val).getTime()), [setCurrentTs])
+  const setSelected = useCallback((val) => setSelectedTs(prev => (typeof val === 'function' ? val(new Date(prev)) : val).getTime()), [setSelectedTs])
+
   const { swipeHandlers, direction } = useSwipeMonth(current, setCurrent)
   
   // Form State

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { 
@@ -14,8 +15,8 @@ import { usersApi } from '../api/users'
 
 export default function AdminClassManagePage() {
   const queryClient = useQueryClient()
-  const [selectedClassId, setSelectedClassId] = useState(null)
-  const [activeGrade, setActiveGrade] = useState('전체')
+  const [selectedClassId, setSelectedClassId] = usePersistedState('selectedClassId', null)
+  const [activeGrade, setActiveGrade] = usePersistedState('activeGrade', '전체')
 
   const { data: roster = [], isLoading: isRosterLoading } = useQuery({
     queryKey: ['admin-roster-full'],

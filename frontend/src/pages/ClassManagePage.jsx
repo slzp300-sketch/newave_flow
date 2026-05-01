@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, X, Loader2, PenLine, UserX, UserCheck, Save, Clock, StickyNote, Camera, Image as ImageIcon } from 'lucide-react'
@@ -11,7 +12,7 @@ import useAuthStore from '../store/authStore'
 
 export default function ClassManagePage() {
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState('list')
+  const [tab, setTab] = usePersistedState('tab', 'list')
   const [editingStudent, setEditingStudent] = useState(null)
   const [deactivatingStudent, setDeactivatingStudent] = useState(null)
   const [memoStudent, setMemoStudent] = useState(null)

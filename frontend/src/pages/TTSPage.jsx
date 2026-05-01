@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Send, CheckCheck, AlertCircle, Clock, Lock } from 'lucide-react'
 import Header from '../components/layout/Header'
@@ -22,7 +23,7 @@ export default function TTSPage() {
 
   const [checks, setChecks]         = useState({})
   const [submitted, setSubmitted]   = useState(false)
-  const [openSections, setOpen]     = useState({})
+  const [openSections, setOpen]     = usePersistedState('openSections', {})
 
   // 1. 질문 목록 가져오기
   const { data: questions = [], isLoading: qLoading } = useQuery({

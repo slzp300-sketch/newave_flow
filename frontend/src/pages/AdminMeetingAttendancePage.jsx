@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Users, Loader2, CheckCircle2, XCircle, RefreshCw, Clock } from 'lucide-react'
@@ -36,8 +37,8 @@ export default function AdminMeetingAttendancePage() {
   const queryClient = useQueryClient()
   const weeks = getPastSaturdays()
   const [selectedDate, setSelectedDate] = useState(weeks[0])
-  const [statusFilter, setStatusFilter] = useState('전체')   // 전체 | 참석 | 불참
-  const [activeGrade, setActiveGrade] = useState('전체')     // 학년 필터
+  const [statusFilter, setStatusFilter] = usePersistedState('statusFilter', '전체')
+  const [activeGrade, setActiveGrade] = usePersistedState('activeGrade', '전체')
 
   // ── 토요 교사회의 참석 데이터
   const { data: attendanceList = [], isLoading: isAttLoading, isRefetching: isAttRefetching } = useQuery({

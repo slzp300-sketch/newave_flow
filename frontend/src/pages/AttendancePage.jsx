@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -36,7 +37,7 @@ export default function AttendancePage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const [selectedClassId, setSelectedClassId] = useState(null)
+  const [selectedClassId, setSelectedClassId] = usePersistedState('selectedClassId', null)
   const classId = selectedClassId ?? classes[0]?.id
 
   // 2. 해당 반 학생 목록
