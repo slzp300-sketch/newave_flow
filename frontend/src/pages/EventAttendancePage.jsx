@@ -159,6 +159,10 @@ export default function EventAttendancePage() {
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
   const isEditable   = !submitted || editing
 
+  const missingReasons  = Object.entries(statusMap).filter(([id, s]) => s === 'ABSENT'  && !reasonMap[id]?.trim())
+  const missingPartials = Object.entries(statusMap).filter(([id, s]) => s === 'PARTIAL' && !partialFromDateMap[id])
+  const canSubmit = missingReasons.length === 0 && missingPartials.length === 0
+
   const todayDateStr = toApiDate(new Date())
   const isPastDeadline = event?.attendanceDeadline && todayDateStr > event?.attendanceDeadline
 
