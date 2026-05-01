@@ -51,6 +51,8 @@ public record StudentDto(
                 prayerRequest,
                 sketch
         );
+    }
+
     public static StudentDto toSummary(Student entity) {
         return new StudentDto(
                 entity.getId(),
