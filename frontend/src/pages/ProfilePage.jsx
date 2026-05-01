@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
-import { LogOut, User, Mail, Shield, Lock, Eye, EyeOff, ChevronRight, CheckCircle2, XCircle } from 'lucide-react'
+import { LogOut, User, Mail, Shield, Lock, Eye, EyeOff, ChevronRight, CheckCircle2, XCircle, Type } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useAuthStore from '../store/authStore'
+import useSettingsStore from '../store/settingsStore'
 import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const [pwResult, setPwResult]       = useState(null) // { ok, msg }
 
   const roleCfg = ROLE_MAP[user?.role] ?? ROLE_MAP.TEACHER
+  const { largeFontMode, toggleLargeFont } = useSettingsStore()
 
   const handleLogout = async () => {
     setLogoutLoading(true)
@@ -204,6 +206,34 @@ export default function ProfilePage() {
               </motion.div>
             )}
           </AnimatePresence>
+        </Card>
+
+        {/* 화면 설정 */}
+        <Card className="!p-0 overflow-hidden">
+          <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">화면 설정</p>
+          <div className="flex items-center justify-between px-4 py-3.5 border-t border-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                <Type size={15} className="text-indigo-500" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-800">큰 글씨 모드</p>
+                <p className="text-[11px] text-gray-400 font-medium mt-0.5">글자 크기를 키워드립니다</p>
+              </div>
+            </div>
+            <button
+              onClick={toggleLargeFont}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0 ${
+                largeFontMode ? 'bg-indigo-500' : 'bg-gray-200'
+              }`}
+            >
+              <motion.div
+                animate={{ x: largeFontMode ? 24 : 2 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+              />
+            </button>
+          </div>
         </Card>
 
         {/* 앱 정보 */}

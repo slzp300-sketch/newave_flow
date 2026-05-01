@@ -1,12 +1,21 @@
+import { useEffect } from 'react'
 import { Outlet, useLocation, ScrollRestoration } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 import BottomNav from './BottomNav'
 import usePullToRefresh from '../../hooks/usePullToRefresh'
+import useSettingsStore from '../../store/settingsStore'
 
 export default function AppLayout() {
   const { pathname } = useLocation()
   const { isRefreshing, pullDistance } = usePullToRefresh()
+  const { largeFontMode } = useSettingsStore()
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.fontSize = largeFontMode ? '120%' : ''
+    root.style.transition = 'font-size 0.3s ease'
+  }, [largeFontMode])
 
   // 당긴 거리 비율 (0 ~ 1)
   const pullProgress = Math.min(pullDistance / 70, 1)
