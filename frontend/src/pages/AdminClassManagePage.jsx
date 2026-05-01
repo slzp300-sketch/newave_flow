@@ -35,6 +35,7 @@ export default function AdminClassManagePage() {
     acc[cls.grade].push(cls)
     return acc
   }, {})
+  Object.values(groupedClasses).forEach(arr => arr.sort((a, b) => a.name.localeCompare(b.name, 'ko')))
 
   const grades = ['전체', ...Object.keys(groupedClasses).sort((a, b) => {
     const priority = { '중': 1, '고': 2 }

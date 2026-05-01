@@ -28,7 +28,7 @@ public class ClassService {
     private final UserRepository userRepository;
 
     public List<ClassDto> getAllRosterData() {
-        List<ClassGroup> classes = classGroupRepository.findAll();
+        List<ClassGroup> classes = classGroupRepository.findAllOrderByName();
         // JOIN FETCH로 teacher, classGroup을 즉시 로딩 (LazyInitializationException 방지)
         List<TeacherClass> allTeacherClasses = teacherClassRepository.findAllWithTeacherAndClass();
         

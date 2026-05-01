@@ -9,6 +9,9 @@ import java.util.List;
 
 public interface ClassGroupRepository extends JpaRepository<ClassGroup, Long> {
 
+    @Query("SELECT c FROM ClassGroup c ORDER BY c.ageGroup, c.name")
+    List<ClassGroup> findAllOrderByName();
+
     @Query("""
         SELECT DISTINCT tc.classGroup FROM TeacherClass tc
         WHERE tc.teacher.id = :teacherId
