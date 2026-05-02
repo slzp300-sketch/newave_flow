@@ -20,7 +20,7 @@ export default function Button({
       className={`
         inline-flex items-center justify-center gap-2
         rounded-xl font-semibold transition-all duration-150
-        disabled:opacity-50 disabled:cursor-not-allowed
+        disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap overflow-hidden
         ${variants[variant]} ${sizes[size]} ${className}
       `}
       disabled={loading || props.disabled}

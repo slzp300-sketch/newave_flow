@@ -10,7 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +22,19 @@ public class MeetingService {
 
     private final MeetingAttendanceRepository meetingAttendanceRepository;
     private final UserRepository userRepository;
+
+    // 제출 가능 기간: 월요일 00:00 ~ 토요일 12:00
+    public static boolean isMeetingWindowOpen(LocalDateTime now) {
+        DayOfWeek day = now.getDayOfWeek();
+        if (day == DayOfWeek.SUNDAY) return false;
+        if (day == DayOfWeek.SATURDAY) return now.getHour() < 12;
+        return true;
+    }
+
+    // 이번 주 토요일 날짜
+    public static LocalDate getThisWeekSaturday(LocalDate date) {
+        return date.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
+    }
 
     public MeetingAttendanceResponse getMeetingAttendance(Long teacherId, LocalDate meetingDate) {
         return meetingAttendanceRepository.findByTeacherIdAndMeetingDate(teacherId, meetingDate)

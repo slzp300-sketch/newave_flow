@@ -51,12 +51,16 @@ function RosterTab() {
     queryKey: ['roster'],
     queryFn: async () => {
       const r = await classesApi.getRoster()
-      return r.data.reduce((acc, cls) => {
+      const grouped = r.data.reduce((acc, cls) => {
         const grade = cls.grade || '기타'
         if (!acc[grade]) acc[grade] = []
         acc[grade].push(cls)
         return acc
       }, {})
+      Object.keys(grouped).forEach(grade => {
+        grouped[grade].sort((a, b) => (parseInt(a.name) || 0) - (parseInt(b.name) || 0))
+      })
+      return grouped
     },
     staleTime: 10 * 60 * 1000 // 10분 캐싱
   })

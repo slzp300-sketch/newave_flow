@@ -41,7 +41,7 @@ export default function BottomNav() {
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center py-2.5 gap-0.5 text-xs font-medium transition-colors
+                `flex flex-col items-center py-2.5 gap-0.5 text-xs font-medium transition-colors whitespace-nowrap overflow-hidden
                 ${isActive ? 'text-primary-600' : 'text-gray-400'}`
               }
             >

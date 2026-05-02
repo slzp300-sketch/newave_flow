@@ -3,6 +3,7 @@ package com.newaveflow.controller;
 import com.newaveflow.dto.prayer.PrayerVoteResponse;
 import com.newaveflow.entity.PrayerVote;
 import com.newaveflow.entity.User;
+import com.newaveflow.exception.AppException;
 import com.newaveflow.service.PrayerVoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -50,15 +51,27 @@ public class PrayerVoteController {
     public ResponseEntity<PrayerVoteResponse> saveVote(
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal User currentUser) {
+
+        LocalDate today = LocalDate.now();
+        if (!PrayerVoteService.isVoteWindowOpen(today)) {
+            throw AppException.forbidden("투표 기간이 아닙니다. 기도모임 참석 여부는 월~목요일에만 제출할 수 있습니다.");
+        }
+
         String statusStr = body.get("status");
         if (statusStr == null || statusStr.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
         try {
             LocalDate weekStart = LocalDate.parse(body.get("weekStart"));
+            LocalDate currentWeekStart = PrayerVoteService.getWeekStart(today);
+            if (!weekStart.equals(currentWeekStart)) {
+                throw AppException.forbidden("이번 주차의 투표만 제출할 수 있습니다.");
+            }
             String reason = body.getOrDefault("reason", "");
             PrayerVote vote = prayerVoteService.saveVote(currentUser.getId(), weekStart, statusStr, reason);
             return ResponseEntity.ok(new PrayerVoteResponse(vote));
+        } catch (AppException e) {
+            throw e;
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }

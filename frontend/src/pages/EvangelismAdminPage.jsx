@@ -541,41 +541,45 @@ function ScheduleManagementTab({ teachers }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 flex flex-col gap-3 pb-4">
-      {!showForm && (
-        <button
-          onClick={openCreate}
-          className="flex items-center justify-center gap-2 py-3.5 px-5 bg-primary-600 text-white rounded-2xl font-black text-sm active:scale-[0.98] transition-transform"
-        >
-          <Plus size={18} /> 새 전도 일정 등록
-        </button>
-      )}
+      <button
+        onClick={openCreate}
+        className="flex items-center justify-center gap-2 py-3.5 px-5 bg-primary-600 text-white rounded-2xl font-black text-sm active:scale-[0.98] transition-transform"
+      >
+        <Plus size={18} /> 새 전도 일정 등록
+      </button>
 
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-            <Card className="flex flex-col gap-4 border border-primary-100 bg-primary-50/50">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <Card className="p-6 flex flex-col gap-5 border-2 border-primary-100 shadow-xl shadow-primary-50">
               <div className="flex items-center justify-between">
                 <p className="font-black text-gray-900 text-sm">{editTarget ? '일정 수정' : '새 일정 등록'}</p>
                 <button onClick={closeForm} className="text-gray-400"><X size={18} /></button>
               </div>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">전도 날짜 (토요일)</span>
-                <input type="date" className="input-field text-sm" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">담당 조</span>
-                <select className="input-field text-sm bg-white" value={form.groupId} onChange={e => setForm(f => ({ ...f, groupId: e.target.value }))}>
-                  <option value="">조를 선택하세요</option>
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">전도 날짜 (토요일)</label>
+                <input type="date" className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold focus:ring-2 focus:ring-primary-400 outline-none" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} />
+              </div>
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">담당 조</label>
+                <div className="flex flex-col gap-2">
                   {groups.map((g, idx) => (
-                    <option key={g.id} value={g.id}>{g.name} ({g.members?.length || 0}명)</option>
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, groupId: String(g.id) }))}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                        form.groupId === String(g.id)
+                          ? 'border-primary-400 bg-primary-50 text-primary-700'
+                          : 'border-gray-100 bg-gray-50 text-gray-600'
+                      }`}
+                    >
+                      <span>{g.name}</span>
+                      <span className="text-xs text-gray-400">{g.members?.map(m => m.teacherName).join(', ') || '없음'}</span>
+                    </button>
                   ))}
-                </select>
-                {form.groupId && (
-                  <p className="text-[10px] text-gray-400 pl-1">
-                    담당자: {groups.find(g => g.id === parseInt(form.groupId))?.members?.map(m => m.teacherName).join(', ') || '없음'}
-                  </p>
-                )}
-              </label>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button onClick={handleSubmit} disabled={!form.scheduledDate || !form.groupId || isPending} className="flex-1 py-3 bg-primary-600 text-white rounded-xl font-black text-sm disabled:opacity-50">
                   {isPending ? '저장 중...' : (editTarget ? '수정 완료' : '등록')}

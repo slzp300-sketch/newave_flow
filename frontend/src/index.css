@@ -5,14 +5,20 @@
 @tailwind utilities;
 
 @layer base {
-  * { 
-    -webkit-tap-highlight-color: transparent; 
+  * {
+    -webkit-tap-highlight-color: transparent;
     @apply transition-colors duration-200;
   }
-  
-  body { 
+
+  body {
     font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
     @apply bg-gray-50 text-gray-900 antialiased selection:bg-primary-100 selection:text-primary-700;
+  }
+
+  /* 큰글씨 모드(font-size 120%)에서 버튼 텍스트가 줄바꿈되어 레이아웃이 무너지는 것을 방지 */
+  button {
+    white-space: nowrap;
+    overflow: hidden;
   }
 }
 
