@@ -1,6 +1,7 @@
 package com.newaveflow.dto.meeting;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -15,5 +16,5 @@ public record MeetingMinuteDto(
     LocalDateTime createdAt,
     boolean confirmed,
     String attendanceStatus,
-    boolean isActive
+    @JsonProperty("isActive") boolean isActive
 ) {}

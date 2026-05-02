@@ -1,6 +1,7 @@
 package com.newaveflow.dto.meeting;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 
 public record MeetingMinuteCreateRequest(
@@ -9,5 +10,5 @@ public record MeetingMinuteCreateRequest(
     String videoLink,
     @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate meetingDate,
-    boolean isActive
+    @JsonProperty("isActive") boolean isActive
 ) {}
