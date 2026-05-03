@@ -39,7 +39,8 @@ export default function MeetingMinutesAdminPage() {
       const res = await client.get('/minutes')
       setMinutes(res.data)
     } catch (err) {
-      console.error(err)
+      console.error('회의록 조회 실패:', err)
+      alert('회의록을 불러오는 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message))
     } finally {
       setLoading(false)
     }
