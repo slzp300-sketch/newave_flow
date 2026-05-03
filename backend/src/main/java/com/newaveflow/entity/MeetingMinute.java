@@ -35,7 +35,7 @@ public class MeetingMinute {
     private LocalDate meetingDate;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default true not null")
     private boolean isActive = true;
 
     @CreatedDate
