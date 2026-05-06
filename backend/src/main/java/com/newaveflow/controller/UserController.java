@@ -73,6 +73,7 @@ public class UserController {
     public ResponseEntity<List<UserInfo>> getAllUsers() {
         List<UserInfo> users = userRepository.findByIsActiveTrue()
             .stream()
+            .filter(u -> u.getRole() != User.Role.ADMIN)
             .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive()))
             .toList();
         return ResponseEntity.ok(users);

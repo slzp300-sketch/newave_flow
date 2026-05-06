@@ -215,11 +215,12 @@ public class EventService {
                 .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .toList();
 
-        // 출석 제출한 사람 중 TEACHER가 아닌 사람 (EXECUTIVE, PASTOR 등) 추가
+        // 출석 제출한 사람 중 TEACHER가 아닌 사람 (EXECUTIVE, PASTOR 등) 추가 — ADMIN 제외
         Set<Long> teacherIds = teachers.stream().map(User::getId).collect(Collectors.toSet());
         List<User> extraSubmitters = records.stream()
                 .map(EventAttendance::getTeacher)
                 .filter(u -> !teacherIds.contains(u.getId()))
+                .filter(u -> u.getRole() != User.Role.ADMIN)
                 .distinct()
                 .toList();
 

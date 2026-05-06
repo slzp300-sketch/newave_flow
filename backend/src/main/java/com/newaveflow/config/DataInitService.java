@@ -43,6 +43,15 @@ public class DataInitService {
         int migrated = userRepository.updateEmailByExactMatch("slzp300", "admin@naver.com");
         if (migrated > 0) log.info("Admin email migrated: slzp300 → admin@naver.com");
 
+        // admin@naver.com 계정이 존재하면 역할을 ADMIN으로 보장
+        userRepository.findByEmailIgnoreCase("admin@naver.com").ifPresent(admin -> {
+            if (admin.getRole() != Role.ADMIN) {
+                admin.updateRole(Role.ADMIN);
+                userRepository.save(admin);
+                log.info("Admin role ensured: {} → ADMIN", admin.getEmail());
+            }
+        });
+
         // IMPORTANT: Only clear and seed if the database is essentially new
         if (userRepository.count() > 0) {
             log.info("Database already initialized. Skipping data seeding.");

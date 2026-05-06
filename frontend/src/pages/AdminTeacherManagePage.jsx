@@ -31,9 +31,8 @@ export default function AdminTeacherManagePage() {
   // 해석: 현재 ADMIN이나 PASTOR인 사람은 리스트에 노출하지 않거나 수정을 막음
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
-      // 본인 제외 (실수 방지)
       if (u.id === currentUser?.id) return false
-      
+      if (u.role === 'ADMIN') return false
       const searchLower = search.toLowerCase()
       return u.name.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower)
     })
