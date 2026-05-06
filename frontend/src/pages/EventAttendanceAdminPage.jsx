@@ -56,9 +56,10 @@ export default function EventAttendanceAdminPage() {
     || teacherSummary.some(t => t.status !== null)   // 실제 제출 데이터가 있으면 탭 표시
   const showStudentTab = !selectedEvent || selectedEvent?.attendanceTarget === 'STUDENT_ONLY' || selectedEvent?.attendanceTarget === 'BOTH'
 
-  const totalStudents = summary.reduce((acc, c) => acc + Number(c.totalCount), 0)
-  const totalPresent  = summary.reduce((acc, c) => acc + Number(c.presentCount), 0)
-  const totalAbsent   = summary.reduce((acc, c) => acc + Number(c.absentCount), 0)
+  const totalStudents     = summary.reduce((acc, c) => acc + Number(c.totalCount), 0)
+  const totalPresent      = summary.reduce((acc, c) => acc + Number(c.presentCount), 0)
+  const totalAbsent       = summary.reduce((acc, c) => acc + Number(c.absentCount), 0)
+  const totalUnsubmitted  = totalStudents - totalPresent - totalAbsent
 
   // 학년별 그룹화 데이터 가공
   const gradeSummary = summary.reduce((acc, cls) => {
@@ -344,12 +345,12 @@ export default function EventAttendanceAdminPage() {
                 <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">출석</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-xl font-black text-amber-500">{summary.reduce((acc, c) => acc + c.records.filter(r => r.status === 'PARTIAL').length, 0)}</p>
-                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">부분참석</p>
-              </Card>
-              <Card className="text-center py-4">
                 <p className="text-xl font-black text-red-400">{totalAbsent}</p>
                 <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">결석</p>
+              </Card>
+              <Card className="text-center py-4">
+                <p className={`text-xl font-black ${totalUnsubmitted > 0 ? 'text-orange-400' : 'text-gray-300'}`}>{totalUnsubmitted}</p>
+                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">미제출</p>
               </Card>
             </div>
 
@@ -431,6 +432,8 @@ export default function EventAttendanceAdminPage() {
                               {cls.records.filter(r => r.status === 'PARTIAL').length > 0 &&
                                 ` · ${cls.records.filter(r => r.status === 'PARTIAL').length}명 부분참석`}
                               {' · '}{cls.absentCount}명 결석
+                              {(cls.totalCount - cls.presentCount - cls.absentCount) > 0 &&
+                                ` · ${cls.totalCount - cls.presentCount - cls.absentCount}명 미제출`}
                             </p>
                           </div>
                         </div>
@@ -458,14 +461,16 @@ export default function EventAttendanceAdminPage() {
                               className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
                                 student.status === 'PRESENT' ? 'bg-emerald-50/50' :
                                 student.status === 'PARTIAL' ? 'bg-amber-50/50' :
-                                'bg-red-50/50'
+                                student.status === 'ABSENT'  ? 'bg-red-50/50' :
+                                'bg-gray-50/80'
                               }`}
                             >
                               <div className="flex items-center gap-3">
                                 <span className={`text-[10px] font-black w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                   student.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
                                   student.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
-                                  'bg-red-200 text-red-700'
+                                  student.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
+                                  'bg-gray-200 text-gray-500'
                                 }`}>{student.studentName[0]}</span>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-bold text-gray-700">{student.studentName}</span>
@@ -484,7 +489,8 @@ export default function EventAttendanceAdminPage() {
                               </div>
                               {student.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :
                                student.status === 'PARTIAL' ? <Clock size={16} className="text-amber-500 flex-shrink-0" /> :
-                               <XCircle size={16} className="text-red-400 flex-shrink-0" />
+                               student.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
+                               <span className="text-[10px] text-orange-400 font-black flex-shrink-0">미제출</span>
                               }
                             </div>
                           ))}

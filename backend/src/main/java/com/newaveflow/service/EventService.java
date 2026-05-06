@@ -267,28 +267,39 @@ public class EventService {
 
     // ── 학생 출석 전체 요약 (관리자) ──
     public List<EventDto.ClassAttendanceSummary> getStudentAttendanceSummary(Long eventId) {
-        List<EventStudentAttendance> all = eventStudentAttendanceRepository.findAllByEventId(eventId);
+        // 제출된 출석 기록을 studentId 기준으로 맵핑
+        Map<Long, EventStudentAttendance> submittedMap = eventStudentAttendanceRepository
+                .findAllByEventId(eventId).stream()
+                .collect(Collectors.toMap(a -> a.getStudent().getId(), a -> a));
 
-        return all.stream()
-                .collect(Collectors.groupingBy(a -> a.getStudent().getClassGroup()))
+        // 전체 활성 학생(반 배정된 학생)을 반별로 그룹화
+        return studentRepository.findAllActiveWithClassGroup().stream()
+                .collect(Collectors.groupingBy(Student::getClassGroup))
                 .entrySet().stream()
                 .map(entry -> {
                     ClassGroup cg = entry.getKey();
-                    List<EventStudentAttendance> recs = entry.getValue();
-                    long presentCount = recs.stream()
-                            .filter(r -> "PRESENT".equals(r.getStatus()) || "PARTIAL".equals(r.getStatus())).count();
-                    List<EventDto.StudentAttendanceRecord> studentRecords = recs.stream()
-                            .sorted(Comparator.comparing(r -> r.getStudent().getName()))
-                            .map(r -> new EventDto.StudentAttendanceRecord(
-                                    r.getStudent().getId(), r.getStudent().getName(),
-                                    r.getStudent().getGrade(), cg.getId(), cg.getName(),
-                                    r.getStatus(), r.getAbsenceReason(),
-                                    r.getPartialFromDate(), r.getPartialNote()))
+                    List<Student> students = entry.getValue();
+                    List<EventDto.StudentAttendanceRecord> records = students.stream()
+                            .sorted(Comparator.comparing(Student::getName))
+                            .map(s -> {
+                                EventStudentAttendance att = submittedMap.get(s.getId());
+                                return new EventDto.StudentAttendanceRecord(
+                                        s.getId(), s.getName(), s.getGrade(),
+                                        cg.getId(), cg.getName(),
+                                        att != null ? att.getStatus() : null,
+                                        att != null ? att.getAbsenceReason() : null,
+                                        att != null ? att.getPartialFromDate() : null,
+                                        att != null ? att.getPartialNote() : null);
+                            })
                             .toList();
+                    long presentCount = records.stream()
+                            .filter(r -> "PRESENT".equals(r.status()) || "PARTIAL".equals(r.status())).count();
+                    long absentCount = records.stream()
+                            .filter(r -> "ABSENT".equals(r.status())).count();
                     return new EventDto.ClassAttendanceSummary(
                             cg.getId(), cg.getName(),
-                            recs.size(), presentCount, recs.size() - presentCount,
-                            studentRecords);
+                            students.size(), presentCount, absentCount,
+                            records);
                 })
                 .sorted(Comparator.comparing(EventDto.ClassAttendanceSummary::classGroupName))
                 .toList();
