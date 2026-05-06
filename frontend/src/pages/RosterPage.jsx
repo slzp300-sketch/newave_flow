@@ -7,10 +7,11 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { classesApi } from '../api/classes'
 
-const GRADES = ['중1', '중2', '중3', '고1', '고2', '고3']
-
+const GRADES = ['전체', '중1', '중2', '중3', '고1', '고2', '고3']
+const GRADE_ORDER = ['중1', '중2', '중3', '고1', '고2', '고3']
 
 const GRADE_COLORS = {
+  '전체': { bg: 'bg-gray-700',    light: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-400'    },
   '중1': { bg: 'bg-blue-500',    light: 'bg-blue-50',    text: 'text-blue-600',    border: 'border-blue-300'    },
   '중2': { bg: 'bg-violet-500',  light: 'bg-violet-50',  text: 'text-violet-600',  border: 'border-violet-300'  },
   '중3': { bg: 'bg-indigo-500',  light: 'bg-indigo-50',  text: 'text-indigo-600',  border: 'border-indigo-300'  },
@@ -45,7 +46,7 @@ export default function RosterPage() {
 
 // ── 교적부 탭 (기존 기능) ───────────────────
 function RosterTab() {
-  const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', '중1')
+  const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', '전체')
   const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
   const { data: groupedData = {}, isLoading, isError, refetch } = useQuery({
     queryKey: ['roster'],
@@ -65,8 +66,10 @@ function RosterTab() {
     staleTime: 10 * 60 * 1000 // 10분 캐싱
   })
 
-  const classes = groupedData[selectedGrade] || []
-  const colors = GRADE_COLORS[selectedGrade] || GRADE_COLORS['중1']
+  const classes = selectedGrade === '전체'
+    ? GRADE_ORDER.flatMap(g => groupedData[g] || [])
+    : (groupedData[selectedGrade] || [])
+  const colors = GRADE_COLORS[selectedGrade] || GRADE_COLORS['전체']
   const totalStudents = classes.reduce((sum, c) => sum + (c.students?.length || 0), 0)
 
   if (isLoading) {
@@ -118,7 +121,7 @@ function RosterTab() {
           className={`mx-4 mb-3 px-4 py-2.5 rounded-xl ${colors.light} flex items-center gap-2`}
         >
           <BookOpen size={13} className={colors.text} />
-          <span className={`text-xs font-black ${colors.text}`}>{selectedGrade}</span>
+          <span className={`text-xs font-black ${colors.text}`}>{selectedGrade === '전체' ? '전체 학년' : selectedGrade}</span>
           <span className="text-gray-300 text-xs">·</span>
           <span className="text-xs text-gray-600 font-semibold">총 {classes.length}반</span>
           <span className="text-gray-300 text-xs">·</span>
@@ -129,6 +132,27 @@ function RosterTab() {
       <div className="px-4 py-4">
         {classes.length === 0 ? (
           <GradeEmptyState grade={selectedGrade} colors={colors} />
+        ) : selectedGrade === '전체' ? (
+          <motion.div key="전체" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            {GRADE_ORDER.filter(g => groupedData[g]?.length > 0).map(g => {
+              const gc = GRADE_COLORS[g]
+              const gradeClasses = groupedData[g]
+              return (
+                <div key={g}>
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <span className={`text-xs font-black px-2.5 py-1 rounded-full ${gc.bg} text-white`}>{g}</span>
+                    <span className="text-xs text-gray-400 font-medium">{gradeClasses.length}반</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {gradeClasses.map((cls, idx) => (
+                      <ClassCard key={cls.id} cls={cls} grade={g} colors={gc} idx={idx}
+                        isSelected={selectedClass?.id === cls.id} onClick={() => setSelectedClass(cls)} />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </motion.div>
         ) : (
           <motion.div key={selectedGrade} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-3">
             {classes.map((cls, idx) => (
@@ -141,7 +165,12 @@ function RosterTab() {
 
       <AnimatePresence>
         {selectedClass && (
-          <ClassDetailSheet cls={selectedClass} grade={selectedGrade} colors={colors} onClose={() => setSelectedClass(null)} />
+          <ClassDetailSheet
+            cls={selectedClass}
+            grade={selectedClass.grade || selectedGrade}
+            colors={GRADE_COLORS[selectedClass.grade] || colors}
+            onClose={() => setSelectedClass(null)}
+          />
         )}
       </AnimatePresence>
     </>

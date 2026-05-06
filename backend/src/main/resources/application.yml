@@ -64,6 +64,8 @@ logging:
 ---
 
 spring:
+  profiles:
+    active: dev
   jackson:
     time-zone: Asia/Seoul
     date-format: yyyy-MM-dd'T'HH:mm:ss

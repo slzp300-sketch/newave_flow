@@ -24,6 +24,17 @@ public class TtsService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
+    private String resolveTeacherGrade(User teacher) {
+        if (teacher.getTeacherClasses() == null || teacher.getTeacherClasses().isEmpty()) {
+            return "교사";
+        }
+        return teacher.getTeacherClasses().stream()
+                .filter(TeacherClass::isPrimary)
+                .map(tc -> tc.getClassGroup().getAgeGroup())
+                .findFirst()
+                .orElseGet(() -> teacher.getTeacherClasses().get(0).getClassGroup().getAgeGroup());
+    }
+
     public List<TtsQuestion> getActiveQuestions() {
         return questionRepository.findAllByIsActiveOrderByDisplayOrderAsc(true);
     }
@@ -77,7 +88,7 @@ public class TtsService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAdminSummary(Integer year, Integer weekNum) {
-        List<User> teachers = userRepository.findByIsActiveTrue().stream()
+        List<User> teachers = userRepository.findAllActiveWithClasses().stream()
                 .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .collect(Collectors.toList());
 
@@ -90,7 +101,7 @@ public class TtsService {
             Map<String, Object> map = new java.util.HashMap<>();
             map.put("teacherId", t.getId());
             map.put("teacherName", t.getName());
-            map.put("grade", t.getGrade());
+            map.put("grade", resolveTeacherGrade(t));
             map.put("isSubmitted", record != null && record.isSubmitted());
             map.put("recordId", record != null ? record.getId() : -1L);
             map.put("score", record != null && record.isSubmitted() ? calculateScore(record) : 0);
@@ -100,7 +111,7 @@ public class TtsService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getQuarterlyScores(Integer year, Integer quarter) {
-        List<User> teachers = userRepository.findByIsActiveTrue().stream()
+        List<User> teachers = userRepository.findAllActiveWithClasses().stream()
                 .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .collect(Collectors.toList());
 
@@ -129,7 +140,7 @@ public class TtsService {
             Map<String, Object> result = new HashMap<>();
             result.put("teacherId", teacher.getId());
             result.put("teacherName", teacher.getName());
-            result.put("grade", teacher.getGrade());
+            result.put("grade", resolveTeacherGrade(teacher));
             result.put("totalScore", totalScore);
             result.put("weekCount", teacherRecords.size());
             result.put("weeklyScores", weeklyScores);
