@@ -1,7 +1,11 @@
 package com.newaveflow.controller;
 
+import com.newaveflow.dto.auth.FindEmailRequest;
+import com.newaveflow.dto.auth.FindEmailResponse;
 import com.newaveflow.dto.auth.LoginRequest;
 import com.newaveflow.dto.auth.LoginResponse;
+import com.newaveflow.dto.auth.ResetPasswordRequest;
+import com.newaveflow.dto.auth.ResetPasswordResponse;
 import com.newaveflow.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +53,15 @@ public class AuthController {
     public ResponseEntity<Map<String, Boolean>> checkName(@RequestParam String name) {
         boolean isDuplicate = authService.checkNameDuplicate(name);
         return ResponseEntity.ok(Map.of("available", !isDuplicate));
+    }
+
+    @PostMapping("/find-email")
+    public ResponseEntity<FindEmailResponse> findEmail(@Valid @RequestBody FindEmailRequest request) {
+        return ResponseEntity.ok(authService.findEmail(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 }

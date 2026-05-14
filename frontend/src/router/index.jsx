@@ -9,6 +9,7 @@ import client from '../api/client'
 
 import Signup                from '../pages/Signup'
 import Login                 from '../pages/Login'
+import FindAccountPage       from '../pages/FindAccountPage'
 import Home                  from '../pages/Home'
 import AttendancePage        from '../pages/AttendancePage'
 import AdminDashboard        from '../pages/AdminDashboard'
@@ -198,6 +199,7 @@ function RequireRole({ roles }) {
 const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
   { path: '/signup', element: <Signup /> },
+  { path: '/find-account', element: <FindAccountPage /> },
   {
     element: <RequireAuth />,
     children: [

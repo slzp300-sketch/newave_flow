@@ -92,12 +92,29 @@ export default function Login() {
         </form>
       </div>
 
-      <div className="text-center mt-6">
+      <div className="text-center mt-6 flex flex-col gap-2">
+        <p className="text-primary-300 text-sm">
+          <button
+            type="button"
+            onClick={() => navigate('/find-account?tab=id')}
+            className="text-primary-200 hover:text-white transition-colors underline underline-offset-4"
+          >
+            아이디 찾기
+          </button>
+          <span className="text-primary-500 mx-2">|</span>
+          <button
+            type="button"
+            onClick={() => navigate('/find-account?tab=pw')}
+            className="text-primary-200 hover:text-white transition-colors underline underline-offset-4"
+          >
+            비밀번호 찾기
+          </button>
+        </p>
         <p className="text-primary-300 text-sm">
           계정이 없으신가요?{' '}
-          <button 
+          <button
             type="button"
-            onClick={() => navigate('/signup')} 
+            onClick={() => navigate('/signup')}
             className="text-white font-bold underline underline-offset-4"
           >
             회원가입

@@ -24,6 +24,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE u.isActive = true")
     List<User> findAllActiveWithClasses();
 
+    Optional<User> findByNameAndPhone(String name, String phone);
+
+    Optional<User> findByEmailIgnoreCaseAndNameAndPhone(String email, String name, String phone);
+
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.email = :newEmail WHERE u.email = :oldEmail")

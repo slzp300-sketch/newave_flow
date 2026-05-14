@@ -1,7 +1,11 @@
 package com.newaveflow.service;
 
+import com.newaveflow.dto.auth.FindEmailRequest;
+import com.newaveflow.dto.auth.FindEmailResponse;
 import com.newaveflow.dto.auth.LoginRequest;
 import com.newaveflow.dto.auth.LoginResponse;
+import com.newaveflow.dto.auth.ResetPasswordRequest;
+import com.newaveflow.dto.auth.ResetPasswordResponse;
 import com.newaveflow.entity.User;
 import com.newaveflow.exception.AppException;
 import com.newaveflow.repository.UserRepository;
@@ -10,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -81,6 +87,40 @@ public class AuthService {
 
     public boolean checkNameDuplicate(String name) {
         return userRepository.existsByName(name);
+    }
+
+    public FindEmailResponse findEmail(FindEmailRequest request) {
+        String normalizedPhone = request.phone().replaceAll("[^0-9]", "");
+        User user = userRepository.findByNameAndPhone(request.name(), normalizedPhone)
+                .or(() -> userRepository.findByNameAndPhone(request.name(), request.phone()))
+                .orElseThrow(() -> AppException.badRequest("입력하신 정보와 일치하는 계정을 찾을 수 없습니다."));
+        return FindEmailResponse.of(user.getEmail());
+    }
+
+    @Transactional
+    public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
+        String normalizedPhone = request.phone().replaceAll("[^0-9]", "");
+        String normalizedEmail = request.email().trim().toLowerCase();
+
+        User user = userRepository.findByEmailIgnoreCaseAndNameAndPhone(normalizedEmail, request.name(), normalizedPhone)
+                .or(() -> userRepository.findByEmailIgnoreCaseAndNameAndPhone(normalizedEmail, request.name(), request.phone()))
+                .orElseThrow(() -> AppException.badRequest("입력하신 정보와 일치하는 계정을 찾을 수 없습니다."));
+
+        String tempPassword = generateTempPassword();
+        user.updatePassword(passwordEncoder.encode(tempPassword));
+        userRepository.save(user);
+        return new ResetPasswordResponse(tempPassword);
+    }
+
+    private static final String TEMP_PW_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+
+    private String generateTempPassword() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(10);
+        for (int i = 0; i < 10; i++) {
+            sb.append(TEMP_PW_CHARS.charAt(random.nextInt(TEMP_PW_CHARS.length())));
+        }
+        return sb.toString();
     }
 
     @Transactional

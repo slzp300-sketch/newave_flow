@@ -146,6 +146,7 @@ export default function ProfilePage() {
                     show={showCurrent}
                     onToggle={() => setShowCurrent(v => !v)}
                     id="current-pw"
+                    autoComplete="current-password"
                   />
                   <PwInput
                     label="새 비밀번호 (8자 이상)"
@@ -154,6 +155,7 @@ export default function ProfilePage() {
                     show={showNew}
                     onToggle={() => setShowNew(v => !v)}
                     id="new-pw"
+                    autoComplete="new-password"
                   />
                   <PwInput
                     label="새 비밀번호 확인"
@@ -162,6 +164,7 @@ export default function ProfilePage() {
                     show={showConfirm}
                     onToggle={() => setShowConfirm(v => !v)}
                     id="confirm-pw"
+                    autoComplete="new-password"
                   />
 
                   {/* 결과 메시지 */}
@@ -299,24 +302,26 @@ function InfoRow({ icon: Icon, label, value, divider = false }) {
   )
 }
 
-function PwInput({ label, value, onChange, show, onToggle, id }) {
+function PwInput({ label, value, onChange, show, onToggle, id, autoComplete = 'off' }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-xs font-semibold text-gray-500">{label}</label>
-      <div className="flex items-center bg-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+      <div className="relative flex items-center bg-gray-50 border border-gray-100 rounded-xl">
         <input
           id={id}
           type={show ? 'text' : 'password'}
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="flex-1 bg-transparent px-3.5 py-3 text-sm text-gray-800 outline-none"
+          className="flex-1 bg-transparent px-3.5 py-3 pr-10 text-sm text-gray-800 outline-none rounded-xl"
           placeholder="••••••••"
-          autoComplete="current-password"
+          autoComplete={autoComplete}
         />
         <button
           type="button"
+          onMouseDown={e => e.preventDefault()}
           onClick={onToggle}
-          className="px-3 py-3 text-gray-400 active:text-gray-600"
+          className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors"
+          tabIndex={-1}
         >
           {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
