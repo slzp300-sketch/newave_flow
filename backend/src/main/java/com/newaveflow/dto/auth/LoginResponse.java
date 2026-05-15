@@ -18,7 +18,7 @@ public record LoginResponse(
                     grade, u.isActive(), u.isLargeFont(),
                     u.getPhone(),
                     u.getBirthDate() != null ? u.getBirthDate().toString() : null,
-                    u.getPositionTitle()
+                    u.getChurchPosition()
             );
         }
     }
