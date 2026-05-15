@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -145,23 +145,24 @@ function RosterLanding({ onSelect }) {
 function StudentRoster() {
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', '전체')
   const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
-  const { data: groupedData = {}, isLoading, isError, refetch } = useQuery({
+  const { data: rawClasses = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['roster'],
-    queryFn: async () => {
-      const r = await classesApi.getRoster()
-      const grouped = r.data.reduce((acc, cls) => {
-        const grade = cls.grade || '기타'
-        if (!acc[grade]) acc[grade] = []
-        acc[grade].push(cls)
-        return acc
-      }, {})
-      Object.keys(grouped).forEach(grade => {
-        grouped[grade].sort((a, b) => (parseInt(a.name) || 0) - (parseInt(b.name) || 0))
-      })
-      return grouped
-    },
+    queryFn: () => classesApi.getRoster().then(r => r.data),
     staleTime: 10 * 60 * 1000,
   })
+
+  const groupedData = useMemo(() => {
+    const grouped = rawClasses.reduce((acc, cls) => {
+      const grade = cls.grade || '기타'
+      if (!acc[grade]) acc[grade] = []
+      acc[grade].push(cls)
+      return acc
+    }, {})
+    Object.keys(grouped).forEach(grade => {
+      grouped[grade].sort((a, b) => (parseInt(a.name) || 0) - (parseInt(b.name) || 0))
+    })
+    return grouped
+  }, [rawClasses])
 
   const classes = selectedGrade === '전체'
     ? GRADE_ORDER.flatMap(g => groupedData[g] || [])
