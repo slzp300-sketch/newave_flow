@@ -324,8 +324,8 @@ function TeacherRoster() {
   const availableGrades = ['전체', ...gradeKeys]
   const filteredGrades = activeGrade === '전체' ? gradeKeys : [activeGrade].filter(g => teachersByGrade[g])
 
-  const execTags    = allTags.filter(t => t.category === 'EXECUTIVE')
-  const teacherTags = allTags.filter(t => t.category === 'TEACHER')
+  const execTags    = allTags.filter(t => t.category === 'EXECUTIVE').sort((a, b) => a.name.localeCompare(b.name))
+  const teacherTags = allTags.filter(t => t.category === 'TEACHER').sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <>
@@ -592,7 +592,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
             </div>
             {localTagIds.size > 0 && (
               <div className="flex flex-wrap gap-1.5 justify-center mt-1">
-                {allTags.filter(t => localTagIds.has(t.id)).map(t => (
+                {allTags.filter(t => localTagIds.has(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => (
                   <span key={t.id} className={`text-[11px] font-black px-2.5 py-1 rounded-full border ${t.color || "bg-primary-50 text-primary-600 border-primary-200"}`}>
                     {t.name}
                   </span>

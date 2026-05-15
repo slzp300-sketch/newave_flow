@@ -1,3 +1,3 @@
 git add -A
-git commit -m "feat: add tag color selection and auto-assignment feature with reset tags button"
+git commit -m "feat: sort tags by name in detail sheet and tag modal"
 git push
