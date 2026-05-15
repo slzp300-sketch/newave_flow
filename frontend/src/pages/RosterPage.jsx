@@ -573,7 +573,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
     if (isGradeHead) {
       displayLabel = '학년부장'
       displayBg = 'bg-emerald-100 text-emerald-700'
-    } else {
+    } else if (teacher.role === 'TEACHER') {
       displayLabel = '교사'
       displayBg = 'bg-emerald-50 text-emerald-600'
     }

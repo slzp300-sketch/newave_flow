@@ -1,3 +1,3 @@
 git add -A
-git commit -m "feat: improve teacher detail sheet UI for class, role, and age visibility"
+git commit -m "feat: restore executive role display in teacher list for users with executive authority"
 git push
