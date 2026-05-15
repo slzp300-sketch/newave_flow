@@ -15,6 +15,7 @@ export default function AppLayout() {
     const root = document.documentElement
     root.style.fontSize = largeFontMode ? '120%' : ''
     root.style.transition = 'font-size 0.3s ease'
+    root.classList.toggle('large-font', largeFontMode)
   }, [largeFontMode])
 
   // 당긴 거리 비율 (0 ~ 1)

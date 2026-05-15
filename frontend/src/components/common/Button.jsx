@@ -6,9 +6,9 @@ const variants = {
 }
 
 const sizes = {
-  sm: 'px-3 py-2 text-sm',
-  md: 'px-4 py-3 text-base',
-  lg: 'w-full px-4 py-4 text-lg font-bold',
+  sm: 'px-3 py-2 text-[12px]',
+  md: 'px-4 py-3 text-[14px]',
+  lg: 'w-full px-4 py-4 text-[16px] font-bold',
 }
 
 export default function Button({

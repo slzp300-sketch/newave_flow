@@ -24,12 +24,35 @@
 
 @layer utilities {
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
-  
+
   .glass-effect {
     @apply backdrop-blur-lg bg-white/70 border border-white/40;
   }
 
   .field-input {
     @apply w-full px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium text-gray-800 outline-none;
+  }
+
+  /* 큰글씨 모드: 버튼 텍스트 크기를 px 고정으로 유지 (rem 스케일 방지) */
+  html.large-font button {
+    font-size: 14px;
+  }
+  html.large-font button.text-xs,
+  html.large-font button[class*="text-[10"],
+  html.large-font button[class*="text-[11"] {
+    font-size: 12px;
+  }
+  html.large-font button.text-sm {
+    font-size: 14px;
+  }
+  html.large-font button.text-base {
+    font-size: 16px;
+  }
+  html.large-font button.text-lg {
+    font-size: 18px;
+  }
+  /* BottomNav NavLink (a 태그) 텍스트도 고정 */
+  html.large-font nav a {
+    font-size: 12px;
   }
 }
