@@ -6,6 +6,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -50,6 +51,12 @@ public class User {
     @Builder.Default
     private boolean largeFont = false;
 
+    @Column
+    private LocalDate birthDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String profileImage;
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "teacher")
     private java.util.List<TeacherClass> teacherClasses;
@@ -60,7 +67,7 @@ public class User {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-    
+
     public void updateRole(Role role) {
         this.role = role;
     }
@@ -75,6 +82,13 @@ public class User {
 
     public void updateLargeFont(boolean largeFont) {
         this.largeFont = largeFont;
+    }
+
+    public void updateProfile(String name, String phone, LocalDate birthDate, String profileImage) {
+        if (name != null && !name.isBlank()) this.name = name;
+        this.phone = phone;
+        this.birthDate = birthDate;
+        this.profileImage = profileImage;
     }
 
     public enum Role {

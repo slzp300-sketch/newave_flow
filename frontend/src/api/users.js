@@ -7,4 +7,10 @@ export const usersApi = {
     client.put('/users/me/password', { currentPassword, newPassword }),
   updateSettings: (settings) =>
     client.put('/users/me/settings', settings),
+  getMyProfile: () =>
+    client.get('/users/me/profile'),
+  updateProfile: ({ name, phone, birthDate, profileImage }) =>
+    client.put('/users/me/profile', { name, phone, birthDate, profileImage }),
+  getTeacherRoster: () =>
+    client.get('/users/teachers/roster'),
 }
