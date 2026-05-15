@@ -1,3 +1,3 @@
 git add -A
-git commit -m "feat: sort tags by name in detail sheet and tag modal"
+git commit -m "style: update tag color palette to vibrant solid colors and add more options"
 git push
