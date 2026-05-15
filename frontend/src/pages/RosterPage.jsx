@@ -332,13 +332,24 @@ function TeacherRoster() {
     return acc
   }, {})
 
-  // 학년부장을 맨 앞으로 정렬
+  // 학년부장을 맨 앞으로, 그 다음은 반 번호 오름차순, 그 다음 이름순으로 정렬
+  const getClassNum = (className) => {
+    if (!className) return 999
+    const match = className.match(/(\d+)반/)
+    return match ? parseInt(match[1], 10) : 999
+  }
+
   Object.values(teachersByGrade).forEach(list => {
     list.sort((a, b) => {
       const aHead = a.churchPosition?.includes('학년부장')
       const bHead = b.churchPosition?.includes('학년부장')
       if (aHead && !bHead) return -1
       if (!aHead && bHead) return 1
+      
+      const aClass = getClassNum(a.className)
+      const bClass = getClassNum(b.className)
+      if (aClass !== bClass) return aClass - bClass
+      
       return a.name.localeCompare(b.name)
     })
   })
@@ -523,7 +534,7 @@ function TeacherCard({ teacher, idx, onSelect, context = 'default' }) {
     if (isGradeHead) {
       displayLabel = '학년부장'
       displayBg = 'bg-emerald-100 text-emerald-700'
-    } else {
+    } else if (teacher.role === 'TEACHER') {
       displayLabel = '교사'
       displayBg = 'bg-gray-100 text-gray-600'
     }
