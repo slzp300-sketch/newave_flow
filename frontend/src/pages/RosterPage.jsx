@@ -700,6 +700,8 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
 
   const currentTags = tagTab === 'EXECUTIVE' ? execTags : teacherTags
 
+  const usedColors = new Set(tags.map(t => t.color).filter(Boolean))
+
   const getLeastUsedColor = () => {
     const colorCounts = {}
     TAG_COLORS.forEach(c => colorCounts[c] = 0)
@@ -818,13 +820,22 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
                 {/* 편집 중 색상 팔레트 */}
                 {editingId === tag.id && (
                   <div className="flex flex-wrap gap-1.5 pt-1 border-t border-gray-100">
-                    {TAG_COLORS.map(c => (
-                      <button
-                        key={c}
-                        onClick={() => setSelectedColor(c)}
-                        className={`w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${selectedColor === c ? 'border-gray-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
-                      />
-                    ))}
+                    {TAG_COLORS.map(c => {
+                      const isUsed = usedColors.has(c)
+                      const isCurrent = tags.find(t => t.id === editingId)?.color === c
+                      const isDisabled = isUsed && !isCurrent
+                      return (
+                        <button
+                          key={c}
+                          disabled={isDisabled}
+                          onClick={() => setSelectedColor(c)}
+                          className={`w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${
+                            isDisabled ? 'opacity-20 cursor-not-allowed' :
+                            selectedColor === c ? 'border-gray-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'
+                          }`}
+                        />
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -841,13 +852,20 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
                 onClick={() => setSelectedColor('')}
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[8px] font-black ${!selectedColor ? 'border-gray-800 bg-gray-100' : 'border-gray-200 bg-gray-50 text-gray-400'}`}
               >?</button>
-              {TAG_COLORS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setSelectedColor(c)}
-                  className={`w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${selectedColor === c ? 'border-gray-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'}`}
-                />
-              ))}
+              {TAG_COLORS.map(c => {
+                const isDisabled = usedColors.has(c)
+                return (
+                  <button
+                    key={c}
+                    disabled={isDisabled}
+                    onClick={() => setSelectedColor(c)}
+                    className={`w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${
+                      isDisabled ? 'opacity-20 cursor-not-allowed' :
+                      selectedColor === c ? 'border-gray-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'
+                    }`}
+                  />
+                )
+              })}
             </div>
             <div className="flex gap-2">
               <input

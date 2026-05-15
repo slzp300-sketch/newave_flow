@@ -1,3 +1,3 @@
 git add -A
-git commit -m "feat: improve teacher card UI, grade head sorting, and tag display"
+git commit -m "feat: disable selecting already used colors in tag pool modal"
 git push
