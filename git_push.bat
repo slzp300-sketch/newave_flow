@@ -1,3 +1,3 @@
 git add -A
-git commit -m "fix: update teacher role display"
+git commit -m "fix: show unassigned teachers and add total teacher count"
 git push
