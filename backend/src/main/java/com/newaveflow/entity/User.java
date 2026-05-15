@@ -46,6 +46,10 @@ public class User {
     @Builder.Default
     private boolean isActive = true;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean largeFont = false;
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "teacher")
     private java.util.List<TeacherClass> teacherClasses;
@@ -67,6 +71,10 @@ public class User {
 
     public void approve() {
         this.isActive = true;
+    }
+
+    public void updateLargeFont(boolean largeFont) {
+        this.largeFont = largeFont;
     }
 
     public enum Role {

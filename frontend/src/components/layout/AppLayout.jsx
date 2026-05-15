@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 import BottomNav from './BottomNav'
 import usePullToRefresh from '../../hooks/usePullToRefresh'
-import useSettingsStore from '../../store/settingsStore'
+import useAuthStore from '../../store/authStore'
 
 export default function AppLayout() {
   const { pathname } = useLocation()
   const { isRefreshing, pullDistance } = usePullToRefresh()
-  const { largeFontMode } = useSettingsStore()
+  const { user } = useAuthStore()
+  const largeFontMode = user?.largeFont ?? false
 
   useEffect(() => {
     const root = document.documentElement

@@ -5,4 +5,6 @@ export const usersApi = {
   updateRole: (id, role) => client.put(`/users/${id}/role`, { role }),
   changePassword: (currentPassword, newPassword) =>
     client.put('/users/me/password', { currentPassword, newPassword }),
+  updateSettings: (settings) =>
+    client.put('/users/me/settings', settings),
 }

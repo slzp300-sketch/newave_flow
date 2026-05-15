@@ -17,7 +17,12 @@ const useAuthStore = create(
         set({ user: null, accessToken: null, refreshToken: null }),
 
       updateAccessToken: (accessToken) => set({ accessToken }),
-      
+
+      updateUserSettings: (settings) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...settings } : null,
+        })),
+
       setHydrated: () => set({ isHydrated: true }),
     }),
     {

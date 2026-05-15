@@ -4,7 +4,6 @@ import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { LogOut, User, Mail, Shield, Lock, Eye, EyeOff, ChevronRight, CheckCircle2, XCircle, Type } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useAuthStore from '../store/authStore'
-import useSettingsStore from '../store/settingsStore'
 import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
@@ -19,7 +18,7 @@ const ROLE_MAP = {
 
 export default function ProfilePage() {
   const navigate      = useNavigate()
-  const { user, clearAuth } = useAuthStore()
+  const { user, clearAuth, updateUserSettings } = useAuthStore()
   const queryClient   = useQueryClient()
 
   // 로그아웃
@@ -37,7 +36,17 @@ export default function ProfilePage() {
   const [pwResult, setPwResult]       = useState(null) // { ok, msg }
 
   const roleCfg = ROLE_MAP[user?.role] ?? ROLE_MAP.TEACHER
-  const { largeFontMode, toggleLargeFont } = useSettingsStore()
+  const largeFontMode = user?.largeFont ?? false
+
+  const handleToggleLargeFont = async () => {
+    const newValue = !largeFontMode
+    updateUserSettings({ largeFont: newValue })
+    try {
+      await usersApi.updateSettings({ largeFont: newValue })
+    } catch {
+      updateUserSettings({ largeFont: largeFontMode })
+    }
+  }
 
   const handleLogout = async () => {
     setLogoutLoading(true)
@@ -225,7 +234,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <button
-              onClick={toggleLargeFont}
+              onClick={handleToggleLargeFont}
               className={`relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0 ${
                 largeFontMode ? 'bg-indigo-500' : 'bg-gray-200'
               }`}

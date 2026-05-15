@@ -54,7 +54,7 @@ public class UserController {
         return ResponseEntity.ok(new UserInfo(
             fullUser.getId(), fullUser.getName(),
             fullUser.getEmail(), fullUser.getRole().name(),
-            resolveGrade(fullUser), fullUser.isActive()
+            resolveGrade(fullUser), fullUser.isActive(), fullUser.isLargeFont()
         ));
     }
 
@@ -63,7 +63,7 @@ public class UserController {
     public ResponseEntity<List<UserInfo>> getTeachers() {
         List<UserInfo> teachers = userRepository.findByIsActiveTrue().stream()
             .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
-            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive()))
+            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive(), u.isLargeFont()))
             .toList();
         return ResponseEntity.ok(teachers);
     }
@@ -74,9 +74,22 @@ public class UserController {
         List<UserInfo> users = userRepository.findByIsActiveTrue()
             .stream()
             .filter(u -> u.getRole() != User.Role.ADMIN)
-            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive()))
+            .map(u -> new UserInfo(u.getId(), u.getName(), u.getEmail(), u.getRole().name(), resolveGrade(u), u.isActive(), u.isLargeFont()))
             .toList();
         return ResponseEntity.ok(users);
+    }
+
+    @PutMapping("/me/settings")
+    @Transactional
+    public ResponseEntity<Void> updateSettings(
+            @AuthenticationPrincipal User currentUser,
+            @RequestBody SettingsRequest request) {
+        if (currentUser == null) return ResponseEntity.status(401).build();
+        User user = userRepository.findById(currentUser.getId())
+            .orElseThrow(() -> com.newaveflow.exception.AppException.notFound("사용자를 찾을 수 없습니다."));
+        user.updateLargeFont(request.largeFont());
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/me/password")
@@ -114,4 +127,5 @@ public class UserController {
 
     public record RoleRequest(String role) {}
     public record PasswordChangeRequest(String currentPassword, String newPassword) {}
+    public record SettingsRequest(boolean largeFont) {}
 }
