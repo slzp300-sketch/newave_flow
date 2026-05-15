@@ -320,9 +320,21 @@ function TeacherRoster() {
     <>
       <div className="flex flex-col gap-6 pb-4">
 
+        {/* 목사님/임원/교사 위 태그 관리 버튼 (목사님 전용) */}
+        {canManageTags && (
+          <div className="px-4 pt-4 flex justify-end">
+            <button
+              onClick={() => setShowTagPool(true)}
+              className="flex items-center gap-1.5 text-[12px] font-black text-primary-500 bg-primary-50 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+            >
+              <Tag size={13} /> 태그 관리
+            </button>
+          </div>
+        )}
+
         {/* 목사님 */}
         {pastors.length > 0 && (
-          <div className="px-4 pt-4">
+          <div className="px-4">
             <RosterSection title="목사님" dotColor="bg-blue-500"
               count={pastors.length} teachers={pastors} onSelect={setSelectedTeacher} />
           </div>
@@ -340,18 +352,10 @@ function TeacherRoster() {
         {teacherList.length > 0 && (
           <div className="flex flex-col gap-4">
             {/* 섹션 헤더 */}
-            <div className="flex items-center gap-2 px-4 pt-2">
+            <div className="flex items-center gap-2 px-4">
               <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
               <span className="text-sm font-black text-gray-900">교사</span>
               <span className="text-xs text-gray-400 font-medium">{teacherList.length}명</span>
-              {canManageTags && (
-                <button
-                  onClick={() => setShowTagPool(true)}
-                  className="ml-auto flex items-center gap-1 text-[11px] font-black text-primary-500 bg-primary-50 px-2.5 py-1 rounded-full active:scale-95 transition-all"
-                >
-                  <Tag size={11} /> 태그 관리
-                </button>
-              )}
             </div>
 
             {/* 학년 필터 탭 */}
