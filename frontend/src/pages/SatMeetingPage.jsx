@@ -12,14 +12,14 @@ import client from '../api/client'
 
 function getNow() { return new Date() }
 
-// 월요일 00:00 ~ 토요일 12:00(정오)까지만 제출/수정 가능
+// 월요일 00:00 ~ 토요일 16:00까지만 제출/수정 가능
 function isSatWindowOpen() {
   const now  = getNow()
   const day  = now.getDay() // 0=Sun, 1=Mon ... 6=Sat
   const hour = now.getHours()
   if (day === 0)              return false          // 일요일: 닫힘
   if (day >= 1 && day <= 5)  return true           // 월~금: 항상 열림
-  if (day === 6)              return hour < 12      // 토: 정오 이전만 열림
+  if (day === 6)              return hour < 16      // 토: 16시 이전만 열림
   return false
 }
 

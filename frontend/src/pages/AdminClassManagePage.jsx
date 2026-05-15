@@ -35,7 +35,7 @@ export default function AdminClassManagePage() {
     acc[cls.grade].push(cls)
     return acc
   }, {})
-  Object.values(groupedClasses).forEach(arr => arr.sort((a, b) => a.name.localeCompare(b.name, 'ko')))
+  Object.values(groupedClasses).forEach(arr => arr.sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true })))
 
   const grades = ['전체', ...Object.keys(groupedClasses).sort((a, b) => {
     const priority = { '중': 1, '고': 2 }
@@ -50,8 +50,10 @@ export default function AdminClassManagePage() {
 
   const isLoading = isRosterLoading || isUsersLoading
 
-  const displayedEntries = activeGrade === '전체' 
-    ? Object.entries(groupedClasses)
+  const sortedGradeKeys = grades.filter(g => g !== '전체')
+
+  const displayedEntries = activeGrade === '전체'
+    ? sortedGradeKeys.map(g => [g, groupedClasses[g] || []])
     : [[activeGrade, groupedClasses[activeGrade] || []]]
 
   const assignedOtherClassUserIds = new Set(

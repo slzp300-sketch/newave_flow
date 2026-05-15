@@ -435,7 +435,6 @@ export default function CalendarAdminPage() {
                         type="date"
                         value={formData.attendanceDeadline}
                         onChange={e => setFormData(d => ({ ...d, attendanceDeadline: e.target.value }))}
-                        min={toApiDate(new Date())}
                         className="w-full px-4 py-3 rounded-xl border border-emerald-100 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300"
                       />
                       {formData.attendanceDeadline && (

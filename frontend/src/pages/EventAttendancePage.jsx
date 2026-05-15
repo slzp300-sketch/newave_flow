@@ -157,14 +157,14 @@ export default function EventAttendancePage() {
   const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT').length
   const partialCount = Object.values(statusMap).filter(s => s === 'PARTIAL').length
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
-  const isEditable   = !submitted || editing
+  const todayDateStr = toApiDate(new Date())
+  const isPastDeadline = !!(event?.attendanceDeadline && todayDateStr > event.attendanceDeadline)
+
+  const isEditable   = (!submitted || editing) && !isPastDeadline
 
   const missingReasons  = Object.entries(statusMap).filter(([id, s]) => s === 'ABSENT'  && !reasonMap[id]?.trim())
   const missingPartials = Object.entries(statusMap).filter(([id, s]) => s === 'PARTIAL' && !partialFromDateMap[id])
   const canSubmit = missingReasons.length === 0 && missingPartials.length === 0
-
-  const todayDateStr = toApiDate(new Date())
-  const isPastDeadline = event?.attendanceDeadline && todayDateStr > event?.attendanceDeadline
 
   return (
     <div className="flex flex-col min-h-screen pb-10">

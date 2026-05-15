@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { usePersistedState } from '../hooks/usePersistedState'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -37,8 +36,7 @@ export default function AttendancePage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const [selectedClassId, setSelectedClassId] = usePersistedState('selectedClassId', null)
-  const classId = selectedClassId ?? classes[0]?.id
+  const classId = classes[0]?.id
 
   // 2. 해당 반 학생 목록
   const { data: students = [] } = useQuery({
@@ -184,15 +182,6 @@ export default function AttendancePage() {
               <span className="text-xs font-bold text-gray-400">총 {students.length}명</span>
             </div>
           </div>
-          {classes.length > 1 && (
-            <select
-              value={classId}
-              onChange={e => setSelectedClassId(Number(e.target.value))}
-              className="text-xs font-bold bg-gray-50 px-3 py-1.5 rounded-lg border-none focus:ring-1 focus:ring-primary-500"
-            >
-              {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          )}
         </div>
 
         {!isWindowOpen && (

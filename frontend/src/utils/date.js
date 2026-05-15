@@ -51,8 +51,8 @@ export const getTTSWeekRange = () => {
   const now = new Date()
   const day = now.getDay()
   
-  // 월요일(1) 또는 화요일(2)이면 '지난 주' TTS를 제출하는 기간이므로 범위를 지난 주로 잡음
-  const targetDate = (day === 1 || day === 2) ? subWeeks(now, 1) : now
+  // 일요일(0)~화요일(2)이면 새 주가 시작됐지만 아직 전주 TTS 제출 기간이므로 범위를 지난 주로 잡음
+  const targetDate = (day === 0 || day === 1 || day === 2) ? subWeeks(now, 1) : now
   
   const sun = startOfWeek(targetDate, { weekStartsOn: 0 })
   const sat = endOfWeek(targetDate, { weekStartsOn: 0 })

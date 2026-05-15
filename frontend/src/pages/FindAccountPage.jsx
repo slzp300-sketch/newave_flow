@@ -7,6 +7,13 @@ import Button from '../components/common/Button'
 const TAB_ID = 'id'
 const TAB_PW = 'pw'
 
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+}
+
 export default function FindAccountPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -126,7 +133,7 @@ function FindIdTab() {
         <input
           type="tel"
           value={form.phone}
-          onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+          onChange={(e) => setForm(f => ({ ...f, phone: formatPhone(e.target.value) }))}
           placeholder="010-0000-0000"
           required
           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base transition"
@@ -234,7 +241,7 @@ function FindPasswordTab() {
         <input
           type="tel"
           value={form.phone}
-          onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+          onChange={(e) => setForm(f => ({ ...f, phone: formatPhone(e.target.value) }))}
           placeholder="010-0000-0000"
           required
           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base transition"
