@@ -60,23 +60,25 @@ export default function ProfilePage() {
 
   const [profileForm, setProfileForm] = useState(null)
   const form = profileForm ?? {
-    name:         user?.name ?? '',
-    phone:        myProfile?.phone ?? user?.phone ?? '',
-    birthDate:    myProfile?.birthDate ?? user?.birthDate ?? '',
-    profileImage: myProfile?.profileImage ?? '',
+    name:          user?.name ?? '',
+    phone:         myProfile?.phone ?? user?.phone ?? '',
+    birthDate:     myProfile?.birthDate ?? user?.birthDate ?? '',
+    profileImage:  myProfile?.profileImage ?? '',
+    positionTitle: myProfile?.positionTitle ?? user?.positionTitle ?? '',
   }
   const setForm = (key, val) => setProfileForm(prev => ({ ...(prev ?? form), [key]: val }))
 
   // ── 프로필 저장 ──────────────────────────────────────────
   const profileMutation = useMutation({
     mutationFn: () => usersApi.updateProfile({
-      name:         form.name,
-      phone:        form.phone,
-      birthDate:    form.birthDate || null,
-      profileImage: form.profileImage || null,
+      name:          form.name,
+      phone:         form.phone,
+      birthDate:     form.birthDate || null,
+      profileImage:  form.profileImage || null,
+      positionTitle: form.positionTitle || null,
     }),
     onSuccess: () => {
-      updateUserSettings({ name: form.name, phone: form.phone, birthDate: form.birthDate })
+      updateUserSettings({ name: form.name, phone: form.phone, birthDate: form.birthDate, positionTitle: form.positionTitle })
       queryClient.invalidateQueries({ queryKey: ['my-profile'] })
       setProfileResult({ ok: true, msg: '프로필이 저장되었습니다.' })
       setProfileForm(null)
@@ -283,6 +285,22 @@ export default function ProfilePage() {
                         만 {calcAge(form.birthDate)}세
                       </p>
                     )}
+                  </div>
+
+                  {/* 직책 */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                      🏷️ 직책 <span className="font-normal text-gray-400">(선택)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.positionTitle}
+                      onChange={e => setForm('positionTitle', e.target.value)}
+                      placeholder="예: 회장, 총무, 서기, 담임 등"
+                      maxLength={20}
+                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary-300"
+                    />
+                    <p className="text-[10px] text-gray-400 px-1">교사 교적부에 태그로 표시됩니다</p>
                   </div>
 
                   {profileResult && (

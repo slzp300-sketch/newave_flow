@@ -7,5 +7,6 @@ public record TeacherRosterItem(
         String phone,
         String birthDate,
         String profileImage,
-        String className
+        String className,
+        String positionTitle
 ) {}

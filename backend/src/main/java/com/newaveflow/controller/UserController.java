@@ -89,7 +89,8 @@ public class UserController {
                 u.getId(), u.getName(), u.getRole().name(), u.getPhone(),
                 u.getBirthDate() != null ? u.getBirthDate().toString() : null,
                 u.getProfileImage(),
-                classMap.get(u.getId())
+                classMap.get(u.getId()),
+                u.getPositionTitle()
             ))
             .toList();
         return ResponseEntity.ok(result);
@@ -118,7 +119,7 @@ public class UserController {
         if (request.birthDate() != null && !request.birthDate().isBlank()) {
             birthDate = LocalDate.parse(request.birthDate());
         }
-        user.updateProfile(request.name(), request.phone(), birthDate, request.profileImage());
+        user.updateProfile(request.name(), request.phone(), birthDate, request.profileImage(), request.positionTitle());
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
@@ -170,5 +171,5 @@ public class UserController {
     public record RoleRequest(String role) {}
     public record PasswordChangeRequest(String currentPassword, String newPassword) {}
     public record SettingsRequest(boolean largeFont) {}
-    public record ProfileRequest(String name, String phone, String birthDate, String profileImage) {}
+    public record ProfileRequest(String name, String phone, String birthDate, String profileImage, String positionTitle) {}
 }

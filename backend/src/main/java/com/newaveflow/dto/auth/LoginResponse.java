@@ -10,14 +10,15 @@ public record LoginResponse(
     public record UserInfo(
             Long id, String name, String email, String role, String grade,
             boolean isActive, boolean largeFont,
-            String phone, String birthDate
+            String phone, String birthDate, String positionTitle
     ) {
         public static UserInfo from(User u, String grade) {
             return new UserInfo(
                     u.getId(), u.getName(), u.getEmail(), u.getRole().name(),
                     grade, u.isActive(), u.isLargeFont(),
                     u.getPhone(),
-                    u.getBirthDate() != null ? u.getBirthDate().toString() : null
+                    u.getBirthDate() != null ? u.getBirthDate().toString() : null,
+                    u.getPositionTitle()
             );
         }
     }

@@ -260,6 +260,7 @@ function StudentRoster() {
 // ── 교사 교적부 ─────────────────────────────────────────
 function TeacherRoster() {
   const [selectedTeacher, setSelectedTeacher] = useState(null)
+  const [activeGrade, setActiveGrade] = useState('전체')
 
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ['teacher-roster'],
@@ -275,7 +276,7 @@ function TeacherRoster() {
   const executives = teachers.filter(t => t.role === 'EXECUTIVE')
   const teacherList= teachers.filter(t => t.role === 'TEACHER')
 
-  // 교사를 반별로 그룹화
+  // 교사를 반별로 그룹화 + 정렬
   const teachersByClass = teacherList.reduce((acc, t) => {
     const key = t.className || '미배정'
     if (!acc[key]) acc[key] = []
@@ -283,76 +284,100 @@ function TeacherRoster() {
     return acc
   }, {})
 
-  // 반 이름 정렬 (학년 순서 → 반 번호 순서)
   const sortedClassNames = Object.keys(teachersByClass).sort((a, b) => {
     if (a === '미배정') return 1
     if (b === '미배정') return -1
-    const aGrade = a.split(' ')[0]
-    const bGrade = b.split(' ')[0]
-    const aNum = parseInt(a.split(' ')[1]) || 0
-    const bNum = parseInt(b.split(' ')[1]) || 0
-    const gradeSort = GRADE_ORDER.indexOf(aGrade) - GRADE_ORDER.indexOf(bGrade)
-    return gradeSort !== 0 ? gradeSort : aNum - bNum
+    const aGrade = a.split(' ')[0], bGrade = b.split(' ')[0]
+    const aNum = parseInt(a.split(' ')[1]) || 0, bNum = parseInt(b.split(' ')[1]) || 0
+    const gs = GRADE_ORDER.indexOf(aGrade) - GRADE_ORDER.indexOf(bGrade)
+    return gs !== 0 ? gs : aNum - bNum
   })
+
+  // 교사 섹션용 학년 필터 (실제 배정된 학년만)
+  const availableGrades = ['전체', ...GRADE_ORDER.filter(g =>
+    sortedClassNames.some(cn => cn.startsWith(g + ' '))
+  )]
+
+  // 필터 적용
+  const filteredClassNames = activeGrade === '전체'
+    ? sortedClassNames
+    : sortedClassNames.filter(cn => cn.startsWith(activeGrade + ' '))
 
   return (
     <>
-      <div className="px-4 py-4 flex flex-col gap-6">
+      <div className="flex flex-col gap-6 pb-4">
 
         {/* 목사님 */}
         {pastors.length > 0 && (
-          <RosterSection
-            title="목사님"
-            dotColor="bg-blue-500"
-            count={pastors.length}
-            teachers={pastors}
-            onSelect={setSelectedTeacher}
-          />
+          <div className="px-4 pt-4">
+            <RosterSection title="목사님" dotColor="bg-blue-500"
+              count={pastors.length} teachers={pastors} onSelect={setSelectedTeacher} />
+          </div>
         )}
 
         {/* 임원 */}
         {executives.length > 0 && (
-          <RosterSection
-            title="임원"
-            dotColor="bg-amber-500"
-            count={executives.length}
-            teachers={executives}
-            onSelect={setSelectedTeacher}
-          />
+          <div className="px-4">
+            <RosterSection title="임원" dotColor="bg-amber-500"
+              count={executives.length} teachers={executives} onSelect={setSelectedTeacher} />
+          </div>
         )}
 
-        {/* 교사 (반별) */}
+        {/* 교사 (학년 필터 + 반별 그룹) */}
         {teacherList.length > 0 && (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 px-1">
+            {/* 섹션 헤더 */}
+            <div className="flex items-center gap-2 px-4 pt-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
               <span className="text-sm font-black text-gray-900">교사</span>
               <span className="text-xs text-gray-400 font-medium">{teacherList.length}명</span>
             </div>
-            {sortedClassNames.map(className => {
-              const gradeKey = className.split(' ')[0]
-              const gc = GRADE_COLORS[gradeKey] || GRADE_COLORS['전체']
-              return (
-                <div key={className}>
-                  <div className={`flex items-center gap-2 mb-2 px-1`}>
-                    <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${gc.bg} text-white`}>
-                      {className}
-                    </span>
-                    <span className="text-xs text-gray-400">{teachersByClass[className].length}명</span>
+
+            {/* 학년 필터 탭 */}
+            {availableGrades.length > 2 && (
+              <div className="flex overflow-x-auto gap-2 px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
+                {availableGrades.map(grade => {
+                  const gc = GRADE_COLORS[grade] || GRADE_COLORS['전체']
+                  const isActive = activeGrade === grade
+                  return (
+                    <button key={grade}
+                      onClick={() => setActiveGrade(grade)}
+                      className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-black transition-all active:scale-95 ${
+                        isActive ? `${gc.bg} text-white shadow-sm` : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >{grade}</button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* 반별 그룹 */}
+            <div className="px-4 flex flex-col gap-5">
+              {filteredClassNames.map(className => {
+                const gradeKey = className.split(' ')[0]
+                const gc = GRADE_COLORS[gradeKey] || GRADE_COLORS['전체']
+                return (
+                  <div key={className}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${gc.bg} text-white`}>
+                        {className}
+                      </span>
+                      <span className="text-xs text-gray-400">{teachersByClass[className].length}명</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {teachersByClass[className].map((t, idx) => (
+                        <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={setSelectedTeacher} />
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {teachersByClass[className].map((t, idx) => (
-                      <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={setSelectedTeacher} />
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         )}
 
         {teachers.length === 0 && (
-          <div className="py-20 flex flex-col items-center gap-3 text-gray-300">
+          <div className="py-20 flex flex-col items-center gap-3 text-gray-300 px-4">
             <Users size={40} />
             <p className="text-sm font-black">교사 정보가 없습니다</p>
           </div>
@@ -371,12 +396,12 @@ function TeacherRoster() {
 function RosterSection({ title, dotColor, count, teachers, onSelect }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 px-1">
+      <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${dotColor} flex-shrink-0`} />
         <span className="text-sm font-black text-gray-900">{title}</span>
         <span className="text-xs text-gray-400 font-medium">{count}명</span>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-4 gap-1.5">
         {teachers.map((t, idx) => (
           <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={onSelect} />
         ))}
@@ -387,29 +412,29 @@ function RosterSection({ title, dotColor, count, teachers, onSelect }) {
 
 function TeacherCard({ teacher, idx, onSelect }) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
+  const tag = teacher.positionTitle || (teacher.role !== 'TEACHER' ? null : teacher.className)
   return (
     <motion.button
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.04 }}
+      transition={{ delay: idx * 0.03 }}
       onClick={() => onSelect(teacher)}
-      className="text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-3.5 flex flex-col items-center gap-2 active:scale-[0.96] transition-all"
+      className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.95] transition-all text-center"
     >
-      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      {/* 원형 사진 */}
+      <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
         {teacher.profileImage
           ? <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
-          : <span className="font-black text-gray-600 text-xl">{teacher.name?.[0]}</span>
+          : <span className="font-black text-gray-600 text-base">{teacher.name?.[0]}</span>
         }
       </div>
-      <div className="text-center w-full">
-        <p className="font-black text-gray-900 text-sm truncate">{teacher.name}</p>
-        <span className={`inline-block text-[10px] font-black px-1.5 py-0.5 rounded-full mt-0.5 ${roleCfg.bg}`}>
-          {roleCfg.label}
-        </span>
-        {teacher.className && (
-          <p className="text-[10px] text-gray-400 font-medium mt-1 truncate">{teacher.className}</p>
-        )}
-      </div>
+      {/* 이름 */}
+      <p className="font-black text-gray-900 text-[11px] leading-tight w-full truncate">{teacher.name}</p>
+      {/* 태그: 직책 > 역할 > 반 */}
+      {tag
+        ? <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 truncate w-full">{tag}</span>
+        : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${roleCfg.bg}`}>{roleCfg.label}</span>
+      }
     </motion.button>
   )
 }
