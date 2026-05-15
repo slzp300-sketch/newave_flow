@@ -1,5 +1,7 @@
 package com.newaveflow.dto.auth;
 
+import java.util.List;
+
 public record TeacherRosterItem(
         Long id,
         String name,
@@ -8,5 +10,8 @@ public record TeacherRosterItem(
         String birthDate,
         String profileImage,
         String className,
-        String positionTitle
-) {}
+        List<TagInfo> tags,
+        String churchPosition
+) {
+    public record TagInfo(Long id, String name) {}
+}

@@ -7,6 +7,7 @@ import com.newaveflow.entity.TeacherClass;
 import com.newaveflow.entity.User;
 import com.newaveflow.repository.TeacherClassRepository;
 import com.newaveflow.repository.UserRepository;
+import com.newaveflow.repository.UserTagRepository;
 import com.newaveflow.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/users")
@@ -26,6 +25,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final TeacherClassRepository teacherClassRepository;
+    private final UserTagRepository userTagRepository;
     private final AuthService authService;
 
     private String resolveGrade(User u) {
@@ -56,6 +56,7 @@ public class UserController {
         result.put("birthDate", u.getBirthDate() != null ? u.getBirthDate().toString() : null);
         result.put("phone", u.getPhone());
         result.put("name", u.getName());
+        result.put("churchPosition", u.getChurchPosition());
         return ResponseEntity.ok(result);
     }
 
@@ -69,11 +70,11 @@ public class UserController {
         return ResponseEntity.ok(teachers);
     }
 
-    /** 교사 교적부: 목사님/임원/교사 전원 + 반 배정 + 프로필 이미지 */
+    /** 교사 교적부: 목사님/임원/교사 전원 + 반 배정 + 프로필 이미지 + 태그 */
     @GetMapping("/teachers/roster")
     @Transactional(readOnly = true)
     public ResponseEntity<List<TeacherRosterItem>> getTeacherRoster() {
-        // teacherId → "학년 반명" 매핑 (JOIN FETCH로 LazyInitializationException 방지)
+        // teacherId → "학년 반명" 매핑
         Map<Long, String> classMap = new HashMap<>();
         teacherClassRepository.findAllWithTeacherAndClass().forEach(tc -> {
             ClassGroup cg = tc.getClassGroup();
@@ -83,6 +84,13 @@ public class UserController {
             }
         });
 
+        // teacherId → 태그 목록 매핑
+        Map<Long, List<TeacherRosterItem.TagInfo>> tagsMap = new HashMap<>();
+        userTagRepository.findAllWithTag().forEach(ut ->
+            tagsMap.computeIfAbsent(ut.getUser().getId(), k -> new ArrayList<>())
+                .add(new TeacherRosterItem.TagInfo(ut.getTag().getId(), ut.getTag().getName()))
+        );
+
         List<TeacherRosterItem> result = userRepository.findByIsActiveTrue().stream()
             .filter(u -> u.getRole() != User.Role.ADMIN)
             .map(u -> new TeacherRosterItem(
@@ -90,7 +98,8 @@ public class UserController {
                 u.getBirthDate() != null ? u.getBirthDate().toString() : null,
                 u.getProfileImage(),
                 classMap.get(u.getId()),
-                u.getPositionTitle()
+                tagsMap.getOrDefault(u.getId(), List.of()),
+                u.getChurchPosition()
             ))
             .toList();
         return ResponseEntity.ok(result);
@@ -119,7 +128,7 @@ public class UserController {
         if (request.birthDate() != null && !request.birthDate().isBlank()) {
             birthDate = LocalDate.parse(request.birthDate());
         }
-        user.updateProfile(request.name(), request.phone(), birthDate, request.profileImage(), request.positionTitle());
+        user.updateProfile(request.name(), request.phone(), birthDate, request.profileImage(), request.churchPosition());
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
@@ -171,5 +180,5 @@ public class UserController {
     public record RoleRequest(String role) {}
     public record PasswordChangeRequest(String currentPassword, String newPassword) {}
     public record SettingsRequest(boolean largeFont) {}
-    public record ProfileRequest(String name, String phone, String birthDate, String profileImage, String positionTitle) {}
+    public record ProfileRequest(String name, String phone, String birthDate, String profileImage, String churchPosition) {}
 }

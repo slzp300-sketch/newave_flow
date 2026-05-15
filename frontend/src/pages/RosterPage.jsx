@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, X, BookOpen, Phone, MapPin, Loader2,
-  GraduationCap, ChevronRight, User
+  GraduationCap, ChevronRight, User, Tag, Plus, Trash2, Check
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { classesApi } from '../api/classes'
 import { usersApi } from '../api/users'
+import { tagsApi } from '../api/tags'
+import useAuthStore from '../store/authStore'
 
 // ── 상수 ────────────────────────────────────────────────
 const GRADES = ['전체', '중1', '중2', '중3', '고1', '고2', '고3']
@@ -259,13 +261,24 @@ function StudentRoster() {
 
 // ── 교사 교적부 ─────────────────────────────────────────
 function TeacherRoster() {
+  const { user: me } = useAuthStore()
+  const canManageTags = me?.role === 'PASTOR' || me?.role === 'ADMIN'
+  const qc = useQueryClient()
+
   const [selectedTeacher, setSelectedTeacher] = useState(null)
   const [activeGrade, setActiveGrade] = useState('전체')
+  const [showTagPool, setShowTagPool] = useState(false)
 
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ['teacher-roster'],
     queryFn: () => usersApi.getTeacherRoster().then(r => r.data),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+  })
+
+  const { data: allTags = [] } = useQuery({
+    queryKey: ['tags'],
+    queryFn: () => tagsApi.getAll().then(r => r.data),
+    staleTime: 5 * 60 * 1000,
   })
 
   if (isLoading) {
@@ -331,6 +344,14 @@ function TeacherRoster() {
               <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
               <span className="text-sm font-black text-gray-900">교사</span>
               <span className="text-xs text-gray-400 font-medium">{teacherList.length}명</span>
+              {canManageTags && (
+                <button
+                  onClick={() => setShowTagPool(true)}
+                  className="ml-auto flex items-center gap-1 text-[11px] font-black text-primary-500 bg-primary-50 px-2.5 py-1 rounded-full active:scale-95 transition-all"
+                >
+                  <Tag size={11} /> 태그 관리
+                </button>
+              )}
             </div>
 
             {/* 학년 필터 탭 */}
@@ -386,7 +407,23 @@ function TeacherRoster() {
 
       <AnimatePresence>
         {selectedTeacher && (
-          <TeacherDetailSheet teacher={selectedTeacher} onClose={() => setSelectedTeacher(null)} />
+          <TeacherDetailSheet
+            teacher={selectedTeacher}
+            allTags={allTags}
+            canManageTags={canManageTags}
+            onClose={() => setSelectedTeacher(null)}
+            onTagChanged={() => qc.invalidateQueries({ queryKey: ['teacher-roster'] })}
+          />
+        )}
+        {showTagPool && (
+          <TagPoolModal
+            tags={allTags}
+            onClose={() => setShowTagPool(false)}
+            onChanged={() => {
+              qc.invalidateQueries({ queryKey: ['tags'] })
+              qc.invalidateQueries({ queryKey: ['teacher-roster'] })
+            }}
+          />
         )}
       </AnimatePresence>
     </>
@@ -412,7 +449,7 @@ function RosterSection({ title, dotColor, count, teachers, onSelect }) {
 
 function TeacherCard({ teacher, idx, onSelect }) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
-  const tag = teacher.positionTitle || (teacher.role !== 'TEACHER' ? null : teacher.className)
+  const firstTag = teacher.tags?.[0]
   return (
     <motion.button
       initial={{ opacity: 0, y: 8 }}
@@ -421,27 +458,31 @@ function TeacherCard({ teacher, idx, onSelect }) {
       onClick={() => onSelect(teacher)}
       className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.95] transition-all text-center"
     >
-      {/* 원형 사진 */}
       <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
         {teacher.profileImage
           ? <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
           : <span className="font-black text-gray-600 text-base">{teacher.name?.[0]}</span>
         }
       </div>
-      {/* 이름 */}
       <p className="font-black text-gray-900 text-[11px] leading-tight w-full truncate">{teacher.name}</p>
-      {/* 태그: 직책 > 역할 > 반 */}
-      {tag
-        ? <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 truncate w-full">{tag}</span>
+      {firstTag
+        ? <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600 truncate w-full">{firstTag.name}</span>
         : <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${roleCfg.bg}`}>{roleCfg.label}</span>
       }
     </motion.button>
   )
 }
 
-function TeacherDetailSheet({ teacher, onClose }) {
+function TeacherDetailSheet({ teacher, allTags, canManageTags, onClose, onTagChanged }) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
   const age = calcAge(teacher.birthDate)
+  const assignedTagIds = new Set((teacher.tags || []).map(t => t.id))
+
+  const assignMutation = useMutation({
+    mutationFn: ({ tagId, assigned }) =>
+      assigned ? tagsApi.remove(tagId, teacher.id) : tagsApi.assign(tagId, teacher.id),
+    onSuccess: onTagChanged,
+  })
 
   return (
     <>
@@ -453,10 +494,10 @@ function TeacherDetailSheet({ teacher, onClose }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 12 }}
           transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-          className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto overflow-hidden shadow-2xl"
-          style={{ maxHeight: '80vh' }}
+          className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl overflow-y-auto"
+          style={{ maxHeight: '85vh' }}
         >
-          {/* 닫기 버튼 */}
+          {/* 닫기 */}
           <div className="flex justify-end px-4 pt-4 pb-0">
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
               <X size={16} className="text-gray-500" />
@@ -464,7 +505,7 @@ function TeacherDetailSheet({ teacher, onClose }) {
           </div>
 
           {/* 프로필 */}
-          <div className="flex flex-col items-center gap-3 px-6 pt-2 pb-5">
+          <div className="flex flex-col items-center gap-3 px-6 pt-2 pb-4">
             <div className="w-24 h-24 rounded-3xl bg-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
               {teacher.profileImage
                 ? <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
@@ -476,27 +517,170 @@ function TeacherDetailSheet({ teacher, onClose }) {
               <span className={`inline-block mt-1 text-xs font-bold px-3 py-1 rounded-full ${roleCfg.bg}`}>
                 {roleCfg.label}
               </span>
+              {teacher.churchPosition && (
+                <p className="text-[11px] text-gray-400 font-medium mt-1">{teacher.churchPosition}</p>
+              )}
             </div>
+
+            {/* 배정된 태그 */}
+            {(teacher.tags?.length > 0) && (
+              <div className="flex flex-wrap gap-1.5 justify-center mt-1">
+                {teacher.tags.map(t => (
+                  <span key={t.id} className="text-[11px] font-black px-2.5 py-1 rounded-full bg-primary-50 text-primary-600">
+                    {t.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 정보 목록 */}
-          <div className="px-4 pb-6 flex flex-col gap-2">
-            {teacher.className && (
-              <InfoRow label="담당 반" value={teacher.className} icon="📚" />
-            )}
+          <div className="px-4 flex flex-col gap-2">
+            {teacher.className && <InfoRow label="담당 반" value={teacher.className} icon="📚" />}
             {teacher.birthDate && (
               <InfoRow label="생년월일"
                 value={`${formatBirth(teacher.birthDate)}${age ? ` (만 ${age}세)` : ''}`}
                 icon="🎂" />
             )}
-            {teacher.phone && (
-              <InfoRow label="전화번호" value={teacher.phone} icon="📱" isPhone />
+            {teacher.phone && <InfoRow label="전화번호" value={teacher.phone} icon="📱" isPhone />}
+          </div>
+
+          {/* 목사님 전용: 태그 배정 */}
+          {canManageTags && allTags.length > 0 && (
+            <div className="px-4 py-4 mt-3 border-t border-gray-50">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">태그 배정</p>
+              <div className="flex flex-wrap gap-1.5">
+                {allTags.map(tag => {
+                  const assigned = assignedTagIds.has(tag.id)
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => assignMutation.mutate({ tagId: tag.id, assigned })}
+                      disabled={assignMutation.isPending}
+                      className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
+                        assigned
+                          ? 'border-primary-400 bg-primary-50 text-primary-600'
+                          : 'border-gray-100 bg-gray-50 text-gray-400'
+                      }`}
+                    >
+                      {assigned && <Check size={10} />}
+                      {tag.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="h-4" />
+        </motion.div>
+      </div>
+    </>
+  )
+}
+
+// ── 태그 풀 관리 모달 (목사님 전용) ──────────────────────
+function TagPoolModal({ tags, onClose, onChanged }) {
+  const [newName, setNewName] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editName, setEditName] = useState('')
+
+  const createMutation = useMutation({
+    mutationFn: () => tagsApi.create(newName.trim()),
+    onSuccess: () => { setNewName(''); onChanged() },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: () => tagsApi.update(editingId, editName.trim()),
+    onSuccess: () => { setEditingId(null); onChanged() },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => tagsApi.delete(id),
+    onSuccess: onChanged,
+  })
+
+  return (
+    <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
+      <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.92, y: 12 }}
+          transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+          className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl overflow-hidden"
+          style={{ maxHeight: '80vh' }}
+        >
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+            <div>
+              <p className="font-black text-gray-900">태그 관리</p>
+              <p className="text-[11px] text-gray-400 font-medium mt-0.5">태그를 만들고 교사에게 부여하세요</p>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
+              <X size={16} className="text-gray-500" />
+            </button>
+          </div>
+
+          {/* 태그 목록 */}
+          <div className="px-5 flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: '40vh' }}>
+            {tags.length === 0 && (
+              <p className="text-center text-xs text-gray-400 py-6">아직 태그가 없습니다</p>
             )}
-            {!teacher.birthDate && !teacher.phone && !teacher.className && (
-              <p className="text-center text-xs text-gray-400 py-4">
-                아직 입력된 추가 정보가 없습니다
-              </p>
-            )}
+            {tags.map(tag => (
+              <div key={tag.id} className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl">
+                {editingId === tag.id ? (
+                  <>
+                    <input
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      autoFocus
+                      className="flex-1 text-sm font-bold bg-white border border-primary-200 rounded-lg px-2 py-1 outline-none"
+                    />
+                    <button
+                      onClick={() => updateMutation.mutate()}
+                      disabled={!editName.trim() || updateMutation.isPending}
+                      className="text-[11px] font-black text-primary-600 px-2 py-1 rounded-lg bg-primary-50 active:scale-95 disabled:opacity-50"
+                    >저장</button>
+                    <button onClick={() => setEditingId(null)} className="text-[11px] font-black text-gray-400">취소</button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm font-bold text-gray-800">{tag.name}</span>
+                    <button
+                      onClick={() => { setEditingId(tag.id); setEditName(tag.name) }}
+                      className="text-[10px] font-black text-gray-400 px-2 py-1 rounded-lg hover:bg-gray-100"
+                    >수정</button>
+                    <button
+                      onClick={() => deleteMutation.mutate(tag.id)}
+                      disabled={deleteMutation.isPending}
+                      className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg active:scale-90 transition-all"
+                    ><Trash2 size={13} /></button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 새 태그 생성 */}
+          <div className="px-5 py-4 border-t border-gray-100 mt-3">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">새 태그 추가</p>
+            <div className="flex gap-2">
+              <input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && newName.trim() && createMutation.mutate()}
+                placeholder="태그 이름 입력"
+                maxLength={30}
+                className="flex-1 text-sm font-bold px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-primary-200"
+              />
+              <button
+                onClick={() => createMutation.mutate()}
+                disabled={!newName.trim() || createMutation.isPending}
+                className="flex items-center gap-1 px-3 py-2.5 bg-primary-500 text-white text-sm font-black rounded-xl active:scale-95 disabled:opacity-50 transition-all"
+              ><Plus size={15} /></button>
+            </div>
           </div>
         </motion.div>
       </div>

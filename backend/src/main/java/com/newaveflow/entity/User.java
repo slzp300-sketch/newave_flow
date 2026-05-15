@@ -57,8 +57,8 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String profileImage;
 
-    @Column(length = 50)
-    private String positionTitle;
+    @Column(name = "position_title", length = 50)
+    private String churchPosition;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     @OneToMany(mappedBy = "teacher")
@@ -87,12 +87,12 @@ public class User {
         this.largeFont = largeFont;
     }
 
-    public void updateProfile(String name, String phone, LocalDate birthDate, String profileImage, String positionTitle) {
+    public void updateProfile(String name, String phone, LocalDate birthDate, String profileImage, String churchPosition) {
         if (name != null && !name.isBlank()) this.name = name;
         this.phone = phone;
         this.birthDate = birthDate;
         this.profileImage = profileImage;
-        this.positionTitle = positionTitle;
+        this.churchPosition = churchPosition;
     }
 
     public enum Role {
