@@ -406,6 +406,70 @@ function EventPanel({ event, user }) {
   )
 }
 
+// ── 행사 카드 헤더 (제출 상태 포함) ──────────────────────
+function EventCardHeader({ event, userId, isOpen, onToggle }) {
+  const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
+  const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
+
+  const { data: teacherAtt } = useQuery({
+    queryKey: ['event-teacher-attendance', event.id, userId],
+    queryFn: () => eventApi.getMyTeacherAttendance(event.id).then(r => r.data),
+    enabled: !!userId && needsTeacher,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: students = [] } = useQuery({
+    queryKey: ['event-attendance', event.id, userId],
+    queryFn: () => eventApi.getMyClassAttendance(event.id).then(r => r.data),
+    enabled: !!userId && needsStudent,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const teacherDone = !needsTeacher || !!teacherAtt?.status
+  const studentDone = !needsStudent || students.length === 0 || students.some(s => s.status)
+  const isSubmitted = teacherDone && studentDone
+
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors text-left"
+    >
+      <div className="flex items-center gap-3">
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+          isSubmitted ? 'bg-emerald-100' : isOpen ? 'bg-emerald-50' : 'bg-gray-50'
+        }`}>
+          {isSubmitted
+            ? <CheckCircle2 size={18} className="text-emerald-600" />
+            : <Calendar size={18} className={isOpen ? 'text-emerald-600' : 'text-gray-400'} />
+          }
+        </div>
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className={`font-black text-sm ${isSubmitted ? 'text-emerald-800' : isOpen ? 'text-emerald-800' : 'text-gray-900'}`}>
+              {event.title}
+            </p>
+            {isSubmitted && (
+              <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+                제출 완료
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+            {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
+            {event.startTime && ` · ${event.startTime}`}
+            {' · '}
+            {event.attendanceTarget === 'TEACHER_ONLY' ? '교사 출석' :
+             event.attendanceTarget === 'BOTH'         ? '학생 + 교사' : '학생 출석'}
+          </p>
+        </div>
+      </div>
+      <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+        <ChevronDown size={18} className="text-gray-300" />
+      </motion.div>
+    </button>
+  )
+}
+
 // ── 메인 페이지 ─────────────────────────��────────────────
 export default function EventAttendanceListPage() {
   const { user } = useAuthStore()
@@ -449,31 +513,12 @@ export default function EventAttendanceListPage() {
                 className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
               >
                 {/* 행사 헤더 (클릭으로 펼치기) */}
-                <button
-                  onClick={() => handleSelect(event.id)}
-                  className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                      isOpen ? 'bg-emerald-100' : 'bg-gray-50'
-                    }`}>
-                      <Calendar size={18} className={isOpen ? 'text-emerald-600' : 'text-gray-400'} />
-                    </div>
-                    <div>
-                      <p className={`font-black text-sm ${isOpen ? 'text-emerald-800' : 'text-gray-900'}`}>{event.title}</p>
-                      <p className="text-[10px] text-gray-400 font-medium mt-0.5">
-                        {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
-                        {event.startTime && ` · ${event.startTime}`}
-                        {' · '}
-                        {event.attendanceTarget === 'TEACHER_ONLY' ? '교사 출석' :
-                         event.attendanceTarget === 'BOTH'         ? '학생 + 교사' : '학생 출석'}
-                      </p>
-                    </div>
-                  </div>
-                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown size={18} className="text-gray-300" />
-                  </motion.div>
-                </button>
+                <EventCardHeader
+                  event={event}
+                  userId={user?.id}
+                  isOpen={isOpen}
+                  onToggle={() => handleSelect(event.id)}
+                />
 
                 {/* 출석 체크 패널 */}
                 <AnimatePresence>

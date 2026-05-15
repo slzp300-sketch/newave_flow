@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   Users, FileText, Calendar, CheckSquare, CalendarCheck,
@@ -145,6 +145,48 @@ export default function WeeklyCheckPage() {
   const attendanceEvents = useAttendanceRequiredEvents()
   const weekRange     = getCurrentWeekRange()
 
+  // 행사별 제출 상태 확인 (교사 출석)
+  const teacherAttQueries = useQueries({
+    queries: attendanceEvents
+      .filter(e => e.attendanceTarget === 'TEACHER_ONLY' || e.attendanceTarget === 'BOTH')
+      .map(event => ({
+        queryKey: ['event-teacher-attendance', event.id, user?.id],
+        queryFn: () => eventApi.getMyTeacherAttendance(event.id).then(r => r.data),
+        enabled: !!user,
+        staleTime: 2 * 60 * 1000,
+      })),
+  })
+
+  // 행사별 제출 상태 확인 (학생 출석)
+  const studentAttQueries = useQueries({
+    queries: attendanceEvents
+      .filter(e => !e.attendanceTarget || e.attendanceTarget === 'STUDENT_ONLY' || e.attendanceTarget === 'BOTH')
+      .map(event => ({
+        queryKey: ['event-attendance', event.id, user?.id],
+        queryFn: () => eventApi.getMyClassAttendance(event.id).then(r => r.data),
+        enabled: !!user,
+        staleTime: 2 * 60 * 1000,
+      })),
+  })
+
+  const teacherEventIds = attendanceEvents
+    .filter(e => e.attendanceTarget === 'TEACHER_ONLY' || e.attendanceTarget === 'BOTH')
+    .map(e => e.id)
+  const studentEventIds = attendanceEvents
+    .filter(e => !e.attendanceTarget || e.attendanceTarget === 'STUDENT_ONLY' || e.attendanceTarget === 'BOTH')
+    .map(e => e.id)
+
+  const allEventsDone = attendanceEvents.length > 0 && attendanceEvents.every(event => {
+    const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
+    const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
+    const tIdx = teacherEventIds.indexOf(event.id)
+    const sIdx = studentEventIds.indexOf(event.id)
+    const teacherDone = !needsTeacher || !!teacherAttQueries[tIdx]?.data?.status
+    const studentData = sIdx >= 0 ? (studentAttQueries[sIdx]?.data ?? []) : []
+    const studentDone = !needsStudent || studentData.length === 0 || studentData.some(s => s.status)
+    return teacherDone && studentDone
+  })
+
   // 각 파트별 활성화 상태
   const ttsOpen = canSubmitTTS()
   const meetingOpen = isVoteWindowOpen()
@@ -215,10 +257,14 @@ export default function WeeklyCheckPage() {
     {
       id: 'event-attendance',
       icon: Calendar,
-      color: 'bg-rose-50 text-rose-600',
+      color: allEventsDone ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-50 text-rose-600',
       title: '행사 출석 체크',
-      desc: eventAttendanceOpen ? `출석 체크가 필요한 행사 ${attendanceEvents.length}건이 있습니다.` : '⚠️ 현재 진행 중인 행사 출석 체크가 없습니다.',
-      done: eventAttendanceOpen ? false : true, // 진행할 행사가 없으면 패스
+      desc: !eventAttendanceOpen
+        ? '⚠️ 현재 진행 중인 행사 출석 체크가 없습니다.'
+        : allEventsDone
+          ? `✅ ${attendanceEvents.length}개 행사 출석 체크 완료되었습니다.`
+          : `출석 체크가 필요한 행사 ${attendanceEvents.length}건이 있습니다.`,
+      done: eventAttendanceOpen ? allEventsDone : true,
       disabled: !eventAttendanceOpen,
       path: attendanceEvents.length === 1 ? `/event-attendance/${attendanceEvents[0].id}` : '/event-attendance',
     },
