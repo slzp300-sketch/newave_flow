@@ -1,3 +1,3 @@
 git add -A
-git commit -m "style: update tag color palette to vibrant solid colors and add more options"
+git commit -m "feat: improve teacher card UI, grade head sorting, and tag display"
 git push
