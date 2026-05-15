@@ -41,7 +41,7 @@ function isSatMeetingWindowOpen() {
   const hour = now.getHours()
   if (day === 0)             return false       // 일: 닫힘
   if (day >= 1 && day <= 5)  return true        // 월~금: 열림
-  if (day === 6)             return hour < 12   // 토: 정오 이전만 열림
+  if (day === 6)             return hour < 16   // 토: 16시 이전만 열림
   return false
 }
 

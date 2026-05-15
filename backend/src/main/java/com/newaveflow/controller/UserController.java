@@ -73,9 +73,9 @@ public class UserController {
     @GetMapping("/teachers/roster")
     @Transactional(readOnly = true)
     public ResponseEntity<List<TeacherRosterItem>> getTeacherRoster() {
-        // teacherId → "학년 반명" 매핑
+        // teacherId → "학년 반명" 매핑 (JOIN FETCH로 LazyInitializationException 방지)
         Map<Long, String> classMap = new HashMap<>();
-        teacherClassRepository.findAll().forEach(tc -> {
+        teacherClassRepository.findAllWithTeacherAndClass().forEach(tc -> {
             ClassGroup cg = tc.getClassGroup();
             if (cg != null) {
                 String label = (cg.getAgeGroup() != null ? cg.getAgeGroup() + " " : "") + cg.getName();
