@@ -18,9 +18,11 @@ public class Tag {
     @Column(nullable = false, length = 30, unique = true)
     private String name;
 
-    /** 태그 대상 구분: EXECUTIVE(임원), TEACHER(교사), null=공통 */
     @Column(length = 20)
     private String category;
+
+    @Column(length = 50)
+    private String color;
 
     public void updateName(String name) {
         this.name = name;
@@ -28,5 +30,9 @@ public class Tag {
 
     public void updateCategory(String category) {
         this.category = category;
+    }
+
+    public void updateColor(String color) {
+        this.color = color;
     }
 }

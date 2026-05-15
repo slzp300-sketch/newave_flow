@@ -88,7 +88,7 @@ public class UserController {
         Map<Long, List<TeacherRosterItem.TagInfo>> tagsMap = new HashMap<>();
         userTagRepository.findAllWithTag().forEach(ut ->
             tagsMap.computeIfAbsent(ut.getUser().getId(), k -> new ArrayList<>())
-                .add(new TeacherRosterItem.TagInfo(ut.getTag().getId(), ut.getTag().getName(), ut.getTag().getCategory()))
+                .add(new TeacherRosterItem.TagInfo(ut.getTag().getId(), ut.getTag().getName(), ut.getTag().getCategory(), ut.getTag().getColor()))
         );
 
         List<TeacherRosterItem> result = userRepository.findByIsActiveTrue().stream()

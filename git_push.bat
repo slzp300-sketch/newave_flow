@@ -1,3 +1,3 @@
 git add -A
-git commit -m "feat: improve teacher roster UI and separate tags"
+git commit -m "feat: add tag color selection and auto-assignment feature with reset tags button"
 git push

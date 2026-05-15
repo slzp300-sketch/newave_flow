@@ -28,7 +28,7 @@ public class TagController {
     public ResponseEntity<List<TagDto>> getAllTags() {
         return ResponseEntity.ok(
             tagRepository.findAllByOrderByNameAsc().stream()
-                .map(t -> new TagDto(t.getId(), t.getName(), t.getCategory()))
+                .map(t -> new TagDto(t.getId(), t.getName(), t.getCategory(), t.getColor()))
                 .toList()
         );
     }
@@ -40,8 +40,9 @@ public class TagController {
         Tag tag = tagRepository.save(Tag.builder()
             .name(req.name().trim())
             .category(req.category())
+            .color(req.color())
             .build());
-        return ResponseEntity.ok(new TagDto(tag.getId(), tag.getName(), tag.getCategory()));
+        return ResponseEntity.ok(new TagDto(tag.getId(), tag.getName(), tag.getCategory(), tag.getColor()));
     }
 
     @PutMapping("/{id}")
@@ -54,6 +55,9 @@ public class TagController {
         if (req.category() != null) {
             tag.updateCategory(req.category());
         }
+        if (req.color() != null) {
+            tag.updateColor(req.color());
+        }
         tagRepository.save(tag);
         return ResponseEntity.ok().build();
     }
@@ -64,6 +68,15 @@ public class TagController {
     public ResponseEntity<Void> deleteTag(@PathVariable Long id) {
         userTagRepository.deleteByTag_Id(id);
         tagRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/all")
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR')")
+    public ResponseEntity<Void> deleteAllTags() {
+        userTagRepository.deleteAll();
+        tagRepository.deleteAll();
         return ResponseEntity.ok().build();
     }
 
@@ -89,6 +102,6 @@ public class TagController {
         return ResponseEntity.ok().build();
     }
 
-    public record TagDto(Long id, String name, String category) {}
-    public record TagNameRequest(String name, String category) {}
+    public record TagDto(Long id, String name, String category, String color) {}
+    public record TagNameRequest(String name, String category, String color) {}
 }
