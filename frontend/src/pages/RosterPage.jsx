@@ -475,6 +475,7 @@ function TeacherRoster() {
             canManageTags={canManageTags}
             onClose={() => setSelectedTeacher(null)}
             onTagChanged={() => qc.invalidateQueries({ queryKey: ['teacher-roster'] })}
+            context={activeTab}
           />
         )}
         {showTagPool && (
@@ -560,9 +561,23 @@ function TeacherCard({ teacher, idx, onSelect, context = 'default' }) {
     </motion.button>
   )
 }
-function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManageTags, onClose, onTagChanged }) {
+function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManageTags, onClose, onTagChanged, context }) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
   const age = calcAge(teacher.birthDate)
+  
+  const isGradeHead = teacher.churchPosition?.includes('학년부장')
+  let displayLabel = roleCfg.label
+  let displayBg = roleCfg.bg
+  
+  if (context === 'teacher') {
+    if (isGradeHead) {
+      displayLabel = '학년부장'
+      displayBg = 'bg-emerald-100 text-emerald-700'
+    } else {
+      displayLabel = '교사'
+      displayBg = 'bg-emerald-50 text-emerald-600'
+    }
+  }
   const qc = useQueryClient()
 
   // 낙관적 업데이트를 위한 로컬 태그 상태
@@ -629,8 +644,8 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
             </div>
             <div className="text-center">
               <p className="font-black text-gray-900 text-xl">{teacher.name}</p>
-              <span className={`inline-block mt-1 text-xs font-bold px-3 py-1 rounded-full ${roleCfg.bg}`}>
-                {roleCfg.label}
+              <span className={`inline-block mt-1 text-xs font-bold px-3 py-1 rounded-full ${displayBg}`}>
+                {displayLabel}
               </span>
               {teacher.churchPosition && (
                 <p className="text-[11px] text-gray-400 font-medium mt-1">{teacher.churchPosition}</p>
@@ -650,8 +665,8 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
           <div className="px-4 flex flex-col gap-2">
             {teacher.className && <InfoRow label="담당 반" value={teacher.className} icon="📚" />}
             {teacher.birthDate && (
-              <InfoRow label="생년월일"
-                value={`${formatBirth(teacher.birthDate)}${age ? ` (만 ${age}세)` : ''}`}
+              <InfoRow label="나이"
+                value={`${age ? `만 ${age}세` : ''} (${formatBirth(teacher.birthDate)})`}
                 icon="🎂" />
             )}
             {teacher.phone && <InfoRow label="전화번호" value={teacher.phone} icon="📱" isPhone />}

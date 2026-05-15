@@ -1,3 +1,3 @@
 git add -A
-git commit -m "feat: disable selecting already used colors in tag pool modal"
+git commit -m "feat: improve teacher detail sheet UI for class, role, and age visibility"
 git push
