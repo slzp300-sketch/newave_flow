@@ -339,7 +339,7 @@ function TeacherRoster() {
                     </span>
                     <span className="text-xs text-gray-400">{teachersByClass[className].length}명</span>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {teachersByClass[className].map((t, idx) => (
                       <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={setSelectedTeacher} />
                     ))}
@@ -375,7 +375,7 @@ function RosterSection({ title, dotColor, count, teachers, onSelect }) {
         <span className="text-sm font-black text-gray-900">{title}</span>
         <span className="text-xs text-gray-400 font-medium">{count}명</span>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {teachers.map((t, idx) => (
           <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={onSelect} />
         ))}
@@ -386,33 +386,29 @@ function RosterSection({ title, dotColor, count, teachers, onSelect }) {
 
 function TeacherCard({ teacher, idx, onSelect }) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
-  const age = calcAge(teacher.birthDate)
   return (
     <motion.button
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay: idx * 0.04 }}
       onClick={() => onSelect(teacher)}
-      className="w-full text-left flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.98] transition-all hover:border-gray-200"
+      className="text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-3.5 flex flex-col items-center gap-2 active:scale-[0.96] transition-all"
     >
-      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
         {teacher.profileImage
           ? <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
-          : <span className="font-black text-gray-600 text-sm">{teacher.name?.[0]}</span>
+          : <span className="font-black text-gray-600 text-xl">{teacher.name?.[0]}</span>
         }
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="font-black text-gray-900 text-sm">{teacher.name}</span>
-          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${roleCfg.bg}`}>{roleCfg.label}</span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] text-gray-400">
-          {age && <span>만 {age}세</span>}
-          {age && teacher.phone && <span>·</span>}
-          {teacher.phone && <span>{teacher.phone}</span>}
-        </div>
+      <div className="text-center w-full">
+        <p className="font-black text-gray-900 text-sm truncate">{teacher.name}</p>
+        <span className={`inline-block text-[10px] font-black px-1.5 py-0.5 rounded-full mt-0.5 ${roleCfg.bg}`}>
+          {roleCfg.label}
+        </span>
+        {teacher.className && (
+          <p className="text-[10px] text-gray-400 font-medium mt-1 truncate">{teacher.className}</p>
+        )}
       </div>
-      <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
     </motion.button>
   )
 }
@@ -425,29 +421,24 @@ function TeacherDetailSheet({ teacher, onClose }) {
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
-      <div className="fixed inset-0 z-[70] flex items-end justify-center pointer-events-none">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
         <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
+          initial={{ opacity: 0, scale: 0.92, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.92, y: 12 }}
           transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-          className="w-full max-w-[430px] bg-white rounded-t-3xl pointer-events-auto pb-safe"
-          style={{ maxHeight: '75vh' }}
+          className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto overflow-hidden shadow-2xl"
+          style={{ maxHeight: '80vh' }}
         >
-          {/* 핸들 */}
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-gray-200" />
-          </div>
-
           {/* 닫기 버튼 */}
-          <div className="flex justify-end px-4 pb-1">
+          <div className="flex justify-end px-4 pt-4 pb-0">
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
               <X size={16} className="text-gray-500" />
             </button>
           </div>
 
           {/* 프로필 */}
-          <div className="flex flex-col items-center gap-3 px-6 pb-5">
+          <div className="flex flex-col items-center gap-3 px-6 pt-2 pb-5">
             <div className="w-24 h-24 rounded-3xl bg-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
               {teacher.profileImage
                 ? <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
