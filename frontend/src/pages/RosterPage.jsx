@@ -266,6 +266,7 @@ function TeacherRoster() {
   const qc = useQueryClient()
 
   const [selectedTeacher, setSelectedTeacher] = useState(null)
+  const [activeTab, setActiveTab] = useState('executive')
   const [activeGrade, setActiveGrade] = useState('전체')
   const [showTagPool, setShowTagPool] = useState(false)
 
@@ -287,42 +288,51 @@ function TeacherRoster() {
 
   const pastors    = teachers.filter(t => t.role === 'PASTOR')
   const executives = teachers.filter(t => t.role === 'EXECUTIVE')
-  const teacherList= teachers.filter(t => t.role === 'TEACHER')
+  const pureTeachers = teachers.filter(t => t.role === 'TEACHER')
+  // 반 배정된 임원도 교사 탭에 포함 (중복 제거)
+  const assignedExecs = executives.filter(t => !!t.className)
+  const teacherTabList = [...pureTeachers, ...assignedExecs]
+    .filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
 
-  // 교사를 반별로 그룹화 + 정렬
-  const teachersByClass = teacherList.reduce((acc, t) => {
-    const key = t.className || '미배정'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(t)
+  // 교사 탭 – 학년별 그룹화
+  const teachersByGrade = teacherTabList.reduce((acc, t) => {
+    const grade = t.className ? t.className.split(' ')[0] : '미배정'
+    if (!acc[grade]) acc[grade] = []
+    acc[grade].push(t)
     return acc
   }, {})
 
-  const sortedClassNames = Object.keys(teachersByClass).sort((a, b) => {
-    if (a === '미배정') return 1
-    if (b === '미배정') return -1
-    const aGrade = a.split(' ')[0], bGrade = b.split(' ')[0]
-    const aNum = parseInt(a.split(' ')[1]) || 0, bNum = parseInt(b.split(' ')[1]) || 0
-    const gs = GRADE_ORDER.indexOf(aGrade) - GRADE_ORDER.indexOf(bGrade)
-    return gs !== 0 ? gs : aNum - bNum
-  })
+  const gradeKeys = [...GRADE_ORDER.filter(g => teachersByGrade[g]), ...(teachersByGrade['미배정'] ? ['미배정'] : [])]
+  const availableGrades = ['전체', ...gradeKeys]
+  const filteredGrades = activeGrade === '전체' ? gradeKeys : [activeGrade].filter(g => teachersByGrade[g])
 
-  // 교사 섹션용 학년 필터 (실제 배정된 학년만)
-  const availableGrades = ['전체', ...GRADE_ORDER.filter(g =>
-    sortedClassNames.some(cn => cn.startsWith(g + ' '))
-  )]
-
-  // 필터 적용
-  const filteredClassNames = activeGrade === '전체'
-    ? sortedClassNames
-    : sortedClassNames.filter(cn => cn.startsWith(activeGrade + ' '))
+  const execTags    = allTags.filter(t => t.category === 'EXECUTIVE')
+  const teacherTags = allTags.filter(t => t.category === 'TEACHER')
 
   return (
     <>
-      <div className="flex flex-col gap-6 pb-4">
+      <div className="flex flex-col gap-0 pb-4">
+        {/* 상단 탭 */}
+        <div className="sticky top-14 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+          <div className="flex items-center px-4 pt-3 pb-0">
+            <button
+              onClick={() => setActiveTab('executive')}
+              className={`flex-1 py-2.5 text-sm font-black border-b-2 transition-all ${
+                activeTab === 'executive' ? 'border-amber-400 text-amber-600' : 'border-transparent text-gray-400'
+              }`}
+            >목사님 · 임원</button>
+            <button
+              onClick={() => { setActiveTab('teacher'); setActiveGrade('전체') }}
+              className={`flex-1 py-2.5 text-sm font-black border-b-2 transition-all ${
+                activeTab === 'teacher' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-400'
+              }`}
+            >교사</button>
+          </div>
+        </div>
 
-        {/* 목사님/임원/교사 위 태그 관리 버튼 (목사님 전용) */}
+        {/* 태그 관리 버튼 */}
         {canManageTags && (
-          <div className="px-4 pt-4 flex justify-end">
+          <div className="px-4 pt-3 pb-0 flex justify-end">
             <button
               onClick={() => setShowTagPool(true)}
               className="flex items-center gap-1.5 text-[12px] font-black text-primary-500 bg-primary-50 px-3 py-1.5 rounded-full active:scale-95 transition-all"
@@ -332,81 +342,73 @@ function TeacherRoster() {
           </div>
         )}
 
-        {/* 목사님 */}
-        {pastors.length > 0 && (
-          <div className="px-4">
-            <RosterSection title="목사님" dotColor="bg-blue-500"
-              count={pastors.length} teachers={pastors} onSelect={setSelectedTeacher} />
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {activeTab === 'executive' && (
+            <motion.div key="exec-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex flex-col gap-6 px-4 pt-4">
+              {pastors.length > 0 && (
+                <RosterSection title="목사님" dotColor="bg-blue-500"
+                  count={pastors.length} teachers={pastors} onSelect={setSelectedTeacher} />
+              )}
+              {executives.length > 0 && (
+                <RosterSection title="임원" dotColor="bg-amber-500"
+                  count={executives.length} teachers={executives} onSelect={setSelectedTeacher} />
+              )}
+              {pastors.length === 0 && executives.length === 0 && (
+                <div className="py-20 flex flex-col items-center gap-3 text-gray-300">
+                  <Users size={40} />
+                  <p className="text-sm font-black">임원 정보가 없습니다</p>
+                </div>
+              )}
+            </motion.div>
+          )}
 
-        {/* 임원 */}
-        {executives.length > 0 && (
-          <div className="px-4">
-            <RosterSection title="임원" dotColor="bg-amber-500"
-              count={executives.length} teachers={executives} onSelect={setSelectedTeacher} />
-          </div>
-        )}
-
-        {/* 교사 (학년 필터 + 반별 그룹) */}
-        {teacherList.length > 0 && (
-          <div className="flex flex-col gap-4">
-            {/* 섹션 헤더 */}
-            <div className="flex items-center gap-2 px-4">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-              <span className="text-sm font-black text-gray-900">교사</span>
-              <span className="text-xs text-gray-400 font-medium">{teacherList.length}명</span>
-            </div>
-
-            {/* 학년 필터 탭 */}
-            {availableGrades.length > 2 && (
-              <div className="flex overflow-x-auto gap-2 px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
-                {availableGrades.map(grade => {
+          {activeTab === 'teacher' && (
+            <motion.div key="teacher-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex flex-col gap-4 pt-3">
+              {availableGrades.length > 2 && (
+                <div className="flex overflow-x-auto gap-2 px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
+                  {availableGrades.map(grade => {
+                    const gc = GRADE_COLORS[grade] || GRADE_COLORS['전체']
+                    const isActive = activeGrade === grade
+                    return (
+                      <button key={grade}
+                        onClick={() => setActiveGrade(grade)}
+                        className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-black transition-all active:scale-95 ${
+                          isActive ? `${gc.bg} text-white shadow-sm` : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >{grade}</button>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="px-4 flex flex-col gap-6">
+                {filteredGrades.length === 0 ? (
+                  <div className="py-20 flex flex-col items-center gap-3 text-gray-300">
+                    <Users size={40} />
+                    <p className="text-sm font-black">교사 정보가 없습니다</p>
+                  </div>
+                ) : filteredGrades.map(grade => {
                   const gc = GRADE_COLORS[grade] || GRADE_COLORS['전체']
-                  const isActive = activeGrade === grade
+                  const list = teachersByGrade[grade] || []
                   return (
-                    <button key={grade}
-                      onClick={() => setActiveGrade(grade)}
-                      className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-black transition-all active:scale-95 ${
-                        isActive ? `${gc.bg} text-white shadow-sm` : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >{grade}</button>
+                    <div key={grade}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`text-[11px] font-black px-2.5 py-1 rounded-full ${gc.bg} text-white`}>{grade}</span>
+                        <span className="text-xs text-gray-400 font-medium">{list.length}명</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2">
+                        {list.map((t, idx) => (
+                          <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={setSelectedTeacher} />
+                        ))}
+                      </div>
+                    </div>
                   )
                 })}
               </div>
-            )}
-
-            {/* 반별 그룹 */}
-            <div className="px-4 flex flex-col gap-5">
-              {filteredClassNames.map(className => {
-                const gradeKey = className.split(' ')[0]
-                const gc = GRADE_COLORS[gradeKey] || GRADE_COLORS['전체']
-                return (
-                  <div key={className}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${gc.bg} text-white`}>
-                        {className}
-                      </span>
-                      <span className="text-xs text-gray-400">{teachersByClass[className].length}명</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {teachersByClass[className].map((t, idx) => (
-                        <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={setSelectedTeacher} />
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {teachers.length === 0 && (
-          <div className="py-20 flex flex-col items-center gap-3 text-gray-300 px-4">
-            <Users size={40} />
-            <p className="text-sm font-black">교사 정보가 없습니다</p>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>
@@ -414,6 +416,8 @@ function TeacherRoster() {
           <TeacherDetailSheet
             teacher={selectedTeacher}
             allTags={allTags}
+            execTags={execTags}
+            teacherTags={teacherTags}
             canManageTags={canManageTags}
             onClose={() => setSelectedTeacher(null)}
             onTagChanged={() => qc.invalidateQueries({ queryKey: ['teacher-roster'] })}
@@ -422,6 +426,8 @@ function TeacherRoster() {
         {showTagPool && (
           <TagPoolModal
             tags={allTags}
+            execTags={execTags}
+            teacherTags={teacherTags}
             onClose={() => setShowTagPool(false)}
             onChanged={() => {
               qc.invalidateQueries({ queryKey: ['tags'] })
@@ -477,16 +483,46 @@ function TeacherCard({ teacher, idx, onSelect }) {
   )
 }
 
-function TeacherDetailSheet({ teacher, allTags, canManageTags, onClose, onTagChanged }) {
+function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManageTags, onClose, onTagChanged }) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
   const age = calcAge(teacher.birthDate)
-  const assignedTagIds = new Set((teacher.tags || []).map(t => t.id))
+  const qc = useQueryClient()
 
-  const assignMutation = useMutation({
-    mutationFn: ({ tagId, assigned }) =>
-      assigned ? tagsApi.remove(tagId, teacher.id) : tagsApi.assign(tagId, teacher.id),
-    onSuccess: onTagChanged,
-  })
+  // 낙관적 업데이트를 위한 로컬 태그 상태
+  const [localTagIds, setLocalTagIds] = useState(new Set((teacher.tags || []).map(t => t.id)))
+  const [pendingIds, setPendingIds] = useState(new Set())
+
+  // 이 교사에게 보여줄 태그 풀 (역할별)
+  const relevantTags = teacher.role === 'EXECUTIVE' ? execTags : teacherTags
+
+  const toggleTag = async (tagId) => {
+    if (pendingIds.has(tagId)) return
+    const isAssigned = localTagIds.has(tagId)
+    // 낙관적 업데이트
+    setLocalTagIds(prev => {
+      const next = new Set(prev)
+      isAssigned ? next.delete(tagId) : next.add(tagId)
+      return next
+    })
+    setPendingIds(prev => new Set(prev).add(tagId))
+    try {
+      if (isAssigned) {
+        await tagsApi.remove(tagId, teacher.id)
+      } else {
+        await tagsApi.assign(tagId, teacher.id)
+      }
+      onTagChanged()
+    } catch {
+      // 실패 시 롤백
+      setLocalTagIds(prev => {
+        const next = new Set(prev)
+        isAssigned ? next.add(tagId) : next.delete(tagId)
+        return next
+      })
+    } finally {
+      setPendingIds(prev => { const n = new Set(prev); n.delete(tagId); return n })
+    }
+  }
 
   return (
     <>
@@ -501,14 +537,12 @@ function TeacherDetailSheet({ teacher, allTags, canManageTags, onClose, onTagCha
           className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl overflow-y-auto"
           style={{ maxHeight: '85vh' }}
         >
-          {/* 닫기 */}
           <div className="flex justify-end px-4 pt-4 pb-0">
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
               <X size={16} className="text-gray-500" />
             </button>
           </div>
 
-          {/* 프로필 */}
           <div className="flex flex-col items-center gap-3 px-6 pt-2 pb-4">
             <div className="w-24 h-24 rounded-3xl bg-gray-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
               {teacher.profileImage
@@ -525,11 +559,9 @@ function TeacherDetailSheet({ teacher, allTags, canManageTags, onClose, onTagCha
                 <p className="text-[11px] text-gray-400 font-medium mt-1">{teacher.churchPosition}</p>
               )}
             </div>
-
-            {/* 배정된 태그 */}
-            {(teacher.tags?.length > 0) && (
+            {localTagIds.size > 0 && (
               <div className="flex flex-wrap gap-1.5 justify-center mt-1">
-                {teacher.tags.map(t => (
+                {allTags.filter(t => localTagIds.has(t.id)).map(t => (
                   <span key={t.id} className="text-[11px] font-black px-2.5 py-1 rounded-full bg-primary-50 text-primary-600">
                     {t.name}
                   </span>
@@ -538,7 +570,6 @@ function TeacherDetailSheet({ teacher, allTags, canManageTags, onClose, onTagCha
             )}
           </div>
 
-          {/* 정보 목록 */}
           <div className="px-4 flex flex-col gap-2">
             {teacher.className && <InfoRow label="담당 반" value={teacher.className} icon="📚" />}
             {teacher.birthDate && (
@@ -549,22 +580,21 @@ function TeacherDetailSheet({ teacher, allTags, canManageTags, onClose, onTagCha
             {teacher.phone && <InfoRow label="전화번호" value={teacher.phone} icon="📱" isPhone />}
           </div>
 
-          {/* 목사님 전용: 태그 배정 */}
-          {canManageTags && allTags.length > 0 && (
+          {canManageTags && relevantTags.length > 0 && (
             <div className="px-4 py-4 mt-3 border-t border-gray-50">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">태그 배정</p>
               <div className="flex flex-wrap gap-1.5">
-                {allTags.map(tag => {
-                  const assigned = assignedTagIds.has(tag.id)
+                {relevantTags.map(tag => {
+                  const assigned = localTagIds.has(tag.id)
+                  const pending  = pendingIds.has(tag.id)
                   return (
                     <button
                       key={tag.id}
-                      onClick={() => assignMutation.mutate({ tagId: tag.id, assigned })}
-                      disabled={assignMutation.isPending}
+                      onClick={() => toggleTag(tag.id)}
+                      disabled={pending}
                       className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
-                        assigned
-                          ? 'border-primary-400 bg-primary-50 text-primary-600'
-                          : 'border-gray-100 bg-gray-50 text-gray-400'
+                        pending ? 'opacity-60' :
+                        assigned ? 'border-primary-400 bg-primary-50 text-primary-600' : 'border-gray-100 bg-gray-50 text-gray-400'
                       }`}
                     >
                       {assigned && <Check size={10} />}
@@ -584,13 +614,16 @@ function TeacherDetailSheet({ teacher, allTags, canManageTags, onClose, onTagCha
 }
 
 // ── 태그 풀 관리 모달 (목사님 전용) ──────────────────────
-function TagPoolModal({ tags, onClose, onChanged }) {
+function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
+  const [tagTab, setTagTab] = useState('EXECUTIVE')
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
 
+  const currentTags = tagTab === 'EXECUTIVE' ? execTags : teacherTags
+
   const createMutation = useMutation({
-    mutationFn: () => tagsApi.create(newName.trim()),
+    mutationFn: () => tagsApi.create(newName.trim(), tagTab),
     onSuccess: () => { setNewName(''); onChanged() },
   })
 
@@ -615,24 +648,39 @@ function TagPoolModal({ tags, onClose, onChanged }) {
           exit={{ opacity: 0, scale: 0.92, y: 12 }}
           transition={{ type: 'spring', damping: 30, stiffness: 350 }}
           className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl overflow-hidden"
-          style={{ maxHeight: '80vh' }}
+          style={{ maxHeight: '82vh' }}
         >
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div>
               <p className="font-black text-gray-900">태그 관리</p>
-              <p className="text-[11px] text-gray-400 font-medium mt-0.5">태그를 만들고 교사에게 부여하세요</p>
+              <p className="text-[11px] text-gray-400 font-medium mt-0.5">태그를 만들고 임원·교사에게 부여하세요</p>
             </div>
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
               <X size={16} className="text-gray-500" />
             </button>
           </div>
 
-          {/* 태그 목록 */}
-          <div className="px-5 flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: '40vh' }}>
-            {tags.length === 0 && (
+          {/* 임원/교사 탭 */}
+          <div className="flex border-b border-gray-100 mx-5 mb-3">
+            <button
+              onClick={() => { setTagTab('EXECUTIVE'); setNewName(''); setEditingId(null) }}
+              className={`flex-1 py-2 text-xs font-black border-b-2 transition-all ${
+                tagTab === 'EXECUTIVE' ? 'border-amber-400 text-amber-600' : 'border-transparent text-gray-400'
+              }`}
+            >임원 태그</button>
+            <button
+              onClick={() => { setTagTab('TEACHER'); setNewName(''); setEditingId(null) }}
+              className={`flex-1 py-2 text-xs font-black border-b-2 transition-all ${
+                tagTab === 'TEACHER' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-400'
+              }`}
+            >교사 태그</button>
+          </div>
+
+          <div className="px-5 flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: '38vh' }}>
+            {currentTags.length === 0 && (
               <p className="text-center text-xs text-gray-400 py-6">아직 태그가 없습니다</p>
             )}
-            {tags.map(tag => (
+            {currentTags.map(tag => (
               <div key={tag.id} className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 rounded-xl">
                 {editingId === tag.id ? (
                   <>
@@ -667,9 +715,10 @@ function TagPoolModal({ tags, onClose, onChanged }) {
             ))}
           </div>
 
-          {/* 새 태그 생성 */}
-          <div className="px-5 py-4 border-t border-gray-100 mt-3">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">새 태그 추가</p>
+          <div className="px-5 py-4 border-t border-gray-100 mt-2">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+              {tagTab === 'EXECUTIVE' ? '임원' : '교사'} 태그 추가
+            </p>
             <div className="flex gap-2">
               <input
                 value={newName}

@@ -13,5 +13,5 @@ public record TeacherRosterItem(
         List<TagInfo> tags,
         String churchPosition
 ) {
-    public record TagInfo(Long id, String name) {}
+    public record TagInfo(Long id, String name, String category) {}
 }

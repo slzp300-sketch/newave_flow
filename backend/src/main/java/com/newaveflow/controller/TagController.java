@@ -28,7 +28,7 @@ public class TagController {
     public ResponseEntity<List<TagDto>> getAllTags() {
         return ResponseEntity.ok(
             tagRepository.findAllByOrderByNameAsc().stream()
-                .map(t -> new TagDto(t.getId(), t.getName()))
+                .map(t -> new TagDto(t.getId(), t.getName(), t.getCategory()))
                 .toList()
         );
     }
@@ -37,8 +37,11 @@ public class TagController {
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR')")
     public ResponseEntity<TagDto> createTag(@RequestBody TagNameRequest req) {
-        Tag tag = tagRepository.save(Tag.builder().name(req.name().trim()).build());
-        return ResponseEntity.ok(new TagDto(tag.getId(), tag.getName()));
+        Tag tag = tagRepository.save(Tag.builder()
+            .name(req.name().trim())
+            .category(req.category())
+            .build());
+        return ResponseEntity.ok(new TagDto(tag.getId(), tag.getName(), tag.getCategory()));
     }
 
     @PutMapping("/{id}")
@@ -48,6 +51,9 @@ public class TagController {
         Tag tag = tagRepository.findById(id)
             .orElseThrow(() -> AppException.notFound("태그를 찾을 수 없습니다."));
         tag.updateName(req.name().trim());
+        if (req.category() != null) {
+            tag.updateCategory(req.category());
+        }
         tagRepository.save(tag);
         return ResponseEntity.ok().build();
     }
@@ -83,6 +89,6 @@ public class TagController {
         return ResponseEntity.ok().build();
     }
 
-    public record TagDto(Long id, String name) {}
-    public record TagNameRequest(String name) {}
+    public record TagDto(Long id, String name, String category) {}
+    public record TagNameRequest(String name, String category) {}
 }
