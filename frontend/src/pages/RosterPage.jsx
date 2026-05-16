@@ -731,7 +731,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
               {teacherTags.length > 0 && (
                 <div>
                   <p className="text-[9px] font-black text-emerald-500 mb-1.5">교사 태그</p>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {teacherTags.map(tag => {
                       const assigned = localTagIds.has(tag.id)
                       const pending  = pendingIds.has(tag.id)
@@ -740,12 +740,12 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
                           key={tag.id}
                           onClick={() => toggleTag(tag.id)}
                           disabled={pending}
-                          className={`flex items-center gap-0.5 text-[9px] font-black px-2 py-1 rounded-full border-2 transition-all active:scale-95 ${
+                          className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
                             pending ? 'opacity-60' :
                             assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
                           }`}
                         >
-                          {assigned && <Check size={8} />}
+                          {assigned && <Check size={10} />}
                           {tag.name}
                         </button>
                       )
