@@ -13,5 +13,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT e FROM Event e WHERE e.eventDate >= :fromDate AND e.eventDate <= :toDate ORDER BY e.eventDate ASC")
     List<Event> findByDateRange(@Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
+    List<Event> findAllByOrderByEventDateAsc();
+
     List<Event> findByAttendanceRequiredTrueOrderByEventDateDesc();
 }

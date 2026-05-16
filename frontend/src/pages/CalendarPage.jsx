@@ -1,18 +1,19 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import useSwipeMonth from '../hooks/useSwipeMonth'
-import { useQuery } from '@tanstack/react-query'
-import { 
-  Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Clock, MapPin, MoreHorizontal, PenLine, Trash2, X, Palette
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon,
+  Clock, PenLine, Trash2, X, List
 } from 'lucide-react'
-import { 
+import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   getDay, isSameMonth, isToday, isSameDay, addMonths, subMonths,
   startOfWeek, endOfWeek, addDays, isWithinInterval, startOfDay
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
+import { eventApi } from '../api/event'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
@@ -42,8 +43,9 @@ const EVENT_TYPES = [
 
 export default function CalendarPage() {
   const { user } = useAuthStore()
+  const qc = useQueryClient()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'PASTOR' || user?.role === 'EXECUTIVE'
-  
+
   const [currentTs, setCurrentTs] = usePersistedState('current', new Date().getTime())
   const [selectedTs, setSelectedTs] = usePersistedState('selected', new Date().getTime())
 
@@ -74,6 +76,8 @@ export default function CalendarPage() {
     attendanceTarget: 'STUDENT_ONLY',
   })
   
+  const [viewMode, setViewMode] = useState('calendar')
+
   const { data: events = [], isLoading, refetch } = useQuery({
     queryKey: ['events', format(current, 'yyyy-MM')],
     queryFn:  () => client.get('/events', {
@@ -83,6 +87,27 @@ export default function CalendarPage() {
       }
     }).then(r => r.data),
   })
+
+  const { data: allEvents = [] } = useQuery({
+    queryKey: ['events-all'],
+    queryFn:  () => eventApi.getAllEvents().then(r => r.data),
+    enabled: viewMode === 'list',
+  })
+
+  const today = new Date().toISOString().split('T')[0]
+  const categorizedEvents = useMemo(() => {
+    const upcoming = [], ongoing = [], past = []
+    allEvents.forEach(e => {
+      const end = e.endDate || e.eventDate
+      if (end < today) past.push(e)
+      else if (e.eventDate <= today) ongoing.push(e)
+      else upcoming.push(e)
+    })
+    upcoming.sort((a, b) => a.eventDate.localeCompare(b.eventDate))
+    ongoing.sort((a, b) => a.eventDate.localeCompare(b.eventDate))
+    past.sort((a, b) => b.eventDate.localeCompare(a.eventDate))
+    return { upcoming, ongoing, past }
+  }, [allEvents])
 
   // Lane Allocation Logic
   const eventLanes = useMemo(() => {
@@ -192,6 +217,7 @@ export default function CalendarPage() {
     try {
       await client.delete(`/events/${id}`)
       refetch()
+      qc.invalidateQueries({ queryKey: ['events-all'] })
     } catch (err) {
       console.error(err)
       alert('삭제 중 오류가 발생했습니다.')
@@ -216,6 +242,7 @@ export default function CalendarPage() {
       }
       setShowForm(false)
       refetch()
+      qc.invalidateQueries({ queryKey: ['events-all'] })
     } catch (err) {
       console.error(err)
       alert('저장 중 오류가 발생했습니다.')
@@ -237,12 +264,40 @@ export default function CalendarPage() {
     return map[color] || 'bg-primary-500 text-white border-primary-600'
   }
 
+  const getEventBorderColor = (color) => {
+    const map = {
+      blue: 'border-blue-500', red: 'border-red-500', emerald: 'border-emerald-500',
+      violet: 'border-violet-500', amber: 'border-amber-400', rose: 'border-rose-500', indigo: 'border-indigo-500',
+    }
+    return map[color] || 'border-primary-500'
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50/50">
       <Header title="캘린더" showBack />
 
+      {/* 캘린더 / 목록 탭 */}
+      <div className="bg-white border-b border-gray-100 px-4 pt-3 pb-0 flex gap-0">
+        <button
+          onClick={() => setViewMode('calendar')}
+          className={`flex-1 py-2.5 text-sm font-black border-b-2 transition-all flex items-center justify-center gap-1.5 ${
+            viewMode === 'calendar' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-400'
+          }`}
+        >
+          <CalendarIcon size={14} /> 캘린더
+        </button>
+        <button
+          onClick={() => setViewMode('list')}
+          className={`flex-1 py-2.5 text-sm font-black border-b-2 transition-all flex items-center justify-center gap-1.5 ${
+            viewMode === 'list' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-400'
+          }`}
+        >
+          <List size={14} /> 목록
+        </button>
+      </div>
+
       {/* Calendar Section */}
-      <div className="bg-white px-2 pb-6 shadow-sm border-b border-gray-100">
+      {viewMode === 'calendar' && <div className="bg-white px-2 pb-6 shadow-sm border-b border-gray-100">
         <div className="flex items-center justify-between px-2 py-4">
           <div className="flex items-center gap-1">
             <h2 className="text-xl font-black text-gray-900">
@@ -429,7 +484,74 @@ export default function CalendarPage() {
             ))
           )}
         </div>
-      </div>
+      </div>}
+
+      {/* 목록 뷰 */}
+      {viewMode === 'list' && (
+        <div className="px-4 py-5 flex flex-col gap-6 pb-10">
+          {isAdmin && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleOpenAdd}
+                className="flex items-center gap-1.5 text-sm font-black text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+              >
+                <Plus size={14} /> 일정 추가
+              </button>
+            </div>
+          )}
+          {allEvents.length === 0 ? (
+            <div className="py-20 text-center text-gray-400">
+              <CalendarIcon size={40} className="mx-auto mb-3 opacity-20" />
+              <p className="text-sm font-bold">등록된 일정이 없습니다</p>
+            </div>
+          ) : (
+            [
+              { key: 'ongoing', label: '진행중인 일정', dot: 'bg-emerald-500', list: categorizedEvents.ongoing },
+              { key: 'upcoming', label: '다가올 일정', dot: 'bg-blue-500', list: categorizedEvents.upcoming },
+              { key: 'past', label: '지난 일정', dot: 'bg-gray-400', list: categorizedEvents.past },
+            ].map(({ key, label, dot, list }) => list.length > 0 && (
+              <div key={key} className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                  <p className="text-xs font-black text-gray-500">{label}</p>
+                  <span className="text-xs text-gray-400">{list.length}</span>
+                  <div className="flex-1 h-px bg-gray-100" />
+                </div>
+                {list.map(e => (
+                  <Card key={e.id} className={`p-4 border-l-4 ${getEventBorderColor(e.color)}`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-[10px] font-black text-gray-400">
+                        {format(new Date(e.eventDate), 'M월 d일 (EEE)', { locale: ko })}
+                        {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M월 d일', { locale: ko })}`}
+                      </p>
+                      {isAdmin && (
+                        <div className="flex gap-1">
+                          <button onClick={() => handleEdit(e)} className="p-1 text-gray-300 hover:text-primary-500 transition-colors"><PenLine size={13} /></button>
+                          <button onClick={() => handleDelete(e.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={13} /></button>
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="font-black text-gray-900 text-sm mb-1">{e.title}</h4>
+                    {e.description && <p className="text-xs text-gray-500 leading-relaxed">{e.description}</p>}
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {!e.startTime ? (
+                        <span className="text-[10px] font-black text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
+                      ) : e.startTime && (
+                        <span className="flex items-center gap-1 text-[10px] font-black text-gray-400">
+                          <Clock size={10} /> {e.startTime}{e.endTime && ` ~ ${e.endTime}`}
+                        </span>
+                      )}
+                      {e.attendanceRequired && (
+                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">✓ 출석체크</span>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Admin Modal Form */}
       <AnimatePresence>

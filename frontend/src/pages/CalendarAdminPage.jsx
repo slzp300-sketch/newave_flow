@@ -1,19 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
-import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plus, ChevronLeft, ChevronRight, PenLine, Trash2,
-  Calendar as CalendarIcon, Clock, Type, Palette,
-  ChevronDown, ChevronUp, AlertCircle, CheckCircle2
+  Plus, PenLine, Trash2,
+  Calendar as CalendarIcon, Clock,
+  CheckCircle2, ChevronDown, ChevronUp
 } from 'lucide-react'
-import { 
-  format, startOfMonth, endOfMonth, eachDayOfInterval,
-  isSameMonth, isToday, isSameDay, addMonths, subMonths,
-  startOfWeek, endOfWeek, getWeekOfMonth, getMonth 
-} from 'date-fns'
+import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
+import { eventApi } from '../api/event'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
@@ -52,8 +48,6 @@ const getEventColors = (color) => {
 
 export default function CalendarAdminPage() {
   const qc = useQueryClient()
-  const [current, setCurrent] = useState(new Date())
-  const { swipeHandlers, direction } = useSwipeMonth(current, setCurrent)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -74,13 +68,8 @@ export default function CalendarAdminPage() {
   })
 
   const { data: events = [] } = useQuery({
-    queryKey: ['events', format(current, 'yyyy-MM')],
-    queryFn:  () => client.get('/events', {
-      params: {
-        from: format(startOfWeek(startOfMonth(current)), 'yyyy-MM-dd'),
-        to:   format(endOfWeek(endOfMonth(current)),   'yyyy-MM-dd'),
-      }
-    }).then(r => r.data),
+    queryKey: ['events-all'],
+    queryFn:  () => eventApi.getAllEvents().then(r => r.data),
   })
 
   const handleSubmit = async (e) => {
@@ -104,7 +93,7 @@ export default function CalendarAdminPage() {
         alert('일정이 등록되었습니다.')
       }
       handleCloseForm()
-      qc.invalidateQueries({ queryKey: ['events'] })
+      qc.invalidateQueries({ queryKey: ['events-all'] })
       qc.invalidateQueries({ queryKey: ['attendance-required-events'] })
     } catch (err) {
       console.error(err)
@@ -139,7 +128,7 @@ export default function CalendarAdminPage() {
     try {
       await client.delete(`/events/${id}`)
       alert('삭제되었습니다.')
-      qc.invalidateQueries({ queryKey: ['events'] })
+      qc.invalidateQueries({ queryKey: ['events-all'] })
     } catch (err) {
       console.error(err)
       alert('삭제 중 오류가 발생했습니다.')
@@ -165,21 +154,21 @@ export default function CalendarAdminPage() {
     })
   }
 
-  // 주차별 그룹화 로직
-  const groupedEvents = useMemo(() => {
-    return events
-      .filter(e => isSameMonth(new Date(e.eventDate), current))
-      .reduce((acc, event) => {
-        const date = new Date(event.eventDate);
-        const weekNum = getWeekOfMonth(date, { weekStartsOn: 0 });
-        const month = getMonth(date) + 1;
-        const key = `${month}월 ${weekNum}주차`;
-        
-        if (!acc.has(key)) acc.set(key, []);
-        acc.get(key).push(event);
-        return acc;
-      }, new Map());
-  }, [events, current]);
+  // 다가올 / 진행중 / 지난 일정 분류
+  const today = new Date().toISOString().split('T')[0]
+  const categorizedEvents = useMemo(() => {
+    const upcoming = [], ongoing = [], past = []
+    events.forEach(e => {
+      const end = e.endDate || e.eventDate
+      if (end < today) past.push(e)
+      else if (e.eventDate <= today) ongoing.push(e)
+      else upcoming.push(e)
+    })
+    upcoming.sort((a, b) => a.eventDate.localeCompare(b.eventDate))
+    ongoing.sort((a, b) => a.eventDate.localeCompare(b.eventDate))
+    past.sort((a, b) => b.eventDate.localeCompare(a.eventDate))
+    return { upcoming, ongoing, past }
+  }, [events])
 
   return (
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
@@ -187,44 +176,10 @@ export default function CalendarAdminPage() {
 
       <div className="px-4 py-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-black text-gray-900">
-            {format(current, 'yyyy년 M월', { locale: ko })} 일정
-          </h2>
+          <h2 className="text-xl font-black text-gray-900">전체 일정</h2>
           <Button size="sm" onClick={() => setShowForm(true)}>
             <Plus size={16} /> 일정 추가
           </Button>
-        </div>
-
-        {/* 월 선택 – 좌우 드래그로 월 이동 */}
-        <div
-          {...swipeHandlers}
-          className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm select-none"
-          style={{ touchAction: 'pan-y' }}
-        >
-          <button onClick={() => setCurrent(subMonths(current, 1))} className="p-2 hover:bg-gray-100 rounded-xl transition-all flex-1 flex justify-center">
-            <ChevronLeft size={20} />
-          </button>
-          <AnimatePresence mode="wait" initial={false} custom={direction}>
-            <motion.div
-              key={format(current, 'yyyy-MM')}
-              custom={direction}
-              variants={{
-                enter: (dir) => ({ x: dir === 'left' ? 30 : -30, opacity: 0 }),
-                center: { x: 0, opacity: 1 },
-                exit:  (dir) => ({ x: dir === 'left' ? -30 : 30, opacity: 0 }),
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.18 }}
-              className="px-4 text-sm font-black text-gray-900 min-w-[100px] text-center"
-            >
-              {format(current, 'yyyy년 M월', { locale: ko })}
-            </motion.div>
-          </AnimatePresence>
-          <button onClick={() => setCurrent(addMonths(current, 1))} className="p-2 hover:bg-gray-100 rounded-xl transition-all flex-1 flex justify-center">
-            <ChevronRight size={20} />
-          </button>
         </div>
 
         {showForm && (
@@ -462,46 +417,36 @@ export default function CalendarAdminPage() {
           </motion.div>
         )}
 
-        <AnimatePresence mode="popLayout" initial={false} custom={direction}>
-          <motion.div
-            key={format(current, 'yyyy-MM')}
-            custom={direction}
-            variants={{
-              enter: (dir) => ({ x: dir === 'left' ? '60%' : '-60%', opacity: 0 }),
-              center: { x: 0, opacity: 1 },
-              exit:  (dir) => ({ x: dir === 'left' ? '-60%' : '60%', opacity: 0 }),
-            }}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: 'spring', stiffness: 280, damping: 28, mass: 0.8 }}
-            className="flex flex-col gap-8"
-          >
-          {groupedEvents.size === 0 ? (
-            <div className="py-20 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
-              <CalendarIcon size={48} className="mx-auto mb-3 opacity-20" />
-              <p className="text-sm font-bold">이번 달에 등록된 일정이 없습니다.</p>
-            </div>
-          ) : (
-            Array.from(groupedEvents.keys()).map(weekKey => (
-              <div key={weekKey} className="flex flex-col gap-4">
+        {events.length === 0 ? (
+          <div className="py-20 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
+            <CalendarIcon size={48} className="mx-auto mb-3 opacity-20" />
+            <p className="text-sm font-bold">등록된 일정이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-8">
+            {[
+              { key: 'ongoing', label: '진행중인 일정', dot: 'bg-emerald-500', list: categorizedEvents.ongoing },
+              { key: 'upcoming', label: '다가올 일정', dot: 'bg-blue-500', list: categorizedEvents.upcoming },
+              { key: 'past', label: '지난 일정', dot: 'bg-gray-400', list: categorizedEvents.past },
+            ].map(({ key, label, dot, list }) => list.length > 0 && (
+              <div key={key} className="flex flex-col gap-4">
                 <div className="flex items-center gap-3 px-1">
                   <h3 className="text-sm font-black text-gray-900 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-50 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                    {weekKey}
+                    <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                    {label}
+                    <span className="text-gray-400 font-medium">{list.length}</span>
                   </h3>
                   <div className="flex-1 h-px bg-gradient-to-r from-gray-100 to-transparent" />
                 </div>
-
                 <div className="flex flex-col gap-4">
-                  {groupedEvents.get(weekKey).map(event => {
+                  {list.map(event => {
                     const colors = getEventColors(event.color)
                     return (
                       <Card key={event.id} className={`p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
                         <div className={`p-4 ${colors.split(' ')[1]}`}>
                           <div className="flex justify-between items-start">
                             <div className="flex items-start gap-4">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm`}>
+                              <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm">
                                 <CalendarIcon size={22} className={colors.split(' ')[2]} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -511,6 +456,7 @@ export default function CalendarAdminPage() {
                                   </Badge>
                                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
                                     {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
+                                    {event.endDate && event.endDate !== event.eventDate && ` ~ ${format(new Date(event.endDate), 'M월 d일', { locale: ko })}`}
                                   </span>
                                 </div>
                                 <h3 className="font-black text-gray-900 text-base mb-1">{event.title}</h3>
@@ -519,9 +465,7 @@ export default function CalendarAdminPage() {
                                 )}
                                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-black text-gray-400">
                                   {!event.startTime ? (
-                                    <span className="flex items-center gap-1 text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">
-                                      하루종일
-                                    </span>
+                                    <span className="flex items-center gap-1 text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
                                   ) : (event.startTime || event.endTime) && (
                                     <span className="flex items-center gap-1">
                                       <Clock size={12} /> {event.startTime} {event.endTime && `~ ${event.endTime}`}
@@ -555,10 +499,9 @@ export default function CalendarAdminPage() {
                   })}
                 </div>
               </div>
-            ))
-          )}
-          </motion.div>
-        </AnimatePresence>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

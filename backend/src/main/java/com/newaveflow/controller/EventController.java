@@ -28,6 +28,11 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEvents(from, to));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<EventDto.EventResponse>> getAllEvents() {
+        return ResponseEntity.ok(eventService.getAllEvents());
+    }
+
     @GetMapping("/attendance-required")
     public ResponseEntity<List<EventDto.EventResponse>> getAttendanceRequiredEvents() {
         return ResponseEntity.ok(eventService.getAttendanceRequiredEvents());

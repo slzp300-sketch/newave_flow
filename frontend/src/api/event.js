@@ -2,6 +2,7 @@ import client from './client'
 
 export const eventApi = {
   getEvents:                  (params)         => client.get('/events', { params }),
+  getAllEvents:                ()               => client.get('/events/all'),
   getEvent:                   (id)             => client.get(`/events/${id}`),
   getAttendanceRequired:      ()               => client.get('/events/attendance-required'),
   getMyClassAttendance:       (id)             => client.get(`/events/${id}/student-attendance`),

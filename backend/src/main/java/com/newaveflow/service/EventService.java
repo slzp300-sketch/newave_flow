@@ -39,6 +39,13 @@ public class EventService {
                 eventRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Event not found")));
     }
 
+    public List<EventDto.EventResponse> getAllEvents() {
+        return eventRepository.findAllByOrderByEventDateAsc()
+                .stream()
+                .map(EventDto.EventResponse::from)
+                .toList();
+    }
+
     public List<EventDto.EventResponse> getAttendanceRequiredEvents() {
         return eventRepository.findByAttendanceRequiredTrueOrderByEventDateDesc()
                 .stream()
