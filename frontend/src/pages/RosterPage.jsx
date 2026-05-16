@@ -319,9 +319,8 @@ function TeacherRoster() {
   const pastors    = teachers.filter(t => t.role === 'PASTOR')
   const executives = teachers.filter(t => t.role === 'EXECUTIVE')
   const pureTeachers = teachers.filter(t => t.role === 'TEACHER')
-  // 반 배정된 임원도 교사 탭에 포함 (중복 제거)
-  const assignedExecs = executives.filter(t => !!t.className)
-  const teacherTabList = [...pureTeachers, ...assignedExecs]
+  // 목사님 제외한 모든 교사 (임원 포함, 반 배정 여부 무관)
+  const teacherTabList = [...pureTeachers, ...executives]
     .filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
 
   // 교사 탭 – 학년별 그룹화
