@@ -297,7 +297,8 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Section */}
-      {viewMode === 'calendar' && <div className="bg-white px-2 pb-6 shadow-sm border-b border-gray-100">
+      {viewMode === 'calendar' && <>
+      <div className="bg-white px-2 pb-6 shadow-sm border-b border-gray-100">
         <div className="flex items-center justify-between px-2 py-4">
           <div className="flex items-center gap-1">
             <h2 className="text-xl font-black text-gray-900">
@@ -484,7 +485,8 @@ export default function CalendarPage() {
             ))
           )}
         </div>
-      </div>}
+      </div>
+      </>}
 
       {/* 목록 뷰 */}
       {viewMode === 'list' && (
