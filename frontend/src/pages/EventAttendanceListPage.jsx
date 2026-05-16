@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -481,12 +481,10 @@ export default function EventAttendanceListPage() {
   })
 
   const today = new Date().toISOString().split('T')[0]
-  const events = rawEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today)
-
-  // 행사가 1개면 자동 선택
-  useEffect(() => {
-    if (events.length === 1) setSelectedId(events[0].id)
-  }, [events])
+  const events = useMemo(
+    () => rawEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today),
+    [rawEvents]
+  )
 
   const handleSelect = (id) => setSelectedId(prev => prev === id ? null : id)
 

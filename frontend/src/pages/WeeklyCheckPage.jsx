@@ -97,7 +97,8 @@ function useAttendanceRequiredEvents() {
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
-  return data
+  const today = new Date().toISOString().split('T')[0]
+  return data.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today)
 }
 
 function useEvangelismStatus() {
@@ -142,7 +143,9 @@ export default function WeeklyCheckPage() {
   })
   const satDone = !!satData?.status
   const weeklyStatus  = useWeeklyStatus()
-  const attendanceEvents = useAttendanceRequiredEvents()
+  const _rawAttendanceEvents = useAttendanceRequiredEvents()
+  const _today = new Date().toISOString().split('T')[0]
+  const attendanceEvents = _rawAttendanceEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= _today)
   const weekRange     = getCurrentWeekRange()
 
   // 행사별 제출 상태 확인 (교사 출석)
