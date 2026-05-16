@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -473,7 +472,7 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
 // ── 메인 페이지 ─────────────────────────��────────────────
 export default function EventAttendanceListPage() {
   const { user } = useAuthStore()
-  const [selectedId, setSelectedId] = usePersistedState('selectedId', null)
+  const [selectedId, setSelectedId] = useState(null)
 
   const { data: rawEvents = [], isLoading } = useQuery({
     queryKey: ['attendance-required-events'],
