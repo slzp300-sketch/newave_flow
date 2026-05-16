@@ -138,6 +138,9 @@ public class EventService {
     public void saveStudentAttendanceBatch(Long eventId, Long teacherId, List<EventDto.StudentAttendanceItem> items) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
+        if (event.getAttendanceDeadline() != null && java.time.LocalDate.now().isAfter(event.getAttendanceDeadline())) {
+            throw AppException.badRequest("출석 제출 기한이 마감되었습니다.");
+        }
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
 
@@ -182,6 +185,9 @@ public class EventService {
                                       String status, java.time.LocalDate partialFromDate, String partialNote, String absenceReason) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
+        if (event.getAttendanceDeadline() != null && java.time.LocalDate.now().isAfter(event.getAttendanceDeadline())) {
+            throw AppException.badRequest("출석 제출 기한이 마감되었습니다.");
+        }
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
 
