@@ -475,10 +475,13 @@ export default function EventAttendanceListPage() {
   const { user } = useAuthStore()
   const [selectedId, setSelectedId] = usePersistedState('selectedId', null)
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: rawEvents = [], isLoading } = useQuery({
     queryKey: ['attendance-required-events'],
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
   })
+
+  const today = new Date().toISOString().split('T')[0]
+  const events = rawEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today)
 
   // 행사가 1개면 자동 선택
   useEffect(() => {
