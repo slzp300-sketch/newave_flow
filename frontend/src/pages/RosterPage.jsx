@@ -577,7 +577,9 @@ function TeacherCard({ teacher, idx, onSelect, context = 'default' }) {
       {teacher.tags?.length > 0 && (
         <div className="flex flex-wrap justify-center gap-0.5 mt-0.5 w-full max-h-[30px] overflow-hidden">
           {teacher.tags.map(t => (
-            <span key={t.id} className={`text-[8px] font-black px-1 py-0.5 rounded-sm truncate ${t.color || "bg-primary-50 text-primary-600"}`} style={{ maxWidth: '100%' }}>
+            <span key={t.id} className={`font-black px-1 py-0.5 rounded-sm truncate ${
+              t.category === 'EXECUTIVE' ? 'text-[8px]' : 'text-[7px]'
+            } ${t.color || "bg-primary-50 text-primary-600"}`} style={{ maxWidth: '100%' }}>
               {t.name}
             </span>
           ))}
@@ -609,8 +611,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
   const [localTagIds, setLocalTagIds] = useState(new Set((teacher.tags || []).map(t => t.id)))
   const [pendingIds, setPendingIds] = useState(new Set())
 
-  // 이 교사에게 보여줄 태그 풀 (역할별)
-  const relevantTags = teacher.role === 'EXECUTIVE' ? execTags : teacherTags
+  // 임원/교사 태그 모두 누구에게나 배정 가능
 
   const toggleTag = async (tagId) => {
     if (pendingIds.has(tagId)) return
@@ -679,7 +680,9 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
             {localTagIds.size > 0 && (
               <div className="flex flex-wrap gap-1.5 justify-center mt-1">
                 {allTags.filter(t => localTagIds.has(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => (
-                  <span key={t.id} className={`text-[11px] font-black px-2.5 py-1 rounded-full border ${t.color || "bg-primary-50 text-primary-600 border-primary-200"}`}>
+                  <span key={t.id} className={`font-black px-2.5 py-1 rounded-full border ${
+                    t.category === 'EXECUTIVE' ? 'text-[11px]' : 'text-[9px]'
+                  } ${t.color || "bg-primary-50 text-primary-600 border-primary-200"}`}>
                     {t.name}
                   </span>
                 ))}
@@ -697,29 +700,53 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
             {teacher.phone && <InfoRow label="전화번호" value={teacher.phone} icon="📱" isPhone />}
           </div>
 
-          {canManageTags && relevantTags.length > 0 && (
+          {canManageTags && (execTags.length > 0 || teacherTags.length > 0) && (
             <div className="px-4 py-4 mt-3 border-t border-gray-50">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">태그 배정</p>
-              <div className="flex flex-wrap gap-1.5">
-                {relevantTags.map(tag => {
-                  const assigned = localTagIds.has(tag.id)
-                  const pending  = pendingIds.has(tag.id)
-                  return (
-                    <button
-                      key={tag.id}
-                      onClick={() => toggleTag(tag.id)}
-                      disabled={pending}
-                      className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
-                        pending ? 'opacity-60' :
-                        assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
-                      }`}
-                    >
-                      {assigned && <Check size={10} />}
-                      {tag.name}
-                    </button>
-                  )
-                })}
-              </div>
+              {execTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {execTags.map(tag => {
+                    const assigned = localTagIds.has(tag.id)
+                    const pending  = pendingIds.has(tag.id)
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTag(tag.id)}
+                        disabled={pending}
+                        className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
+                          pending ? 'opacity-60' :
+                          assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
+                        }`}
+                      >
+                        {assigned && <Check size={10} />}
+                        {tag.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {teacherTags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {teacherTags.map(tag => {
+                    const assigned = localTagIds.has(tag.id)
+                    const pending  = pendingIds.has(tag.id)
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTag(tag.id)}
+                        disabled={pending}
+                        className={`flex items-center gap-0.5 text-[9px] font-black px-2 py-1 rounded-full border-2 transition-all active:scale-95 ${
+                          pending ? 'opacity-60' :
+                          assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
+                        }`}
+                      >
+                        {assigned && <Check size={8} />}
+                        {tag.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
