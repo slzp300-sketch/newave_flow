@@ -25,6 +25,7 @@ public class AttendanceService {
     private final ClassGroupRepository classGroupRepository;
     private final UserRepository       userRepository;
     private final DailyReportRepository dailyReportRepository;
+    private final TeacherClassRepository teacherClassRepository;
 
     public List<AttendanceResponse> getByClassAndDate(Long classId, LocalDate date) {
         return attendanceRepository.findByClassAndDate(classId, date)
@@ -138,15 +139,23 @@ public class AttendanceService {
     public List<AdminWeeklyAttendanceDto.ClassSummary> getAdminWeeklySummary(LocalDate date) {
         return dailyReportRepository.findByDateWithDetails(date)
                 .stream()
-                .map(r -> new AdminWeeklyAttendanceDto.ClassSummary(
-                        r.getClassGroup().getId(),
-                        r.getClassGroup().getName(),
-                        r.getClassGroup().getAgeGroup(),
-                        r.getTotalStudents(),
-                        r.getPresentCount(),
-                        r.getAbsentCount(),
-                        r.getStatus() == DailyReport.Status.SUBMITTED
-                ))
+                .map(r -> {
+                    Long classGroupId = r.getClassGroup().getId();
+                    String teacherName = teacherClassRepository
+                            .findByClassGroup_IdAndIsPrimaryTrue(classGroupId)
+                            .map(tc -> tc.getTeacher().getName())
+                            .orElse(null);
+                    return new AdminWeeklyAttendanceDto.ClassSummary(
+                            classGroupId,
+                            r.getClassGroup().getName(),
+                            r.getClassGroup().getAgeGroup(),
+                            r.getTotalStudents(),
+                            r.getPresentCount(),
+                            r.getAbsentCount(),
+                            r.getStatus() == DailyReport.Status.SUBMITTED,
+                            teacherName
+                    );
+                })
                 .toList();
     }
 }

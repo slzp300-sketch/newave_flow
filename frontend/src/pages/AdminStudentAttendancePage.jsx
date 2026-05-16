@@ -172,7 +172,7 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass }) {
                     <div>
                       <p className="font-black text-gray-900 text-sm">{cls.classGroupName}</p>
                       <p className="text-[10px] text-gray-400 font-bold mt-0.5">
-                        {cls.presentCount}명 출석 · {cls.absentCount}명 결석
+                        {cls.teacherName ? `담임 ${cls.teacherName} · ` : ''}{cls.presentCount}명 출석 · {cls.absentCount}명 결석
                         {!cls.submitted && <span className="text-amber-500 ml-1">· 미제출</span>}
                       </p>
                     </div>

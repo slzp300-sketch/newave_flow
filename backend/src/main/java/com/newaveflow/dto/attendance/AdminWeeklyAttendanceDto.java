@@ -9,7 +9,8 @@ public class AdminWeeklyAttendanceDto {
             int totalStudents,
             int presentCount,
             int absentCount,
-            boolean submitted
+            boolean submitted,
+            String teacherName
     ) {}
 
     public record AbsentStudent(
