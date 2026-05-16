@@ -325,7 +325,7 @@ function TeacherRoster() {
 
   // 교사 탭 – 학년별 그룹화
   const teachersByGrade = teacherTabList.reduce((acc, t) => {
-    const grade = t.className && t.className.trim() !== '' ? t.className.split(' ')[0] : '미배정'
+    const grade = t.className && t.className.trim() !== '' ? t.className.split(' ')[0] : '교사'
     if (!acc[grade]) acc[grade] = []
     acc[grade].push(t)
     return acc
@@ -353,11 +353,11 @@ function TeacherRoster() {
     })
   })
 
-  const otherGrades = Object.keys(teachersByGrade).filter(g => !GRADE_ORDER.includes(g) && g !== '미배정')
+  const otherGrades = Object.keys(teachersByGrade).filter(g => !GRADE_ORDER.includes(g) && g !== '교사')
   const gradeKeys = [
     ...GRADE_ORDER.filter(g => teachersByGrade[g]),
     ...otherGrades.sort((a, b) => a.localeCompare(b)),
-    ...(teachersByGrade['미배정'] ? ['미배정'] : [])
+    ...(teachersByGrade['교사'] ? ['교사'] : [])
   ]
   const availableGrades = ['전체', ...gradeKeys]
   const filteredGrades = activeGrade === '전체' ? gradeKeys : [activeGrade].filter(g => teachersByGrade[g])
