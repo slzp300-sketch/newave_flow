@@ -701,50 +701,56 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
           </div>
 
           {canManageTags && (execTags.length > 0 || teacherTags.length > 0) && (
-            <div className="px-4 py-4 mt-3 border-t border-gray-50">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">태그 배정</p>
+            <div className="px-4 py-4 mt-3 border-t border-gray-50 flex flex-col gap-3">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">태그 배정</p>
               {execTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {execTags.map(tag => {
-                    const assigned = localTagIds.has(tag.id)
-                    const pending  = pendingIds.has(tag.id)
-                    return (
-                      <button
-                        key={tag.id}
-                        onClick={() => toggleTag(tag.id)}
-                        disabled={pending}
-                        className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
-                          pending ? 'opacity-60' :
-                          assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
-                        }`}
-                      >
-                        {assigned && <Check size={10} />}
-                        {tag.name}
-                      </button>
-                    )
-                  })}
+                <div>
+                  <p className="text-[9px] font-black text-amber-500 mb-1.5">임원 태그</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {execTags.map(tag => {
+                      const assigned = localTagIds.has(tag.id)
+                      const pending  = pendingIds.has(tag.id)
+                      return (
+                        <button
+                          key={tag.id}
+                          onClick={() => toggleTag(tag.id)}
+                          disabled={pending}
+                          className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
+                            pending ? 'opacity-60' :
+                            assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
+                          }`}
+                        >
+                          {assigned && <Check size={10} />}
+                          {tag.name}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
               {teacherTags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {teacherTags.map(tag => {
-                    const assigned = localTagIds.has(tag.id)
-                    const pending  = pendingIds.has(tag.id)
-                    return (
-                      <button
-                        key={tag.id}
-                        onClick={() => toggleTag(tag.id)}
-                        disabled={pending}
-                        className={`flex items-center gap-0.5 text-[9px] font-black px-2 py-1 rounded-full border-2 transition-all active:scale-95 ${
-                          pending ? 'opacity-60' :
-                          assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
-                        }`}
-                      >
-                        {assigned && <Check size={8} />}
-                        {tag.name}
-                      </button>
-                    )
-                  })}
+                <div>
+                  <p className="text-[9px] font-black text-emerald-500 mb-1.5">교사 태그</p>
+                  <div className="flex flex-wrap gap-1">
+                    {teacherTags.map(tag => {
+                      const assigned = localTagIds.has(tag.id)
+                      const pending  = pendingIds.has(tag.id)
+                      return (
+                        <button
+                          key={tag.id}
+                          onClick={() => toggleTag(tag.id)}
+                          disabled={pending}
+                          className={`flex items-center gap-0.5 text-[9px] font-black px-2 py-1 rounded-full border-2 transition-all active:scale-95 ${
+                            pending ? 'opacity-60' :
+                            assigned ? (tag.color || 'border-primary-400 bg-primary-50 text-primary-600') : 'border-gray-100 bg-gray-50 text-gray-400'
+                          }`}
+                        >
+                          {assigned && <Check size={8} />}
+                          {tag.name}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
