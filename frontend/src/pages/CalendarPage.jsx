@@ -467,7 +467,7 @@ export default function CalendarPage() {
                   </div>
                   <h4 className="font-black text-gray-900 text-base mb-1">{e.title}</h4>
                   {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
-                  {e.attendanceRequired && (
+                  {e.attendanceRequired && (isAdmin || !e.attendanceDeadline || e.attendanceDeadline >= today) && (
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
                         ✓ 출석체크 활성
@@ -541,7 +541,7 @@ export default function CalendarPage() {
                           <Clock size={10} /> {e.startTime}{e.endTime && ` ~ ${e.endTime}`}
                         </span>
                       )}
-                      {e.attendanceRequired && (
+                      {e.attendanceRequired && (isAdmin || !e.attendanceDeadline || e.attendanceDeadline >= today) && (
                         <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">✓ 출석체크</span>
                       )}
                     </div>
