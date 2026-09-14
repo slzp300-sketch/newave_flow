@@ -54,10 +54,10 @@ client.interceptors.response.use(
   async (error) => {
     const original = error.config
 
-    // 네트워크 오류 (백엔드 응답 없음) → 1회 재시도
-    if (!error.response && !original._networkRetry) {
-      original._networkRetry = true
-      await new Promise(resolve => setTimeout(resolve, 3000))
+    // 네트워크 오류 (백엔드 응답 없음) → 최대 3회 재시도 (2s → 4s → 6s 대기)
+    if (!error.response && (original._networkRetryCount || 0) < 3) {
+      original._networkRetryCount = (original._networkRetryCount || 0) + 1
+      await new Promise(resolve => setTimeout(resolve, 2000 * original._networkRetryCount))
       return client(original)
     }
 
