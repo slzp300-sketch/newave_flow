@@ -38,7 +38,7 @@ public class MeetingController {
 
         LocalDateTime now = LocalDateTime.now();
         if (!MeetingService.isMeetingWindowOpen(now)) {
-            throw AppException.forbidden("제출 기간이 아닙니다. 토요회의 참석 여부는 월~토요일 정오까지 제출할 수 있습니다.");
+            throw AppException.forbidden("제출 기간이 아닙니다. 토요회의 참석 여부는 월~토요일 오후 4시까지 제출할 수 있습니다.");
         }
 
         LocalDate expectedSaturday = MeetingService.getThisWeekSaturday(now.toLocalDate());

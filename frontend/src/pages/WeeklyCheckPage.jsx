@@ -238,7 +238,7 @@ export default function WeeklyCheckPage() {
         ? '✅ 교사 회의 참석 여부 제출 완료'
         : satWindowOpen
           ? '토요일 교사 회의 참석 여부를 제출하세요'
-          : '⚠️ 제출 기간이 아닙니다 (월~토 정오 가능).',
+          : '⚠️ 제출 기간이 아닙니다 (월~토 오후 4시까지 가능).',
       done: satDone,
       disabled: !satDone && !satWindowOpen,
       path: '/meeting/sat',
