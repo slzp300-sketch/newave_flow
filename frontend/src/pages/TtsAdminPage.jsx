@@ -4,21 +4,23 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Trash2, Save, Settings,
   ChevronLeft, ChevronRight, CheckCircle2,
-  MoveDown, LayoutList, ClipboardCheck, Trophy, ChevronDown, ChevronUp, ArrowUpDown
+  MoveDown, LayoutList, ClipboardCheck, Trophy, ChevronDown, ChevronUp, ArrowUpDown, Upload
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import Badge from '../components/common/Badge'
 import { ttsApi } from '../api/tts'
-import { getTTSWeekRange } from '../utils/date'
+import WeekNavigator from '../components/common/WeekNavigator'
+import { getWeekStartByOffset, formatUpdatedAt } from '../utils/date'
+import { addDays, format, getWeek } from 'date-fns'
 
 const getCurrentQuarter = () => Math.ceil((new Date().getMonth() + 1) / 3)
 const QUARTER_LABELS = { 1: '1~3월', 2: '4~6월', 3: '7~9월', 4: '10~12월' }
 
 export default function TtsAdminPage() {
   const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'scores' | 'questions'
-  const [currentWeek, setCurrentWeek] = useState(getTTSWeekRange())
+  const [weekOffset, setWeekOffset] = useState(0)
 
   return (
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/30">
@@ -33,7 +35,7 @@ export default function TtsAdminPage() {
               activeTab === 'summary' ? 'bg-primary-500 text-white shadow-md' : 'text-gray-400'
             }`}
           >
-            <ClipboardCheck size={16} /> 제출 현황
+            <ClipboardCheck size={16} /> 주간 현황
           </button>
           <button
             onClick={() => setActiveTab('scores')}
@@ -56,7 +58,7 @@ export default function TtsAdminPage() {
 
       <AnimatePresence mode="wait">
         {activeTab === 'summary' ? (
-          <SummaryTab key="summary" week={currentWeek} onWeekChange={setCurrentWeek} />
+          <SummaryTab key="summary" offset={weekOffset} onOffsetChange={setWeekOffset} />
         ) : activeTab === 'scores' ? (
           <ScoresTab key="scores" />
         ) : (
@@ -285,12 +287,17 @@ function WeeklyScoreDetail({ scores, total }) {
   )
 }
 
-function SummaryTab({ week, onWeekChange }) {
-  const year = new Date().getFullYear()
+function SummaryTab({ offset, onOffsetChange }) {
+  // 서버와 같은 주차 규칙: 일~토, 1월 1일이 든 주가 1주차 (연도는 그 주 토요일 기준)
+  const sunday = getWeekStartByOffset(offset, 0)
+  const year = addDays(sunday, 6).getFullYear()
+  const week = { weekNum: getWeek(sunday, { weekStartsOn: 0 }), start: format(sunday, 'M/d'), end: format(addDays(sunday, 6), 'M/d') }
   const [expandedGrades, setExpandedGrades] = useState([])
-  
+
   const { data: summary = [], isLoading } = useQuery({
     queryKey: ['tts-admin-summary', year, week.weekNum],
+    // 교사가 수정한 내용이 바로 보이도록 화면에 돌아올 때마다 다시 불러옴
+    refetchOnWindowFocus: 'always',
     queryFn: () => ttsApi.getSummary(year, week.weekNum).then(r => r.data)
   })
 
@@ -316,21 +323,16 @@ function SummaryTab({ week, onWeekChange }) {
     )
   }
 
-  const moveWeek = (offset) => {
-    onWeekChange(prev => ({ ...prev, weekNum: prev.weekNum + offset }))
-  }
-
   return (
     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="px-4 flex flex-col gap-5">
       {/* 주차 선택 */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-3xl shadow-sm">
-        <button onClick={() => moveWeek(-1)} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400"><ChevronLeft /></button>
-        <div className="text-center">
-          <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">{year}년 {week.month}월 {week.weekOfMonth}주차</p>
-          <p className="text-xl font-black text-gray-900">{week.weekNum}주차 TTS</p>
-          <p className="text-[11px] text-gray-400 font-bold mt-1">{week.start} ~ {week.end}</p>
-        </div>
-        <button onClick={() => moveWeek(1)} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400"><ChevronRight /></button>
+      <div className="bg-white p-4 rounded-3xl shadow-sm">
+        <WeekNavigator
+          offset={offset}
+          onChange={onOffsetChange}
+          title={`${year}년 ${week.weekNum}주차 TTS`}
+          range={`${week.start} ~ ${week.end} · 1점 이상이면 참여로 집계`}
+        />
       </div>
 
       <div className="flex items-center justify-between px-1">
@@ -375,7 +377,7 @@ function SummaryTab({ week, onWeekChange }) {
                         <div>
                           <p className="font-black text-gray-900 text-base">{grade} 관리</p>
                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                            {submittedCount} / {teachers.length} Submitted
+                            {submittedCount} / {teachers.length} 참여
                           </p>
                         </div>
                       </div>
@@ -413,10 +415,13 @@ function SummaryTab({ week, onWeekChange }) {
                               }`}>
                                 {t.teacherName[0]}
                               </div>
-                              <p className="font-bold text-gray-700 text-sm">{t.teacherName}</p>
+                              <div>
+                                <p className="font-bold text-gray-700 text-sm">{t.teacherName}</p>
+                                {t.updatedAt && <p className="text-[10px] text-gray-400 font-bold">마지막 수정 {formatUpdatedAt(t.updatedAt)}</p>}
+                              </div>
                             </div>
                             <Badge variant={t.isSubmitted ? 'success' : 'gray'} className="text-[10px]">
-                              {t.isSubmitted ? '제출 완료' : '미제출'}
+                              {t.isSubmitted ? `${t.score}점` : '미참여'}
                             </Badge>
                           </div>
                         ))}
@@ -464,6 +469,8 @@ function QuestionsTab() {
       title: '새로운 항목',
       type: 'DAYS',
       emoji: '✨',
+      points: 5,
+      linkType: 'NONE',
       displayOrder: nextOrder,
       active: true
     }
@@ -520,7 +527,7 @@ function QuestionsTab() {
                   placeholder="항목 제목"
                   className="w-full text-sm font-black text-gray-900 border-none outline-none focus:bg-gray-50 rounded px-1"
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={q.type}
                     onChange={(e) => updateQuestion(idx, 'type', e.target.value)}
@@ -529,6 +536,16 @@ function QuestionsTab() {
                     <option value="DAYS">주간 체크 (DAYS)</option>
                     <option value="ATTEND">참석 여부 (ATTEND)</option>
                   </select>
+                  <label className="flex items-center gap-1 text-[10px] font-black text-gray-400">
+                    <input
+                      type="number"
+                      min={0}
+                      value={q.points ?? (q.type === 'DAYS' ? 5 : 10)}
+                      onChange={(e) => updateQuestion(idx, 'points', Number(e.target.value))}
+                      className="w-12 bg-gray-100 px-1.5 py-1 rounded-lg text-gray-700 border-none outline-none"
+                    />
+                    {q.type === 'DAYS' ? '점/일' : '점'}
+                  </label>
                   <label className="flex items-center gap-1 ml-auto">
                     <input
                       type="checkbox"
@@ -539,6 +556,17 @@ function QuestionsTab() {
                     <span className="text-[10px] font-black text-gray-400">활성</span>
                   </label>
                 </div>
+                {q.type === 'ATTEND' && (
+                  <select
+                    value={q.linkType || 'NONE'}
+                    onChange={(e) => updateQuestion(idx, 'linkType', e.target.value)}
+                    className="text-[10px] font-black bg-violet-50 text-violet-700 px-2 py-1 rounded-lg border-none outline-none self-start"
+                  >
+                    <option value="NONE">직접 체크</option>
+                    <option value="SAT_MEETING">교사회의 체크에서 자동 반영</option>
+                    <option value="PRAYER_MEETING">기도모임 투표(화·목 참석)에서 자동 반영</option>
+                  </select>
+                )}
               </div>
               <button onClick={() => deleteQuestion(idx)} className="text-gray-200 hover:text-red-400 transition-colors p-1">
                 <Trash2 size={16} />
@@ -548,6 +576,8 @@ function QuestionsTab() {
         ))}
       </div>
 
+      <LegacyImportCard />
+
       {hasChanges && (
         <div className="fixed bottom-24 left-4 right-4 animate-[slideUp_0.3s_ease]">
           <Button size="lg" onClick={() => save(editList)} loading={isPending} className="shadow-glow">
@@ -556,5 +586,68 @@ function QuestionsTab() {
         </div>
       )}
     </motion.div>
+  )
+}
+
+// 기존 구글 시트(TTS 점수표)를 붙여넣어 통계에 합치는 카드
+function LegacyImportCard() {
+  const queryClient = useQueryClient()
+  const thisYear = new Date().getFullYear()
+  const [year, setYear] = useState(thisYear)
+  const [text, setText] = useState('')
+  const [result, setResult] = useState(null)
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => ttsApi.importLegacy(year, text).then(r => r.data),
+    onSuccess: (data) => {
+      setResult(data)
+      setText('')
+      queryClient.invalidateQueries({ queryKey: ['tts-stats'] })
+    },
+    onError: (err) => alert(err.response?.data?.message || '가져오기 중 오류가 발생했습니다.'),
+  })
+
+  const submit = () => {
+    if (!text.trim()) return alert('시트 내용을 붙여넣어 주세요.')
+    if (!confirm(`${year}년 시트 점수를 가져올까요?\n같은 연도의 이전 시트 데이터는 새 내용으로 바뀝니다.\n(앱에서 체크한 점수가 있는 주는 앱 점수가 우선)`)) return
+    mutate()
+  }
+
+  return (
+    <Card className="flex flex-col gap-3 mt-6">
+      <div className="flex items-center gap-2">
+        <Upload size={16} className="text-primary-500" />
+        <p className="font-black text-gray-900 text-sm">기존 시트 점수 가져오기</p>
+      </div>
+      <p className="text-[11px] text-gray-400 font-medium leading-relaxed">
+        구글 시트에서 이름·주차별 점수 표를 통째로 복사(Ctrl+C)해서 아래에 붙여넣으세요.
+        첫 줄은 제목 줄(이름, 1주차, 2주차 …)이어야 해요.
+      </p>
+      <select
+        value={year}
+        onChange={(e) => setYear(Number(e.target.value))}
+        className="text-xs font-black bg-gray-100 px-3 py-2 rounded-xl border-none outline-none self-start"
+      >
+        {[thisYear, thisYear - 1].map(y => <option key={y} value={y}>{y}년</option>)}
+      </select>
+      <textarea
+        rows={5}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="여기에 붙여넣기"
+        className="w-full px-3 py-2 rounded-xl border border-gray-100 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary-200 bg-gray-50"
+      />
+      <Button onClick={submit} loading={isPending} disabled={isPending}>
+        <Upload size={16} /> 가져오기
+      </Button>
+      {result && (
+        <div className="bg-gray-50 rounded-xl px-3 py-2 text-[11px] font-bold text-gray-600 flex flex-col gap-1">
+          <p>{result.year}년 · {result.names}명 · {result.weeks?.length ?? 0}개 주차 · {result.rows}건 저장</p>
+          {result.unmatchedNames?.length > 0 && (
+            <p className="text-amber-600">앱 계정과 이름이 안 맞는 사람(시트 이름으로 표시): {result.unmatchedNames.join(', ')}</p>
+          )}
+        </div>
+      )}
+    </Card>
   )
 }

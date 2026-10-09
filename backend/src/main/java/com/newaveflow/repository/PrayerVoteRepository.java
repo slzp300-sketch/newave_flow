@@ -36,4 +36,6 @@ public interface PrayerVoteRepository extends JpaRepository<PrayerVote, Long> {
         ORDER BY t.name
         """)
     List<PrayerVote> findAllByWeekStart(@Param("weekStart") LocalDate weekStart);
+
+    List<PrayerVote> findByWeekStartBetween(LocalDate from, LocalDate to);
 }

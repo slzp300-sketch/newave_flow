@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Mic2, MicOff, CheckCircle2, CalendarCheck,
-  MessageSquare, Lock, PenLine, GraduationCap, Clock, BookOpen
+  MessageSquare, PenLine, GraduationCap, BookOpen
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
-import { getThisWeekInfo } from '../utils/date'
-import { getISOWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
+import WeekNavigator from '../components/common/WeekNavigator'
+import { getWeekStartByOffset, formatUpdatedAt, toApiDate } from '../utils/date'
+import { getISOWeek, getWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import { prayerVoteApi } from '../api/prayerVote'
 
@@ -19,24 +20,8 @@ const ROTATION_LABELS = [
   { key: 2, grades: ['중3', '고3'], label: '중3 · 고3' },
 ]
 
-function getNow() { return new Date() }
-
-function getThisWeekMonday() {
-  const now = getNow()
-  const day = now.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + diff)
-  return format(monday, 'yyyy-MM-dd')
-}
-
-function isVoteWindowOpen() {
-  const day = getNow().getDay()
-  return day >= 1 && day <= 4
-}
-
-function getMicRotationIndex() {
-  const now = getNow()
+// now: 기준 시각 (지난 주를 볼 때는 그만큼 이전으로 옮긴 시각)
+function getMicRotationIndex(now) {
   const day = now.getDay()
   const base = (day === 1 || day === 2)
     ? startOfWeek(addWeeks(now, -1), { weekStartsOn: 0 })
@@ -44,18 +29,20 @@ function getMicRotationIndex() {
   return getISOWeek(base) % 3
 }
 
+const EMPTY_PRAYER = { status: null, micAvailable: null, reason: '', micReason: '' }
+
 export default function PrayerMeetingPage() {
   const { user }   = useAuthStore()
-  const weekInfo   = getThisWeekInfo()
-  const micIdx     = getMicRotationIndex()
+  const [offset, setOffset] = useState(0)
+  const micIdx     = getMicRotationIndex(addWeeks(new Date(), offset))
   const micGroup   = ROTATION_LABELS[micIdx]
   const userGrade  = user?.grade
   const isMicTurn  = userGrade && micGroup.grades.includes(userGrade)
-  const weekStart  = getThisWeekMonday()
-  const mondayDate = new Date(weekStart)
+  const mondayDate = getWeekStartByOffset(offset, 1)
+  const weekStart  = toApiDate(mondayDate)
+  const weekNum    = getWeek(mondayDate, { weekStartsOn: 0 })
   const tueDate    = format(addDays(mondayDate, 1), 'M/d')
   const thuDate    = format(addDays(mondayDate, 3), 'M/d')
-  const voteOpen   = isVoteWindowOpen()
 
   const queryClient = useQueryClient()
 
@@ -69,18 +56,24 @@ export default function PrayerMeetingPage() {
     mutationFn: (payload) => prayerVoteApi.save(payload).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['prayer-vote', weekStart, user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['tts-week'] })
       setEditingPrayer(false)
     },
-    onError: () => alert('투표 저장 중 오류가 발생했습니다.'),
+    onError: (err) => alert(err.response?.data?.message || '투표 저장 중 오류가 발생했습니다.'),
   })
 
-  const [prayer, setPrayer]           = useState({ status: null, micAvailable: null, reason: '', micReason: '' })
+  const [prayer, setPrayer]           = useState(EMPTY_PRAYER)
   const [editingPrayer, setEditingPrayer] = useState(false)
 
+  // 주를 바꾸거나 저장 결과가 오면 화면 상태를 그 주 기록에 맞춘다
   useEffect(() => {
-    if (voteData) setEditingPrayer(false)
-    else          setEditingPrayer(true)
-  }, [voteData])
+    if (voteData) {
+      setEditingPrayer(false)
+    } else {
+      setPrayer(EMPTY_PRAYER)
+      setEditingPrayer(true)
+    }
+  }, [voteData, weekStart])
 
   const updatePrayer = (patch) => setPrayer(d => ({ ...d, ...patch }))
 
@@ -104,28 +97,26 @@ export default function PrayerMeetingPage() {
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
-      <Header title={`${weekInfo.weekNum}주차 기도모임 투표`} showBack />
+      <Header title="기도모임 투표" showBack />
 
-      <div className="px-4 py-4 glass-effect">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">온라인 기도모임 투표 · Mon ~ Thu</p>
-            <p className="text-sm font-bold text-gray-700 mt-0.5">{weekInfo.start} ~ {weekInfo.end}</p>
+      <div className="px-4 py-3 glass-effect flex flex-col gap-2">
+        <WeekNavigator
+          offset={offset}
+          onChange={setOffset}
+          title={`${weekNum}주차 기도모임`}
+          range={`${tueDate}(화) · ${thuDate}(목) · 지난 주 기록도 수정할 수 있어요`}
+        />
+        {userGrade && (
+          <div className="self-end bg-violet-50 px-3 py-1 rounded-xl border border-violet-100 flex items-center gap-1.5">
+            <GraduationCap size={13} className="text-violet-600" />
+            <span className="text-[11px] font-black text-violet-700">{userGrade} 교사</span>
           </div>
-          {userGrade && (
-            <div className="bg-violet-50 px-3 py-1.5 rounded-xl border border-violet-100 flex items-center gap-1.5">
-              <GraduationCap size={14} className="text-violet-600" />
-              <span className="text-[11px] font-black text-violet-700">{userGrade} 교사</span>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       <div className="px-4 py-5">
         {voteLoading ? (
           <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
-        ) : !voteOpen && !prayerSubmitted ? (
-          <VoteClosedCard />
         ) : prayerSubmitted ? (
           <PrayerSubmittedCard
             vote={voteData}
@@ -139,6 +130,7 @@ export default function PrayerMeetingPage() {
             micLabel={micGroup.label}
             update={updatePrayer}
             onSubmit={submitPrayer}
+            onCancel={voteData ? () => setEditingPrayer(false) : null}
             valid={prayerValid}
             isMicTurn={isMicTurn}
             saving={saveMutation.isPending}
@@ -146,35 +138,21 @@ export default function PrayerMeetingPage() {
             thuDate={thuDate}
           />
         )}
+        <p className="text-[11px] text-gray-400 font-medium text-center mt-3">
+          화·목 참석으로 투표하면 TTS의 '줌 기도모임' 점수에 자동으로 반영돼요.
+        </p>
       </div>
     </div>
   )
 }
 
-function VoteClosedCard() {
-  return (
-    <Card className="flex flex-col items-center gap-3 py-8">
-      <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center">
-        <Lock size={22} className="text-gray-400" />
-      </div>
-      <div className="text-center">
-        <p className="font-black text-gray-700 text-sm">투표 기간이 아닙니다</p>
-        <p className="text-[11px] text-gray-400 mt-1 font-medium">매주 월요일 ~ 목요일에 투표할 수 있습니다</p>
-      </div>
-      <div className="flex items-center gap-1.5 bg-violet-50 px-3 py-1.5 rounded-xl border border-violet-100">
-        <Clock size={12} className="text-violet-500" />
-        <span className="text-[11px] font-black text-violet-600">Mon ~ Thu 투표 가능</span>
-      </div>
-    </Card>
-  )
-}
 
-function PrayerForm({ prayer, micLabel, update, onSubmit, valid, isMicTurn, saving, tueDate, thuDate }) {
+function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMicTurn, saving, tueDate, thuDate }) {
   return (
     <Card className="flex flex-col gap-5">
       <div className="bg-violet-50 rounded-2xl px-4 py-3 border border-violet-100 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-black text-violet-400 uppercase tracking-widest">이번 주 마이크 순서</p>
+          <p className="text-[10px] font-black text-violet-400 uppercase tracking-widest">마이크 순서</p>
           <p className="text-sm font-black text-violet-800 mt-0.5">🎤 {micLabel}</p>
         </div>
         {isMicTurn && (
@@ -225,10 +203,15 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, valid, isMicTurn, savi
         )}
       </AnimatePresence>
 
-      <Button size="lg" disabled={!valid || saving} onClick={onSubmit}>
-        <CalendarCheck size={17} />
-        {saving ? '저장 중...' : '기도모임 투표 완료'}
-      </Button>
+      <div className="flex gap-2">
+        {onCancel && (
+          <Button size="lg" variant="secondary" onClick={onCancel} className="flex-1">취소</Button>
+        )}
+        <Button size="lg" disabled={!valid || saving} onClick={onSubmit} className="flex-[2]">
+          <CalendarCheck size={17} />
+          {saving ? '저장 중...' : '저장'}
+        </Button>
+      </div>
     </Card>
   )
 }
@@ -264,7 +247,8 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
       <div className="bg-gray-50 rounded-xl px-4 py-3 flex flex-col gap-2 text-sm">
         <Row label="투표 결과" value={statusMap[vote?.status]} />
         {vote?.reason && <Row label="불참 사유" value={vote.reason} />}
-        <Row label="이번 주 순서" value={`🎤 ${micLabel}`} muted />
+        <Row label="마이크 순서" value={`🎤 ${micLabel}`} muted />
+        {vote?.updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(vote.updatedAt)} muted />}
       </div>
       {isAbsent && (
         <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${vote.scriptureCopySubmitted ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
@@ -276,7 +260,7 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
             <p className={`text-[11px] mt-0.5 font-medium ${vote.scriptureCopySubmitted ? 'text-emerald-500' : 'text-amber-500'}`}>
               {vote.scriptureCopySubmitted
                 ? '관리자가 필사 제출을 확인했습니다'
-                : '둘 다 불참 시 이번 주 필사를 제출해야 합니다'}
+                : '둘 다 불참 시 그 주 필사를 제출해야 합니다'}
             </p>
           </div>
         </div>

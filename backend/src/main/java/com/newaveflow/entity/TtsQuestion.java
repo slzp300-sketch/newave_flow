@@ -39,6 +39,14 @@ public class TtsQuestion {
     @Builder.Default
     private boolean isActive = true;
 
+    // 체크 1회당 점수 (비어 있으면 DAYS 5점, ATTEND 10점)
+    private Integer points;
+
+    // 다른 화면 기록과 자동 연동 (비어 있으면 직접 체크)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "link_type", length = 20)
+    private TtsLinkType linkType;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -49,5 +57,11 @@ public class TtsQuestion {
     public enum TtsQuestionType {
         DAYS,   // Mon-Sat/Sun check
         ATTEND  // Yes/No
+    }
+
+    public enum TtsLinkType {
+        NONE,
+        SAT_MEETING,    // 토요 교사회의 '참석'이면 자동 체크
+        PRAYER_MEETING  // 줌 기도모임 화/목 참석 투표면 자동 체크
     }
 }

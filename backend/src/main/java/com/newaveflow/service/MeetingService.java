@@ -39,7 +39,7 @@ public class MeetingService {
     public MeetingAttendanceResponse getMeetingAttendance(Long teacherId, LocalDate meetingDate) {
         return meetingAttendanceRepository.findByTeacherIdAndMeetingDate(teacherId, meetingDate)
                 .map(MeetingAttendanceResponse::from)
-                .orElse(new MeetingAttendanceResponse(teacherId, meetingDate, null, null));
+                .orElse(new MeetingAttendanceResponse(teacherId, meetingDate, null, null, null));
     }
 
     @Transactional

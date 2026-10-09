@@ -5,6 +5,7 @@ import { BookOpen, CheckCircle2, Clock, Users, Loader2 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { prayerVoteApi } from '../api/prayerVote'
+import { formatUpdatedAt } from '../utils/date'
 import { format, startOfWeek, addWeeks } from 'date-fns'
 
 function getThisWeekMonday() {
@@ -41,6 +42,7 @@ export default function PrayerAbsentAdminPage() {
   const { data: absentList = [], isLoading } = useQuery({
     queryKey: ['prayer-absent', selectedWeek],
     queryFn: () => prayerVoteApi.getAbsentList(selectedWeek).then(r => r.data),
+    refetchOnWindowFocus: 'always', // 교사가 투표를 고치면 바로 반영
   })
 
   const toggleMutation = useMutation({
@@ -193,6 +195,9 @@ export default function PrayerAbsentAdminPage() {
                                   </div>
                                 {vote.reason && (
                                   <p className="text-[11px] text-gray-400 font-medium mt-0.5 line-clamp-1">사유: {vote.reason}</p>
+                                )}
+                                {vote.updatedAt && (
+                                  <p className="text-[10px] text-gray-300 font-bold mt-0.5">마지막 수정 {formatUpdatedAt(vote.updatedAt)}</p>
                                 )}
                               </div>
                             </div>

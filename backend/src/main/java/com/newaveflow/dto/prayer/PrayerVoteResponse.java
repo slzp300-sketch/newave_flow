@@ -20,6 +20,7 @@ public class PrayerVoteResponse {
     private String reason;
     private boolean scriptureCopySubmitted;
     private LocalDateTime scriptureCopySubmittedAt;
+    private LocalDateTime updatedAt;
 
     public PrayerVoteResponse(PrayerVote vote) {
         this(vote, null);
@@ -47,6 +48,7 @@ public class PrayerVoteResponse {
         this.reason = vote.getReason();
         this.scriptureCopySubmitted = vote.isScriptureCopySubmitted();
         this.scriptureCopySubmittedAt = vote.getScriptureCopySubmittedAt();
+        this.updatedAt = vote.getUpdatedAt() != null ? vote.getUpdatedAt() : vote.getCreatedAt();
     }
 
     private String extractGrade(String className) {

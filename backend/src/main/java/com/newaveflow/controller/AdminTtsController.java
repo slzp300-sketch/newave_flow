@@ -40,4 +40,11 @@ public class AdminTtsController {
     public ResponseEntity<List<TtsQuestion>> updateQuestions(@RequestBody List<TtsQuestion> questions) {
         return ResponseEntity.ok(ttsService.updateQuestions(questions));
     }
+
+    // 구글 시트 "주차별점수" 표를 붙여넣어 해당 연도 기존 점수를 통째로 교체
+    @PostMapping("/legacy")
+    public ResponseEntity<Map<String, Object>> importLegacy(@RequestBody Map<String, Object> body) {
+        int year = Integer.parseInt(String.valueOf(body.get("year")));
+        return ResponseEntity.ok(ttsService.importLegacyScores(year, (String) body.get("text")));
+    }
 }

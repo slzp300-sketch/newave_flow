@@ -34,6 +34,10 @@ public class AttendanceService {
 
     @Transactional
     public int saveBatch(AttendanceBatchRequest request, Long teacherId) {
+        // 이번 주일과 지난 주일들은 언제든 수정 가능, 미래 날짜만 막는다
+        if (request.attendanceDate().isAfter(LocalDate.now())) {
+            throw AppException.forbidden("아직 오지 않은 날짜의 출석은 입력할 수 없습니다.");
+        }
         ClassGroup classGroup = classGroupRepository.findById(request.classGroupId())
                 .orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
         User teacher = userRepository.findById(teacherId)

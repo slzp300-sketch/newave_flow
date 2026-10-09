@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "meeting_attendances",
@@ -31,8 +32,17 @@ public class MeetingAttendance {
     @Column(columnDefinition = "TEXT")
     private String reason;
 
+    // 마지막 수정 시각 (관리자 화면 표시용)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    void onCreate() {
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    }
+
     public void updateStatus(String status, String reason) {
         this.status = status;
         this.reason = reason;
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -84,8 +84,36 @@ public class DataInitService {
         
         // 2. Load the actual Roster (Classes, Students)
         rosterDataInitService.initRosterData();
-        
+
+        // 3. 기본 TTS 항목 (구글 시트 점수 규칙과 동일)
+        initTtsQuestions();
+
         log.info("Clean initialization completed. Test data (Attendance, Minutes, etc.) skipped.");
+    }
+
+    private void initTtsQuestions() {
+        if (ttsQuestionRepository.count() > 0) return;
+        Object[][] defaults = {
+                // 제목, 종류, 이모지, 점수, 연동
+                {"말씀 (3장 이상)", TtsQuestion.TtsQuestionType.DAYS, "📖", 5, TtsQuestion.TtsLinkType.NONE},
+                {"기도 (30분 이상)", TtsQuestion.TtsQuestionType.DAYS, "🙏", 5, TtsQuestion.TtsLinkType.NONE},
+                {"교사회의", TtsQuestion.TtsQuestionType.ATTEND, "👥", 10, TtsQuestion.TtsLinkType.SAT_MEETING},
+                {"온라인 줌 기도모임", TtsQuestion.TtsQuestionType.ATTEND, "💻", 10, TtsQuestion.TtsLinkType.PRAYER_MEETING},
+                {"본예배", TtsQuestion.TtsQuestionType.ATTEND, "⛪", 10, TtsQuestion.TtsLinkType.NONE},
+                {"금요철야", TtsQuestion.TtsQuestionType.ATTEND, "🌙", 10, TtsQuestion.TtsLinkType.NONE},
+                {"리버스기도회", TtsQuestion.TtsQuestionType.ATTEND, "🔥", 50, TtsQuestion.TtsLinkType.NONE},
+        };
+        for (int i = 0; i < defaults.length; i++) {
+            Object[] d = defaults[i];
+            ttsQuestionRepository.save(TtsQuestion.builder()
+                    .title((String) d[0])
+                    .type((TtsQuestion.TtsQuestionType) d[1])
+                    .emoji((String) d[2])
+                    .points((Integer) d[3])
+                    .linkType((TtsQuestion.TtsLinkType) d[4])
+                    .displayOrder(i + 1)
+                    .build());
+        }
     }
 
     private void initAdminUser() {

@@ -48,11 +48,20 @@ public class PrayerVote {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    // 마지막 수정 시각 (관리자 화면 표시용)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    void onCreate() {
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    }
+
     public enum Status { TUE, THU, ABSENT }
 
     public void update(Status status, String reason) {
         this.status = status;
         this.reason = reason;
+        this.updatedAt = LocalDateTime.now();
         if (status != Status.ABSENT) {
             this.scriptureCopySubmitted = false;
             this.scriptureCopySubmittedAt = null;
