@@ -50,7 +50,7 @@ public class TtsService {
     @Transactional
     public TtsResponse submitTts(User teacher, TtsSubmitRequest request) {
         if (!isSubmissionWindowOpen()) {
-            throw new RuntimeException("TTS 제출 기간이 아닙니다 (토요일 ~ 화요일만 가능)");
+            throw com.newaveflow.exception.AppException.badRequest("TTS 제출 기간이 아닙니다 (토요일 ~ 화요일만 가능)");
         }
 
         TtsRecord record = recordRepository.findByTeacherIdAndInfoYearAndWeekNum(teacher.getId(), request.getYear(), request.getWeekNum())
@@ -148,8 +148,25 @@ public class TtsService {
         }).collect(Collectors.toList());
     }
 
+    public List<TtsQuestion> getAllQuestions() {
+        return questionRepository.findAllByOrderByDisplayOrderAsc();
+    }
+
     @Transactional
     public List<TtsQuestion> updateQuestions(List<TtsQuestion> newQuestions) {
+        // 목록에서 빠진 항목: 답변 기록이 있으면 비활성화(기록 보존), 없으면 삭제
+        Set<Long> keepIds = newQuestions.stream()
+                .map(TtsQuestion::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        for (TtsQuestion existing : questionRepository.findAll()) {
+            if (keepIds.contains(existing.getId())) continue;
+            if (questionRepository.hasAnswers(existing.getId())) {
+                existing.setActive(false);
+            } else {
+                questionRepository.delete(existing);
+            }
+        }
         return questionRepository.saveAll(newQuestions);
     }
 

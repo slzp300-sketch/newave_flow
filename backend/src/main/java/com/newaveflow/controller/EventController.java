@@ -43,11 +43,13 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEvent(id));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping
     public ResponseEntity<EventDto.EventResponse> createEvent(@Valid @RequestBody EventDto.EventCreateRequest request) {
         return ResponseEntity.ok(eventService.createEvent(request));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/{id}")
     public ResponseEntity<EventDto.EventResponse> updateEvent(
             @PathVariable Long id,
@@ -55,6 +57,7 @@ public class EventController {
         return ResponseEntity.ok(eventService.updateEvent(id, request));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
         eventService.deleteEvent(id);

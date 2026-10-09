@@ -46,22 +46,27 @@ export default function StudentDetailPage() {
           </div>
           <div className="text-center">
             <h2 className="text-2xl font-black text-gray-900">{student?.name}</h2>
-            <p className="text-primary-600 font-bold text-sm">{student?.className} · {student?.grade}</p>
+            <p className="text-primary-600 font-bold text-sm">{[student?.grade, student?.school].filter(Boolean).join(' · ')}</p>
           </div>
         </motion.div>
 
         {/* 기본 정보 */}
         <div className="grid grid-cols-1 gap-3">
           <SectionLabel>기본 정보</SectionLabel>
-          <Card className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-              <Phone size={18} />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-gray-400">부모님 연락처 ({student?.parentName})</p>
-              <p className="font-bold text-gray-900">{student?.parentPhone}</p>
-            </div>
-          </Card>
+          {[
+            { label: '부', name: student?.fatherName, phone: student?.fatherPhone },
+            { label: '모', name: student?.motherName, phone: student?.motherPhone },
+          ].filter(p => p.name || p.phone).map(p => (
+            <Card key={p.label} className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                <Phone size={18} />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-gray-400">{p.label} {p.name ?? ''}</p>
+                <p className="font-bold text-gray-900">{p.phone ?? '연락처 없음'}</p>
+              </div>
+            </Card>
+          ))}
         </div>
 
         {/* 출석 히스토리 */}
@@ -77,7 +82,7 @@ export default function StudentDetailPage() {
             <div className="flex flex-col gap-2">
               {history.map((record, idx) => (
                 <motion.div
-                  key={record.id}
+                  key={record.attendanceDate}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}

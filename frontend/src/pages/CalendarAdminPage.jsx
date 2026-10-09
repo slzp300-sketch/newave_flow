@@ -155,7 +155,7 @@ export default function CalendarAdminPage() {
   }
 
   // 다가올 / 진행중 / 지난 일정 분류
-  const today = new Date().toISOString().split('T')[0]
+  const today = toApiDate()
   const categorizedEvents = useMemo(() => {
     const upcoming = [], ongoing = [], past = []
     events.forEach(e => {

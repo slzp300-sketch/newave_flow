@@ -14,7 +14,7 @@ import { eventApi } from '../api/event'
 import { prayerVoteApi } from '../api/prayerVote'
 import { ttsApi } from '../api/tts'
 import client from '../api/client'
-import { getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
+import { toApiDate, getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
 import { format, addDays } from 'date-fns'
 
 function getThisWeekMonday() {
@@ -97,7 +97,7 @@ function useAttendanceRequiredEvents() {
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
-  const today = new Date().toISOString().split('T')[0]
+  const today = toApiDate()
   return data.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today)
 }
 
@@ -144,7 +144,7 @@ export default function WeeklyCheckPage() {
   const satDone = !!satData?.status
   const weeklyStatus  = useWeeklyStatus()
   const _rawAttendanceEvents = useAttendanceRequiredEvents()
-  const _today = new Date().toISOString().split('T')[0]
+  const _today = toApiDate()
   const attendanceEvents = _rawAttendanceEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= _today)
   const weekRange     = getCurrentWeekRange()
 

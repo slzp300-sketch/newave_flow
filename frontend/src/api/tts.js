@@ -6,5 +6,6 @@ export const ttsApi = {
   submitTts: (data) => client.post('/tts/submit', data),
   getSummary: (year, weekNum) => client.get('/admin/tts/summary', { params: { year, weekNum } }),
   getQuarterlyScores: (year, quarter) => client.get('/admin/tts/scores/quarterly', { params: { year, quarter } }),
+  getAllQuestions: () => client.get('/admin/tts/questions'),
   updateQuestions: (questions) => client.post('/admin/tts/questions', questions),
 }

@@ -64,19 +64,13 @@ public class ClassService {
         }).toList();
     }
 
+    // 본인이 맡은 반만 반환 (역할과 무관), 담임 반을 맨 앞에 둔다.
+    // 출석 체크·우리 반 관리 화면이 첫 번째 반을 "내 반"으로 사용한다.
     public List<ClassDto> getClassesForTeacher(Long teacherId) {
-        User user = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
-        if (user.getRole() == User.Role.ADMIN || 
-            user.getRole() == User.Role.PASTOR || 
-            user.getRole() == User.Role.EXECUTIVE) {
-            return getAllRosterData();
-        }
-
-        return classGroupRepository.findByTeacherId(teacherId)
+        return teacherClassRepository.findByTeacherId(teacherId)
                 .stream()
-                .map(ClassDto::from)
+                .sorted(java.util.Comparator.comparing((TeacherClass tc) -> !tc.isPrimary()))
+                .map(tc -> ClassDto.from(tc.getClassGroup()))
                 .toList();
     }
 

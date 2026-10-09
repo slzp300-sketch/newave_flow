@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
 @RestController
 @RequestMapping("/api/admin/tts")
 @RequiredArgsConstructor
@@ -28,6 +29,11 @@ public class AdminTtsController {
             @RequestParam Integer year,
             @RequestParam Integer quarter) {
         return ResponseEntity.ok(ttsService.getQuarterlyScores(year, quarter));
+    }
+
+    @GetMapping("/questions")
+    public ResponseEntity<List<TtsQuestion>> getAllQuestions() {
+        return ResponseEntity.ok(ttsService.getAllQuestions());
     }
 
     @PostMapping("/questions")

@@ -683,7 +683,7 @@ function AdminView({ navigate, today }) {
             ))}
             {reportData.notSubmitted.length > 3 && (
               <button 
-                onClick={() => navigate('/admin/tts')}
+                onClick={() => navigate('/admin/student-attendance')}
                 className="text-center text-[10px] text-gray-400 font-bold mt-1 hover:text-primary-500 transition-colors"
                 >
                 외 {reportData.notSubmitted.length - 3}명 더 있음 (상세 보기)

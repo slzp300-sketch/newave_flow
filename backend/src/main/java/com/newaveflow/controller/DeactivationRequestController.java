@@ -26,18 +26,21 @@ public class DeactivationRequestController {
     }
 
     // 관리자: 대기 중인 제적 신청 목록
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @GetMapping("/api/admin/deactivation-requests")
     public ResponseEntity<List<DeactivationRequestDto.Response>> getPending() {
         return ResponseEntity.ok(deactivationRequestService.getPendingRequests());
     }
 
     // 관리자: 승인
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PatchMapping("/api/admin/deactivation-requests/{id}/approve")
     public ResponseEntity<DeactivationRequestDto.Response> approve(@PathVariable Long id) {
         return ResponseEntity.ok(deactivationRequestService.approve(id));
     }
 
     // 관리자: 반려
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PatchMapping("/api/admin/deactivation-requests/{id}/reject")
     public ResponseEntity<DeactivationRequestDto.Response> reject(@PathVariable Long id) {
         return ResponseEntity.ok(deactivationRequestService.reject(id));

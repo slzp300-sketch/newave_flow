@@ -54,6 +54,7 @@ public class MeetingMinuteController {
         return ResponseEntity.ok(dtos);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping
     public ResponseEntity<MeetingMinute> create(@RequestBody MeetingMinuteCreateRequest request) {
         log.debug("Creating meeting minutes: {}", request);
@@ -77,6 +78,7 @@ public class MeetingMinuteController {
         return ResponseEntity.ok(saved);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/{id}")
     public ResponseEntity<MeetingMinute> update(@PathVariable Long id, @RequestBody MeetingMinuteCreateRequest request) {
         MeetingMinute minutes = meetingMinuteRepository.findById(id).orElseThrow();
@@ -88,6 +90,7 @@ public class MeetingMinuteController {
         return ResponseEntity.ok(meetingMinuteRepository.save(minutes));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         meetingMinuteConfirmRepository.deleteAllByMinutesId(id);
