@@ -23,11 +23,11 @@ public class MeetingService {
     private final MeetingAttendanceRepository meetingAttendanceRepository;
     private final UserRepository userRepository;
 
-    // 제출 가능 기간: 월요일 00:00 ~ 토요일 12:00
+    // 제출 가능 기간: 월요일 00:00 ~ 토요일 16:00
     public static boolean isMeetingWindowOpen(LocalDateTime now) {
         DayOfWeek day = now.getDayOfWeek();
         if (day == DayOfWeek.SUNDAY) return false;
-        if (day == DayOfWeek.SATURDAY) return now.getHour() < 12;
+        if (day == DayOfWeek.SATURDAY) return now.getHour() < 16;
         return true;
     }
 

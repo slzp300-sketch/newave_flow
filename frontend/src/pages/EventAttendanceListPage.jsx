@@ -12,6 +12,7 @@ import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
+import { toApiDate } from '../utils/date'
 
 const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
 const STATUS_COLOR = {
@@ -479,7 +480,7 @@ export default function EventAttendanceListPage() {
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
   })
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = toApiDate()
   const events = useMemo(
     () => rawEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today),
     [rawEvents]

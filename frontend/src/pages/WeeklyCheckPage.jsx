@@ -14,7 +14,7 @@ import { eventApi } from '../api/event'
 import { prayerVoteApi } from '../api/prayerVote'
 import { ttsApi } from '../api/tts'
 import client from '../api/client'
-import { getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
+import { toApiDate, getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
 import { format, addDays } from 'date-fns'
 
 function getThisWeekMonday() {
@@ -97,7 +97,7 @@ function useAttendanceRequiredEvents() {
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
-  const today = new Date().toISOString().split('T')[0]
+  const today = toApiDate()
   return data.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today)
 }
 
@@ -144,7 +144,7 @@ export default function WeeklyCheckPage() {
   const satDone = !!satData?.status
   const weeklyStatus  = useWeeklyStatus()
   const _rawAttendanceEvents = useAttendanceRequiredEvents()
-  const _today = new Date().toISOString().split('T')[0]
+  const _today = toApiDate()
   const attendanceEvents = _rawAttendanceEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= _today)
   const weekRange     = getCurrentWeekRange()
 
@@ -238,7 +238,7 @@ export default function WeeklyCheckPage() {
         ? '✅ 교사 회의 참석 여부 제출 완료'
         : satWindowOpen
           ? '토요일 교사 회의 참석 여부를 제출하세요'
-          : '⚠️ 제출 기간이 아닙니다 (월~토 정오 가능).',
+          : '⚠️ 제출 기간이 아닙니다 (월~토 오후 4시까지 가능).',
       done: satDone,
       disabled: !satDone && !satWindowOpen,
       path: '/meeting/sat',

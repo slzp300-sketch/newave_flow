@@ -94,7 +94,7 @@ export default function CalendarPage() {
     enabled: viewMode === 'list',
   })
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = toApiDate()
   const categorizedEvents = useMemo(() => {
     const upcoming = [], ongoing = [], past = []
     allEvents.forEach(e => {

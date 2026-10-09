@@ -156,11 +156,22 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/{id}/role")
     @Transactional
-    public ResponseEntity<Void> updateRole(@PathVariable Long id, @RequestBody RoleRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    public ResponseEntity<Void> updateRole(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long id,
+            @RequestBody RoleRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> com.newaveflow.exception.AppException.notFound("사용자를 찾을 수 없습니다."));
         User.Role newRole = User.Role.valueOf(request.role());
+
+        // 최종관리자 권한 부여/변경은 최종관리자만 가능
+        boolean callerIsAdmin = currentUser != null && currentUser.getRole() == User.Role.ADMIN;
+        if (!callerIsAdmin && (newRole == User.Role.ADMIN || user.getRole() == User.Role.ADMIN)) {
+            throw com.newaveflow.exception.AppException.forbidden("최종관리자 권한은 최종관리자만 변경할 수 있습니다.");
+        }
 
         if (newRole == User.Role.PASTOR || newRole == User.Role.ADMIN) {
             long count = userRepository.findByIsActiveTrue().stream()

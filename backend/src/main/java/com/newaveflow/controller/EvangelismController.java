@@ -25,11 +25,13 @@ public class EvangelismController {
         return ResponseEntity.ok(evangelismService.getAllGroups());
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping("/groups")
     public ResponseEntity<GroupResponse> createGroup(@RequestBody GroupRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(evangelismService.createGroup(req));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/groups/{groupId}")
     public ResponseEntity<GroupResponse> updateGroup(
             @PathVariable Long groupId,
@@ -37,6 +39,7 @@ public class EvangelismController {
         return ResponseEntity.ok(evangelismService.updateGroup(groupId, req));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/groups/{groupId}/members")
     public ResponseEntity<GroupResponse> updateGroupMembers(
             @PathVariable Long groupId,
@@ -44,6 +47,7 @@ public class EvangelismController {
         return ResponseEntity.ok(evangelismService.updateGroupMembers(groupId, req));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @DeleteMapping("/groups/{groupId}")
     public ResponseEntity<Void> deleteGroup(@PathVariable Long groupId) {
         evangelismService.deleteGroup(groupId);
@@ -61,11 +65,13 @@ public class EvangelismController {
         return ResponseEntity.ok(result);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping("/schedules")
     public ResponseEntity<ScheduleResponse> createSchedule(@RequestBody ScheduleRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(evangelismService.createSchedule(req));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/schedules/{scheduleId}")
     public ResponseEntity<ScheduleResponse> updateSchedule(
             @PathVariable Long scheduleId,
@@ -73,12 +79,14 @@ public class EvangelismController {
         return ResponseEntity.ok(evangelismService.updateSchedule(scheduleId, req));
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @DeleteMapping("/schedules/{scheduleId}")
     public ResponseEntity<Void> deleteSchedule(@PathVariable Long scheduleId) {
         evangelismService.deleteSchedule(scheduleId);
         return ResponseEntity.noContent().build();
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping("/schedules/{scheduleId}/cancel")
     public ResponseEntity<ScheduleResponse> cancelSchedule(@PathVariable Long scheduleId) {
         return ResponseEntity.ok(evangelismService.cancelSchedule(scheduleId));

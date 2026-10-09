@@ -435,9 +435,10 @@ function SummaryTab({ week, onWeekChange }) {
 
 function QuestionsTab() {
   const qc = useQueryClient()
-  const { data: questions = [], isLoading } = useQuery({
-    queryKey: ['tts-questions'],
-    queryFn: () => ttsApi.getQuestions().then(r => r.data)
+  // 기본값([])을 두지 않음: 매 렌더마다 새 배열이 생겨 아래 useEffect가 무한 반복되는 것을 방지
+  const { data: questions, isLoading } = useQuery({
+    queryKey: ['tts-questions', 'all'],
+    queryFn: () => ttsApi.getAllQuestions().then(r => r.data)
   })
 
   const [editList, setEditList] = useState([])
@@ -464,14 +465,14 @@ function QuestionsTab() {
       type: 'DAYS',
       emoji: '✨',
       displayOrder: nextOrder,
-      isActive: true
+      active: true
     }
     setEditList([...editList, newQ])
     setHasChanges(true)
   }
 
   const deleteQuestion = (idx) => {
-    if (!window.confirm('항목을 삭제하시겠습니까? (저장 전에는 실제 반영되지 않습니다)')) return
+    if (!window.confirm('항목을 삭제하시겠습니까? (저장 시 반영되며, 이미 답변 기록이 있는 항목은 비활성으로 남습니다)')) return
     const next = [...editList]
     next.splice(idx, 1)
     setEditList(next)
@@ -531,8 +532,8 @@ function QuestionsTab() {
                   <label className="flex items-center gap-1 ml-auto">
                     <input
                       type="checkbox"
-                      checked={q.isActive}
-                      onChange={(e) => updateQuestion(idx, 'isActive', e.target.checked)}
+                      checked={q.active}
+                      onChange={(e) => updateQuestion(idx, 'active', e.target.checked)}
                       className="w-3 h-3 rounded"
                     />
                     <span className="text-[10px] font-black text-gray-400">활성</span>

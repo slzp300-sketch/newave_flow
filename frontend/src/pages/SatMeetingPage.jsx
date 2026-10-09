@@ -87,7 +87,7 @@ export default function SatMeetingPage() {
 
       <div className="px-4 py-4 glass-effect">
         <div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">토요일 교사 회의 · 월~토 정오까지</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">토요일 교사 회의 · 월~토 오후 4시까지</p>
           <p className="text-sm font-bold text-gray-700 mt-0.5">{weekInfo.start} ~ {weekInfo.end}</p>
         </div>
       </div>
@@ -154,11 +154,11 @@ function SatClosedCard() {
       </div>
       <div className="text-center">
         <p className="font-black text-gray-700 text-sm">제출 기간이 아닙니다</p>
-        <p className="text-[11px] text-gray-400 mt-1 font-medium">매주 월요일부터 토요일 정오까지 제출할 수 있습니다</p>
+        <p className="text-[11px] text-gray-400 mt-1 font-medium">매주 월요일부터 토요일 오후 4시까지 제출할 수 있습니다</p>
       </div>
       <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
         <Clock size={12} className="text-blue-500" />
-        <span className="text-[11px] font-black text-blue-600">Mon ~ Sat 12:00 제출 가능</span>
+        <span className="text-[11px] font-black text-blue-600">Mon ~ Sat 16:00 제출 가능</span>
       </div>
     </Card>
   )
