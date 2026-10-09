@@ -256,7 +256,7 @@ export default function WeeklyCheckPage() {
 
   return (
     <div className="flex flex-col min-h-screen pb-20">
-      <Header title="주간 체크" />
+      <Header title="주간 체크" showBack />
 
       {/* 서브 헤더 */}
       <div className="px-4 py-4 glass-effect">

@@ -15,7 +15,6 @@ import AttendancePage        from '../pages/AttendancePage'
 import AdminDashboard        from '../pages/AdminDashboard'
 import CalendarPage          from '../pages/CalendarPage'
 import CalendarAdminPage     from '../pages/CalendarAdminPage'
-import MeetingAttendancePage from '../pages/MeetingAttendancePage'
 import PrayerMeetingPage    from '../pages/PrayerMeetingPage'
 import SatMeetingPage       from '../pages/SatMeetingPage'
 import StudentDetailPage     from '../pages/StudentDetailPage'
@@ -34,12 +33,12 @@ import AdminMeetingAttendancePage from '../pages/AdminMeetingAttendancePage'
 import ClassManagePage                  from '../pages/ClassManagePage'
 import DeactivationRequestsAdminPage   from '../pages/DeactivationRequestsAdminPage'
 import TtsAdminPage                    from '../pages/TtsAdminPage'
+import MenuPage                        from '../pages/MenuPage'
 import AdminTeacherManagePage         from '../pages/AdminTeacherManagePage'
 import AdminClassManagePage           from '../pages/AdminClassManagePage'
 import AdminStudentManagePage         from '../pages/AdminStudentManagePage'
 import AdminPendingUsersPage          from '../pages/AdminPendingUsersPage'
 import AdminStudentAttendancePage    from '../pages/AdminStudentAttendancePage'
-import ExecutiveManagePage          from '../pages/ExecutiveManagePage'
 import ManualPreviewPage             from '../pages/ManualPreviewPage'
 import ProfilePage                   from '../pages/ProfilePage'
 import NotificationPage              from '../pages/NotificationPage'
@@ -207,11 +206,11 @@ const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/',           element: <Home /> },
+          { path: '/menu',       element: <MenuPage /> },
           { path: '/attendance', element: <AttendancePage /> },
           { path: '/calendar',   element: <CalendarPage /> },
           { path: '/checklist',  element: <WeeklyCheckPage /> },
           { path: '/tts',        element: <TTSPage /> },
-          { path: '/meeting',         element: <MeetingAttendancePage /> },
           { path: '/meeting/prayer',  element: <PrayerMeetingPage /> },
           { path: '/meeting/sat',     element: <SatMeetingPage /> },
           { path: '/minutes',    element: <MeetingMinutesPage /> },
@@ -238,7 +237,6 @@ const router = createBrowserRouter([
               { path: '/admin/deactivation-requests', element: <DeactivationRequestsAdminPage /> },
               { path: '/admin/tts',              element: <TtsAdminPage /> },
               { path: '/admin/student-attendance', element: <AdminStudentAttendancePage /> },
-              { path: '/executive',              element: <ExecutiveManagePage /> },
               { path: '/admin/class-assignment', element: <AdminClassManagePage /> },
                 { path: '/admin/students',               element: <AdminStudentManagePage /> },
                 { path: '/admin/pending-users',          element: <AdminPendingUsersPage /> },

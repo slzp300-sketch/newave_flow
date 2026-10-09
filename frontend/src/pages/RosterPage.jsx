@@ -102,7 +102,7 @@ export default function RosterPage() {
 
   return (
     <div className="flex flex-col min-h-screen pb-24">
-      <Header title="교적부" />
+      <Header title="교적부" showBack />
       <RosterLanding onSelect={setActiveRoster} />
     </div>
   )
