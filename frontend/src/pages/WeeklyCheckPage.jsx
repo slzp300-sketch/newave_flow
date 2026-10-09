@@ -14,7 +14,7 @@ import { eventApi } from '../api/event'
 import { prayerVoteApi } from '../api/prayerVote'
 import { ttsApi } from '../api/tts'
 import client from '../api/client'
-import { toApiDate, getTTSWeekRange, getCurrentWeekRange, canSubmitTTS } from '../utils/date'
+import { toApiDate, getTTSWeekRange, getCurrentWeekRange, getWeekStartByOffset } from '../utils/date'
 import { format, addDays } from 'date-fns'
 
 function getThisWeekMonday() {
@@ -24,25 +24,6 @@ function getThisWeekMonday() {
   const monday = new Date(now)
   monday.setDate(now.getDate() + diff)
   return format(monday, 'yyyy-MM-dd')
-}
-
-// ── 날짜 / 권한 유틸 ────────────────────────
-function isVoteWindowOpen() {
-  const day = new Date().getDay()
-  return day >= 1 && day <= 4 // Mon=1 ~ Thu=4
-}
-function isSundayToTuesday() {
-  const day = new Date().getDay()
-  return day === 0 || day === 1 || day === 2 // Sun=0, Mon=1, Tue=2
-}
-function isSatMeetingWindowOpen() {
-  const now = new Date()
-  const day  = now.getDay()
-  const hour = now.getHours()
-  if (day === 0)             return false       // 일: 닫힘
-  if (day >= 1 && day <= 5)  return true        // 월~금: 열림
-  if (day === 6)             return hour < 16   // 토: 16시 이전만 열림
-  return false
 }
 
 // ── localStorage 상태 훅 ────────────────────────
@@ -114,14 +95,14 @@ function useEvangelismStatus() {
 export default function WeeklyCheckPage() {
   const navigate      = useNavigate()
   const { user }      = useAuthStore()
-  const { weekNum: ttsWeekNum } = getTTSWeekRange()
-  const currentYear = new Date().getFullYear()
+  // 이번 주(일~토) TTS — 1점 이상 체크했으면 완료로 표시
   const { data: ttsRecord } = useQuery({
-    queryKey: ['tts-my', currentYear, ttsWeekNum],
-    queryFn: () => ttsApi.getMyTts(currentYear, ttsWeekNum).then(r => r.data),
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['tts-week', toApiDate(getWeekStartByOffset(0, 0))],
+    queryFn: () => ttsApi.getWeek(toApiDate()).then(r => r.data),
+    staleTime: 60 * 1000,
   })
-  const ttsSubmitted = ttsRecord?.submitted ?? false
+  const ttsScore = ttsRecord?.score ?? 0
+  const ttsSubmitted = ttsScore > 0
 
   // 기도모임 투표 완료 여부 (API)
   const weekMonday = getThisWeekMonday()
@@ -190,13 +171,8 @@ export default function WeeklyCheckPage() {
     return teacherDone && studentDone
   })
 
-  // 각 파트별 활성화 상태
-  const ttsOpen = canSubmitTTS()
-  const meetingOpen = isVoteWindowOpen()
-  const satWindowOpen = isSatMeetingWindowOpen()
-  const attendanceOpen = isSundayToTuesday()
+  // 출석·TTS·기도모임·교사회의는 언제든 입력/수정 가능, 행사 출석만 진행 중인 행사가 있을 때
   const eventAttendanceOpen = attendanceEvents.length > 0
-  const minutesOpen = true // 회의록은 상시 열림
 
   const tasks = [
     {
@@ -214,7 +190,7 @@ export default function WeeklyCheckPage() {
       icon: CheckSquare,
       color: ttsSubmitted ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600',
       title: 'TTS 체크',
-      desc: ttsSubmitted ? '✅ 이번 주 TTS 제출 완료되었습니다.' : '이번 주 활동을 기록해 주세요',
+      desc: ttsSubmitted ? `✅ 이번 주 ${ttsScore}점 · 계속 체크할 수 있어요` : '이번 주 활동을 기록해 주세요',
       done: ttsSubmitted,
       disabled: false, // 항목 항상 활성화 (페이지 진입 후 안내)
       path: '/tts',
@@ -224,9 +200,9 @@ export default function WeeklyCheckPage() {
       icon: Users,
       color: prayerDone ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600',
       title: '기도모임 투표',
-      desc: prayerDone ? '✅ 기도모임 투표 완료되었습니다.' : (meetingOpen ? '온라인 기도모임 참석 여부를 투표하세요' : '⚠️ 투표 기간이 아닙니다 (월~목 가능).'),
+      desc: prayerDone ? '✅ 기도모임 투표 완료되었습니다.' : '온라인 기도모임 참석 여부를 투표하세요',
       done: prayerDone,
-      disabled: !prayerDone && !meetingOpen,
+      disabled: false,
       path: '/meeting/prayer',
     },
     {
@@ -236,11 +212,9 @@ export default function WeeklyCheckPage() {
       title: '교사회의 체크',
       desc: satDone
         ? '✅ 교사 회의 참석 여부 제출 완료'
-        : satWindowOpen
-          ? '토요일 교사 회의 참석 여부를 제출하세요'
-          : '⚠️ 제출 기간이 아닙니다 (월~토 오후 4시까지 가능).',
+        : '토요일 교사 회의 참석 여부를 제출하세요',
       done: satDone,
-      disabled: !satDone && !satWindowOpen,
+      disabled: false,
       path: '/meeting/sat',
     },
     ...(satData?.status === 'ABSENT' ? [{

@@ -52,20 +52,15 @@ public class PrayerVoteController {
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal User currentUser) {
 
-        LocalDate today = LocalDate.now();
-        if (!PrayerVoteService.isVoteWindowOpen(today)) {
-            throw AppException.forbidden("투표 기간이 아닙니다. 기도모임 참석 여부는 월~목요일에만 제출할 수 있습니다.");
-        }
-
         String statusStr = body.get("status");
         if (statusStr == null || statusStr.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
         try {
-            LocalDate weekStart = LocalDate.parse(body.get("weekStart"));
-            LocalDate currentWeekStart = PrayerVoteService.getWeekStart(today);
-            if (!weekStart.equals(currentWeekStart)) {
-                throw AppException.forbidden("이번 주차의 투표만 제출할 수 있습니다.");
+            // 이번 주와 지난 주들은 언제든 수정 가능, 다음 주 이후만 막는다
+            LocalDate weekStart = PrayerVoteService.getWeekStart(LocalDate.parse(body.get("weekStart")));
+            if (weekStart.isAfter(PrayerVoteService.getWeekStart(LocalDate.now()))) {
+                throw AppException.forbidden("다음 주 이후의 기도모임은 아직 입력할 수 없습니다.");
             }
             String reason = body.getOrDefault("reason", "");
             PrayerVote vote = prayerVoteService.saveVote(currentUser.getId(), weekStart, statusStr, reason);

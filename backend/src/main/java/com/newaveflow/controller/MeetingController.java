@@ -12,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/meetings")
@@ -36,14 +36,12 @@ public class MeetingController {
             @Valid @RequestBody MeetingAttendanceRequest request,
             @AuthenticationPrincipal User currentUser) {
 
-        LocalDateTime now = LocalDateTime.now();
-        if (!MeetingService.isMeetingWindowOpen(now)) {
-            throw AppException.forbidden("제출 기간이 아닙니다. 토요회의 참석 여부는 월~토요일 오후 4시까지 제출할 수 있습니다.");
+        // 이번 주와 지난 주들의 토요회의는 언제든 수정 가능, 다음 주 이후만 막는다
+        if (request.meetingDate().getDayOfWeek() != DayOfWeek.SATURDAY) {
+            throw AppException.badRequest("토요일 날짜만 입력할 수 있습니다.");
         }
-
-        LocalDate expectedSaturday = MeetingService.getThisWeekSaturday(now.toLocalDate());
-        if (!request.meetingDate().equals(expectedSaturday)) {
-            throw AppException.forbidden("이번 주 토요회의 날짜로만 제출할 수 있습니다.");
+        if (request.meetingDate().isAfter(MeetingService.getThisWeekSaturday(LocalDate.now()))) {
+            throw AppException.forbidden("다음 주 이후의 토요회의는 아직 입력할 수 없습니다.");
         }
 
         return ResponseEntity.ok(meetingService.saveMeetingAttendance(currentUser.getId(), request));

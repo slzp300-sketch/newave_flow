@@ -16,4 +16,7 @@ public interface TtsRecordRepository extends JpaRepository<TtsRecord, Long> {
 
     @Query("SELECT DISTINCT r FROM TtsRecord r LEFT JOIN FETCH r.answers a LEFT JOIN FETCH a.question WHERE r.infoYear = :year AND r.isSubmitted = true")
     List<TtsRecord> findAllSubmittedByYearWithAnswers(@Param("year") Integer year);
+
+    @Query("SELECT DISTINCT r FROM TtsRecord r JOIN FETCH r.teacher LEFT JOIN FETCH r.answers a LEFT JOIN FETCH a.question WHERE r.infoYear = :year")
+    List<TtsRecord> findAllByYearWithAnswers(@Param("year") Integer year);
 }

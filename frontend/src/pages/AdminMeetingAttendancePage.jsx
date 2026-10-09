@@ -7,6 +7,7 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import client from '../api/client'
 import { format, addDays } from 'date-fns'
+import { formatUpdatedAt } from '../utils/date'
 
 function getPastSaturdays(count = 8) {
   const saturdays = []
@@ -45,6 +46,7 @@ export default function AdminMeetingAttendancePage() {
     queryKey: ['admin-meeting-attendance', selectedDate],
     queryFn: () => client.get(`/meetings/attendance/admin?date=${selectedDate}`).then(r => r.data),
     refetchInterval: 60000,
+    refetchOnWindowFocus: 'always',
   })
 
   // ── 전체 교사 명단
@@ -99,6 +101,7 @@ export default function AdminMeetingAttendancePage() {
       displayGrade: t.grade || '미분류',
       satStatus: att?.status || 'UNSUBMITTED',
       satReason: att?.reason || '',
+      satUpdatedAt: att?.updatedAt || null,
       minuteConfirmed: minuteConfirmMap[tid] || false,
     }
   })
@@ -296,6 +299,7 @@ export default function AdminMeetingAttendancePage() {
                                 }`}>
                                   {item.satStatus === 'ATTEND' ? '✅ 참석' :
                                    item.satStatus === 'ABSENT' ? '❌ 불참' : '미제출'}
+                                  {item.satUpdatedAt && <span className="text-gray-300 font-bold"> · 마지막 수정 {formatUpdatedAt(item.satUpdatedAt)}</span>}
                                 </p>
 
                                 {/* 불참 사유 */}

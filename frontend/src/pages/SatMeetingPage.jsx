@@ -1,43 +1,24 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, CalendarCheck, MessageSquare, PenLine, Lock, Clock } from 'lucide-react'
+import { CheckCircle2, CalendarCheck, MessageSquare, PenLine } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
-import { getThisWeekInfo } from '../utils/date'
-import { format, addDays } from 'date-fns'
+import WeekNavigator from '../components/common/WeekNavigator'
+import { getWeekStartByOffset, formatUpdatedAt, toApiDate } from '../utils/date'
+import { format, addDays, getWeek } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import client from '../api/client'
 
-function getNow() { return new Date() }
-
-// 월요일 00:00 ~ 토요일 16:00까지만 제출/수정 가능
-function isSatWindowOpen() {
-  const now  = getNow()
-  const day  = now.getDay() // 0=Sun, 1=Mon ... 6=Sat
-  const hour = now.getHours()
-  if (day === 0)              return false          // 일요일: 닫힘
-  if (day >= 1 && day <= 5)  return true           // 월~금: 항상 열림
-  if (day === 6)              return hour < 16      // 토: 16시 이전만 열림
-  return false
-}
-
-function getThisWeekMonday() {
-  const now = getNow()
-  const day = now.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + diff)
-  return format(monday, 'yyyy-MM-dd')
-}
-
 export default function SatMeetingPage() {
   const { user }   = useAuthStore()
-  const weekInfo   = getThisWeekInfo()
-  const mondayDate = new Date(getThisWeekMonday())
-  const satDate    = format(addDays(mondayDate, 5), 'yyyy-MM-dd')
-  const satDateLabel = format(addDays(mondayDate, 5), 'M/d')
+  const [offset, setOffset] = useState(0)
+  // 월요일 시작 주의 토요일 (일요일에는 어제 토요일이 '이번 주')
+  const satDay       = addDays(getWeekStartByOffset(offset, 1), 5)
+  const satDate      = toApiDate(satDay)
+  const satDateLabel = format(satDay, 'M/d')
+  const weekNum      = getWeek(satDay, { weekStartsOn: 0 })
 
   const queryClient = useQueryClient()
 
@@ -51,9 +32,10 @@ export default function SatMeetingPage() {
     mutationFn: (payload) => client.post('/meetings/attendance', payload).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meeting-attendance', satDate, user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['tts-week'] })
       setEditingSat(false)
     },
-    onError: () => alert('저장 중 오류가 발생했습니다.'),
+    onError: (err) => alert(err.response?.data?.message || '저장 중 오류가 발생했습니다.'),
   })
 
   const [sat, setSat]           = useState({ status: null, reason: '' })
@@ -64,6 +46,7 @@ export default function SatMeetingPage() {
       setSat({ status: satData.status, reason: satData.reason || '' })
       setEditingSat(false)
     } else {
+      setSat({ status: null, reason: '' })
       setEditingSat(true)
     }
   }, [satData])
@@ -79,49 +62,50 @@ export default function SatMeetingPage() {
   }
   const satValid     = sat.status !== null && (sat.status === 'ATTEND' || sat.reason.trim() !== '')
   const satSubmitted = satData?.status && !editingSat
-  const windowOpen   = isSatWindowOpen()
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
-      <Header title={`${weekInfo.weekNum}주차 교사회의 체크`} showBack />
+      <Header title="교사회의 체크" showBack />
 
-      <div className="px-4 py-4 glass-effect">
-        <div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">토요일 교사 회의 · 월~토 오후 4시까지</p>
-          <p className="text-sm font-bold text-gray-700 mt-0.5">{weekInfo.start} ~ {weekInfo.end}</p>
-        </div>
+      <div className="px-4 py-3 glass-effect">
+        <WeekNavigator
+          offset={offset}
+          onChange={setOffset}
+          title={`${weekNum}주차 토요 교사회의`}
+          range={`${satDateLabel} (토) · 지난 주 기록도 언제든 수정할 수 있어요`}
+        />
       </div>
 
       <div className="px-4 py-5">
         {satLoading ? (
           <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
         ) : satSubmitted ? (
-          <SatSubmittedCard sat={sat} onEdit={() => setEditingSat(true)} windowOpen={windowOpen} />
-        ) : windowOpen ? (
+          <SatSubmittedCard sat={sat} updatedAt={satData?.updatedAt} onEdit={() => setEditingSat(true)} />
+        ) : (
           <SatForm
             sat={sat}
             update={updateSat}
             onSubmit={submitSat}
+            onCancel={satData?.status ? () => {
+              setSat({ status: satData.status, reason: satData.reason || '' })
+              setEditingSat(false)
+            } : null}
             valid={satValid}
             saving={saveSatMutation.isPending}
             satDateLabel={satDateLabel}
           />
-        ) : (
-          <SatClosedCard />
         )}
+        <p className="text-[11px] text-gray-400 font-medium text-center mt-3">
+          참석으로 체크하면 TTS의 '교사회의' 점수에 자동으로 반영돼요.
+        </p>
       </div>
     </div>
   )
 }
 
-function SatForm({ sat, update, onSubmit, valid, saving, satDateLabel }) {
+function SatForm({ sat, update, onSubmit, onCancel, valid, saving, satDateLabel }) {
   return (
     <Card className="flex flex-col gap-5">
-      <div className="bg-blue-50 rounded-2xl px-4 py-3 border border-blue-100">
-        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">제출 기한</p>
-        <p className="text-sm font-black text-blue-800 mt-0.5">📅 매주 금요일 18:00까지</p>
-      </div>
-
       <div>
         <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">교사 회의 참석 여부 ({satDateLabel} 토요일)</p>
         <div className="grid grid-cols-2 gap-3">
@@ -138,53 +122,36 @@ function SatForm({ sat, update, onSubmit, valid, saving, satDateLabel }) {
         )}
       </AnimatePresence>
 
-      <Button size="lg" disabled={!valid || saving} onClick={onSubmit}>
-        <CalendarCheck size={17} />
-        {saving ? '저장 중...' : '교사 회의 체크 제출'}
-      </Button>
-    </Card>
-  )
-}
-
-function SatClosedCard() {
-  return (
-    <Card className="flex flex-col items-center gap-3 py-8">
-      <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center">
-        <Lock size={22} className="text-gray-400" />
-      </div>
-      <div className="text-center">
-        <p className="font-black text-gray-700 text-sm">제출 기간이 아닙니다</p>
-        <p className="text-[11px] text-gray-400 mt-1 font-medium">매주 월요일부터 토요일 오후 4시까지 제출할 수 있습니다</p>
-      </div>
-      <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
-        <Clock size={12} className="text-blue-500" />
-        <span className="text-[11px] font-black text-blue-600">Mon ~ Sat 16:00 제출 가능</span>
+      <div className="flex gap-2">
+        {onCancel && (
+          <Button size="lg" variant="secondary" onClick={onCancel} className="flex-1">취소</Button>
+        )}
+        <Button size="lg" disabled={!valid || saving} onClick={onSubmit} className="flex-[2]">
+          <CalendarCheck size={17} />
+          {saving ? '저장 중...' : '저장'}
+        </Button>
       </div>
     </Card>
   )
 }
 
-function SatSubmittedCard({ sat, onEdit, windowOpen }) {
+function SatSubmittedCard({ sat, updatedAt, onEdit }) {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CheckCircle2 size={18} className="text-blue-500" />
-          <span className="font-black text-gray-900 text-sm">교사 회의 체크 제출 완료</span>
+          <span className="font-black text-gray-900 text-sm">교사 회의 체크 완료</span>
         </div>
-        {windowOpen && (
-          <button onClick={onEdit} className="text-[11px] text-blue-600 font-black flex items-center gap-1">
-            <PenLine size={12} /> 수정
-          </button>
-        )}
+        <button onClick={onEdit} className="text-[11px] text-blue-600 font-black flex items-center gap-1">
+          <PenLine size={12} /> 수정
+        </button>
       </div>
       <div className="bg-gray-50 rounded-xl px-4 py-3 flex flex-col gap-2 text-sm">
         <Row label="참석 여부" value={sat.status === 'ATTEND' ? '✅ 참석' : '❌ 불참'} />
         {sat.reason && <Row label="사유" value={sat.reason} />}
+        {updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(updatedAt)} muted />}
       </div>
-      {!windowOpen && (
-        <p className="text-[11px] text-gray-400 font-medium text-center">제출 기간이 종료되어 수정할 수 없습니다.</p>
-      )}
     </Card>
   )
 }
@@ -217,7 +184,7 @@ function Row({ label, value, muted }) {
   return (
     <div className="flex justify-between items-start gap-3">
       <span className={`text-[11px] font-bold ${muted ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
-      <span className={`text-[11px] font-black text-right max-w-[200px] ${muted ? 'text-gray-300' : 'text-gray-700'}`}>{value}</span>
+      <span className={`text-[11px] font-black text-right max-w-[200px] ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{value}</span>
     </div>
   )
 }

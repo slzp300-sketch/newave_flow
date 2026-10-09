@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Check, X, ChevronDown, ChevronUp, Send,
-  CheckCircle2, AlertCircle, MessageSquare, UserCheck, UserX,
-  History, Calendar, Lock
+  CheckCircle2, MessageSquare, UserCheck, UserX,
+  History, Calendar
 } from 'lucide-react'
 import { attendanceApi } from '../api/attendance'
 import { classesApi } from '../api/classes'
 import { reportsApi } from '../api/reports'
-import { toApiDate, getMostRecentSunday, isSundayToTuesday, formatDate } from '../utils/date'
+import { toApiDate, getWeekStartByOffset, formatDate, formatUpdatedAt } from '../utils/date'
 import useAuthStore from '../store/authStore'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
+import WeekNavigator from '../components/common/WeekNavigator'
 
 const STATUS_CONFIG = {
   PRESENT: { label: '출석', color: 'emerald', icon: UserCheck },
@@ -23,11 +23,13 @@ const STATUS_CONFIG = {
 
 export default function AttendancePage() {
   const qc    = useQueryClient()
-  const navigate = useNavigate()
   const { user } = useAuthStore()
-  const today = toApiDate(getMostRecentSunday())
-  const isWindowOpen = isSundayToTuesday()
+  const [offset, setOffset] = useState(0)
+  // 선택한 주의 주일(일요일). 지난 주일 출석도 언제든 수정할 수 있다
+  const today = toApiDate(getWeekStartByOffset(offset, 0))
   const [localEdit, setLocalEdit] = useState(false)
+
+  useEffect(() => { setLocalEdit(false) }, [today])
 
   // 1. 담당 반 목록
   const { data: classes = [], isLoading: classLoading } = useQuery({
@@ -46,8 +48,8 @@ export default function AttendancePage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  // 3. 오늘 출석 기록
-  const { data: records = [] } = useQuery({
+  // 3. 선택한 주일 출석 기록
+  const { data: records } = useQuery({
     queryKey: ['attendance', classId, today],
     queryFn:  () => attendanceApi.getByClass(classId, today).then(r => r.data),
     enabled:  !!classId,
@@ -67,19 +69,17 @@ export default function AttendancePage() {
   // 상태 관리: { [studentId]: { status, absentReason, note } }
   const [formData, setFormData] = useState({})
 
-  // 초기 데이터 로드
+  // 선택한 주일의 기록으로 화면을 채운다 (주를 바꾸면 이전 주 입력이 섞이지 않게 통째로 교체)
   useEffect(() => {
-    if (records.length > 0) {
-      const initial = {}
-      records.forEach(r => {
-        initial[r.studentId] = {
-          status: r.status,
-          absentReason: r.absentReason || '',
-          note: r.note || ''
-        }
-      })
-      setFormData(prev => ({ ...initial, ...prev }))
-    }
+    const initial = {}
+    ;(records || []).forEach(r => {
+      initial[r.studentId] = {
+        status: r.status,
+        absentReason: r.absentReason || '',
+        note: r.note || ''
+      }
+    })
+    setFormData(initial)
   }, [records])
 
   const updateStudent = (id, fields) => {
@@ -113,7 +113,18 @@ export default function AttendancePage() {
       qc.invalidateQueries({ queryKey: ['report-status'] })
       qc.invalidateQueries({ queryKey: ['weekly-status'] })
     },
+    onError: (err) => alert(err.response?.data?.message || '저장 중 오류가 발생했습니다.'),
   })
+
+  const weekNav = (
+    <WeekNavigator
+      offset={offset}
+      onChange={setOffset}
+      title={`${formatDate(today)} 주일`}
+      range="지난 주일 출석도 언제든 수정할 수 있어요"
+    />
+  )
+  const lastUpdated = reportStatus?.updatedAt || reportStatus?.submittedAt
 
   if (classLoading) return <div className="py-20 text-center text-gray-400">불러오는 중...</div>
 
@@ -132,27 +143,6 @@ export default function AttendancePage() {
     )
   }
 
-  if (!isWindowOpen) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gray-50/50">
-        <Header title="출석 체크" showBack />
-        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20 mt-[-10vh]">
-          <div className="w-16 h-16 bg-white border-4 border-gray-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
-            <Lock size={28} className="text-gray-400" />
-          </div>
-          <h2 className="text-[17px] font-black text-gray-800 mb-3 text-center tracking-tight">출결 입력 기간이 아닙니다</h2>
-          <p className="text-[13px] text-gray-500 text-center mb-8 font-medium leading-relaxed">
-            매주 <span className="text-gray-700 font-bold">주일(일요일)부터 화요일</span>까지만<br />
-            출결 현황을 기록하거나 수정할 수 있습니다.
-          </p>
-          <Button onClick={() => navigate(-1)} variant="secondary" className="w-full max-w-[160px] rounded-2xl border-gray-200">
-            돌아가기
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   if (isSubmitted) {
     return (
       <SubmittedAttendanceView 
@@ -161,7 +151,8 @@ export default function AttendancePage() {
         students={students}
         formData={formData}
         onEdit={() => setLocalEdit(true)}
-        isWindowOpen={isWindowOpen}
+        weekNav={weekNav}
+        lastUpdated={lastUpdated}
       />
     )
   }
@@ -171,8 +162,9 @@ export default function AttendancePage() {
       <Header title="출석 체크" showBack />
 
       {/* 상단 정보 */}
-      <div className="px-4 py-4 glass-effect border-b border-gray-100">
-        <div className="flex justify-between items-center mb-3">
+      <div className="px-4 py-4 glass-effect border-b border-gray-100 flex flex-col gap-3">
+        {weekNav}
+        <div className="flex justify-between items-center">
           <div>
             <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest flex items-center gap-1">
               <Calendar size={10} /> {formatDate(today)}
@@ -183,13 +175,6 @@ export default function AttendancePage() {
             </div>
           </div>
         </div>
-
-        {!isWindowOpen && (
-          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2.5 rounded-xl text-[11px] font-bold">
-            <AlertCircle size={14} className="flex-shrink-0" />
-            <p>출석 제출 기간이 아닙니다 (매주 주일~월요일 가능). 현재는 미리 입력만 가능합니다.</p>
-          </div>
-        )}
       </div>
 
       {/* 학생 목록 */}
@@ -210,14 +195,13 @@ export default function AttendancePage() {
         <Button
           className="w-full premium-gradient shadow-glow"
           onClick={() => submitReport()}
-          disabled={!isWindowOpen}
           loading={isSubmitting}
         >
           <Send size={18} />
           제출하기
         </Button>
         <p className="text-center text-[10px] text-gray-400 mt-2 font-medium">
-          제출 후에도 기간 내에는 수정이 가능합니다
+          제출 후에도 언제든 다시 고쳐서 제출할 수 있어요
         </p>
       </div>
     </div>
@@ -324,7 +308,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
   )
 }
 
-function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit, isWindowOpen }) {
+function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit, weekNav, lastUpdated }) {
   const counts = students.reduce((acc, s) => {
     const status = formData[s.id]?.status || 'ABSENT'
     acc[status] = (acc[status] || 0) + 1
@@ -334,6 +318,7 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="출석 완료" showBack />
+      <div className="px-4 py-3 glass-effect border-b border-gray-100">{weekNav}</div>
       
       <div className="px-6 pt-10 pb-6 flex flex-col items-center gap-6">
         <motion.div
@@ -349,6 +334,7 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
           <h2 className="text-2xl font-black text-gray-900">{classGroup?.name}</h2>
           <p className="text-emerald-500 font-bold mt-1">출석 제출이 완료되었습니다!</p>
           <p className="text-gray-400 text-xs mt-3">{formatDate(date)}</p>
+          {lastUpdated && <p className="text-gray-300 text-[11px] mt-1">마지막 수정 {formatUpdatedAt(lastUpdated)}</p>}
         </div>
 
         <div className="w-full grid grid-cols-2 gap-3 mt-4">
@@ -380,16 +366,12 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
         </div>
 
         <div className="mt-6 flex flex-col items-center gap-4">
-          {isWindowOpen ? (
-            <button
+          <button
               onClick={onEdit}
               className="text-primary-600 font-bold text-sm underline underline-offset-4 active:opacity-60"
             >
               수정하기
             </button>
-          ) : (
-            <p className="text-[11px] text-gray-400 font-medium">제출 기간이 종료되었습니다.</p>
-          )}
           <Button variant="outline" size="sm" onClick={() => window.history.back()}>
             홈으로 돌아가기
           </Button>

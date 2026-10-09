@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Mic2, MicOff, Users2, CheckCircle2, CalendarCheck,
-  MessageSquare, Lock, PenLine, GraduationCap, Clock, BookOpen
+  MessageSquare, PenLine, GraduationCap, BookOpen
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -31,11 +31,6 @@ function getThisWeekMonday() {
   const monday = new Date(now)
   monday.setDate(now.getDate() + diff)
   return format(monday, 'yyyy-MM-dd')
-}
-
-function isVoteWindowOpen() {
-  const day = getNow().getDay()
-  return day >= 1 && day <= 4 // Mon=1 ~ Thu=4
 }
 
 function getMicRotationIndex() {
@@ -70,7 +65,6 @@ export default function MeetingAttendancePage() {
   const thuDate = format(addDays(mondayDate, 3), 'M/d')
   const satDate = format(addDays(mondayDate, 5), 'yyyy-MM-dd')
   const satDateLabel = format(addDays(mondayDate, 5), 'M/d')
-  const voteOpen  = isVoteWindowOpen()
 
   const queryClient = useQueryClient()
 
@@ -211,8 +205,6 @@ export default function MeetingAttendancePage() {
 
           {voteLoading ? (
             <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
-          ) : !voteOpen && !prayerSubmitted ? (
-            <VoteClosedCard />
           ) : prayerSubmitted ? (
             <PrayerSubmittedCard
               vote={voteData}
@@ -256,25 +248,6 @@ export default function MeetingAttendancePage() {
 
       </div>
     </div>
-  )
-}
-
-// ── 투표 기간 외 안내 카드 ──────────────────
-function VoteClosedCard() {
-  return (
-    <Card className="flex flex-col items-center gap-3 py-8">
-      <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center">
-        <Lock size={22} className="text-gray-400" />
-      </div>
-      <div className="text-center">
-        <p className="font-black text-gray-700 text-sm">투표 기간이 아닙니다</p>
-        <p className="text-[11px] text-gray-400 mt-1 font-medium">매주 월요일 ~ 목요일에 투표할 수 있습니다</p>
-      </div>
-      <div className="flex items-center gap-1.5 bg-violet-50 px-3 py-1.5 rounded-xl border border-violet-100">
-        <Clock size={12} className="text-violet-500" />
-        <span className="text-[11px] font-black text-violet-600">Mon ~ Thu 투표 가능</span>
-      </div>
-    </Card>
   )
 }
 
@@ -417,11 +390,6 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit, isMicTurn }) {
 function SatForm({ sat, update, onSubmit, valid, satDateLabel }) {
   return (
     <Card className="flex flex-col gap-5">
-      <div className="bg-blue-50 rounded-2xl px-4 py-3 border border-blue-100">
-        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">제출 기한</p>
-        <p className="text-sm font-black text-blue-800 mt-0.5">📅 매주 금요일 18:00까지</p>
-      </div>
-
       <div>
         <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">교사 회의 참석 여부 ({satDateLabel} 토요일)</p>
         <div className="grid grid-cols-2 gap-3">

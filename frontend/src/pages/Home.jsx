@@ -166,13 +166,11 @@ function TeacherView({ navigate }) {
   const weeklyStatus  = useWeeklyStatus()
   const { user: authUser } = useAuthStore()
 
-  const { weekNum: ttsWeekNum } = getTTSWeekRange()
-  const currentYear = new Date().getFullYear()
-
+  // 이번 주(일~토) TTS — 1점 이상 체크했으면 완료로 표시
   const { data: ttsRecord } = useQuery({
-    queryKey: ['tts-my', currentYear, ttsWeekNum],
-    queryFn: () => ttsApi.getMyTts(currentYear, ttsWeekNum).then(r => r.data),
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['tts-week', toApiDate(startOfWeek(new Date(), { weekStartsOn: 0 }))],
+    queryFn: () => ttsApi.getWeek(toApiDate()).then(r => r.data),
+    staleTime: 60 * 1000,
   })
 
   // 기도모임 투표 완료 여부
@@ -199,7 +197,7 @@ function TeacherView({ navigate }) {
   })
 
   const attendanceDone = weeklyStatus.attendanceSubmittedThisWeek
-  const ttsDone        = ttsRecord?.submitted ?? false
+  const ttsDone        = (ttsRecord?.score ?? 0) > 0
   const prayerDone     = !!prayerVoteData
   const satDone        = !!satData?.status
 
@@ -226,7 +224,7 @@ function TeacherView({ navigate }) {
       items: [
         { to: '/attendance',      icon: ClipboardList, iconBg: 'bg-emerald-50',  iconColor: 'text-emerald-600', title: '출석',        desc: '주일 예배 반 학생 출석체크', done: attendanceDone },
         { to: '/tts',             icon: CheckSquare,   iconBg: 'bg-teal-50',     iconColor: 'text-teal-600',    title: 'TTS',         desc: 'Teacher Training Sheet 작성', done: ttsDone },
-        { to: '/meeting/prayer',  icon: Users,         iconBg: 'bg-violet-50',   iconColor: 'text-violet-600',  title: '기도모임 투표', desc: '온라인 기도모임 참석 투표 (월~목)', done: prayerDone },
+        { to: '/meeting/prayer',  icon: Users,         iconBg: 'bg-violet-50',   iconColor: 'text-violet-600',  title: '기도모임 투표', desc: '온라인 기도모임 참석 투표', done: prayerDone },
         { to: '/meeting/sat',     icon: CalendarCheck, iconBg: 'bg-blue-50',     iconColor: 'text-blue-600',    title: '교사회의 체크', desc: '토요일 교사 회의 참석 여부 제출', done: satDone },
         ...(satData?.status === 'ABSENT' ? [{
           to: '/minutes',

@@ -1,7 +1,7 @@
 import { 
   format, isToday, isTomorrow, isYesterday, 
   getISOWeek, getWeek, getMonth, getWeekOfMonth,
-  startOfWeek, endOfWeek, subWeeks 
+  startOfWeek, endOfWeek, subWeeks, addWeeks
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
@@ -89,3 +89,11 @@ export const isSundayToTuesday = () => {
   const day = new Date().getDay()
   return day === 0 || day === 1 || day === 2 // 0: Sunday, 1: Monday, 2: Tuesday
 }
+
+/** 지금 기준 offset주 이동한 주의 시작일 (weekStartsOn 0=일, 1=월). offset 0 = 이번 주 */
+export const getWeekStartByOffset = (offset = 0, weekStartsOn = 0) =>
+  startOfWeek(addWeeks(new Date(), offset), { weekStartsOn })
+
+/** 'yyyy-MM-ddTHH:mm:ss' → '10/9 14:05' (마지막 수정 시각 표시용) */
+export const formatUpdatedAt = (value) =>
+  value ? format(new Date(value), 'M/d HH:mm') : ''

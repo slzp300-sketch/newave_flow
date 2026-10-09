@@ -4,6 +4,7 @@ import com.newaveflow.entity.Event;
 import com.newaveflow.entity.MeetingAttendance;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class EventDto {
@@ -127,15 +128,17 @@ public class EventDto {
             Long teacherId,
             LocalDate meetingDate,
             String status,
-            String reason
+            String reason,
+            LocalDateTime updatedAt
     ) {
         public static MeetingAttendanceResponse from(MeetingAttendance attendance) {
-            if (attendance == null) return new MeetingAttendanceResponse(null, null, null, null);
+            if (attendance == null) return new MeetingAttendanceResponse(null, null, null, null, null);
             return new MeetingAttendanceResponse(
                     attendance.getTeacher().getId(),
                     attendance.getMeetingDate(),
                     attendance.getStatus(),
-                    attendance.getReason()
+                    attendance.getReason(),
+                    attendance.getUpdatedAt()
             );
         }
     }
