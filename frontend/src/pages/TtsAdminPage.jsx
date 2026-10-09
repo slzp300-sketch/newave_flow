@@ -579,7 +579,7 @@ function QuestionsTab() {
       <LegacyImportCard />
 
       {hasChanges && (
-        <div className="fixed bottom-24 left-4 right-4 animate-[slideUp_0.3s_ease]">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 z-20">
           <Button size="lg" onClick={() => save(editList)} loading={isPending} className="shadow-glow">
             <Save size={18} /> 변경사항 저장하기
           </Button>
