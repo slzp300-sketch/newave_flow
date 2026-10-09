@@ -22,7 +22,9 @@ backend/bin
 frontend/dist
 
 # Optional
-.claude
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
 output
 products
 scripts
