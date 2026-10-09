@@ -576,7 +576,8 @@ function QuestionsTab() {
         ))}
       </div>
 
-      <LegacyImportCard />
+      {/* 기존 시트 점수 가져오기: 당분간 숨김 (다시 쓰려면 아래 줄의 주석만 풀면 됨) */}
+      {/* <LegacyImportCard /> */}
 
       {hasChanges && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 z-20">
