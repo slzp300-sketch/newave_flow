@@ -1,0 +1,9 @@
+allprojects { auditProject ->
+    afterEvaluate {
+        if (auditProject.plugins.hasPlugin('java')) {
+            def auditSources = new File(auditProject.projectDir.parentFile, 'docs/code-audit-checks/java')
+            assert auditSources.isDirectory(): 'Audit verification sources were not found'
+            auditProject.sourceSets.test.java.srcDir(auditSources)
+        }
+    }
+}

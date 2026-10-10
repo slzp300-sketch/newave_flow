@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, XCircle, Calendar, Users, PenLine, CalendarCheck, UserCheck, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { toApiDate } from '../utils/date'
+import { isEventAttendanceClosed, assertEventAttendanceOpen } from '../utils/eventAttendance'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
@@ -76,7 +76,10 @@ export default function EventAttendancePage() {
   }, [students])
 
   const saveMutation = useMutation({
-    mutationFn: (records) => eventApi.saveStudentAttendance(eventId, records),
+    mutationFn: (records) => {
+      assertEventAttendanceOpen(event)
+      return eventApi.saveStudentAttendance(eventId, records)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-attendance', eventId, user?.id] })
       setSubmitted(true)
@@ -107,19 +110,22 @@ export default function EventAttendancePage() {
   }, [myTeacherAttendance])
 
   const teacherAttendanceMutation = useMutation({
-    mutationFn: () => eventApi.saveTeacherAttendance(
-      eventId, pendingTeacherStatus,
-      pendingTeacherStatus === 'PARTIAL' ? partialFromDate || null : null,
-      pendingTeacherStatus === 'PARTIAL' ? partialNote || null : null,
-      pendingTeacherStatus === 'ABSENT' ? teacherAbsenceReason || null : null
-    ),
+    mutationFn: () => {
+      assertEventAttendanceOpen(event)
+      return eventApi.saveTeacherAttendance(
+        eventId, pendingTeacherStatus,
+        pendingTeacherStatus === 'PARTIAL' ? partialFromDate || null : null,
+        pendingTeacherStatus === 'PARTIAL' ? partialNote || null : null,
+        pendingTeacherStatus === 'ABSENT' ? teacherAbsenceReason || null : null
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, user?.id] })
       setTeacherSubmitted(true)
       setTeacherEditing(false)
     },
     onError: (err) => {
-      alert(err.response?.data?.message || '제출 중 오류가 발생했습니다.')
+      alert(err.response?.data?.message || err.message || '제출 중 오류가 발생했습니다.')
     },
   })
 
@@ -160,8 +166,7 @@ export default function EventAttendancePage() {
   const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT').length
   const partialCount = Object.values(statusMap).filter(s => s === 'PARTIAL').length
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
-  const todayDateStr = toApiDate(new Date())
-  const isPastDeadline = !!(event?.attendanceDeadline && todayDateStr > event.attendanceDeadline)
+  const isPastDeadline = isEventAttendanceClosed(event)
 
   const isEditable   = (!submitted || editing) && !isPastDeadline
 

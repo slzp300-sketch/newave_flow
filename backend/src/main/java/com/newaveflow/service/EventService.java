@@ -24,6 +24,8 @@ public class EventService {
     private final TeacherClassRepository teacherClassRepository;
     private final StudentRepository studentRepository;
     private final NotificationService notificationService;
+    private final EventRosterService roster;
+    private final EventParticipantRepository participants;
 
     public List<EventDto.EventResponse> getEvents(LocalDate from, LocalDate to) {
         if (from == null) from = LocalDate.now().minusMonths(6);
@@ -56,6 +58,7 @@ public class EventService {
     @Transactional
     public EventDto.EventResponse createEvent(EventDto.EventCreateRequest request) {
         Event saved = eventRepository.save(buildEvent(request));
+        roster.capture(saved);
 
         // 새 일정 등록 시 교사들에게 알림 (SYSTEM 또는 EVENT)
         List<Long> activeUserIds = userRepository.findByIsActiveTrue().stream().map(User::getId).toList();
@@ -71,12 +74,15 @@ public class EventService {
     @Transactional
     public List<EventDto.EventResponse> createEvents(List<EventDto.EventCreateRequest> requests) {
         List<Event> events = requests.stream().map(this::buildEvent).toList();
-        return eventRepository.saveAll(events).stream()
+        List<Event> saved = eventRepository.saveAll(events);
+        saved.forEach(roster::capture);
+        return saved.stream()
                 .map(EventDto.EventResponse::from)
                 .toList();
     }
 
     private Event buildEvent(EventDto.EventCreateRequest request) {
+        InputRules.eventDates(request.title(), request.eventDate(), request.endDate());
         if (request.title().isBlank()) {
             throw AppException.badRequest("일정 제목을 입력해주세요.");
         }
@@ -100,6 +106,7 @@ public class EventService {
 
     @Transactional
     public EventDto.EventResponse updateEvent(Long id, EventDto.EventCreateRequest request) {
+        InputRules.eventDates(request.title(), request.eventDate(), request.endDate());
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
         event.setTitle(request.title());
@@ -113,11 +120,13 @@ public class EventService {
         event.setAttendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()));
         event.setAttendanceDeadline(Boolean.TRUE.equals(request.attendanceRequired()) ? request.attendanceDeadline() : null);
         event.setAttendanceTarget(parseAttendanceTarget(request.attendanceTarget()));
+        roster.capture(event);
         return EventDto.EventResponse.from(eventRepository.save(event));
     }
 
     @Transactional
     public void deleteEvent(Long id) {
+        participants.deleteByEventId(id);
         eventStudentAttendanceRepository.deleteAllByEventId(id);
         eventAttendanceRepository.deleteAllByEventId(id);
         eventRepository.deleteById(id);
@@ -125,36 +134,9 @@ public class EventService {
 
     // ── 학생 출석 조회 (교사: 내 반) ──
     public List<EventDto.StudentAttendanceRecord> getMyClassAttendance(Long eventId, Long teacherId) {
-        List<TeacherClass> teacherClasses = teacherClassRepository.findByTeacherId(teacherId);
-        if (teacherClasses.isEmpty()) return List.of();
-
-        TeacherClass primary = teacherClasses.stream()
-                .filter(TeacherClass::isPrimary)
-                .findFirst()
-                .orElse(teacherClasses.get(0));
-
-        Long classGroupId = primary.getClassGroup().getId();
-        String classGroupName = primary.getClassGroup().getName();
-
-        List<Student> students = studentRepository.findByClassGroupIdAndIsActiveTrue(classGroupId);
-
-        Map<Long, EventStudentAttendance> attMap = eventStudentAttendanceRepository
-                .findByEventIdAndClassGroupId(eventId, classGroupId)
-                .stream()
-                .collect(Collectors.toMap(a -> a.getStudent().getId(), a -> a));
-
-        return students.stream()
-                .map(s -> {
-                    EventStudentAttendance att = attMap.get(s.getId());
-                    return new EventDto.StudentAttendanceRecord(
-                        s.getId(), s.getName(), s.getGrade(),
-                        classGroupId, classGroupName,
-                        att != null ? att.getStatus() : null,
-                        att != null ? att.getAbsenceReason() : null,
-                        att != null ? att.getPartialFromDate() : null,
-                        att != null ? att.getPartialNote() : null);
-                })
-                .toList();
+        Set<Long> classIds = teacherClassRepository.findByTeacherId(teacherId).stream()
+                .map(tc -> tc.getClassGroup().getId()).collect(Collectors.toSet());
+        return roster.studentRecords(eventId).stream().filter(s -> classIds.contains(s.classGroupId())).toList();
     }
 
     // ── 학생 출석 배치 저장 (교사) ──
@@ -177,9 +159,10 @@ public class EventService {
                 .collect(Collectors.toSet());
 
         for (EventDto.StudentAttendanceItem item : items) {
+            InputRules.eventAttendance(event, item.status(), item.absenceReason(), item.partialFromDate());
             Student student = studentRepository.findById(item.studentId())
                     .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
-            if (student.getClassGroup() == null || !myClassIds.contains(student.getClassGroup().getId())) {
+            if (!myClassIds.contains(roster.student(eventId, student.getId()).getClassGroupId())) {
                 throw AppException.forbidden("담당 반 학생만 출석 체크할 수 있습니다.");
             }
 
@@ -230,6 +213,8 @@ public class EventService {
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
 
         Optional<EventAttendance> existing = eventAttendanceRepository.findByEventIdAndTeacherId(eventId, teacherId);
+        InputRules.eventAttendance(event, status, absenceReason, partialFromDate);
+        roster.captureExtraTeacher(eventId, teacher);
         if (existing.isPresent()) {
             existing.get().update(status, partialFromDate, partialNote, absenceReason);
             eventAttendanceRepository.save(existing.get());
@@ -249,59 +234,7 @@ public class EventService {
 
     // ── 교사 출석 전체 요약 (관리자) ──
     public List<EventDto.TeacherAttendanceRecord> getTeacherAttendanceSummary(Long eventId) {
-        // 실제 출석 기록이 있는 사람 (역할 무관) + TEACHER 롤 전체 (미제출 포함)
-        List<EventAttendance> records = eventAttendanceRepository.findAllByEventIdWithTeacher(eventId);
-        Map<Long, EventAttendance> attendanceMap = records.stream()
-                .collect(Collectors.toMap(a -> a.getTeacher().getId(), a -> a));
-
-        // TEACHER 및 EXECUTIVE 롤 전체 (미제출자 포함)
-        List<User> teachers = userRepository.findByIsActiveTrue().stream()
-                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
-                .toList();
-
-        // 출석 제출한 사람 중 TEACHER가 아닌 사람 (EXECUTIVE, PASTOR 등) 추가 — ADMIN 제외
-        Set<Long> teacherIds = teachers.stream().map(User::getId).collect(Collectors.toSet());
-        List<User> extraSubmitters = records.stream()
-                .map(EventAttendance::getTeacher)
-                .filter(u -> !teacherIds.contains(u.getId()))
-                .filter(u -> u.getRole() != User.Role.ADMIN)
-                .distinct()
-                .toList();
-
-        // 합산 목록 구성
-        List<User> allUsers = new java.util.ArrayList<>(teachers);
-        allUsers.addAll(extraSubmitters);
-
-        // 교사들의 반 배정 정보 조회 (한 번에 조회하여 성능 최적화)
-        List<TeacherClass> allTeacherClasses = teacherClassRepository.findAllWithTeacherAndClass();
-        Map<Long, String> teacherGradeMap = allTeacherClasses.stream()
-                .filter(TeacherClass::isPrimary)
-                .collect(Collectors.toMap(
-                        tc -> tc.getTeacher().getId(),
-                        tc -> {
-                            String desc = tc.getClassGroup().getDescription();
-                            return (desc != null && !desc.isBlank()) ? desc : tc.getClassGroup().getName();
-                        },
-                        (v1, v2) -> v1
-                ));
-
-        return allUsers.stream()
-                .map(t -> {
-                    String grade = t.getGrade();
-                    if (grade == null || grade.isBlank()) {
-                        grade = teacherGradeMap.get(t.getId());
-                    }
-                    EventAttendance att = attendanceMap.get(t.getId());
-                    return new EventDto.TeacherAttendanceRecord(
-                            t.getId(), t.getName(), grade,
-                            att != null ? att.getStatus() : null,
-                            att != null ? att.getPartialFromDate() : null,
-                            att != null ? att.getPartialNote() : null,
-                            att != null ? att.getAbsenceReason() : null
-                    );
-                })
-                .sorted(Comparator.comparing(r -> r.teacherName() != null ? r.teacherName() : ""))
-                .toList();
+        return roster.teacherSummary(eventId);
     }
 
     private Event.AttendanceTarget parseAttendanceTarget(String value) {
@@ -312,41 +245,6 @@ public class EventService {
 
     // ── 학생 출석 전체 요약 (관리자) ──
     public List<EventDto.ClassAttendanceSummary> getStudentAttendanceSummary(Long eventId) {
-        // 제출된 출석 기록을 studentId 기준으로 맵핑
-        Map<Long, EventStudentAttendance> submittedMap = eventStudentAttendanceRepository
-                .findAllByEventId(eventId).stream()
-                .collect(Collectors.toMap(a -> a.getStudent().getId(), a -> a));
-
-        // 전체 활성 학생(반 배정된 학생)을 반별로 그룹화
-        return studentRepository.findAllActiveWithClassGroup().stream()
-                .collect(Collectors.groupingBy(Student::getClassGroup))
-                .entrySet().stream()
-                .map(entry -> {
-                    ClassGroup cg = entry.getKey();
-                    List<Student> students = entry.getValue();
-                    List<EventDto.StudentAttendanceRecord> records = students.stream()
-                            .sorted(Comparator.comparing(Student::getName))
-                            .map(s -> {
-                                EventStudentAttendance att = submittedMap.get(s.getId());
-                                return new EventDto.StudentAttendanceRecord(
-                                        s.getId(), s.getName(), s.getGrade(),
-                                        cg.getId(), cg.getName(),
-                                        att != null ? att.getStatus() : null,
-                                        att != null ? att.getAbsenceReason() : null,
-                                        att != null ? att.getPartialFromDate() : null,
-                                        att != null ? att.getPartialNote() : null);
-                            })
-                            .toList();
-                    long presentCount = records.stream()
-                            .filter(r -> "PRESENT".equals(r.status()) || "PARTIAL".equals(r.status())).count();
-                    long absentCount = records.stream()
-                            .filter(r -> "ABSENT".equals(r.status())).count();
-                    return new EventDto.ClassAttendanceSummary(
-                            cg.getId(), cg.getName(),
-                            students.size(), presentCount, absentCount,
-                            records);
-                })
-                .sorted(Comparator.comparing(EventDto.ClassAttendanceSummary::classGroupName))
-                .toList();
+        return roster.studentSummary(eventId);
     }
 }

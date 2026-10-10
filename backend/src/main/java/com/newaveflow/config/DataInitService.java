@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@Profile({"dev", "local", "prod"})
+@Profile({"dev", "local"})
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DataInitService {
 
     private final UserRepository userRepository;
@@ -37,47 +38,23 @@ public class DataInitService {
     private final PasswordEncoder passwordEncoder;
     private final RosterDataInitService rosterDataInitService;
 
+    @org.springframework.beans.factory.annotation.Value("${BOOTSTRAP_ADMIN_PASSWORD:}")
+    private String bootstrapPassword;
+
+    @org.springframework.beans.factory.annotation.Value("${BOOTSTRAP_ADMIN_EMAIL:admin@example.invalid}")
+    private String bootstrapEmail;
+
     @PostConstruct
     public void init() {
-        // 기존 DB의 관리자 이메일 마이그레이션 (slzp300 → admin@naver.com)
-        int migrated = userRepository.updateEmailByExactMatch("slzp300", "admin@naver.com");
-        if (migrated > 0) log.info("Admin email migrated: slzp300 → admin@naver.com");
-
-        // admin@naver.com 계정이 존재하면 역할을 ADMIN으로 보장
-        userRepository.findByEmailIgnoreCase("admin@naver.com").ifPresent(admin -> {
-            if (admin.getRole() != Role.ADMIN) {
-                admin.updateRole(Role.ADMIN);
-                userRepository.save(admin);
-                log.info("Admin role ensured: {} → ADMIN", admin.getEmail());
-            }
-        });
-
         // IMPORTANT: Only clear and seed if the database is essentially new
         if (userRepository.count() > 0) {
             log.info("Database already initialized. Skipping data seeding.");
             return;
         }
 
-        log.info("Performing a fresh initialization for migration...");
-        
-        // Clean up any existing loose data just in case
-        deactivationRequestRepository.deleteAll();
-        studentMemoRepository.deleteAll();
-        eventStudentAttendanceRepository.deleteAll();
-        eventAttendanceRepository.deleteAll();
-        meetingMinuteConfirmRepository.deleteAll();
-        prayerVoteRepository.deleteAll();
-        teacherClassRepository.deleteAll();
-        attendanceRepository.deleteAll();
-        dailyReportRepository.deleteAll();
-        meetingAttendanceRepository.deleteAll();
-        ttsRecordRepository.deleteAll();
-        ttsQuestionRepository.deleteAll();
-        evangelismGroupMemberRepository.deleteAll();
-        evangelismGroupRepository.deleteAll();
-        studentRepository.deleteAll();
-        classGroupRepository.deleteAll();
-        userRepository.deleteAll();
+        if (bootstrapPassword == null || bootstrapPassword.length() < 12) {
+            throw new IllegalStateException("BOOTSTRAP_ADMIN_PASSWORD must contain at least 12 characters");
+        }
 
         // 1. Create the primary Admin account
         initAdminUser();
@@ -117,12 +94,11 @@ public class DataInitService {
     }
 
     private void initAdminUser() {
-        log.info("Creating primary admin account: admin@naver.com");
-        String encodedPassword = passwordEncoder.encode("zd53738445");
+        String encodedPassword = passwordEncoder.encode(bootstrapPassword);
 
         User admin = User.builder()
                 .name("최종 관리자")
-                .email("admin@naver.com")
+                .email(bootstrapEmail)
                 .password(encodedPassword)
                 .role(Role.ADMIN)
                 .isActive(true)

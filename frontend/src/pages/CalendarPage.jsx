@@ -1,3 +1,4 @@
+import { eventRangeKey } from '../api/queryPolicy'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import useSwipeMonth from '../hooks/useSwipeMonth'
@@ -83,7 +84,7 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState('calendar')
 
   const { data: events = [], isLoading, refetch } = useQuery({
-    queryKey: ['events', format(current, 'yyyy-MM')],
+    queryKey: eventRangeKey(format(startOfWeek(startOfMonth(current)), 'yyyy-MM-dd'), format(endOfWeek(endOfMonth(current)), 'yyyy-MM-dd')),
     queryFn:  () => client.get('/events', {
       params: {
         from: format(startOfWeek(startOfMonth(current)), 'yyyy-MM-dd'),

@@ -1,7 +1,38 @@
 spring:
+  profiles:
+    default: none
+  jackson:
+    time-zone: Asia/Seoul
+    date-format: yyyy-MM-dd'T'HH:mm:ss
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 3600000      # 1시간 (ms)
+  refresh-token-expiration: 604800000   # 7일 (ms)
+
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+logging:
+  level:
+    root: INFO
+    com.newaveflow: INFO
+    org.springframework: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: OFF
+    org.springframework.security: INFO
+
+---
+
+spring:
   config:
     activate:
-      on-profile: dev
+      on-profile: "dev | local"
   datasource:
     url: jdbc:h2:mem:newave_flow;DB_CLOSE_DELAY=-1;MODE=MySQL
     username: sa
@@ -29,6 +60,9 @@ logging:
     com.newaveflow: DEBUG
     org.springframework.security: INFO
 
+jwt:
+  secret: ${JWT_SECRET:${random.uuid}${random.uuid}}
+
 ---
 
 spring:
@@ -36,13 +70,13 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:newave_flow}
-    username: ${PGUSER:postgres}
-    password: ${PGPASSWORD:password}
+    url: jdbc:postgresql://${PGHOST}:${PGPORT:5432}/${PGDATABASE}
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
@@ -60,34 +94,3 @@ logging:
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql: OFF
     org.springframework.security: WARN
-
----
-
-spring:
-  profiles:
-    active: dev
-  jackson:
-    time-zone: Asia/Seoul
-    date-format: yyyy-MM-dd'T'HH:mm:ss
-
-jwt:
-  secret: ${JWT_SECRET:newaveflow-secret-key-must-be-at-least-256-bits-long-for-hs256}
-  access-token-expiration: 3600000      # 1시간 (ms)
-  refresh-token-expiration: 604800000   # 7일 (ms)
-
-server:
-  port: 8080
-  servlet:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
-
-logging:
-  level:
-    root: INFO
-    com.newaveflow: INFO
-    org.springframework: WARN
-    org.hibernate.SQL: WARN
-    org.hibernate.type.descriptor.sql: OFF
-    org.springframework.security: INFO

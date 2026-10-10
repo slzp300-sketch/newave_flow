@@ -35,6 +35,7 @@ export default function ClassManagePage() {
   const activateMutation = useMutation({
     mutationFn: (id) => studentsApi.activate(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-class-students'] }),
+    onError: err => alert(err.response?.data?.message || '복적 처리에 실패했습니다.'),
   })
 
   const activeStudents   = students.filter(s => s.isActive && !s.hasPendingRequest)
@@ -142,7 +143,7 @@ export default function ClassManagePage() {
                     idx={idx}
                     isInactive
                     onEdit={() => setEditingStudent(student)}
-                    onActivate={() => activateMutation.mutate(student.id)}
+                    onActivate={user?.role !== 'TEACHER' ? () => activateMutation.mutate(student.id) : undefined}
                     isPending={activateMutation.isPending}
                   />
                 ))}
@@ -246,9 +247,9 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
           {isInactive ? (
             <button
               onClick={onActivate}
-              disabled={isPending}
+              disabled={isPending || !onActivate}
               className="p-2 rounded-xl bg-emerald-100 text-emerald-600 active:scale-90 transition-all"
-              title="복적"
+              title={onActivate ? '복적' : '복적은 관리자에게 요청해주세요'}
             >
               <UserCheck size={14} />
             </button>

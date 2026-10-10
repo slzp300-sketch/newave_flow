@@ -163,7 +163,7 @@ public class UserController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id,
             @RequestBody RoleRequest request) {
-        User user = userRepository.findById(id)
+        User user = userRepository.lockById(id)
                 .orElseThrow(() -> com.newaveflow.exception.AppException.notFound("사용자를 찾을 수 없습니다."));
         User.Role newRole = User.Role.valueOf(request.role());
 

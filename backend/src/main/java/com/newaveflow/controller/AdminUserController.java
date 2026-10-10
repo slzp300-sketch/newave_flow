@@ -16,6 +16,18 @@ import java.util.List;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final com.newaveflow.service.AuthService authService;
+
+    public record PasswordResetRequest(boolean identityVerified) {}
+
+    @PostMapping("/{id}/reset-password")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<com.newaveflow.dto.auth.ResetPasswordResponse> resetPassword(
+            @PathVariable Long id, @RequestBody PasswordResetRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.newaveflow.entity.User user) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(authService.resetPasswordByAdmin(id, user, request.identityVerified()));
+    }
 
     @GetMapping("/pending")
     public ResponseEntity<List<UserInfo>> getPendingUsers() {

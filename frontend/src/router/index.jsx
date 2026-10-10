@@ -1,51 +1,46 @@
-import axios from 'axios'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
 import useAuthStore from '../store/authStore'
 import { queryClient } from '../queryClient'
 import AppLayout from '../components/layout/AppLayout'
-import client from '../api/client'
+import client, { refreshSession } from '../api/client'
 
-import Signup                from '../pages/Signup'
-import Login                 from '../pages/Login'
-import FindAccountPage       from '../pages/FindAccountPage'
-import Home                  from '../pages/Home'
-import AttendancePage        from '../pages/AttendancePage'
-import AdminDashboard        from '../pages/AdminDashboard'
-import CalendarPage          from '../pages/CalendarPage'
-import CalendarAdminPage     from '../pages/CalendarAdminPage'
-import PrayerMeetingPage    from '../pages/PrayerMeetingPage'
-import SatMeetingPage       from '../pages/SatMeetingPage'
-import StudentDetailPage     from '../pages/StudentDetailPage'
-import TTSPage               from '../pages/TTSPage'
-import EvangelismPage        from '../pages/EvangelismPage'
-import EvangelismAdminPage   from '../pages/EvangelismAdminPage'
-import MeetingMinutesPage    from '../pages/MeetingMinutesPage'
-import MeetingMinutesAdminPage from '../pages/MeetingMinutesAdminPage'
-import PrayerAbsentAdminPage  from '../pages/PrayerAbsentAdminPage'
-import WeeklyCheckPage          from '../pages/WeeklyCheckPage'
-import RosterPage               from '../pages/RosterPage'
-import EventAttendanceListPage  from '../pages/EventAttendanceListPage'
-import EventAttendancePage      from '../pages/EventAttendancePage'
-import EventAttendanceAdminPage from '../pages/EventAttendanceAdminPage'
-import AdminMeetingAttendancePage from '../pages/AdminMeetingAttendancePage'
-import ClassManagePage                  from '../pages/ClassManagePage'
-import DeactivationRequestsAdminPage   from '../pages/DeactivationRequestsAdminPage'
-import TtsAdminPage                    from '../pages/TtsAdminPage'
-import MenuPage                        from '../pages/MenuPage'
-import AdminTeacherManagePage         from '../pages/AdminTeacherManagePage'
-import AdminClassManagePage           from '../pages/AdminClassManagePage'
-import AdminStudentManagePage         from '../pages/AdminStudentManagePage'
-import AdminPendingUsersPage          from '../pages/AdminPendingUsersPage'
-import AdminStudentAttendancePage    from '../pages/AdminStudentAttendancePage'
-import ManualPreviewPage             from '../pages/ManualPreviewPage'
-import ProfilePage                   from '../pages/ProfilePage'
-import NotificationPage              from '../pages/NotificationPage'
-
-const API = import.meta.env.PROD
-  ? 'https://newaveflow-production.up.railway.app/api'
-  : '/api'
+const Signup = lazy(() => import('../pages/Signup'))
+const Login = lazy(() => import('../pages/Login'))
+const FindAccountPage = lazy(() => import('../pages/FindAccountPage'))
+const Home = lazy(() => import('../pages/Home'))
+const AttendancePage = lazy(() => import('../pages/AttendancePage'))
+const AdminDashboard = lazy(() => import('../pages/AdminDashboard'))
+const CalendarPage = lazy(() => import('../pages/CalendarPage'))
+const CalendarAdminPage = lazy(() => import('../pages/CalendarAdminPage'))
+const PrayerMeetingPage = lazy(() => import('../pages/PrayerMeetingPage'))
+const SatMeetingPage = lazy(() => import('../pages/SatMeetingPage'))
+const StudentDetailPage = lazy(() => import('../pages/StudentDetailPage'))
+const TTSPage = lazy(() => import('../pages/TTSPage'))
+const EvangelismPage = lazy(() => import('../pages/EvangelismPage'))
+const EvangelismAdminPage = lazy(() => import('../pages/EvangelismAdminPage'))
+const MeetingMinutesPage = lazy(() => import('../pages/MeetingMinutesPage'))
+const MeetingMinutesAdminPage = lazy(() => import('../pages/MeetingMinutesAdminPage'))
+const PrayerAbsentAdminPage = lazy(() => import('../pages/PrayerAbsentAdminPage'))
+const WeeklyCheckPage = lazy(() => import('../pages/WeeklyCheckPage'))
+const RosterPage = lazy(() => import('../pages/RosterPage'))
+const EventAttendanceListPage = lazy(() => import('../pages/EventAttendanceListPage'))
+const EventAttendancePage = lazy(() => import('../pages/EventAttendancePage'))
+const EventAttendanceAdminPage = lazy(() => import('../pages/EventAttendanceAdminPage'))
+const AdminMeetingAttendancePage = lazy(() => import('../pages/AdminMeetingAttendancePage'))
+const ClassManagePage = lazy(() => import('../pages/ClassManagePage'))
+const DeactivationRequestsAdminPage = lazy(() => import('../pages/DeactivationRequestsAdminPage'))
+const TtsAdminPage = lazy(() => import('../pages/TtsAdminPage'))
+const MenuPage = lazy(() => import('../pages/MenuPage'))
+const AdminTeacherManagePage = lazy(() => import('../pages/AdminTeacherManagePage'))
+const AdminClassManagePage = lazy(() => import('../pages/AdminClassManagePage'))
+const AdminStudentManagePage = lazy(() => import('../pages/AdminStudentManagePage'))
+const AdminPendingUsersPage = lazy(() => import('../pages/AdminPendingUsersPage'))
+const AdminStudentAttendancePage = lazy(() => import('../pages/AdminStudentAttendancePage'))
+const ManualPreviewPage = lazy(() => import('../pages/ManualPreviewPage'))
+const ProfilePage = lazy(() => import('../pages/ProfilePage'))
+const NotificationPage = lazy(() => import('../pages/NotificationPage'))
 
 // JWT payload의 exp(초 단위)를 보고 만료됐거나 bufferMs 이내에 만료되는지 확인
 function isTokenExpiredOrExpiring(token, bufferMs = 5 * 60 * 1000) {
@@ -95,6 +90,7 @@ function RequireAuth() {
   const [warming, setWarming] = useState(() => needsWarmup)
   const [refreshing, setRefreshing] = useState(() => needsTokenRefresh)
   const [slowStart, setSlowStart] = useState(false)
+  useEffect(() => { if (needsTokenRefresh) setRefreshing(true) }, [needsTokenRefresh])
 
   // ─── 서버 워밍업 (백엔드 첫 기동 시) ───
   useEffect(() => {
@@ -132,15 +128,15 @@ function RequireAuth() {
       // 2단계: 토큰 만료 선제 확인
       // /health는 인증 불필요라 토큰 만료를 감지 못함. 만료됐거나 5분 내 만료 예정이면
       // 페이지 렌더 전에 미리 갱신하여 데이터 로딩 실패를 방지한다.
-      const { accessToken: tok, refreshToken: rtok, setAuth, clearAuth } = useAuthStore.getState()
+      const { accessToken: tok } = useAuthStore.getState()
       if (tok && isTokenExpiredOrExpiring(tok)) {
         try {
-          const { data } = await axios.post(`${API}/auth/refresh`, { refreshToken: rtok })
-          setAuth(data.user, data.accessToken, data.refreshToken)
+          await refreshSession()
+
           queryClient.clear()
         } catch {
           // 리프레시 토큰도 만료된 경우 — auth 초기화 후 렌더 시 /login으로 이동
-          clearAuth()
+          // refreshSession clears authentication only for rejected credentials.
         }
       }
 
@@ -166,14 +162,14 @@ function RequireAuth() {
     let mounted = true
 
     const tryRefresh = async () => {
-      const { accessToken: tok, refreshToken: rtok, setAuth, clearAuth } = useAuthStore.getState()
+      const { accessToken: tok } = useAuthStore.getState()
       if (tok && isTokenExpiredOrExpiring(tok)) {
         try {
-          const { data } = await axios.post(`${API}/auth/refresh`, { refreshToken: rtok })
-          setAuth(data.user, data.accessToken, data.refreshToken)
+          await refreshSession()
+
           queryClient.clear()
         } catch {
-          clearAuth()
+          // refreshSession clears authentication only for rejected credentials.
         }
       }
       if (mounted) setRefreshing(false)
@@ -195,7 +191,7 @@ function RequireRole({ roles }) {
   return <Outlet />
 }
 
-const router = createBrowserRouter([
+const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingScreen />}><Outlet /></Suspense>, children: [
   { path: '/login', element: <Login /> },
   { path: '/signup', element: <Signup /> },
   { path: '/find-account', element: <FindAccountPage /> },
@@ -247,6 +243,6 @@ const router = createBrowserRouter([
       },
     ],
   },
-])
+] }])
 
 export default router

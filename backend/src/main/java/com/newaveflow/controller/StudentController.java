@@ -34,18 +34,21 @@ public class StudentController {
     @PutMapping("/{id}")
     public ResponseEntity<StudentDto> updateStudent(
             @PathVariable Long id,
-            @Valid @RequestBody StudentUpdateRequest request) {
-        return ResponseEntity.ok(studentService.updateStudent(id, request));
+            @Valid @RequestBody StudentUpdateRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(studentService.updateStudent(id, request, currentUser));
     }
 
     // 제적 처리
     @PatchMapping("/{id}/deactivate")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     public ResponseEntity<StudentDto> deactivateStudent(@PathVariable Long id) {
         return ResponseEntity.ok(studentService.deactivateStudent(id));
     }
 
     // 복적 처리
     @PatchMapping("/{id}/activate")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     public ResponseEntity<StudentDto> activateStudent(@PathVariable Long id) {
         return ResponseEntity.ok(studentService.activateStudent(id));
     }

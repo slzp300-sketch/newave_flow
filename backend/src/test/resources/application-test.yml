@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:regression;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+jwt:
+  secret: ${random.uuid}${random.uuid}
+app:
+  seed:
+    enabled: false

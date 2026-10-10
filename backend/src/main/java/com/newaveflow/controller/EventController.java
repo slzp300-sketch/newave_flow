@@ -20,6 +20,7 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final com.newaveflow.service.OperationService operations;
 
     @GetMapping
     public ResponseEntity<List<EventDto.EventResponse>> getEvents(
@@ -45,14 +46,18 @@ public class EventController {
 
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping
-    public ResponseEntity<EventDto.EventResponse> createEvent(@Valid @RequestBody EventDto.EventCreateRequest request) {
-        return ResponseEntity.ok(eventService.createEvent(request));
+    public ResponseEntity<EventDto.EventResponse> createEvent(@Valid @RequestBody EventDto.EventCreateRequest request,
+            @RequestHeader("Idempotency-Key") String operationKey, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(operations.execute(user.getId(), operationKey, "event-create", request,
+                new com.fasterxml.jackson.core.type.TypeReference<EventDto.EventResponse>() {}, () -> eventService.createEvent(request)));
     }
 
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping("/bulk")
-    public ResponseEntity<List<EventDto.EventResponse>> createEvents(@Valid @RequestBody EventDto.BulkCreateRequest request) {
-        return ResponseEntity.ok(eventService.createEvents(request.events()));
+    public ResponseEntity<List<EventDto.EventResponse>> createEvents(@Valid @RequestBody EventDto.BulkCreateRequest request,
+            @RequestHeader("Idempotency-Key") String operationKey, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(operations.execute(user.getId(), operationKey, "event-bulk", request,
+                new com.fasterxml.jackson.core.type.TypeReference<List<EventDto.EventResponse>>() {}, () -> eventService.createEvents(request.events())));
     }
 
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
@@ -108,7 +113,7 @@ public class EventController {
     @PostMapping("/{id}/teacher-attendance")
     public ResponseEntity<Void> saveTeacherAttendance(
             @PathVariable Long id,
-            @RequestBody EventDto.EventAttendanceRequest request,
+            @Valid @RequestBody EventDto.EventAttendanceRequest request,
             @AuthenticationPrincipal User currentUser) {
         eventService.saveTeacherAttendance(id, currentUser.getId(),
                 request.status(), request.partialFromDate(), request.partialNote(), request.absenceReason());

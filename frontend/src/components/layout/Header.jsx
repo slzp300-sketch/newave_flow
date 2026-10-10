@@ -3,6 +3,7 @@ import { ChevronLeft, LogOut, Bell } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '../../store/authStore'
 import { notificationApi } from '../../api/notifications'
+import { authApi } from '../../api/auth'
 
 export default function Header({ title, showBack = false, onBack, showLogout = false, showNotification = true, right }) {
   const navigate = useNavigate()
@@ -15,8 +16,11 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
     enabled: !!user && showNotification,
   })
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('로그아웃 하시겠습니까?')) {
+      try { await authApi.logout() } catch {
+        alert('서버에 연결하지 못해 이 기기에서만 로그아웃합니다. 다른 기기의 로그인은 유지될 수 있습니다.')
+      }
       queryClient.clear()
       clearAuth()
       navigate('/login', { replace: true })

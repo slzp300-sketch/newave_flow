@@ -25,8 +25,9 @@ public class TtsController {
     private final TtsService ttsService;
 
     @GetMapping("/questions")
-    public ResponseEntity<List<TtsQuestion>> getQuestions() {
-        return ResponseEntity.ok(ttsService.getActiveQuestions());
+    public ResponseEntity<List<TtsQuestion>> getQuestions(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(ttsService.getActiveQuestions(date == null ? LocalDate.now() : date));
     }
 
     @GetMapping("/my")

@@ -1,0 +1,73 @@
+name: Regression checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - run: bash gradlew build --no-daemon
+  postgres-migration:
+    name: postgres-migration (PostgreSQL ${{ matrix.postgresql }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgresql: ['17', '18']
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgresql }}
+        env:
+          POSTGRES_DB: newave_migration_ci
+          POSTGRES_USER: verification
+          POSTGRES_PASSWORD: migration-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U verification -d newave_migration_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      RUN_POSTGRES_MIGRATION: 'true'
+      MIGRATION_SYNTHETIC_FIXTURE: 'true'
+      MIGRATION_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_migration_ci
+      MIGRATION_TEST_USER: verification
+      MIGRATION_TEST_PASSWORD: migration-ci-only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - run: bash gradlew createMigrationBaseline --init-script db/verification/legacy.init.gradle --no-daemon
+      - run: bash gradlew test --tests com.newaveflow.PostgresMigrationTest --no-daemon

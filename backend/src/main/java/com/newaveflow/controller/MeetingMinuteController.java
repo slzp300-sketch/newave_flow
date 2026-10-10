@@ -38,11 +38,13 @@ public class MeetingMinuteController {
             ? meetingMinuteRepository.findAllByOrderByMeetingDateDesc()
             : meetingMinuteRepository.findAllByIsActiveTrueOrderByMeetingDateDesc();
         
+        var confirmedIds = new java.util.HashSet<>(meetingMinuteConfirmRepository.findConfirmedMinuteIds(currentUser.getId()));
+        var attendanceByDate = minutes.isEmpty() ? Map.<java.time.LocalDate, MeetingAttendance>of()
+                : meetingAttendanceRepository.findByTeacherIdAndMeetingDateIn(currentUser.getId(), minutes.stream().map(MeetingMinute::getMeetingDate).toList())
+                    .stream().collect(Collectors.toMap(MeetingAttendance::getMeetingDate, a -> a, (a,b) -> a));
         List<MeetingMinuteDto> dtos = minutes.stream().map(m -> {
-            boolean confirmed = meetingMinuteConfirmRepository.findByMinutesAndUser(m, currentUser).isPresent();
-            
-            MeetingAttendance attendance = meetingAttendanceRepository.findByTeacherIdAndMeetingDate(currentUser.getId(), m.getMeetingDate())
-                .orElse(null);
+            boolean confirmed = confirmedIds.contains(m.getId());
+            MeetingAttendance attendance = attendanceByDate.get(m.getMeetingDate());
             String attendanceStatus = (attendance != null) ? attendance.getStatus() : "UNKNOWN";
 
             return new MeetingMinuteDto(

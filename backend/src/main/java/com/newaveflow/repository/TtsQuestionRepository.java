@@ -7,6 +7,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface TtsQuestionRepository extends JpaRepository<TtsQuestion, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT q FROM TtsQuestion q ORDER BY q.id")
+    java.util.List<TtsQuestion> lockAll();
     List<TtsQuestion> findAllByIsActiveOrderByDisplayOrderAsc(boolean isActive);
     List<TtsQuestion> findAllByOrderByDisplayOrderAsc();
 

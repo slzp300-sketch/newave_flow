@@ -30,20 +30,45 @@ public class JwtTokenProvider {
     }
 
     public String createAccessToken(Long userId, String email, String role) {
-        return buildToken(userId, email, role, accessExpiration);
+        return createAccessToken(userId, email, role, 0);
     }
 
     public String createRefreshToken(Long userId, String email, String role) {
-        return buildToken(userId, email, role, refreshExpiration);
+        return createRefreshToken(userId, email, role, 0);
     }
 
-    private String buildToken(Long userId, String email, String role, long expiration) {
+    public String createAccessToken(Long userId, String email, String role, long version) {
+        return buildToken(userId, email, role, version, "access", accessExpiration);
+    }
+
+    public String createRefreshToken(Long userId, String email, String role, long version) {
+        return buildToken(userId, email, role, version, "refresh", refreshExpiration);
+    }
+
+    public boolean matchesUser(Claims claims, com.newaveflow.entity.User user) {
+        Number version = claims.get("version", Number.class);
+        return user.isActive() && version != null && version.longValue() == user.getAuthVersion()
+                && user.getRole().name().equals(claims.get("role", String.class));
+    }
+
+    public Claims requireToken(String token, String purpose) {
+        Claims claims = getClaims(token);
+        if (!purpose.equals(claims.get("purpose", String.class))) {
+            throw new IllegalArgumentException("Invalid token purpose");
+        }
+        return claims;
+    }
+
+    private String buildToken(Long userId, String email, String role, long version, String purpose, long expiration) {
         Date now    = new Date();
         Date expiry = new Date(now.getTime() + expiration);
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("email", email)
                 .claim("role", role)
+                .claim("purpose", purpose)
+                .claim("version", version)
+                .id(java.util.UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(key)

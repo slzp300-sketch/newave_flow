@@ -8,6 +8,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ClassGroupRepository extends JpaRepository<ClassGroup, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM ClassGroup c WHERE c.id = :id")
+    java.util.Optional<ClassGroup> lockById(@Param("id") Long id);
 
     @Query("SELECT c FROM ClassGroup c ORDER BY c.ageGroup, c.name")
     List<ClassGroup> findAllOrderByName();

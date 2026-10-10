@@ -44,6 +44,9 @@ public class MeetingService {
 
     @Transactional
     public MeetingAttendanceResponse saveMeetingAttendance(Long teacherId, MeetingAttendanceRequest request) {
+        if (request.status() == null || !java.util.Set.of("ATTEND", "ABSENT").contains(request.status())) {
+            throw com.newaveflow.exception.AppException.badRequest("회의 출석 상태가 올바르지 않습니다.");
+        }
         MeetingAttendance existing = meetingAttendanceRepository.findByTeacherIdAndMeetingDate(teacherId, request.meetingDate())
                 .orElse(null);
 

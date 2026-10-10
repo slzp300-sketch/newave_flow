@@ -143,6 +143,7 @@ export default function EventAttendanceAdminPage() {
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="행사 출석 현황" showBack />
+      <p className="px-4 pt-3 text-xs text-gray-500">명단은 출석 행사 등록 시점을 기준으로 보존됩니다. 이전 행사는 데이터 전환 시점의 명단이 기준입니다.</p>
 
       <div className="px-4 py-5 flex flex-col gap-5">
 

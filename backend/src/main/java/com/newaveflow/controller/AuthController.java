@@ -38,8 +38,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
-        // 클라이언트에서 토큰 삭제 처리 (stateless)
+    public ResponseEntity<Void> logout(@org.springframework.security.core.annotation.AuthenticationPrincipal com.newaveflow.entity.User user) {
+        authService.logout(user.getId());
         return ResponseEntity.noContent().build();
     }
 

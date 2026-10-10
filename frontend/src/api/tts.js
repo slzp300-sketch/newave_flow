@@ -1,7 +1,7 @@
 import client from './client'
 
 export const ttsApi = {
-  getQuestions: () => client.get('/tts/questions'),
+  getQuestions: (date) => client.get('/tts/questions', { params: { date } }),
   getMyTts: (year, weekNum) => client.get('/tts/my', { params: { year, weekNum } }),
   submitTts: (data) => client.post('/tts/submit', data),
   getSummary: (year, weekNum) => client.get('/admin/tts/summary', { params: { year, weekNum } }),

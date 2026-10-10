@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MeetingMinuteConfirmRepository extends JpaRepository<MeetingMinuteConfirm, Long> {
+    @org.springframework.data.jpa.repository.Query("SELECT c.minutes.id FROM MeetingMinuteConfirm c WHERE c.user.id = :userId")
+    List<Long> findConfirmedMinuteIds(@org.springframework.data.repository.query.Param("userId") Long userId);
     Optional<MeetingMinuteConfirm> findByMinutesAndUser(MeetingMinute minutes, User user);
     List<MeetingMinuteConfirm> findAllByMinutes(MeetingMinute minutes);
 

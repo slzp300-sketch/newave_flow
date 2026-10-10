@@ -105,7 +105,9 @@ export default function ProfilePage() {
   // ── 로그아웃 ─────────────────────────────────────────────
   const handleLogout = async () => {
     setLogoutLoading(true)
-    try { await authApi.logout() } catch {}
+    try { await authApi.logout() } catch {
+      alert('서버에 연결하지 못해 이 기기에서만 로그아웃합니다. 다른 기기의 로그인은 유지될 수 있습니다.')
+    }
     queryClient.clear()
     clearAuth()
     navigate('/login', { replace: true })
@@ -115,7 +117,10 @@ export default function ProfilePage() {
   const pwMutation = useMutation({
     mutationFn: () => usersApi.changePassword(currentPw, newPw),
     onSuccess: () => {
-      setPwResult({ ok: true, msg: '비밀번호가 성공적으로 변경되었습니다.' })
+      alert('비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.')
+      queryClient.clear()
+      clearAuth()
+      navigate('/login', { replace: true })
       setCurrentPw(''); setNewPw(''); setConfirmPw('')
     },
     onError: (err) => {

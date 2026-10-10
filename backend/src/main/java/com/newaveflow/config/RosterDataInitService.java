@@ -19,7 +19,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile({"dev", "local", "prod"})
+@Profile({"dev", "local"})
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class RosterDataInitService {
 
     private final ClassGroupRepository classGroupRepository;

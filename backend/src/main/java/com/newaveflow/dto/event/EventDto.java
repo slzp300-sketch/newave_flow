@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,10 +55,10 @@ public class EventDto {
             String startTime,
             String endTime,
             String color,
-            @NotNull String eventType,
+            @NotNull @Pattern(regexp = "SPECIAL|MEETING|REGULAR|CHURCH_WIDE") String eventType,
             Boolean attendanceRequired,
             LocalDate attendanceDeadline,
-            String attendanceTarget
+            @Pattern(regexp = "STUDENT_ONLY|TEACHER_ONLY|BOTH") String attendanceTarget
     ) {}
 
     // 여러 일정 한번에 등록 (최대 30개)
@@ -100,7 +101,7 @@ public class EventDto {
 
     // 배치 요청
     public record StudentAttendanceBatchRequest(
-            @NotNull List<StudentAttendanceItem> records
+            @jakarta.validation.constraints.NotEmpty List<@Valid StudentAttendanceItem> records
     ) {}
 
     // 학생 출석 응답 단건
