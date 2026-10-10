@@ -43,6 +43,7 @@ SELECT version, applied_at FROM schema_migrations;
 1. 위 별도 DB 검증 결과와 복원 가능한 백업을 확보합니다. PR/main 반영 방식은 사용자 결정 후 진행합니다.
 2. 백엔드·프런트 자동 배포 시점을 맞춥니다. 쓰기를 잠시 중지하고 기존 서버를 멈춘 후 DB 전환을 실행합니다. main 푸시만 먼저 하면 자동 배포가 앞설 수 있습니다.
 3. 운영 환경: `SPRING_PROFILES_ACTIVE=prod`, PostgreSQL `PG*`, 충분한 길이의 `JWT_SECRET`, 필요한 `VITE_API_URL`을 확인합니다. 초기화 옵션 `app.seed.enabled`는 켜지 않습니다. 실제 비밀값을 문서나 로그로 출력하지 않습니다.
+   - 2026-10-10 Railway 읽기 점검: `prod`와 `PG*`는 설정되어 있고 초기화 활성화 설정은 없습니다. **`JWT_SECRET`은 누락되어 있으므로 새 코드 배포 전에 설정해야 합니다.** 임의 값은 최소 32바이트 이상이어야 하며 암호학적 난수로 생성합니다. 설정 변경 시 기존 세션 무효화와 재배포 시점을 함께 조율합니다. 이 점검에서는 운영 변수를 변경하지 않았습니다.
 4. 새 백엔드 시작과 스키마 검사를 확인한 다음 새 프런트를 반영합니다. 토큰 형식 변경으로 기존 사용자는 한 번 재로그인해야 합니다. 설치형/PWA 사용자는 새 버전으로 새로고침합니다.
 5. 운영에서는 실사용자의 저장·승인·삭제를 시험하지 않습니다. 로그인 화면, 읽기 화면, 401/403·서버 오류 현황을 확인하고 허가된 검수 계정의 테스트 범위만 사용합니다.
 
@@ -59,4 +60,4 @@ SELECT version, applied_at FROM schema_migrations;
 
 `backend`: Java 17 이상에서 `./gradlew build --no-daemon` (Windows `gradlew.bat`). 검사는 H2와 가상 데이터만 사용합니다.
 
-`.github/workflows/check.yml`에 같은 검사와 빌드를 추가했습니다. GitHub에서의 실제 실행은 푸시 후 확인해야 합니다. 현재 로컬 검사가 통과했다는 사실이 운영 SQL·배포까지 완료됐다는 뜻은 아닙니다.
+`.github/workflows/check.yml`에 같은 검사와 빌드, PostgreSQL 전환 검사를 추가했습니다. 코드 커밋 `4e8922a`는 [GitHub Actions의 3개 작업](https://github.com/slzp300-sketch/newave_flow/actions/runs/38047484045)을 모두 통과했습니다. 이후 변경은 해당 커밋의 검사 상태를 별도로 확인합니다. 로컬·CI 검사 성공이 운영 복원본 검사나 운영 SQL·배포까지 완료됐다는 뜻은 아닙니다.
