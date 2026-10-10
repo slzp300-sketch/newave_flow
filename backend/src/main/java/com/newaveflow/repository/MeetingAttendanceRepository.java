@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface MeetingAttendanceRepository extends JpaRepository<MeetingAttendance, Long> {
     Optional<MeetingAttendance> findByTeacherIdAndMeetingDate(Long teacherId, LocalDate meetingDate);
     java.util.List<MeetingAttendance> findByMeetingDate(LocalDate meetingDate);
+    java.util.List<MeetingAttendance> findByTeacherIdAndMeetingDateIn(Long teacherId, java.util.Collection<LocalDate> dates);
     java.util.List<MeetingAttendance> findByMeetingDateBetween(LocalDate from, LocalDate to);
 }

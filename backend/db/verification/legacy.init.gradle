@@ -1,0 +1,45 @@
+// Reconstruct the old schema from the actual pre-migration entity sources, without app startup/seeding.
+def baseline = '7e3584eff3541b1666478a90118b559ffa1aa323'
+allprojects {
+    afterEvaluate { project ->
+        def generated = layout.buildDirectory.dir('migration-legacy-src').get().asFile
+        sourceSets {
+            migrationLegacy {
+                java.srcDirs = [generated, new File(project.projectDir, 'db/verification/java')]
+                resources.srcDirs = []
+            }
+        }
+        configurations.migrationLegacyImplementation.extendsFrom(configurations.implementation)
+        configurations.migrationLegacyCompileOnly.extendsFrom(configurations.compileOnly)
+        configurations.migrationLegacyAnnotationProcessor.extendsFrom(configurations.annotationProcessor)
+        configurations.migrationLegacyRuntimeOnly.extendsFrom(configurations.runtimeOnly)
+        tasks.register('extractMigrationBaseline') {
+            doLast {
+                def paths = new ByteArrayOutputStream()
+                exec {
+                    workingDir rootProject.projectDir.parentFile
+                    commandLine 'git', 'ls-tree', '-r', '--name-only', baseline, 'backend/src/main/java/com/newaveflow/entity'
+                    standardOutput = paths
+                }
+                paths.toString('UTF-8').readLines().findAll { it.endsWith('.java') }.each { source ->
+                    def out = new File(generated, source.replace('backend/src/main/java/', ''))
+                    out.parentFile.mkdirs()
+                    out.withOutputStream { stream ->
+                        exec {
+                            workingDir rootProject.projectDir.parentFile
+                            commandLine 'git', 'show', "${baseline}:${source}"
+                            standardOutput = stream
+                        }
+                    }
+                }
+            }
+        }
+        tasks.named('compileMigrationLegacyJava') { dependsOn 'extractMigrationBaseline' }
+        tasks.register('createMigrationBaseline', JavaExec) {
+            dependsOn 'migrationLegacyClasses'
+            classpath = sourceSets.migrationLegacy.runtimeClasspath
+            mainClass = 'com.newaveflow.migration.LegacySchemaTool'
+            args generated.absolutePath
+        }
+    }
+}

@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, forwardRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, ShieldCheck, UserCog, User as UserIcon, Check, Loader2, ChevronRight, AlertCircle, Sparkles } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import AdminPasswordReset from '../components/AdminPasswordReset'
 import ViewModeToggle, { useViewMode, DetailTable } from '../components/common/ViewModeToggle'
 import { usersApi } from '../api/users'
 import useAuthStore from '../store/authStore'
@@ -102,7 +103,7 @@ export default function AdminTeacherManagePage() {
                     key={user.id}
                     user={user}
                     onUpdate={handleRoleChange}
-                    isUpdating={mutation.isLoading && mutation.variables?.id === user.id}
+                    isUpdating={mutation.isPending && mutation.variables?.id === user.id}
                   />
                 ))}
               </AnimatePresence>
@@ -142,7 +143,7 @@ export default function AdminTeacherManagePage() {
                 <UserManagementCard
                   user={selectedUser}
                   onUpdate={handleRoleChange}
-                  isUpdating={mutation.isLoading && mutation.variables?.id === selectedUser.id}
+                  isUpdating={mutation.isPending && mutation.variables?.id === selectedUser.id}
                 />
                 <button onClick={() => setSelectedId(null)}
                   className="py-3 rounded-2xl bg-white text-sm font-black text-gray-500 shadow-sm active:scale-[0.98] transition-all">
@@ -194,9 +195,11 @@ function UserCompactItem({ user, idx, mode, onClick }) {
   )
 }
 
-function UserManagementCard({ user, onUpdate, isUpdating }) {
+const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpdate, isUpdating }, ref) {
+  const actor = useAuthStore(state => state.user)
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -248,10 +251,11 @@ function UserManagementCard({ user, onUpdate, isUpdating }) {
             />
           )}
         </div>
+        {actor?.role === 'ADMIN' && <AdminPasswordReset key={user.id} user={user} />}
       </Card>
     </motion.div>
   )
-}
+})
 
 function RoleButton({ active, label, onClick, variant = 'default' }) {
   const styles = {

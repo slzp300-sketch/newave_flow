@@ -22,6 +22,7 @@ import java.util.Map;
 public class WeeklyStatusController {
 
     private final DailyReportRepository dailyReportRepository;
+    private final com.newaveflow.repository.TeacherClassRepository teacherClassRepository;
     private final MeetingMinuteConfirmRepository meetingMinuteConfirmRepository;
     private final MeetingMinuteRepository meetingMinuteRepository;
 
@@ -32,11 +33,12 @@ public class WeeklyStatusController {
         LocalDate sunday = today.minusDays(today.getDayOfWeek().getValue() % 7);
         LocalDate saturday = sunday.plusDays(6);
 
-        List<DailyReport> weeklyReports = dailyReportRepository
-                .findByTeacherIdAndReportDateBetween(currentUser.getId(), sunday, saturday);
-
-        boolean attendanceSubmitted = weeklyReports.stream()
-                .anyMatch(r -> r.getStatus() == DailyReport.Status.SUBMITTED);
+        List<Long> classIds = teacherClassRepository.findByTeacherId(currentUser.getId()).stream()
+                .map(tc -> tc.getClassGroup().getId()).distinct().toList();
+        List<DailyReport> weeklyReports = classIds.isEmpty() ? List.of() : dailyReportRepository
+                .findByClassGroupIdInAndReportDateBetween(classIds, sunday, saturday);
+        boolean attendanceSubmitted = !classIds.isEmpty() && classIds.stream().allMatch(id -> weeklyReports.stream()
+                .anyMatch(r -> r.getClassGroup().getId().equals(id) && r.getStatus() == DailyReport.Status.SUBMITTED));
 
         long unconfirmedMinutesCount = meetingMinuteConfirmRepository.countUnconfirmedForUser(currentUser);
 

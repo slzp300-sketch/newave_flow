@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "daily_reports",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"teacher_id", "class_group_id", "report_date"}))
+       uniqueConstraints = @UniqueConstraint(name = "uk_report_class_date", columnNames = {"class_group_id", "report_date"}))
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -60,6 +60,8 @@ public class DailyReport {
     private LocalDateTime updatedAt;
 
     public enum Status { DRAFT, SUBMITTED }
+
+    public void recordEditor(User editor) { this.teacher = editor; }
 
     public void submit() {
         this.status = Status.SUBMITTED;

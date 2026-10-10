@@ -39,25 +39,32 @@ public class AuthService {
         }
 
         String role         = user.getRole().name();
-        String accessToken  = tokenProvider.createAccessToken(user.getId(), user.getEmail(), role);
-        String refreshToken = tokenProvider.createRefreshToken(user.getId(), user.getEmail(), role);
+        String accessToken  = tokenProvider.createAccessToken(user.getId(), user.getEmail(), role, user.getAuthVersion());
+        String refreshToken = tokenProvider.createRefreshToken(user.getId(), user.getEmail(), role, user.getAuthVersion());
 
         return LoginResponse.of(accessToken, refreshToken, user);
     }
 
     public LoginResponse refresh(String refreshToken) {
-        if (!tokenProvider.validateToken(refreshToken)) {
+        io.jsonwebtoken.Claims claims;
+        try {
+            claims = tokenProvider.requireToken(refreshToken, "refresh");
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
             throw AppException.unauthorized("유효하지 않은 토큰입니다. 다시 로그인해주세요.");
         }
 
-        Long   userId = tokenProvider.getUserId(refreshToken);
-        String role   = tokenProvider.getRole(refreshToken);
+        Long userId;
+        try { userId = Long.valueOf(claims.getSubject()); }
+        catch (RuntimeException e) { throw AppException.unauthorized("유효하지 않은 토큰입니다."); }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> AppException.unauthorized("사용자를 찾을 수 없습니다."));
 
-        String newAccessToken  = tokenProvider.createAccessToken(userId, user.getEmail(), role);
-        String newRefreshToken = tokenProvider.createRefreshToken(userId, user.getEmail(), role);
+        if (!tokenProvider.matchesUser(claims, user)) {
+            throw AppException.unauthorized("계정 상태가 변경되었습니다. 다시 로그인해주세요.");
+        }
+        String newAccessToken  = tokenProvider.createAccessToken(userId, user.getEmail(), user.getRole().name(), user.getAuthVersion());
+        String newRefreshToken = tokenProvider.createRefreshToken(userId, user.getEmail(), user.getRole().name(), user.getAuthVersion());
 
         return LoginResponse.of(newAccessToken, newRefreshToken, user);
     }
@@ -99,13 +106,16 @@ public class AuthService {
 
     @Transactional
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
-        String normalizedPhone = request.phone().replaceAll("[^0-9]", "");
-        String normalizedEmail = request.email().trim().toLowerCase();
+        throw AppException.forbidden("비밀번호 재설정은 부서 관리자에게 본인 확인 후 요청해주세요.");
+    }
 
-        User user = userRepository.findByEmailIgnoreCaseAndNameAndPhone(normalizedEmail, request.name(), normalizedPhone)
-                .or(() -> userRepository.findByEmailIgnoreCaseAndNameAndPhone(normalizedEmail, request.name(), request.phone()))
-                .orElseThrow(() -> AppException.badRequest("입력하신 정보와 일치하는 계정을 찾을 수 없습니다."));
-
+    @Transactional
+    public ResetPasswordResponse resetPasswordByAdmin(Long userId, User actor, boolean identityVerified) {
+        if (actor == null || actor.getRole() != User.Role.ADMIN || !identityVerified) {
+            throw AppException.forbidden("최종 관리자의 본인 확인이 필요합니다.");
+        }
+        User user = userRepository.lockById(userId)
+                .orElseThrow(() -> AppException.notFound("사용자를 찾을 수 없습니다."));
         String tempPassword = generateTempPassword();
         user.updatePassword(passwordEncoder.encode(tempPassword));
         userRepository.save(user);
@@ -116,8 +126,8 @@ public class AuthService {
 
     private String generateTempPassword() {
         SecureRandom random = new SecureRandom();
-        StringBuilder sb = new StringBuilder(10);
-        for (int i = 0; i < 10; i++) {
+        StringBuilder sb = new StringBuilder(20);
+        for (int i = 0; i < 20; i++) {
             sb.append(TEMP_PW_CHARS.charAt(random.nextInt(TEMP_PW_CHARS.length())));
         }
         return sb.toString();
@@ -125,18 +135,23 @@ public class AuthService {
 
     @Transactional
     public void changePassword(Long userId, String currentPassword, String newPassword) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.lockById(userId)
                 .orElseThrow(() -> AppException.badRequest("사용자를 찾을 수 없습니다."));
 
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             throw AppException.badRequest("현재 비밀번호가 올바르지 않습니다.");
         }
 
-        if (newPassword.length() < 8) {
+        if (newPassword == null || newPassword.length() < 8) {
             throw AppException.badRequest("새 비밀번호는 8자 이상이어야 합니다.");
         }
 
         user.updatePassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void logout(Long userId) {
+        userRepository.lockById(userId).ifPresent(User::revokeSessions);
     }
 }

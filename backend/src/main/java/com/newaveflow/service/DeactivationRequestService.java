@@ -20,6 +20,7 @@ public class DeactivationRequestService {
 
     private final DeactivationRequestRepository deactivationRequestRepository;
     private final StudentRepository studentRepository;
+    private final ClassAccessService classAccessService;
 
     @Transactional
     public DeactivationRequestDto.Response createRequest(Long studentId, String reason, User teacher) {
@@ -28,6 +29,8 @@ public class DeactivationRequestService {
         }
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
+        classAccessService.requireStudent(teacher, student);
+        if (reason == null || reason.isBlank()) throw AppException.badRequest("제적 신청 사유를 입력해주세요.");
 
         DeactivationRequest request = DeactivationRequest.builder()
                 .student(student)

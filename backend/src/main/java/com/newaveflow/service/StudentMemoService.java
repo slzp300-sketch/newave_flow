@@ -16,9 +16,13 @@ public class StudentMemoService {
 
     private final StudentMemoRepository studentMemoRepository;
     private final StudentRepository studentRepository;
+    private final ClassAccessService classAccessService;
 
     @Transactional
     public void saveMemo(Long studentId, String prayerRequest, String sketch, User teacher) {
+        Student target = studentRepository.findById(studentId)
+                .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
+        classAccessService.requireStudent(teacher, target);
         studentMemoRepository.findByStudentIdAndTeacherId(studentId, teacher.getId())
                 .ifPresentOrElse(
                         memo -> memo.update(prayerRequest, sketch),

@@ -18,6 +18,7 @@ import java.util.Map;
 public class AdminStudentController {
 
     private final StudentService studentService;
+    private final com.newaveflow.service.OperationService operations;
 
     // 전체 학생 조회 (학년별 그룹핑)
     @GetMapping
@@ -65,8 +66,11 @@ public class AdminStudentController {
     // 학년 일괄 진급 (연도 개편)
     // body: { "중1": "중2", "중2": "중3", ... }
     @PostMapping("/bulk-advance")
-    public ResponseEntity<Map<String, Integer>> bulkAdvance(@RequestBody Map<String, String> gradeMap) {
-        int count = studentService.bulkAdvanceGrades(gradeMap);
-        return ResponseEntity.ok(Map.of("advanced", count));
+    public ResponseEntity<Map<String, Integer>> bulkAdvance(@RequestBody Map<String, String> gradeMap,
+            @RequestHeader("Idempotency-Key") String operationKey,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.newaveflow.entity.User user) {
+        return ResponseEntity.ok(operations.execute(user.getId(), operationKey, "grade-advance", gradeMap,
+                new com.fasterxml.jackson.core.type.TypeReference<Map<String, Integer>>() {},
+                () -> Map.of("advanced", studentService.bulkAdvanceGrades(gradeMap))));
     }
 }

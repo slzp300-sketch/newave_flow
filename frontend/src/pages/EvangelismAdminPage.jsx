@@ -118,18 +118,11 @@ function GroupManagementTab({ teachers }) {
     if (fromGroupId === toGroupId) return
     setMoving(true)
     try {
-      if (toGroupId) {
-        const tg = groups.find(g => g.id === toGroupId)
-        const ids = [...(tg?.members?.map(m => m.teacherId) || []), teacherId]
-        await evangelismApi.updateGroupMembers(toGroupId, { teacherIds: ids })
-      }
-      if (fromGroupId) {
-        const sg = groups.find(g => g.id === fromGroupId)
-        const ids = (sg?.members || []).filter(m => m.teacherId !== teacherId).map(m => m.teacherId)
-        await evangelismApi.updateGroupMembers(fromGroupId, { teacherIds: ids })
-      }
-      await qc.invalidateQueries({ queryKey: ['evangelism-groups'] })
+      await evangelismApi.moveTeacher(teacherId, { fromGroupId, toGroupId })
+    } catch (err) {
+      alert(err.response?.data?.message || '이동 결과를 확인하지 못했습니다. 목록을 확인해주세요.')
     } finally {
+      await qc.invalidateQueries({ predicate: query => String(query.queryKey[0]).startsWith('evangelism-') })
       setMoving(false)
       setMoveSheet(null)
     }

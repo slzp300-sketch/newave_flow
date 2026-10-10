@@ -36,6 +36,7 @@ public class StudentService {
     private final DeactivationRequestRepository deactivationRequestRepository;
     private final StudentMemoRepository studentMemoRepository;
     private final ClassGroupRepository classGroupRepository;
+    private final ClassAccessService classAccessService;
 
     public StudentDto getStudentById(Long id) {
         Student student = studentRepository.findById(id)
@@ -82,9 +83,10 @@ public class StudentService {
 
     // 학생 정보 수정
     @Transactional
-    public StudentDto updateStudent(Long id, StudentUpdateRequest request) {
+    public StudentDto updateStudent(Long id, StudentUpdateRequest request, com.newaveflow.entity.User actor) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
+        classAccessService.requireStudent(actor, student);
 
         LocalDate birthDate = null;
         if (request.birthDate() != null && !request.birthDate().isBlank()) {

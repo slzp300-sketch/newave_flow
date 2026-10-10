@@ -459,7 +459,7 @@ function QuestionsTab() {
     mutationFn: (data) => ttsApi.updateQuestions(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tts-questions'] })
-      alert('저장되었습니다.')
+      alert('저장되었습니다. 항목·배점 변경은 다음 주일부터 적용되며, 이전 주차 기록은 당시 기준을 유지합니다.')
       setHasChanges(false)
     }
   })
@@ -480,7 +480,7 @@ function QuestionsTab() {
   }
 
   const deleteQuestion = (idx) => {
-    if (!window.confirm('항목을 삭제하시겠습니까? (저장 시 반영되며, 이미 답변 기록이 있는 항목은 비활성으로 남습니다)')) return
+    if (!window.confirm('다음 주부터 항목을 사용하지 않을까요? 이전 주차 기록과 배점은 보존됩니다.')) return
     const next = [...editList]
     next.splice(idx, 1)
     setEditList(next)
@@ -503,6 +503,7 @@ function QuestionsTab() {
         </button>
       </div>
 
+      <p className="text-xs leading-relaxed text-gray-500">항목·배점 변경은 다음 주일부터 적용됩니다. 이전 주차 기록은 당시 기준을 유지합니다.</p>
       <div className="flex flex-col gap-3">
         {editList.length === 0 && !isLoading && (
           <div className="py-20 text-center text-gray-300">

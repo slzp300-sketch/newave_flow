@@ -12,7 +12,8 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-@Profile({"dev", "local", "prod"})
+@Profile({"dev", "local"})
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class TtsDataInitializer implements CommandLineRunner {
 
     private final TtsQuestionRepository questionRepository;

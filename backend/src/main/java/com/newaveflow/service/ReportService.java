@@ -22,30 +22,34 @@ public class ReportService {
     private final ClassGroupRepository   classGroupRepository;
     private final UserRepository         userRepository;
     private final StudentRepository      studentRepository;
+    private final ClassAccessService classAccessService;
 
     @Transactional
     public DailyReport saveOrUpdate(ReportRequest request, Long teacherId) {
-        ClassGroup classGroup = classGroupRepository.findById(request.classGroupId())
+        if (request.reportDate().isAfter(LocalDate.now())) throw AppException.badRequest("미래 날짜는 저장할 수 없습니다.");
+        ClassGroup classGroup = classGroupRepository.lockById(request.classGroupId())
                 .orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+        classAccessService.requireClass(teacher, classGroup.getId());
 
         // 출석 집계 자동 계산
         List<Attendance> records = attendanceRepository
                 .findByClassGroupIdAndAttendanceDate(request.classGroupId(), request.reportDate());
-        int total   = studentRepository.findByClassGroupIdAndIsActiveTrue(request.classGroupId()).size();
+        int total   = records.size();
         int present = (int) records.stream().filter(a -> a.getStatus() == Attendance.Status.PRESENT).count();
         int late    = (int) records.stream().filter(a -> a.getStatus() == Attendance.Status.LATE).count();
-        int absent  = total - present - late;
+        int absent  = (int) records.stream().filter(a -> a.getStatus() == Attendance.Status.ABSENT).count();
 
         DailyReport report = reportRepository
-                .findByTeacherIdAndClassGroupIdAndReportDate(teacherId, request.classGroupId(), request.reportDate())
+                .findFirstByClassGroupIdAndReportDateOrderByIdAsc(request.classGroupId(), request.reportDate())
                 .orElseGet(() -> DailyReport.builder()
                         .teacher(teacher)
                         .classGroup(classGroup)
                         .reportDate(request.reportDate())
                         .build());
 
+        report.recordEditor(teacher);
         report.updateCounts(total, present, absent, late, request.specialNotes());
         return reportRepository.save(report);
     }
@@ -55,13 +59,10 @@ public class ReportService {
         DailyReport report = reportRepository.findById(reportId)
                 .orElseThrow(() -> AppException.notFound("보고서를 찾을 수 없습니다."));
 
-        if (!report.getTeacher().getId().equals(teacherId)) {
-            throw AppException.badRequest("본인의 보고서만 제출할 수 있습니다.");
-        }
-        if (report.getStatus() == DailyReport.Status.SUBMITTED) {
-            throw AppException.conflict("이미 제출된 보고서입니다.");
-        }
-
+        classGroupRepository.lockById(report.getClassGroup().getId()).orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
+        User teacher = userRepository.findById(teacherId).orElseThrow(() -> AppException.unauthorized("교사를 찾을 수 없습니다."));
+        classAccessService.requireClass(teacher, report.getClassGroup().getId());
+        report.recordEditor(teacher);
         report.submit();
         return report;
     }
@@ -74,11 +75,15 @@ public class ReportService {
                 .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
                 .toList();
 
-        List<Long> submittedTeacherIds = allReports.stream()
+        java.util.Set<Long> submittedClassIds = allReports.stream()
                 .filter(r -> r.getStatus() == DailyReport.Status.SUBMITTED)
-                .map(r -> r.getTeacher().getId())
-                .toList();
+                .map(r -> r.getClassGroup().getId())
+                .collect(java.util.stream.Collectors.toSet());
 
+        List<Long> submittedTeacherIds = targetTeachers.stream()
+                .filter(t -> t.getTeacherClasses() != null && !t.getTeacherClasses().isEmpty()
+                    && t.getTeacherClasses().stream().allMatch(tc -> submittedClassIds.contains(tc.getClassGroup().getId())))
+                .map(User::getId).toList();
         long submitted = submittedTeacherIds.size();
 
         List<ReportSummaryResponse.NotSubmittedTeacher> notSubmitted = targetTeachers.stream()
@@ -99,7 +104,6 @@ public class ReportService {
                 date, targetTeachers.size(), submitted, notSubmitted.size(), notSubmitted);
     }
     public DailyReport getByClassAndDate(Long classId, LocalDate date) {
-        return reportRepository.findByClassGroupIdAndReportDate(classId, date)
-                .stream().findFirst().orElse(null); // Or use findByTeacherId... if multiple teachers per class
+        return reportRepository.findFirstByClassGroupIdAndReportDateOrderByIdAsc(classId, date).orElse(null);
     }
 }

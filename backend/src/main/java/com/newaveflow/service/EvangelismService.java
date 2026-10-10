@@ -46,16 +46,29 @@ public class EvangelismService {
 
     @Transactional
     public void deleteGroup(Long groupId) {
+        groupRepo.lockGroups();
         EvangelismGroup group = groupRepo.findById(groupId)
             .orElseThrow(() -> AppException.notFound("조를 찾을 수 없습니다."));
         group.deactivate();
+        groupRepo.saveAndFlush(group);
+        memberRepo.deleteByGroupId(groupId);
     }
 
     @Transactional
     public GroupResponse updateGroupMembers(Long groupId, GroupMembersRequest req) {
+        groupRepo.lockGroups();
         EvangelismGroup group = groupRepo.findById(groupId)
             .orElseThrow(() -> AppException.notFound("조를 찾을 수 없습니다."));
 
+        if (!group.isActive()) throw AppException.badRequest("삭제된 조는 변경할 수 없습니다.");
+        if (req.teacherIds() == null || req.teacherIds().stream().distinct().count() != req.teacherIds().size()) {
+            throw AppException.badRequest("중복되지 않은 교사 목록을 보내주세요.");
+        }
+        for (Long teacherId : req.teacherIds()) {
+            if (memberRepo.findActiveByTeacherId(teacherId).stream().anyMatch(m -> !m.getGroup().getId().equals(groupId))) {
+                throw AppException.conflict("이미 다른 조에 속한 교사입니다. 이동 기능을 이용해주세요.");
+            }
+        }
         memberRepo.deleteByGroupId(groupId);
 
         List<EvangelismGroupMember> newMembers = req.teacherIds().stream().map(teacherId -> {
@@ -78,6 +91,24 @@ public class EvangelismService {
             .toList();
     }
 
+    @Transactional
+    public void moveTeacher(Long teacherId, Long fromGroupId, Long toGroupId) {
+        groupRepo.lockGroups();
+        User teacher = userRepo.findById(teacherId).orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+        if (!teacher.isActive()) throw AppException.badRequest("활성 교사만 배정할 수 있습니다.");
+        List<EvangelismGroupMember> current = memberRepo.findActiveByTeacherId(teacherId);
+        Long actual = current.isEmpty() ? null : current.get(0).getGroup().getId();
+        if (current.size() > 1 || !java.util.Objects.equals(actual, fromGroupId)) {
+            throw AppException.conflict("조 편성이 변경되었습니다. 새로고침 후 다시 이동해주세요.");
+        }
+        if (java.util.Objects.equals(actual, toGroupId)) return;
+        EvangelismGroup target = toGroupId == null ? null : groupRepo.findById(toGroupId)
+                .filter(EvangelismGroup::isActive).orElseThrow(() -> AppException.badRequest("이동할 조가 없습니다."));
+        memberRepo.deleteAll(current);
+        memberRepo.flush();
+        if (target != null) memberRepo.save(EvangelismGroupMember.builder().teacher(teacher).group(target).build());
+    }
+
     public List<ScheduleResponse> getUpcomingSchedules() {
         return scheduleRepo.findUpcomingWithAssignments(LocalDate.now()).stream()
             .map(ScheduleResponse::from)
@@ -85,7 +116,7 @@ public class EvangelismService {
     }
 
     public MyStatusResponse getMyStatus(Long teacherId) {
-        List<EvangelismGroupMember> memberships = memberRepo.findByTeacherId(teacherId);
+        List<EvangelismGroupMember> memberships = memberRepo.findActiveByTeacherId(teacherId);
         if (memberships.isEmpty()) return new MyStatusResponse(null, null, List.of());
 
         EvangelismGroup myGroup = memberships.get(0).getGroup();
@@ -100,7 +131,7 @@ public class EvangelismService {
     }
 
     public List<ScheduleResponse> getMySchedules(Long teacherId) {
-        List<EvangelismGroupMember> memberships = memberRepo.findByTeacherId(teacherId);
+        List<EvangelismGroupMember> memberships = memberRepo.findActiveByTeacherId(teacherId);
         if (memberships.isEmpty()) return List.of();
 
         Long groupId = memberships.get(0).getGroup().getId();
@@ -176,7 +207,7 @@ public class EvangelismService {
             User teacher = userRepo.findById(teacherId)
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다: " + teacherId));
 
-            List<EvangelismGroupMember> memberships = memberRepo.findByTeacherId(teacherId);
+            List<EvangelismGroupMember> memberships = memberRepo.findActiveByTeacherId(teacherId);
             EvangelismGroup group = memberships.isEmpty() ? null : memberships.get(0).getGroup();
 
             return EvangelismAssignment.builder()

@@ -86,8 +86,8 @@ export function CheckTab({ embedded = false }) {
   const weekKey   = ['tts-week', weekStart]
 
   const { data: questions = [], isLoading: qLoading } = useQuery({
-    queryKey: ['tts-questions'],
-    queryFn: () => ttsApi.getQuestions().then(r => r.data),
+    queryKey: ['tts-questions', weekStart],
+    queryFn: () => ttsApi.getQuestions(weekStart).then(r => r.data),
   })
 
   const { data: week, isLoading: wLoading } = useQuery({

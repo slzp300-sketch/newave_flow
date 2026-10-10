@@ -20,6 +20,8 @@ backend/target
 # Build artifacts
 backend/bin
 frontend/dist
+frontend/.verification
+backend/.verification
 
 # Optional
 .claude/*

@@ -15,7 +15,7 @@ public interface EventStudentAttendanceRepository extends JpaRepository<EventStu
     @Query("""
         SELECT a FROM EventStudentAttendance a
         JOIN FETCH a.student s
-        JOIN FETCH s.classGroup
+        LEFT JOIN FETCH s.classGroup
         WHERE a.event.id = :eventId AND s.classGroup.id = :classGroupId
         """)
     List<EventStudentAttendance> findByEventIdAndClassGroupId(
@@ -24,7 +24,7 @@ public interface EventStudentAttendanceRepository extends JpaRepository<EventStu
     @Query("""
         SELECT a FROM EventStudentAttendance a
         JOIN FETCH a.student s
-        JOIN FETCH s.classGroup
+        LEFT JOIN FETCH s.classGroup
         WHERE a.event.id = :eventId
         ORDER BY s.classGroup.name, s.name
         """)

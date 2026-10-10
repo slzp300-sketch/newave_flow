@@ -13,6 +13,7 @@ import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
 import { toApiDate } from '../utils/date'
+import { isEventAttendanceClosed, assertEventAttendanceOpen } from '../utils/eventAttendance'
 
 const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
 const STATUS_COLOR = {
@@ -24,6 +25,7 @@ const STATUS_COLOR = {
 // ── 교사 본인 출석 체크 섹션 ──────────────────────────────
 function TeacherSelfCheck({ event, userId }) {
   const eventId = event.id
+  const isPastDeadline = isEventAttendanceClosed(event)
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
 
@@ -51,23 +53,27 @@ function TeacherSelfCheck({ event, userId }) {
   }, [myAtt])
 
   const saveMutation = useMutation({
-    mutationFn: () => eventApi.saveTeacherAttendance(
-      eventId, pending,
-      pending === 'PARTIAL' ? partialFromDate || null : null,
-      pending === 'PARTIAL' ? partialNote || null : null,
-      pending === 'ABSENT'  ? absenceReason || null : null,
-    ),
+    mutationFn: () => {
+      assertEventAttendanceOpen(event)
+      return eventApi.saveTeacherAttendance(
+        eventId, pending,
+        pending === 'PARTIAL' ? partialFromDate || null : null,
+        pending === 'PARTIAL' ? partialNote || null : null,
+        pending === 'ABSENT'  ? absenceReason || null : null,
+      )
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, userId] })
       setSubmitted(true)
       setEditing(false)
     },
+    onError: (err) => alert(err.response?.data?.message || err.message || '출석을 저장하지 못했어요. 다시 시도해 주세요.'),
   })
 
-  const canSubmit = pending &&
+  const canSubmit = !isPastDeadline && pending &&
     (pending !== 'PARTIAL' || partialFromDate) &&
     (pending !== 'ABSENT'  || absenceReason.trim() !== '')
-  const isEditable = !submitted || editing
+  const isEditable = (!submitted || editing) && !isPastDeadline
   const statusKeys = isMultiDay ? ['PRESENT', 'PARTIAL', 'ABSENT'] : ['PRESENT', 'ABSENT']
 
   return (
@@ -91,9 +97,9 @@ function TeacherSelfCheck({ event, userId }) {
               <p className="text-[10px] text-gray-500 font-medium pl-6">사유: {absenceReason}</p>
             )}
           </div>
-          <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
+          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
             <PenLine size={12} /> 수정
-          </button>
+          </button>}
         </div>
       )}
 
@@ -181,6 +187,7 @@ function TeacherSelfCheck({ event, userId }) {
 // ── 학생 출석 체크 섹션 ─────────────────────────────────────
 function StudentAttendanceCheck({ event, userId }) {
   const eventId  = event.id
+  const isPastDeadline = isEventAttendanceClosed(event)
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
 
@@ -215,7 +222,10 @@ function StudentAttendanceCheck({ event, userId }) {
   }, [students])
 
   const saveMutation = useMutation({
-    mutationFn: (records) => eventApi.saveStudentAttendance(eventId, records),
+    mutationFn: (records) => {
+      assertEventAttendanceOpen(event)
+      return eventApi.saveStudentAttendance(eventId, records)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['event-attendance', eventId, userId] })
       setSubmitted(true); setEditing(false)
@@ -238,7 +248,7 @@ function StudentAttendanceCheck({ event, userId }) {
 
   const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT' || s === 'PARTIAL').length
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
-  const isEditable   = !submitted || editing
+  const isEditable   = (!submitted || editing) && !isPastDeadline
 
   const missingReasons  = students.filter(s => statusMap[s.studentId] === 'ABSENT' && !reasonMap[s.studentId]?.trim())
   const missingPartials = isMultiDay
@@ -275,9 +285,9 @@ function StudentAttendanceCheck({ event, userId }) {
             <CheckCircle2 size={16} className="text-emerald-600" />
             <span className="text-xs font-black text-emerald-700">출석 체크 제출 완료</span>
           </div>
-          <button onClick={() => setEditing(true)} className="text-[11px] text-emerald-600 font-black flex items-center gap-1">
+          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-[11px] text-emerald-600 font-black flex items-center gap-1">
             <PenLine size={12} /> 수정
-          </button>
+          </button>}
         </div>
       )}
 
@@ -335,9 +345,10 @@ function StudentAttendanceCheck({ event, userId }) {
                   ) : (
                     <button onClick={() => isEditable && toggleSimple(sid)} disabled={!isEditable}
                       className={`text-xs font-black flex items-center gap-1 ${
-                        status === 'PRESENT' ? 'text-emerald-600' : 'text-red-500'
+                        status === 'PRESENT' ? 'text-emerald-600' : status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
                       } ${!isEditable ? 'cursor-default' : ''}`}>
-                      {status === 'PRESENT' ? <><CheckCircle2 size={14} /> 출석</> : <><XCircle size={14} /> 결석</>}
+                      {status === 'PRESENT' ? <><CheckCircle2 size={14} /> 출석</> :
+                       status === 'PARTIAL' ? <><Clock size={14} /> 부분참석</> : <><XCircle size={14} /> 결석</>}
                     </button>
                   )}
                 </div>
@@ -394,11 +405,17 @@ function StudentAttendanceCheck({ event, userId }) {
 
 // ── 행사별 출석 패널 ─────────────────────────────────────
 function EventPanel({ event, user }) {
+  const isPastDeadline = isEventAttendanceClosed(event)
   const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
   const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
 
   return (
     <div className="flex flex-col gap-5 px-4 pb-4 pt-2">
+      {isPastDeadline && (
+        <p role="status" className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          출석 제출 기간이 마감되었습니다. 기존 기록만 확인할 수 있어요.
+        </p>
+      )}
       {needsTeacher && <TeacherSelfCheck event={event} userId={user?.id} />}
       {needsTeacher && needsStudent && <div className="border-t border-gray-100" />}
       {needsStudent && <StudentAttendanceCheck event={event} userId={user?.id} />}
@@ -408,6 +425,7 @@ function EventPanel({ event, user }) {
 
 // ── 행사 카드 헤더 (제출 상태 포함) ──────────────────────
 function EventCardHeader({ event, userId, isOpen, onToggle }) {
+  const isPastDeadline = isEventAttendanceClosed(event)
   const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
   const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
 
@@ -461,6 +479,11 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
             {event.attendanceTarget === 'TEACHER_ONLY' ? '교사 출석' :
              event.attendanceTarget === 'BOTH'         ? '학생 + 교사' : '학생 출석'}
           </p>
+          {event.attendanceDeadline && (
+            <p className={`mt-1 text-xs font-semibold ${isPastDeadline ? 'text-gray-500' : 'text-primary-700'}`}>
+              {isPastDeadline ? '제출 마감됨' : `${format(new Date(event.attendanceDeadline), 'M월 d일')}까지 제출`}
+            </p>
+          )}
         </div>
       </div>
       <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -482,8 +505,8 @@ export default function EventAttendanceListPage() {
 
   const today = toApiDate()
   const events = useMemo(
-    () => rawEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today),
-    [rawEvents]
+    () => rawEvents.filter(e => !isEventAttendanceClosed(e, today)),
+    [rawEvents, today]
   )
 
   const handleSelect = (id) => setSelectedId(prev => prev === id ? null : id)

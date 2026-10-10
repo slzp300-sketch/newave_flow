@@ -5,6 +5,7 @@ export const usersApi = {
 }
 
 export const evangelismApi = {
+  moveTeacher: (teacherId, data) => client.post(`/evangelism/groups/move/${teacherId}`, data),
   getGroups:             ()               => client.get('/evangelism/groups'),
   createGroup:           (data)           => client.post('/evangelism/groups', data),
   updateGroup:           (id, data)       => client.put(`/evangelism/groups/${id}`, data),

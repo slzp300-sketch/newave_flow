@@ -18,6 +18,15 @@ public class EvangelismController {
 
     private final EvangelismService evangelismService;
 
+    public record MoveRequest(Long fromGroupId, Long toGroupId) {}
+
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    @PostMapping("/groups/move/{teacherId}")
+    public ResponseEntity<Void> moveTeacher(@PathVariable Long teacherId, @RequestBody MoveRequest request) {
+        evangelismService.moveTeacher(teacherId, request.fromGroupId(), request.toGroupId());
+        return ResponseEntity.noContent().build();
+    }
+
     // ── 조 ──
 
     @GetMapping("/groups")

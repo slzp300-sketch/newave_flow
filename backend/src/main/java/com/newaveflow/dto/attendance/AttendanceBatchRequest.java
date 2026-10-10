@@ -14,11 +14,11 @@ public record AttendanceBatchRequest(
         LocalDate attendanceDate,
 
         @NotEmpty(message = "출석 기록은 하나 이상이어야 합니다.")
-        List<Record> records
+        List<@jakarta.validation.Valid Record> records
 ) {
     public record Record(
             @NotNull Long studentId,
-            @NotNull String status,
+            @NotNull @jakarta.validation.constraints.Pattern(regexp = "PRESENT|ABSENT|LATE", message = "출석 상태가 올바르지 않습니다.") String status,
             String absentReason,
             String note
     ) {}

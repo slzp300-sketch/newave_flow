@@ -26,6 +26,7 @@ public class AttendanceService {
     private final UserRepository       userRepository;
     private final DailyReportRepository dailyReportRepository;
     private final TeacherClassRepository teacherClassRepository;
+    private final ClassAccessService classAccessService;
 
     public List<AttendanceResponse> getByClassAndDate(Long classId, LocalDate date) {
         return attendanceRepository.findByClassAndDate(classId, date)
@@ -38,10 +39,11 @@ public class AttendanceService {
         if (request.attendanceDate().isAfter(LocalDate.now())) {
             throw AppException.forbidden("아직 오지 않은 날짜의 출석은 입력할 수 없습니다.");
         }
-        ClassGroup classGroup = classGroupRepository.findById(request.classGroupId())
+        ClassGroup classGroup = classGroupRepository.lockById(request.classGroupId())
                 .orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+        classAccessService.requireClass(teacher, classGroup.getId());
 
         // 기존 출석 기록 조회 (upsert 처리)
         Map<Long, Attendance> existingMap = attendanceRepository
@@ -59,7 +61,15 @@ public class AttendanceService {
                         .collect(Collectors.toMap(Student::getId, s -> s));
 
         for (AttendanceBatchRequest.Record rec : request.records()) {
-            Attendance.Status status = Attendance.Status.valueOf(rec.status());
+            Student target = existingMap.containsKey(rec.studentId())
+                    ? existingMap.get(rec.studentId()).getStudent() : studentMap.get(rec.studentId());
+            if (target == null || !target.isActive() || target.getClassGroup() == null
+                    || !target.getClassGroup().getId().equals(classGroup.getId())) {
+                throw AppException.badRequest("해당 반의 활성 학생만 출석을 저장할 수 있습니다.");
+            }
+            Attendance.Status status;
+            try { status = Attendance.Status.valueOf(rec.status()); }
+            catch (RuntimeException e) { throw AppException.badRequest("출석 상태가 올바르지 않습니다."); }
 
             if (existingMap.containsKey(rec.studentId())) {
                 existingMap.get(rec.studentId()).updateStatus(status, rec.absentReason(), rec.note());
@@ -88,9 +98,13 @@ public class AttendanceService {
 
     @Transactional
     public void submitReport(Long classId, LocalDate date, Long teacherId) {
-        DailyReport report = dailyReportRepository.findByTeacherIdAndClassGroupIdAndReportDate(teacherId, classId, date)
+        classGroupRepository.lockById(classId).orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
+        User teacher = userRepository.findById(teacherId).orElseThrow(() -> AppException.unauthorized("교사를 찾을 수 없습니다."));
+        classAccessService.requireClass(teacher, classId);
+        DailyReport report = dailyReportRepository.findFirstByClassGroupIdAndReportDateOrderByIdAsc(classId, date)
                 .orElseThrow(() -> AppException.notFound("보고서를 찾을 수 없습니다. 출석을 먼저 입력해주세요."));
         
+        report.recordEditor(teacher);
         report.submit();
     }
 
@@ -102,7 +116,7 @@ public class AttendanceService {
         int absent = (int) attendances.stream().filter(a -> a.getStatus() == Attendance.Status.ABSENT).count();
         int late = (int) attendances.stream().filter(a -> a.getStatus() == Attendance.Status.LATE).count();
 
-        DailyReport report = dailyReportRepository.findByTeacherIdAndClassGroupIdAndReportDate(teacher.getId(), classGroup.getId(), date)
+        DailyReport report = dailyReportRepository.findFirstByClassGroupIdAndReportDateOrderByIdAsc(classGroup.getId(), date)
                 .orElseGet(() -> DailyReport.builder()
                         .teacher(teacher)
                         .classGroup(classGroup)
@@ -110,7 +124,8 @@ public class AttendanceService {
                         .status(DailyReport.Status.DRAFT)
                         .build());
         
-        report.updateCounts(total, present, absent, late, "");
+        report.recordEditor(teacher);
+        report.updateCounts(total, present, absent, late, report.getSpecialNotes());
         dailyReportRepository.save(report);
     }
 
@@ -141,14 +156,13 @@ public class AttendanceService {
 
     // ── 관리자: 주간 출석 요약 (반별) ──
     public List<AdminWeeklyAttendanceDto.ClassSummary> getAdminWeeklySummary(LocalDate date) {
+        Map<Long, String> primaryNames = teacherClassRepository.findAllWithTeacherAndClass().stream().filter(com.newaveflow.entity.TeacherClass::isPrimary)
+                .collect(Collectors.toMap(tc -> tc.getClassGroup().getId(), tc -> tc.getTeacher().getName(), (a,b) -> a));
         return dailyReportRepository.findByDateWithDetails(date)
                 .stream()
                 .map(r -> {
                     Long classGroupId = r.getClassGroup().getId();
-                    String teacherName = teacherClassRepository
-                            .findByClassGroup_IdAndIsPrimaryTrue(classGroupId)
-                            .map(tc -> tc.getTeacher().getName())
-                            .orElse(null);
+                    String teacherName = primaryNames.get(classGroupId);
                     return new AdminWeeklyAttendanceDto.ClassSummary(
                             classGroupId,
                             r.getClassGroup().getName(),

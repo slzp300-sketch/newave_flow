@@ -37,6 +37,7 @@ public class TtsService {
     private final PrayerVoteRepository prayerVoteRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final TtsQuestionPolicy questionPolicy;
 
     // ── 주차 계산: 일~토 한 주, 1월 1일이 들어 있는 주가 1주차 (화면의 date-fns getWeek와 동일) ──
 
@@ -68,15 +69,17 @@ public class TtsService {
     }
 
     public List<TtsQuestion> getActiveQuestions() {
-        return questionRepository.findAllByIsActiveOrderByDisplayOrderAsc(true);
+        return getActiveQuestions(LocalDate.now());
     }
 
-    @Transactional
-    public TtsResponse getMyTtsRecord(User teacher, Integer year, Integer weekNum) {
-        TtsRecord record = recordRepository.findByTeacherIdAndInfoYearAndWeekNum(teacher.getId(), year, weekNum)
-                .orElseGet(() -> createEmptyRecord(teacher, year, weekNum));
+    public List<TtsQuestion> getActiveQuestions(LocalDate date) {
+        return questionPolicy.load().at(weekSunday(date));
+    }
 
-        return convertToResponse(record);
+    @Transactional(readOnly = true)
+    public TtsResponse getMyTtsRecord(User teacher, Integer year, Integer week) {
+        if (year == null || year < 1900 || year > 9998 || week == null || week < 1 || week > 53) throw AppException.badRequest("주차가 올바르지 않습니다.");
+        return getWeek(teacher, firstSunday(year).plusWeeks(week - 1));
     }
 
     // ── 새 방식: 주 단위 조회 + 항목별 즉시 저장 ──
@@ -101,7 +104,9 @@ public class TtsService {
             throw AppException.forbidden("다음 주 이후는 아직 체크할 수 없습니다.");
         }
 
-        TtsQuestion question = questionRepository.findById(request.questionId())
+        // A user lock also protects simultaneous first writes from multiple devices.
+        userRepository.lockById(teacher.getId()).orElseThrow(() -> AppException.unauthorized("교사를 찾을 수 없습니다."));
+        TtsQuestion question = getActiveQuestions(sunday).stream().filter(q -> q.getId().equals(request.questionId())).findFirst()
                 .orElseThrow(() -> AppException.notFound("항목을 찾을 수 없습니다."));
         if (!question.isActive()) {
             throw AppException.badRequest("사용하지 않는 항목입니다.");
@@ -128,11 +133,11 @@ public class TtsService {
         if (existing != null) {
             existing.setAnswerData(answerData);
         } else {
-            record.addAnswer(TtsAnswer.builder().record(record).question(question).answerData(answerData).build());
+            record.addAnswer(TtsAnswer.builder().record(record).question(questionRepository.getReferenceById(question.getId())).answerData(answerData).build());
         }
 
         // 하나라도 체크돼 있으면 '참여한 주'로 본다
-        record.setSubmitted(record.getAnswers().stream().anyMatch(a -> answerScore(a) > 0));
+        record.setSubmitted(recordScore(record) > 0);
         TtsRecord saved = recordRepository.save(record);
         return buildWeekResponse(teacher.getId(), sunday, saved);
     }
@@ -152,6 +157,7 @@ public class TtsService {
             throw AppException.badRequest("잘못된 값입니다.");
         }
         Map<String, Boolean> normalized = new LinkedHashMap<>();
+        if (dayMap == null || !DAY_LABELS.containsAll(dayMap.keySet())) throw AppException.badRequest("요일 값이 올바르지 않습니다.");
         for (int i = 0; i < DAY_LABELS.size(); i++) {
             String label = DAY_LABELS.get(i);
             if (Boolean.TRUE.equals(dayMap.get(label))) {
@@ -169,11 +175,12 @@ public class TtsService {
     }
 
     private TtsResponse buildWeekResponse(Long teacherId, LocalDate sunday, TtsRecord record) {
+        var timeline = questionPolicy.load();
         Set<TtsLinkType> linkedDone = loadLinked(sunday, sunday.plusDays(6))
                 .getOrDefault(teacherId, Map.of())
                 .getOrDefault(sunday, Set.of());
 
-        List<TtsResponse.LinkedResponse> linked = linkedQuestions().stream()
+        List<TtsResponse.LinkedResponse> linked = timeline.at(sunday).stream().filter(TtsService::isLinked)
                 .map(q -> TtsResponse.LinkedResponse.builder()
                         .questionId(q.getId())
                         .checked(linkedDone.contains(q.getLinkType()))
@@ -192,47 +199,12 @@ public class TtsService {
                 .isSubmitted(record != null && record.isSubmitted())
                 .answers(answers)
                 .linked(linked)
-                .score(recordScore(record) + linkedScore(linkedDone))
+                .score(recordScore(record, timeline) + linkedScore(linkedDone, sunday, timeline))
                 .build();
     }
 
-    @Transactional
     public TtsResponse submitTts(User teacher, TtsSubmitRequest request) {
-        if (!isSubmissionWindowOpen()) {
-            throw com.newaveflow.exception.AppException.badRequest("TTS 제출 기간이 아닙니다 (토요일 ~ 화요일만 가능)");
-        }
-
-        TtsRecord record = recordRepository.findByTeacherIdAndInfoYearAndWeekNum(teacher.getId(), request.getYear(), request.getWeekNum())
-                .orElseGet(() -> TtsRecord.builder()
-                        .teacher(teacher)
-                        .infoYear(request.getYear())
-                        .weekNum(request.getWeekNum())
-                        .isSubmitted(false)
-                        .build());
-
-        if (record.getAnswers() == null) {
-            record.setAnswers(new ArrayList<>());
-        } else {
-            record.getAnswers().clear();
-        }
-
-        if (request.getAnswers() != null) {
-            for (TtsSubmitRequest.AnswerRequest answerReq : request.getAnswers()) {
-                TtsQuestion question = questionRepository.findById(answerReq.getQuestionId())
-                        .orElseThrow(() -> new RuntimeException("질문을 찾을 수 없습니다: " + answerReq.getQuestionId()));
-
-                TtsAnswer answer = TtsAnswer.builder()
-                        .record(record)
-                        .question(question)
-                        .answerData(answerReq.getAnswerData())
-                        .build();
-                record.addAnswer(answer);
-            }
-        }
-
-        record.setSubmitted(true);
-        TtsRecord saved = recordRepository.save(record);
-        return convertToResponse(saved);
+        throw AppException.badRequest("기존 일괄 제출 기능은 종료되었습니다. 화면을 새로고침한 뒤 항목별로 저장해주세요.");
     }
 
     // ── 점수 집계 (앱 기록 + 자동 연동 + 시트 가져오기) ──
@@ -246,9 +218,10 @@ public class TtsService {
     /** 교사별 → 주차별 앱 점수 (직접 체크 + 자동 연동) */
     private Map<Long, Map<Integer, Integer>> computeAppScores(int year, Map<Long, User> usersOut) {
         Map<Long, Map<Integer, Integer>> scores = new HashMap<>();
+        var timeline = questionPolicy.load();
 
         for (TtsRecord r : recordRepository.findAllByYearWithAnswers(year)) {
-            int s = recordScore(r);
+            int s = recordScore(r, timeline);
             if (s <= 0) continue;
             usersOut.putIfAbsent(r.getTeacher().getId(), r.getTeacher());
             scores.computeIfAbsent(r.getTeacher().getId(), k -> new HashMap<>()).merge(r.getWeekNum(), s, Integer::sum);
@@ -257,7 +230,7 @@ public class TtsService {
         LocalDate from = firstSunday(year);
         LocalDate to = firstSunday(year + 1).minusDays(1);
         loadLinked(from, to).forEach((teacherId, byWeek) -> byWeek.forEach((sunday, types) -> {
-            int s = linkedScore(types);
+            int s = linkedScore(types, sunday, timeline);
             if (s <= 0) return;
             scores.computeIfAbsent(teacherId, k -> new HashMap<>()).merge(weekNum(sunday), s, Integer::sum);
         }));
@@ -474,27 +447,10 @@ public class TtsService {
 
     @Transactional
     public List<TtsQuestion> updateQuestions(List<TtsQuestion> newQuestions) {
-        // 목록에서 빠진 항목: 답변 기록이 있으면 비활성화(기록 보존), 없으면 삭제
-        Set<Long> keepIds = newQuestions.stream()
-                .map(TtsQuestion::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        for (TtsQuestion existing : questionRepository.findAll()) {
-            if (keepIds.contains(existing.getId())) continue;
-            if (questionRepository.hasAnswers(existing.getId())) {
-                existing.setActive(false);
-            } else {
-                questionRepository.delete(existing);
-            }
-        }
-        return questionRepository.saveAll(newQuestions);
+        return questionPolicy.update(newQuestions);
     }
 
-    public boolean isSubmissionWindowOpen() {
-        DayOfWeek day = LocalDate.now().getDayOfWeek();
-        return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY ||
-               day == DayOfWeek.MONDAY || day == DayOfWeek.TUESDAY;
-    }
+    public boolean isSubmissionWindowOpen() { return true; }
 
     private TtsRecord createEmptyRecord(User teacher, Integer year, Integer weekNum) {
         TtsRecord record = TtsRecord.builder()
@@ -542,34 +498,33 @@ public class TtsService {
         return getActiveQuestions().stream().filter(TtsService::isLinked).toList();
     }
 
-    int answerScore(TtsAnswer answer) {
-        TtsQuestion question = answer.getQuestion();
+    private int answerScore(TtsAnswer answer, TtsQuestion question) {
         String data = answer.getAnswerData();
-        if (isLinked(question) || data == null || data.isBlank()) return 0;
-
+        if (question == null || isLinked(question) || data == null || data.isBlank()) return 0;
         if (question.getType() == TtsQuestionType.DAYS) {
             try {
-                Map<String, Boolean> dayMap = objectMapper.readValue(data, new TypeReference<>() {});
-                long checkedDays = dayMap.values().stream().filter(v -> v != null && v).count();
-                return (int) checkedDays * pointsOf(question);
-            } catch (Exception ignored) {
-                return 0;
-            }
+                Map<String, Boolean> days = objectMapper.readValue(data, new TypeReference<>() {});
+                if (days == null) return 0;
+                return (int) DAY_LABELS.stream().filter(day -> Boolean.TRUE.equals(days.get(day))).count() * pointsOf(question);
+            } catch (Exception ignored) { return 0; }
         }
         return "true".equals(data) ? pointsOf(question) : 0;
     }
 
-    int recordScore(TtsRecord record) {
+    int recordScore(TtsRecord record) { return recordScore(record, questionPolicy.load()); }
+
+    private int recordScore(TtsRecord record, TtsQuestionPolicy.Timeline timeline) {
         if (record == null || record.getAnswers() == null) return 0;
-        return record.getAnswers().stream().mapToInt(this::answerScore).sum();
+        LocalDate sunday = firstSunday(record.getInfoYear()).plusWeeks(record.getWeekNum() - 1);
+        var rules = timeline.allAt(sunday).stream().collect(Collectors.toMap(TtsQuestion::getId, q -> q));
+        Set<Long> seen = new HashSet<>();
+        return record.getAnswers().stream().filter(a -> seen.add(a.getQuestion().getId()))
+                .mapToInt(a -> answerScore(a, rules.get(a.getQuestion().getId()))).sum();
     }
 
-    private int linkedScore(Set<TtsLinkType> done) {
-        if (done.isEmpty()) return 0;
-        return linkedQuestions().stream()
-                .filter(q -> done.contains(q.getLinkType()))
-                .mapToInt(TtsService::pointsOf)
-                .sum();
+    private int linkedScore(Set<TtsLinkType> done, LocalDate sunday, TtsQuestionPolicy.Timeline timeline) {
+        return timeline.at(sunday).stream().filter(TtsService::isLinked)
+                .filter(q -> done.contains(q.getLinkType())).mapToInt(TtsService::pointsOf).sum();
     }
 
     /** 교사별 → 주(일요일)별로 자동 연동된 활동 (토요회의 참석, 기도모임 화/목 참석) */

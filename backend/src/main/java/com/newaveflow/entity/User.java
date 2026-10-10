@@ -47,6 +47,11 @@ public class User {
     @Builder.Default
     private boolean isActive = true;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    @Builder.Default
+    private long authVersion = 0;
+
     @Column(nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean largeFont = false;
@@ -72,14 +77,19 @@ public class User {
     private LocalDateTime updatedAt;
 
     public void updateRole(Role role) {
+        if (this.role != role) revokeSessions();
         this.role = role;
     }
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+        revokeSessions();
     }
 
+    public void revokeSessions() { this.authVersion++; }
+
     public void approve() {
+        if (!this.isActive) revokeSessions();
         this.isActive = true;
     }
 

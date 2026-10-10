@@ -29,20 +29,20 @@
 
 ```bash
 # 백엔드 (8080) — Windows는 gradlew.bat
-cd backend && ./gradlew bootRun
+cd backend && ./gradlew bootRun --args='--spring.profiles.active=dev'
 
 # 프론트 (5173) — /api 요청은 8080으로 프록시됨
 cd frontend && npm ci && npm run dev
 ```
 
-- 기본 프로필은 `dev`: 메모리 DB(H2)라서 서버를 껐다 켜면 데이터가 초기화된다. 시작할 때 관리자 계정(admin@naver.com)과 반·학생 명단이 자동으로 생성된다.
-- 로그인 화면 아이디 칸에는 `admin`만 입력한다(@naver.com은 옆 선택칸).
+- 실행 프로필은 반드시 명시한다. `dev`/`local`은 메모리 DB(H2)이며 기본적으로 계정·명단을 생성하지 않는다. 운영은 `prod`만 사용한다.
+- 개발용 명단 초기화가 꼭 필요한 경우에만 `app.seed.enabled=true`와 `BOOTSTRAP_ADMIN_PASSWORD`(12자 이상), `BOOTSTRAP_ADMIN_EMAIL`을 설정한다. 이 초기화는 실제 명단 파일을 읽으므로 일반 검수에는 사용하지 않는다. 자동 검사는 `test` 프로필의 가상 데이터만 사용한다.
 - 브라우저 자동화로 로그인할 때 값을 한 번에 채워 넣는 방식(form_input)은 로그인 버튼이 반응하지 않는다. 칸을 클릭하고 직접 타이핑해야 한다.
 
 ## 검증
 
 ```bash
-cd frontend && npm run build        # 화면 코드 빌드 확인
+cd frontend && npm test && npm run build -- --outDir .verification/build
 cd backend && ./gradlew build       # 백엔드 컴파일 + 테스트
 ```
 
@@ -55,9 +55,10 @@ cd backend && ./gradlew build       # 백엔드 컴파일 + 테스트
 | 프론트 | Vercel `newave-flow` → https://newave-flow.vercel.app | main에 머지되면 자동 배포 |
 | 백엔드 | Railway → `https://newaveflow-production.up.railway.app` | `prod` 프로필 + PostgreSQL(`PG*` 환경변수), `JWT_SECRET` 환경변수 |
 
-- 운영 API 주소는 두 곳에 하드코딩돼 있다: `frontend/src/api/client.js`, `frontend/src/router/index.jsx`. 주소가 바뀌면 **둘 다** 고친다.
-- Railway에 `SPRING_PROFILES_ACTIVE=prod`가 빠지면 메모리 DB로 떠서 데이터가 사라진다. 백엔드 배포 설정을 만질 때 반드시 확인한다.
-- `frontend/dist/`는 .gitignore에 있지만 과거에 커밋돼 있어서, 빌드하면 변경으로 잡힌다. 의도한 게 아니면 커밋하지 말고 `git checkout -- frontend/dist`로 되돌린다.
+- 운영 API 주소는 `VITE_API_URL`로 지정할 수 있으며 기본값은 `frontend/src/api/client.js`에만 있다. 라우터도 공통 클라이언트의 갱신 함수를 사용한다.
+- `SPRING_PROFILES_ACTIVE=prod`, `PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD`, `JWT_SECRET`을 확인한다. 프로필 누락은 시작 실패로 처리하며 운영 DB 구조는 `ddl-auto=validate`로 검사한다.
+- 보안·공동 보고서·기록 보존 변경의 배포 순서와 DB 전환은 `docs/deployment-checklist.md`를 따른다. SQL을 적용하기 전에 복원한 별도 PostgreSQL에서 검증해야 한다.
+- `frontend/dist/`는 과거에 추적된 파일이다. 로컬 검증 빌드는 `.verification/build`로 출력하고, 기존 결과물을 임의로 되돌리지 않는다.
 
 ## Git 작업 방식
 
@@ -75,6 +76,6 @@ cd backend && ./gradlew build       # 백엔드 컴파일 + 테스트
 
 ## 미해결 메모
 
-- 관리자 초기 비밀번호가 `backend/.../config/DataInitService.java`에 하드코딩돼 있음 → 환경변수로 옮길 예정(미착수).
+- 2026-10-10 코드 개선 결과와 남은 운영 검증은 `docs/implementation-progress.md` 참고. 초기 비밀번호 하드코딩은 제거했다.
 - 임원교사(EXECUTIVE) 권한 범위 축소는 사용자가 추후 결정.
 - 루트의 `brand-config.md`, `cs-templates.md`, `brand/`는 다른 프로젝트(이커머스) 템플릿에서 넘어온 파일로 이 앱과 무관하다.

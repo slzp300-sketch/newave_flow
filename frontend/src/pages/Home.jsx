@@ -1,3 +1,4 @@
+import { eventRangeKey } from '../api/queryPolicy'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect, useMemo } from 'react'
@@ -334,7 +335,7 @@ function AdminView({ navigate, today }) {
   })
 
   const { data: monthEvents = [] } = useQuery({
-    queryKey: ['events', format(new Date(), 'yyyy-MM')],
+    queryKey: eventRangeKey(toApiDate(startOfMonth(new Date())), toApiDate(endOfMonth(new Date()))),
     queryFn: () => client.get('/events', {
       params: {
         from: toApiDate(startOfMonth(new Date())),
