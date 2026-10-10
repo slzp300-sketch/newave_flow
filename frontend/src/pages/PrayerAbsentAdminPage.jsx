@@ -5,7 +5,7 @@ import { BookOpen, CheckCircle2, Clock, Users, Loader2 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { prayerVoteApi } from '../api/prayerVote'
-import { formatUpdatedAt } from '../utils/date'
+import { formatUpdatedAt, weekLabels } from '../utils/date'
 import { format, startOfWeek, addWeeks } from 'date-fns'
 
 function getThisWeekMonday() {
@@ -90,7 +90,7 @@ export default function PrayerAbsentAdminPage() {
             className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-black text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-violet-200"
           >
             {weeks.map(w => (
-              <option key={w} value={w}>{w} 주차</option>
+              <option key={w} value={w}>{weekLabels(new Date(w + 'T00:00:00')).monthWeek} ({weekLabels(new Date(w + 'T00:00:00')).yearWeek})</option>
             ))}
           </select>
         </section>

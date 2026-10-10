@@ -12,7 +12,7 @@ import Button from '../components/common/Button'
 import Badge from '../components/common/Badge'
 import { ttsApi } from '../api/tts'
 import WeekNavigator from '../components/common/WeekNavigator'
-import { getWeekStartByOffset, formatUpdatedAt } from '../utils/date'
+import { getWeekStartByOffset, formatUpdatedAt, weekLabels, weekLabelsByNum } from '../utils/date'
 import { addDays, format, getWeek } from 'date-fns'
 
 const getCurrentQuarter = () => Math.ceil((new Date().getMonth() + 1) / 3)
@@ -225,7 +225,7 @@ function ScoresTab() {
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-1">
-                        <WeeklyScoreDetail scores={t.weeklyScores} total={t.totalScore} />
+                        <WeeklyScoreDetail year={year} scores={t.weeklyScores} total={t.totalScore} />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -265,7 +265,7 @@ function ScoresTab() {
   )
 }
 
-function WeeklyScoreDetail({ scores, total }) {
+function WeeklyScoreDetail({ year, scores, total }) {
   return (
     <Card className="p-4 flex flex-col gap-2 bg-gray-50/50">
       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">주차별 점수</p>
@@ -274,7 +274,7 @@ function WeeklyScoreDetail({ scores, total }) {
       ) : (
         scores.map(ws => (
           <div key={ws.weekNum} className="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-0">
-            <span className="text-sm font-bold text-gray-600">{ws.weekNum}주차</span>
+            <span className="text-sm font-bold text-gray-600">{weekLabelsByNum(year, ws.weekNum).monthWeek}</span>
             <span className="font-black text-gray-700 text-sm">{ws.score}점</span>
           </div>
         ))
@@ -330,7 +330,8 @@ function SummaryTab({ offset, onOffsetChange }) {
         <WeekNavigator
           offset={offset}
           onChange={onOffsetChange}
-          title={`${year}년 ${week.weekNum}주차 TTS`}
+          title={`${weekLabels(sunday).monthWeek} TTS`}
+          sub={weekLabels(sunday).yearWeek}
           range={`${week.start} ~ ${week.end} · 1점 이상이면 참여로 집계`}
         />
       </div>

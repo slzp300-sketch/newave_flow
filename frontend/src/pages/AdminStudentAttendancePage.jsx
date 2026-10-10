@@ -3,11 +3,11 @@ import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { format, subWeeks, startOfWeek } from 'date-fns'
-import { ko } from 'date-fns/locale'
 import { Users, CheckCircle2, XCircle, Clock, ChevronRight, AlertCircle } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { attendanceApi } from '../api/attendance'
+import { weekLabels } from '../utils/date'
 
 // ── 주차 목록 생성 (최근 10주, 일요일 기준) ─────────────────────
 function getPastSundays(count = 10) {
@@ -375,7 +375,7 @@ export default function AdminStudentAttendancePage() {
           >
             {sundays.map(s => (
               <option key={s} value={s}>
-                {format(new Date(s + 'T00:00:00'), 'yyyy년 M월 d일 (EEE)', { locale: ko })} 주차
+                {weekLabels(new Date(s + 'T00:00:00')).monthWeek} ({weekLabels(new Date(s + 'T00:00:00')).yearWeek}) · {format(new Date(s + 'T00:00:00'), 'M/d')} 주일
               </option>
             ))}
           </select>

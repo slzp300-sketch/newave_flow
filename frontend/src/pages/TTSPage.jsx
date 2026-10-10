@@ -7,7 +7,7 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import WeekNavigator from '../components/common/WeekNavigator'
 import useAuthStore from '../store/authStore'
-import { getWeekStartByOffset, toApiDate } from '../utils/date'
+import { getWeekStartByOffset, toApiDate, weekLabels, weekLabelsByNum } from '../utils/date'
 import { ttsApi } from '../api/tts'
 
 export const DAYS = ['월', '화', '수', '목', '금', '토']
@@ -158,6 +158,8 @@ export function CheckTab({ embedded = false }) {
   const dayQuestions   = withColor.filter(({ q }) => isDaily(q))
   const otherQuestions = withColor.filter(({ q }) => !isDaily(q))
 
+  const labels = weekLabels(sunday)
+
   const remainingToday = todayIdx >= 0
     ? questions.filter(q => q.type === 'DAYS' && !isLinked(q) && !answers[q.id]?.[DAYS[todayIdx]])
     : []
@@ -168,7 +170,8 @@ export function CheckTab({ embedded = false }) {
         <WeekNavigator
           offset={offset}
           onChange={setOffset}
-          title={`${week?.weekNum ?? ''}주차 TTS`}
+          title={`${labels.monthWeek} TTS`}
+          sub={labels.yearWeek}
           range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')} · 탭하면 바로 저장돼요`}
         />
       </div>}
@@ -184,7 +187,7 @@ export function CheckTab({ embedded = false }) {
             range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
             score={score}
             maxScore={maxScore}
-            weekNum={week?.weekNum}
+            weekLabel={labels.monthWeek}
             items={withColor.map(({ q, color }) => ({
               q,
               color,
@@ -272,7 +275,7 @@ export function CheckTab({ embedded = false }) {
   )
 }
 
-function ScoreCard({ compact, range, score, maxScore, weekNum, items, message }) {
+function ScoreCard({ compact, range, score, maxScore, weekLabel, items, message }) {
   const r = 36
   const c = 2 * Math.PI * r
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
@@ -286,7 +289,7 @@ function ScoreCard({ compact, range, score, maxScore, weekNum, items, message })
           <span className="text-xs font-bold text-gray-400"> / {maxScore}점</span>
         </p>
         <p className="text-[11px] font-bold text-gray-400">
-          <span className="font-black text-primary-500">{weekNum}주차</span> · {range}
+          <span className="font-black text-primary-500">{weekLabel}</span> · {range}
         </p>
       </div>
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden mt-2.5">
@@ -320,7 +323,7 @@ function ScoreCard({ compact, range, score, maxScore, weekNum, items, message })
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-black text-primary-500">{weekNum}주차 점수</p>
+          <p className="text-[11px] font-black text-primary-500">{weekLabel} 점수</p>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2">
             {items.map(({ q, color, done, total }) => (
               <div key={q.id} className="flex items-center gap-1.5 min-w-0">
@@ -489,11 +492,11 @@ function StatsTab() {
       ) : view === 'rank' ? (
         <CumulativeRank people={people} myId={user?.id} />
       ) : view === 'quarter' ? (
-        <QuarterRank people={people} myId={user?.id} lastWeek={lastWeek} />
+        <QuarterRank year={year} people={people} myId={user?.id} lastWeek={lastWeek} />
       ) : view === 'weekly' ? (
-        <WeeklyTable people={people} lastWeek={lastWeek} />
+        <WeeklyTable year={year} people={people} lastWeek={lastWeek} />
       ) : (
-        <MyTrend me={me} lastWeek={lastWeek} />
+        <MyTrend year={year} me={me} lastWeek={lastWeek} />
       )}
     </div>
   )
@@ -543,7 +546,7 @@ function CumulativeRank({ people, myId }) {
   )
 }
 
-function QuarterRank({ people, myId, lastWeek }) {
+function QuarterRank({ year, people, myId, lastWeek }) {
   const currentQ = QUARTERS.find(x => lastWeek >= x.from && lastWeek <= x.to)?.q ?? 1
   const [q, setQ] = useState(currentQ)
   const range = QUARTERS[q - 1]
@@ -570,7 +573,7 @@ function QuarterRank({ people, myId, lastWeek }) {
           ))}
         </div>
       </div>
-      <p className="text-[10px] text-gray-300 font-bold px-2 pb-1">{range.from}~{range.to}주차</p>
+      <p className="text-[10px] text-gray-300 font-bold px-2 pb-1">{weekLabelsByNum(year, range.from).monthWeek} ~ {weekLabelsByNum(year, range.to).monthWeek}</p>
       {list.length === 0 && <p className="text-center text-xs text-gray-400 py-6">이 분기 기록이 없어요</p>}
       {list.map(p => {
         const diff = Math.round(p.qTotal - avg)
@@ -593,7 +596,7 @@ function QuarterRank({ people, myId, lastWeek }) {
   )
 }
 
-function WeeklyTable({ people, lastWeek }) {
+function WeeklyTable({ year, people, lastWeek }) {
   const rows = []
   for (let w = lastWeek; w >= 1; w--) {
     const entries = people.map(p => ({ name: p.name, s: p.weekly[w] || 0 })).filter(e => e.s > 0)
@@ -609,13 +612,13 @@ function WeeklyTable({ people, lastWeek }) {
   }
   return (
     <Card className="flex flex-col px-3">
-      <div className="grid grid-cols-[44px_36px_40px_40px_1fr] gap-1 text-[10px] font-black text-gray-400 pb-2 border-b border-gray-50">
+      <div className="grid grid-cols-[64px_32px_36px_36px_1fr] gap-1 text-[10px] font-black text-gray-400 pb-2 border-b border-gray-50">
         <span>주차</span><span className="text-right">인원</span><span className="text-right">평균</span><span className="text-right">최고</span><span className="pl-2">최고점</span>
       </div>
       {rows.length === 0 && <p className="text-center text-xs text-gray-400 py-6">기록이 없어요</p>}
       {rows.map(r => (
-        <div key={r.w} className="grid grid-cols-[44px_36px_40px_40px_1fr] gap-1 py-2 text-xs border-b border-gray-50 last:border-0">
-          <span className="font-black text-gray-700">{r.w}주</span>
+        <div key={r.w} className="grid grid-cols-[64px_32px_36px_36px_1fr] gap-1 py-2 text-xs border-b border-gray-50 last:border-0">
+          <span className="font-black text-gray-700">{weekLabelsByNum(year, r.w).monthWeek}</span>
           <span className="text-right font-bold text-gray-500">{r.count}</span>
           <span className="text-right font-bold text-gray-500">{r.avg}</span>
           <span className="text-right font-black text-primary-600">{r.max}</span>
@@ -626,7 +629,7 @@ function WeeklyTable({ people, lastWeek }) {
   )
 }
 
-function MyTrend({ me, lastWeek }) {
+function MyTrend({ year, me, lastWeek }) {
   if (!me) return <Card className="py-10 text-center text-sm text-gray-400">내 기록이 아직 없어요</Card>
   const weeks = Array.from({ length: lastWeek }, (_, i) => lastWeek - i)
   const max = Math.max(150, ...Object.values(me.weekly))
@@ -640,7 +643,7 @@ function MyTrend({ me, lastWeek }) {
         const s = me.weekly[w] || 0
         return (
           <div key={w} className="flex items-center gap-2">
-            <span className="w-9 text-[11px] font-black text-gray-400">{w}주</span>
+            <span className="w-16 flex-shrink-0 text-[11px] font-black text-gray-400">{weekLabelsByNum(year, w).monthWeek}</span>
             <div className="flex-1 h-3 bg-gray-50 rounded-full overflow-hidden">
               <div className="h-full bg-primary-400 rounded-full" style={{ width: `${(s / max) * 100}%` }} />
             </div>

@@ -46,6 +46,13 @@ export const weekLabels = (date) => {
   }
 }
 
+/** 연도 + 연간 주차 번호로 라벨 만들기 (통계 표처럼 번호만 있을 때). 없는 53주차는 그해 마지막 주로 */
+export const weekLabelsByNum = (year, weekNum) => {
+  let sun = addWeeks(startOfWeek(new Date(year, 0, 1), { weekStartsOn: 0 }), weekNum - 1)
+  if (getWeekYear(sun, { weekStartsOn: 0 }) > year) sun = subWeeks(sun, 1)
+  return weekLabels(sun)
+}
+
 /** 현재 주간 범위 (항상 이번 주, Mon/Tue 시프트 없음) */
 export const getThisWeekInfo = () => {
   const now = new Date()
