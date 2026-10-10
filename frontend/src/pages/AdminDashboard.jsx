@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 
-const MENU_GROUPS = [
+export const MENU_GROUPS = [
   {
     title: '회원 및 조직 관리',
     icon: UserCog,

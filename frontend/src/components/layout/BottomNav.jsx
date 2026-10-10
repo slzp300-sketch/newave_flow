@@ -1,37 +1,15 @@
 import { NavLink } from 'react-router-dom'
-import { Home, ClipboardList, Calendar, BarChart2, BookOpen, User } from 'lucide-react'
-import useAuthStore from '../../store/authStore'
+import { Home, LayoutGrid, Calendar, User } from 'lucide-react'
 
-const teacherNav = [
-  { to: '/',          icon: Home,          label: '홈' },
-  { to: '/roster',    icon: BookOpen,      label: '교적부' },
-  { to: '/checklist', icon: ClipboardList, label: '주간 체크' },
-  { to: '/calendar',  icon: Calendar,      label: '캘린더' },
-  { to: '/profile',   icon: User,          label: '마이' },
-]
-
-const executiveNav = [
-  { to: '/',           icon: Home,          label: '홈' },
-  { to: '/roster',     icon: BookOpen,      label: '교적부' },
-  { to: '/checklist',  icon: ClipboardList, label: '주간 체크' },
-  { to: '/calendar',   icon: Calendar,      label: '캘린더' },
-  { to: '/profile',    icon: User,          label: '마이' },
-]
-
-const adminNav = [
-  { to: '/',        icon: Home,      label: '홈' },
-  { to: '/roster',  icon: BookOpen,  label: '교적부' },
-  { to: '/admin',   icon: BarChart2, label: '관리' },
-  { to: '/calendar',icon: Calendar,  label: '캘린더' },
-  { to: '/profile', icon: User,      label: '마이' },
+// 모든 권한 공통 하단 탭 (관리 화면은 '전체' 탭 안에 카드로 들어 있음)
+const navItems = [
+  { to: '/',         icon: Home,       label: '홈' },
+  { to: '/menu',     icon: LayoutGrid, label: '전체' },
+  { to: '/calendar', icon: Calendar,   label: '캘린더' },
+  { to: '/profile',  icon: User,       label: '마이' },
 ]
 
 export default function BottomNav() {
-  const { user } = useAuthStore()
-  const navItems =
-    user?.role === 'EXECUTIVE' ? executiveNav :
-    user?.role === 'TEACHER'   ? teacherNav   : adminNav
-
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile bg-white border-t border-gray-100 safe-bottom z-10">
       <ul className="flex">
