@@ -4,11 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, ShieldCheck, UserCog, User as UserIcon, Check, Loader2, ChevronRight, AlertCircle, Sparkles } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode, DetailTable } from '../components/common/ViewModeToggle'
 import { usersApi } from '../api/users'
 import useAuthStore from '../store/authStore'
 
 export default function AdminTeacherManagePage() {
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useViewMode('admin-teachers', 'large')
+  const [selectedId, setSelectedId] = useState(null) // 작은 카드·목록·자세히에서 누른 교사 (권한 변경 창)
   const queryClient = useQueryClient()
   const { user: currentUser } = useAuthStore()
 
@@ -37,6 +40,9 @@ export default function AdminTeacherManagePage() {
       return u.name.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower)
     })
   }, [users, search, currentUser])
+
+  // 권한이 바뀌면 최신 정보로 다시 그리도록 목록에서 찾아온다
+  const selectedUser = filteredUsers.find(u => u.id === selectedId)
 
   const handleRoleChange = (id, newRole) => {
     if (newRole === 'PASTOR') {
@@ -85,23 +91,106 @@ export default function AdminTeacherManagePage() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-             <div className="px-1 mb-1">
+             <div className="px-1 mb-1 flex items-center justify-between">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Management Target ({filteredUsers.length})</p>
+                <ViewModeToggle mode={viewMode} onChange={setViewMode} />
              </div>
-            <AnimatePresence mode="popLayout">
-              {filteredUsers.map((user) => (
-                <UserManagementCard
-                  key={user.id}
-                  user={user}
-                  onUpdate={handleRoleChange}
-                  isUpdating={mutation.isLoading && mutation.variables?.id === user.id}
-                />
-              ))}
-            </AnimatePresence>
+            {viewMode === 'large' ? (
+              <AnimatePresence mode="popLayout">
+                {filteredUsers.map((user) => (
+                  <UserManagementCard
+                    key={user.id}
+                    user={user}
+                    onUpdate={handleRoleChange}
+                    isUpdating={mutation.isLoading && mutation.variables?.id === user.id}
+                  />
+                ))}
+              </AnimatePresence>
+            ) : viewMode === 'detail' ? (
+              <DetailTable
+                rows={filteredUsers}
+                onRowClick={u => setSelectedId(u.id)}
+                columns={[
+                  { label: '이름', render: u => u.name },
+                  { label: '권한', render: u => <RoleBadge role={u.role} /> },
+                  { label: '이메일', render: u => u.email },
+                ]}
+              />
+            ) : (
+              <div className={viewMode === 'small' ? 'grid grid-cols-4 gap-2' : 'flex flex-col gap-2'}>
+                {filteredUsers.map((user, idx) => (
+                  <UserCompactItem key={user.id} user={user} idx={idx} mode={viewMode} onClick={() => setSelectedId(user.id)} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {selectedUser && (
+          <>
+            <motion.div key="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setSelectedId(null)} className="fixed inset-0 bg-black/40 z-[60]" />
+            <div key="sheet" className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 12 }}
+                className="w-full max-w-[360px] pointer-events-auto flex flex-col gap-2"
+              >
+                <UserManagementCard
+                  user={selectedUser}
+                  onUpdate={handleRoleChange}
+                  isUpdating={mutation.isLoading && mutation.variables?.id === selectedUser.id}
+                />
+                <button onClick={() => setSelectedId(null)}
+                  className="py-3 rounded-2xl bg-white text-sm font-black text-gray-500 shadow-sm active:scale-[0.98] transition-all">
+                  닫기
+                </button>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
+  )
+}
+
+function UserCompactItem({ user, idx, mode, onClick }) {
+  const motionProps = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    transition: { delay: Math.min(idx * 0.03, 0.3) },
+    onClick,
+  }
+  if (mode === 'small') {
+    return (
+      <motion.button {...motionProps}
+        className="bg-white rounded-2xl shadow-sm p-2 flex flex-col items-center gap-1 active:scale-95 transition-all">
+        <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-black">
+          {user.name[0]}
+        </div>
+        <p className="text-[11px] font-black text-gray-900 truncate w-full text-center">{user.name}</p>
+        <RoleBadge role={user.role} />
+      </motion.button>
+    )
+  }
+  return (
+    <motion.button {...motionProps}
+      className="w-full bg-white rounded-2xl shadow-sm px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-all">
+      <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-black flex-shrink-0">
+        {user.name[0]}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-black text-gray-900 text-sm flex-shrink-0">{user.name}</p>
+          <RoleBadge role={user.role} />
+        </div>
+        <p className="text-[11px] font-medium text-gray-400 truncate mt-0.5">{user.email}</p>
+      </div>
+      <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
+    </motion.button>
   )
 }
 

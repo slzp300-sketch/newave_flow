@@ -10,6 +10,7 @@ import {
 import Header from '../components/layout/Header'
 import { adminStudentsApi } from '../api/students'
 import { classesApi } from '../api/classes'
+import ViewModeToggle, { useViewMode, DetailTable } from '../components/common/ViewModeToggle'
 
 const GRADE_ORDER = ['유치', '초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '미분류']
 
@@ -180,6 +181,8 @@ function StudentListTab({
   showDeactivated, setShowDeactivated,
   onAdd, onEdit, onAdvance, onRefresh, queryClient,
 }) {
+  const [viewMode, setViewMode] = useViewMode('admin-students', 'list')
+
   return (
     <>
       {/* 학년 필터 */}
@@ -226,45 +229,66 @@ function StudentListTab({
           <p className="text-xs text-gray-400 font-bold">
             총 <span className="text-gray-800 font-black">{students.length}</span>명
           </p>
-          <button
-            onClick={() => setShowDeactivated(v => !v)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${
-              showDeactivated
-                ? 'bg-red-50 text-red-500 border border-red-100'
-                : 'bg-gray-50 text-gray-400 border border-gray-100'
-            }`}
-          >
-            <UserMinus size={12} />
-            제적 포함
-          </button>
+          <div className="flex items-center gap-2">
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+            <button
+              onClick={() => setShowDeactivated(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${
+                showDeactivated
+                  ? 'bg-red-50 text-red-500 border border-red-100'
+                  : 'bg-gray-50 text-gray-400 border border-gray-100'
+              }`}
+            >
+              <UserMinus size={12} />
+              제적 포함
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 학생 목록 */}
-      <div className="px-4 flex flex-col gap-2 pb-4">
+      <div className="px-4 pb-4">
         {students.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-3 text-gray-300">
             <Users size={36} />
             <p className="text-sm font-bold">학생이 없습니다</p>
           </div>
+        ) : viewMode === 'detail' ? (
+          <DetailTable
+            rows={students}
+            onRowClick={onEdit}
+            rowClassName={s => s.isActive ? '' : 'opacity-50'}
+            columns={[
+              { label: '이름', render: s => s.name },
+              { label: '학년', render: s => s.grade || null },
+              { label: '반', render: s => s.classGroupName || null },
+              { label: '학교', render: s => s.school || null },
+              { label: '연락처', render: s => s.phone || null },
+              { label: '세례', render: s => s.baptism ? '세례' : null },
+              { label: '상태', render: s => s.isActive ? '재적' : '제적' },
+            ]}
+          />
         ) : (
-          students.map((s, idx) => (
-            <StudentCard
-              key={s.id}
-              student={s}
-              idx={idx}
-              onEdit={() => onEdit(s)}
-              queryClient={queryClient}
-              onRefresh={onRefresh}
-            />
-          ))
+          <div className={{ large: 'grid grid-cols-2 gap-2', small: 'grid grid-cols-4 gap-2', list: 'flex flex-col gap-2' }[viewMode]}>
+            {students.map((s, idx) => (
+              <StudentCard
+                key={s.id}
+                student={s}
+                idx={idx}
+                mode={viewMode}
+                onEdit={() => onEdit(s)}
+                queryClient={queryClient}
+                onRefresh={onRefresh}
+              />
+            ))}
+          </div>
         )}
       </div>
     </>
   )
 }
 
-function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh }) {
+function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = 'list' }) {
   const deactivateMut = useMutation({
     mutationFn: () => adminStudentsApi.deactivate(s.id),
     onSuccess: onRefresh,
@@ -273,6 +297,79 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh }) {
     mutationFn: () => adminStudentsApi.activate(s.id),
     onSuccess: onRefresh,
   })
+
+  const avatarColor = s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-blue-50 text-blue-500'
+  const avatarContent = s.profileImage
+    ? <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
+    : s.name[0]
+  const motionProps = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    transition: { delay: Math.min(idx * 0.03, 0.3) },
+  }
+
+  // 작은 카드: 사진 + 이름만, 누르면 수정 창
+  if (mode === 'small') {
+    return (
+      <motion.button {...motionProps} onClick={onEdit}
+        className={`bg-white rounded-2xl border shadow-sm p-2 flex flex-col items-center gap-1 active:scale-95 transition-all ${
+          !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
+        }`}>
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-black overflow-hidden ${avatarColor}`}>
+          {avatarContent}
+        </div>
+        <p className={`text-[11px] font-black truncate w-full text-center ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
+        <p className="text-[9px] text-gray-400 font-bold truncate w-full text-center">{s.classGroupName || s.grade || ''}</p>
+      </motion.button>
+    )
+  }
+
+  // 큰 카드: 정보 + 수정/제적 버튼
+  if (mode === 'large') {
+    return (
+      <motion.div {...motionProps}
+        className={`bg-white rounded-2xl border shadow-sm p-3 flex flex-col items-center gap-1.5 text-center ${
+          !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
+        }`}>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black overflow-hidden ${avatarColor}`}>
+          {avatarContent}
+        </div>
+        <p className={`font-black text-sm ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
+        <div className="flex flex-wrap justify-center gap-1">
+          {s.grade && <span className="text-[10px] text-primary-500 font-black bg-primary-50 px-1.5 py-0.5 rounded-md">{s.grade}</span>}
+          {!s.isActive && <span className="text-[9px] font-black bg-red-100 text-red-400 px-1.5 py-0.5 rounded-md">제적</span>}
+          {s.baptism && <span className="text-[9px] font-black bg-emerald-50 text-emerald-500 px-1.5 py-0.5 rounded-md">세례</span>}
+        </div>
+        <p className="text-[11px] text-gray-500 font-bold truncate w-full">{s.classGroupName || '반 미배정'}</p>
+        {s.school && <p className="text-[10px] text-gray-300 font-bold truncate w-full -mt-1">{s.school}</p>}
+        <div className="flex gap-1 w-full mt-1">
+          <button onClick={onEdit}
+            className="flex-1 h-8 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center gap-1 text-[11px] font-black">
+            <Pencil size={12} /> 수정
+          </button>
+          {s.isActive ? (
+            <button
+              onClick={() => {
+                if (confirm(`${s.name} 학생을 제적 처리하시겠어요?`)) deactivateMut.mutate()
+              }}
+              disabled={deactivateMut.isPending}
+              className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center disabled:opacity-50"
+            >
+              {deactivateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserMinus size={13} />}
+            </button>
+          ) : (
+            <button
+              onClick={() => activateMut.mutate()}
+              disabled={activateMut.isPending}
+              className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center disabled:opacity-50"
+            >
+              {activateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
+            </button>
+          )}
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div
