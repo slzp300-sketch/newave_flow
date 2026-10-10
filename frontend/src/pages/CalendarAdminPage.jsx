@@ -15,6 +15,8 @@ import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import Badge from '../components/common/Badge'
 import { toApiDate } from '../utils/date'
+import { DateRangeField } from '../components/calendar/DateRangePicker'
+import BulkEventForm, { AddEventChoice } from '../components/calendar/BulkEventForm'
 
 const COLORS = [
   { name: '기본', value: '', class: 'bg-primary-500' },
@@ -49,6 +51,8 @@ const getEventColors = (color) => {
 export default function CalendarAdminPage() {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
+  const [showChoice, setShowChoice] = useState(false)
+  const [showBulk, setShowBulk] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -83,7 +87,8 @@ export default function CalendarAdminPage() {
         ...rest,
         startTime: allDay ? null : rest.startTime || null,
         endTime:   allDay ? null : rest.endTime   || null,
-        attendanceDeadline: rest.attendanceDeadline || null,
+        // 마감일을 비워두면 일정 마지막 날까지
+        attendanceDeadline: rest.attendanceRequired ? (rest.attendanceDeadline || rest.endDate) : null,
       }
       if (editingId) {
         await client.put(`/events/${editingId}`, submitData)
@@ -180,7 +185,7 @@ export default function CalendarAdminPage() {
       <div className="px-4 py-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-black text-gray-900">전체 일정</h2>
-          <Button size="sm" onClick={() => setShowForm(true)}>
+          <Button size="sm" onClick={() => setShowChoice(true)}>
             <Plus size={16} /> 일정 추가
           </Button>
         </div>
@@ -201,37 +206,15 @@ export default function CalendarAdminPage() {
                   />
                 </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">시작일</label>
-                      <input 
-                        type="date" 
-                        value={formData.eventDate}
-                        onChange={e => {
-                          const newDate = e.target.value;
-                          setFormData({
-                            ...formData, 
-                            eventDate: newDate, 
-                            // 종료일이 시작일보다 빠르거나 같았던 경우 함께 업데이트
-                            endDate: formData.endDate < newDate ? newDate : formData.endDate
-                          });
-                        }}
-                        required
-                        className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">종료일</label>
-                      <input 
-                        type="date" 
-                        value={formData.endDate}
-                        onChange={e => setFormData({...formData, endDate: e.target.value})}
-                        min={formData.eventDate}
-                        required
-                        className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none"
-                      />
-                    </div>
-                  </div>
+                <div>
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">날짜 <span className="normal-case tracking-normal font-medium">(하루 또는 기간)</span></label>
+                  <DateRangeField
+                    start={formData.eventDate}
+                    end={formData.endDate}
+                    onChange={(s, e) => setFormData(f => ({ ...f, eventDate: s, endDate: e }))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold text-gray-800"
+                  />
+                </div>
 
                 {/* 하루종일 토글 */}
                 <div
@@ -402,7 +385,7 @@ export default function CalendarAdminPage() {
                       )}
                       {!formData.attendanceDeadline && (
                         <p className="text-[11px] text-gray-400 mt-1.5">
-                          미설정 시 마감 제한 없이 제출 가능합니다
+                          비워두면 일정 마지막 날({formData.endDate})까지 제출 가능합니다
                         </p>
                       )}
                     </div>
@@ -506,6 +489,9 @@ export default function CalendarAdminPage() {
           </div>
         )}
       </div>
+
+      <AddEventChoice open={showChoice} onClose={() => setShowChoice(false)} onSingle={() => setShowForm(true)} onBulk={() => setShowBulk(true)} />
+      <BulkEventForm open={showBulk} onClose={() => setShowBulk(false)} />
     </div>
   )
 }

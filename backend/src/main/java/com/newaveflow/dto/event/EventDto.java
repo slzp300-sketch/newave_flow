@@ -2,7 +2,10 @@ package com.newaveflow.dto.event;
 
 import com.newaveflow.entity.Event;
 import com.newaveflow.entity.MeetingAttendance;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,6 +58,11 @@ public class EventDto {
             Boolean attendanceRequired,
             LocalDate attendanceDeadline,
             String attendanceTarget
+    ) {}
+
+    // 여러 일정 한번에 등록 (최대 30개)
+    public record BulkCreateRequest(
+            @NotEmpty @Size(max = 30) List<@Valid EventCreateRequest> events
     ) {}
 
     public record TeacherAttendanceRecord(

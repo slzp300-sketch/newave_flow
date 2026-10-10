@@ -50,6 +50,12 @@ public class EventController {
     }
 
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    @PostMapping("/bulk")
+    public ResponseEntity<List<EventDto.EventResponse>> createEvents(@Valid @RequestBody EventDto.BulkCreateRequest request) {
+        return ResponseEntity.ok(eventService.createEvents(request.events()));
+    }
+
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/{id}")
     public ResponseEntity<EventDto.EventResponse> updateEvent(
             @PathVariable Long id,

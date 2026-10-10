@@ -7,6 +7,7 @@ import com.newaveflow.exception.AppException;
 import com.newaveflow.repository.NotificationRepository;
 import com.newaveflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +21,13 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
+    // 알림 전체 on/off — 점검·개선 전까지 꺼둠. 다시 켜려면 환경변수 NOTIFICATIONS_ENABLED=true
+    @Value("${NOTIFICATIONS_ENABLED:false}")
+    private boolean notificationsEnabled;
+
     @Transactional
     public void createNotification(Long userId, String title, String content, Notification.NotificationType type) {
+        if (!notificationsEnabled) return;
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) return;
         
@@ -36,6 +42,7 @@ public class NotificationService {
     
     @Transactional
     public void createNotificationForUsers(List<Long> userIds, String title, String content, Notification.NotificationType type) {
+        if (!notificationsEnabled) return;
         userIds.forEach(id -> createNotification(id, title, content, type));
     }
 

@@ -21,6 +21,8 @@ import Button from '../components/common/Button'
 import { motion, AnimatePresence } from 'framer-motion'
 import useAuthStore from '../store/authStore'
 import { toApiDate } from '../utils/date'
+import { DateRangeField } from '../components/calendar/DateRangePicker'
+import BulkEventForm, { AddEventChoice } from '../components/calendar/BulkEventForm'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -59,6 +61,8 @@ export default function CalendarPage() {
   
   // Form State
   const [showForm, setShowForm] = useState(false)
+  const [showChoice, setShowChoice] = useState(false)
+  const [showBulk, setShowBulk] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -235,7 +239,8 @@ export default function CalendarPage() {
         ...rest,
         startTime: allDay ? null : rest.startTime || null,
         endTime:   allDay ? null : rest.endTime   || null,
-        attendanceDeadline: rest.attendanceDeadline || null,
+        // 마감일을 비워두면 일정 마지막 날까지
+        attendanceDeadline: rest.attendanceRequired ? (rest.attendanceDeadline || rest.endDate) : null,
       }
       if (editingId) {
         await client.put(`/events/${editingId}`, submitData)
@@ -310,7 +315,7 @@ export default function CalendarPage() {
             </h2>
             {isAdmin && (
               <button 
-                onClick={handleOpenAdd}
+                onClick={() => setShowChoice(true)}
                 className="ml-2 w-7 h-7 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center hover:bg-primary-100 transition-colors"
               >
                 <Plus size={16} />
@@ -424,7 +429,7 @@ export default function CalendarPage() {
             <h3 className="text-lg font-black text-gray-900">{format(selected, 'M월 d일 (EEEE)', { locale: ko })}</h3>
           </div>
           {isAdmin && (
-            <Button size="sm" onClick={handleOpenAdd}>
+            <Button size="sm" onClick={() => setShowChoice(true)}>
               <Plus size={16} /> 일정 추가
             </Button>
           )}
@@ -498,7 +503,7 @@ export default function CalendarPage() {
           {isAdmin && (
             <div className="flex justify-end">
               <button
-                onClick={handleOpenAdd}
+                onClick={() => setShowChoice(true)}
                 className="flex items-center gap-1.5 text-sm font-black text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full active:scale-95 transition-all"
               >
                 <Plus size={14} /> 일정 추가
@@ -574,35 +579,14 @@ export default function CalendarPage() {
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">제목</label>
                   <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">시작일</label>
-                    <input 
-                      type="date" 
-                      value={formData.eventDate} 
-                      onChange={e => {
-                        const newDate = e.target.value;
-                        setFormData({
-                          ...formData, 
-                          eventDate: newDate,
-                          endDate: formData.endDate < newDate ? newDate : formData.endDate
-                        });
-                      }} 
-                      required 
-                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">종료일</label>
-                    <input 
-                      type="date" 
-                      value={formData.endDate} 
-                      onChange={e => setFormData({...formData, endDate: e.target.value})} 
-                      min={formData.eventDate}
-                      required 
-                      className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" 
-                    />
-                  </div>
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">날짜 <span className="normal-case tracking-normal font-medium">(하루 또는 기간)</span></label>
+                  <DateRangeField
+                    start={formData.eventDate}
+                    end={formData.endDate}
+                    onChange={(s, e) => setFormData(f => ({ ...f, eventDate: s, endDate: e }))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold text-gray-800"
+                  />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">구분</label>
@@ -748,7 +732,7 @@ export default function CalendarPage() {
                         </p>
                       ) : (
                         <p className="text-[11px] text-gray-400 mt-1.5">
-                          미설정 시 마감 제한 없이 제출 가능합니다
+                          비워두면 일정 마지막 날({format(new Date(formData.endDate), 'M월 d일', { locale: ko })})까지 제출 가능합니다
                         </p>
                       )}
                     </div>
@@ -764,6 +748,9 @@ export default function CalendarPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AddEventChoice open={showChoice} onClose={() => setShowChoice(false)} onSingle={handleOpenAdd} onBulk={() => setShowBulk(true)} />
+      <BulkEventForm open={showBulk} onClose={() => setShowBulk(false)} defaultDate={selected} />
     </div>
   )
 }
