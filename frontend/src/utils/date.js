@@ -1,6 +1,6 @@
 import { 
   format, isToday, isTomorrow, isYesterday, 
-  getISOWeek, getWeek, getMonth, getWeekOfMonth,
+  getISOWeek, getWeek, getWeekYear, getMonth, getWeekOfMonth,
   startOfWeek, endOfWeek, subWeeks, addWeeks
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -31,6 +31,20 @@ export const greetingByTime = () => {
 
 /** 현재 날짜의 주차 (ISO 기준) */
 export const getCurrentWeekNumber = () => getISOWeek(new Date())
+
+/**
+ * 주 표시용 라벨 (그 주 일요일 기준)
+ * monthWeek: "10월 1주차" — 그 달의 몇 번째 주일인지
+ * yearWeek:  "26년 41주차" — 서버와 같은 연간 주차 (1월 1일이 든 주가 1주차)
+ */
+export const weekLabels = (date) => {
+  const sun = startOfWeek(date, { weekStartsOn: 0 })
+  const yy  = String(getWeekYear(sun, { weekStartsOn: 0 })).slice(2)
+  return {
+    monthWeek: `${sun.getMonth() + 1}월 ${Math.ceil(sun.getDate() / 7)}주차`,
+    yearWeek:  `${yy}년 ${getWeek(sun, { weekStartsOn: 0 })}주차`,
+  }
+}
 
 /** 현재 주간 범위 (항상 이번 주, Mon/Tue 시프트 없음) */
 export const getThisWeekInfo = () => {

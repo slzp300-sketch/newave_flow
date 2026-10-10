@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronRight, Users, FileText, Calendar, CheckSquare,
-  CalendarCheck, CheckCircle2,
+  CheckCircle2,
   BookOpen, ClipboardList, Clock, Bell, LayoutGrid,
   ArrowUpRight, TrendingUp, UserMinus, Megaphone,
   UserPlus, UserCog, GraduationCap, UserCheck,
@@ -15,14 +15,13 @@ import { reportsApi } from '../api/reports'
 import { eventApi } from '../api/event'
 import { weeklyStatusApi } from '../api/weeklyStatus'
 import { ttsApi } from '../api/tts'
-import { prayerVoteApi } from '../api/prayerVote'
 import { deactivationApi } from '../api/students'
 import { adminUsersApi } from '../api/adminUsers'
 import { 
   toApiDate, getTTSWeekRange, 
-  getCurrentWeekRange, canSubmitTTS, getWeekStartByOffset
+  canSubmitTTS, getWeekStartByOffset
 } from '../utils/date'
-import { startOfWeek, endOfWeek, format, addDays, startOfMonth, endOfMonth } from 'date-fns'
+import { startOfWeek, endOfWeek, format, startOfMonth, endOfMonth } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
 import Header from '../components/layout/Header'
@@ -39,26 +38,28 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen pb-12 bg-gray-50/50">
-      <Header title="Newave Flow" showLogout={true} />
+      {/* 로그인한 사람 + 직분은 헤더 오른쪽에 작게 */}
+      <Header
+        title="Newave Flow"
+        showLogout={true}
+        right={
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs font-black text-gray-700 truncate max-w-[5.5rem]">{user?.name}님</span>
+            <RoleBadge role={user?.role} />
+            {isExecutive && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="p-1.5 rounded-xl bg-primary-50 text-primary-600 active:scale-95 transition-all"
+                aria-label="관리자 모드"
+              >
+                <ShieldCheck size={14} />
+              </button>
+            )}
+          </div>
+        }
+      />
 
-      {/* 로그인한 사람 + 직분 */}
-      <div className="mx-4 mt-1 mb-4 flex items-center justify-between gap-2 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-50">
-        <p className="text-sm font-black text-gray-900 truncate">{user?.name}님</p>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {isExecutive && (
-            <button
-              onClick={() => navigate('/admin')}
-              className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1.5 rounded-xl bg-primary-50 text-primary-600 active:scale-95 transition-all"
-            >
-              <ShieldCheck size={12} />
-              관리자 모드
-            </button>
-          )}
-          <RoleBadge role={user?.role} />
-        </div>
-      </div>
-
-      <div className="px-4 flex flex-col gap-4">
+      <div className="px-4 mt-1 flex flex-col gap-4">
         <AnimatePresence mode="wait">
           {(isTeacher || isExecutive)
             ? <TeacherView key="teacher" navigate={navigate} />
@@ -78,7 +79,7 @@ function RoleBadge({ role }) {
     ADMIN:     ['관리자', 'bg-gray-900 text-white shadow-sm']
   }
   const [label, cls] = map[role] ?? ['사용자', 'bg-gray-100 text-gray-500']
-  return <span className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-xl tracking-widest ${cls}`}>{label}</span>
+  return <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-lg flex-shrink-0 ${cls}`}>{label}</span>
 }
 
 // ────────── Hooks ──────────
@@ -131,7 +132,6 @@ function useAttendanceRequiredEvents() {
 
 // ────────── 내 영성체크 대시보드 (모든 권한 공통) ──────────
 function PersonalDashboard({ navigate }) {
-  const { user: authUser } = useAuthStore()
   const weeklyStatus = useWeeklyStatus()
 
   const sunday    = getWeekStartByOffset(0, 0)
@@ -146,24 +146,6 @@ function PersonalDashboard({ navigate }) {
     queryKey: ['tts-week', weekStart],
     queryFn: () => ttsApi.getWeek(weekStart).then(r => r.data),
     staleTime: 60 * 1000,
-  })
-
-  // 기도모임 투표 완료 여부
-  const weekMonday = toApiDate(addDays(sunday, 1))
-  const { data: prayerVoteData } = useQuery({
-    queryKey: ['prayer-vote', weekMonday, authUser?.id],
-    queryFn:  () => prayerVoteApi.getMine(weekMonday).then(r => r.data),
-    enabled:  !!authUser,
-    staleTime: 5 * 60 * 1000,
-  })
-
-  // 교사회의 체크 완료 여부
-  const satDate = toApiDate(addDays(sunday, 6))
-  const { data: satData } = useQuery({
-    queryKey: ['meeting-attendance', satDate, authUser?.id],
-    queryFn:  () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data),
-    enabled:  !!authUser,
-    staleTime: 5 * 60 * 1000,
   })
 
   const answers = useMemo(() => {
@@ -183,54 +165,35 @@ function PersonalDashboard({ navigate }) {
 
   const score    = calcScore(questions, answers, linked)
 
+  // 기도모임·교사회의는 위 '예배 · 모임'에서 보이므로 출석·TTS만
   const todos = [
-    { to: '/attendance',     icon: ClipboardList, label: '출석',     done: weeklyStatus.attendanceSubmittedThisWeek },
-    { to: '/tts',            icon: CheckSquare,   label: 'TTS',      done: score > 0 },
-    { to: '/meeting/prayer', icon: Users,         label: '기도모임', done: !!prayerVoteData },
-    { to: '/meeting/sat',    icon: CalendarCheck, label: '교사회의', done: !!satData?.status },
+    { to: '/attendance', icon: ClipboardList, label: '출석', done: weeklyStatus.attendanceSubmittedThisWeek },
+    { to: '/tts',        icon: CheckSquare,   label: 'TTS',  done: score > 0 },
   ]
-  const doneCount = todos.filter(t => t.done).length
 
   return (
     <>
-      <div className="flex items-center justify-between px-1">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">My Check</p>
-        <p className="text-[10px] font-bold text-gray-400">{getCurrentWeekRange()}</p>
-      </div>
-
       {/* 이번 주 영성체크: 홈에서 바로 체크 (TTS 화면과 같은 부품) */}
       <CheckTab embedded />
 
-      {/* 이번 주 할 일 진행률 */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-black text-gray-900">이번 주 할 일</p>
-          <p className="text-xs font-black text-primary-600">{doneCount}/{todos.length} 완료</p>
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
-          <div
-            className="h-full bg-primary-500 rounded-full transition-all duration-500"
-            style={{ width: `${(doneCount / todos.length) * 100}%` }}
-          />
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {todos.map(t => {
-            const Icon = t.icon
-            return (
-              <button
-                key={t.to}
-                onClick={() => navigate(t.to)}
-                className={`relative flex flex-col items-center gap-1.5 rounded-2xl py-3 border active:scale-95 transition-all ${
-                  t.done ? 'bg-emerald-50/60 border-emerald-100' : 'bg-gray-50/60 border-gray-100'
-                }`}
-              >
-                {t.done && <CheckCircle2 size={14} className="absolute top-1.5 right-1.5 text-emerald-500" />}
-                <Icon size={18} className={t.done ? 'text-emerald-600' : 'text-gray-400'} />
-                <span className={`text-[11px] font-black ${t.done ? 'text-emerald-700' : 'text-gray-500'}`}>{t.label}</span>
-              </button>
-            )
-          })}
-        </div>
+      {/* 이번 주 할 일: 칩 한 줄 */}
+      <Card className="flex items-center gap-2">
+        <p className="flex-1 text-sm font-black text-gray-900">이번 주 할 일</p>
+        {todos.map(t => {
+          const Icon = t.done ? CheckCircle2 : t.icon
+          return (
+            <button
+              key={t.to}
+              onClick={() => navigate(t.to)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl border text-[11px] font-black active:scale-95 transition-all ${
+                t.done ? 'bg-emerald-50/60 border-emerald-100 text-emerald-700' : 'bg-gray-50/60 border-gray-100 text-gray-500'
+              }`}
+            >
+              <Icon size={14} className={t.done ? 'text-emerald-500' : 'text-gray-400'} />
+              {t.label}
+            </button>
+          )
+        })}
       </Card>
     </>
   )

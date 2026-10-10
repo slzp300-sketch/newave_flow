@@ -2,9 +2,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 /**
  * 주 이동 바: 이번 주(offset 0)와 지난 주들(offset < 0)만 선택 가능
- * title: "41주차" 같은 큰 글씨, range: "10/4 ~ 10/10" 같은 작은 글씨
+ * title: "10월 1주차" 같은 큰 글씨, sub: "26년 41주차" 같은 작은 표시(선택), range: "10/4 ~ 10/10" 같은 작은 글씨
  */
-export default function WeekNavigator({ offset, onChange, title, range }) {
+export default function WeekNavigator({ offset, onChange, title, sub, range }) {
   const isCurrent = offset === 0
   return (
     <div className="flex items-center gap-2">
@@ -23,6 +23,7 @@ export default function WeekNavigator({ offset, onChange, title, range }) {
             {isCurrent ? '이번 주' : `${-offset}주 전`}
           </span>
         </div>
+        {sub && <p className="text-[10px] font-bold text-gray-400 mt-0.5">{sub}</p>}
         <p className="text-[11px] font-bold text-gray-400 mt-0.5">{range}</p>
       </div>
 

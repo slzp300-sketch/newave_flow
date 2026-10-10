@@ -6,8 +6,8 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import WeekNavigator from '../components/common/WeekNavigator'
-import { getWeekStartByOffset, formatUpdatedAt, toApiDate } from '../utils/date'
-import { format, addDays, getWeek } from 'date-fns'
+import { getWeekStartByOffset, formatUpdatedAt, toApiDate, weekLabels } from '../utils/date'
+import { format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import client from '../api/client'
 
@@ -18,7 +18,7 @@ export default function SatMeetingPage() {
   const satDay       = addDays(getWeekStartByOffset(offset, 1), 5)
   const satDate      = toApiDate(satDay)
   const satDateLabel = format(satDay, 'M/d')
-  const weekNum      = getWeek(satDay, { weekStartsOn: 0 })
+  const labels       = weekLabels(satDay)
 
   const queryClient = useQueryClient()
 
@@ -71,7 +71,8 @@ export default function SatMeetingPage() {
         <WeekNavigator
           offset={offset}
           onChange={setOffset}
-          title={`${weekNum}주차 토요 교사회의`}
+          title={`${labels.monthWeek} 토요 교사회의`}
+          sub={labels.yearWeek}
           range={`${satDateLabel} (토) · 지난 주 기록도 언제든 수정할 수 있어요`}
         />
       </div>

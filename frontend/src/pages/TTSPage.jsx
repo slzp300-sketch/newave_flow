@@ -180,6 +180,8 @@ export function CheckTab({ embedded = false }) {
       ) : (
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
           <ScoreCard
+            compact={embedded}
+            range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
             score={score}
             maxScore={maxScore}
             weekNum={week?.weekNum}
@@ -194,7 +196,7 @@ export function CheckTab({ embedded = false }) {
             message={
               maxScore > 0 && score >= maxScore ? { done: true, text: '이번 주 만점이에요! 수고했어요' }
               : offset === 0 && todayIdx >= 0 ? (remainingToday.length
-                ? { done: false, text: `오늘(${DAYS[todayIdx]}) 남은 체크: ${remainingToday.map(q => q.title).join(', ')}` }
+                ? { done: false, text: `오늘(${DAYS[todayIdx]}) 남은 체크: ${remainingToday.map(q => embedded ? splitTitle(q.title)[0] : q.title).join(', ')}` }
                 : { done: true, text: `오늘(${DAYS[todayIdx]}) 체크를 모두 마쳤어요` })
               : null
             }
@@ -217,6 +219,19 @@ export function CheckTab({ embedded = false }) {
                 <p className="font-black text-gray-900 text-sm">예배 · 모임</p>
                 <p className="text-[11px] font-bold text-gray-400">참석하면 체크</p>
               </div>
+              {embedded ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {otherQuestions.map(({ q, color }) => (
+                    <CheckTile
+                      key={q.id}
+                      q={q}
+                      color={color}
+                      checked={isLinked(q) ? !!linked[q.id] : answers[q.id] === true}
+                      onClick={() => isLinked(q) ? navigate(LINK_PATH[q.linkType]) : toggleAttend(q)}
+                    />
+                  ))}
+                </div>
+              ) : (
               <div className="flex flex-col gap-2">
                 {otherQuestions.map(({ q, color }) => isLinked(q) ? (
                   <CheckRow
@@ -238,6 +253,7 @@ export function CheckTab({ embedded = false }) {
                   />
                 ))}
               </div>
+              )}
             </Card>
           )}
 
@@ -256,11 +272,36 @@ export function CheckTab({ embedded = false }) {
   )
 }
 
-function ScoreCard({ score, maxScore, weekNum, items, message }) {
+function ScoreCard({ compact, range, score, maxScore, weekNum, items, message }) {
   const r = 36
   const c = 2 * Math.PI * r
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
   const full  = maxScore > 0 && score >= maxScore
+  // 홈용: 점수 한 줄 + 진행 막대 + 남은 체크 한 줄 (항목별 점수는 아래 표·타일에서 보인다)
+  if (compact) return (
+    <Card>
+      <div className="flex items-end justify-between gap-2">
+        <p className="leading-none">
+          <span className="text-2xl font-black text-gray-900">{score}</span>
+          <span className="text-xs font-bold text-gray-400"> / {maxScore}점</span>
+        </p>
+        <p className="text-[11px] font-bold text-gray-400">
+          <span className="font-black text-primary-500">{weekNum}주차</span> · {range}
+        </p>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mt-2.5">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${full ? 'bg-emerald-500' : 'bg-primary-500'}`}
+          style={{ width: `${ratio * 100}%` }}
+        />
+      </div>
+      {message && (
+        <p className={`mt-2.5 text-[11px] font-bold break-keep ${message.done ? 'text-primary-600' : 'text-amber-600'}`}>
+          {message.done ? '🎉 ' : '⏰ '}{message.text}
+        </p>
+      )}
+    </Card>
+  )
   return (
     <Card>
       <div className="flex items-center gap-4">
@@ -370,6 +411,22 @@ function CheckRow({ q, color, checked, sub, onClick }) {
       <span className={`text-xs font-black flex-shrink-0 ${checked ? color.text : 'text-gray-300'}`}>+{pointsOf(q)}</span>
       <span className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
         {checked && <Check size={16} strokeWidth={3} className="text-white" />}
+      </span>
+    </button>
+  )
+}
+
+// 홈용 참석·자동 반영 항목 작은 타일 (2칸 배치)
+function CheckTile({ q, color, checked, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all active:scale-[0.97] ${checked ? color.soft : 'bg-gray-50'}`}
+    >
+      <span className="text-base flex-shrink-0">{q.emoji}</span>
+      <span className="flex-1 min-w-0 text-xs font-black text-gray-900 truncate">{q.title}</span>
+      <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
+        {checked && <Check size={12} strokeWidth={3} className="text-white" />}
       </span>
     </button>
   )

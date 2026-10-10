@@ -9,7 +9,7 @@ import {
 import { attendanceApi } from '../api/attendance'
 import { classesApi } from '../api/classes'
 import { reportsApi } from '../api/reports'
-import { toApiDate, getWeekStartByOffset, formatDate, formatUpdatedAt } from '../utils/date'
+import { toApiDate, getWeekStartByOffset, formatDate, formatShort, formatUpdatedAt, weekLabels } from '../utils/date'
 import useAuthStore from '../store/authStore'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
@@ -27,6 +27,7 @@ export default function AttendancePage() {
   const [offset, setOffset] = useState(0)
   // 선택한 주의 주일(일요일). 지난 주일 출석도 언제든 수정할 수 있다
   const today = toApiDate(getWeekStartByOffset(offset, 0))
+  const labels = weekLabels(getWeekStartByOffset(offset, 0))
   const [localEdit, setLocalEdit] = useState(false)
 
   useEffect(() => { setLocalEdit(false) }, [today])
@@ -120,8 +121,9 @@ export default function AttendancePage() {
     <WeekNavigator
       offset={offset}
       onChange={setOffset}
-      title={`${formatDate(today)} 주일`}
-      range="지난 주일 출석도 언제든 수정할 수 있어요"
+      title={`${labels.monthWeek} 출석`}
+      sub={labels.yearWeek}
+      range={`${formatShort(today)} 주일 · 지난 주일 출석도 언제든 수정할 수 있어요`}
     />
   )
   const lastUpdated = reportStatus?.updatedAt || reportStatus?.submittedAt

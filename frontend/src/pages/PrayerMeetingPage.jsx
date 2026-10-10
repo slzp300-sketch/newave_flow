@@ -9,8 +9,8 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import WeekNavigator from '../components/common/WeekNavigator'
-import { getWeekStartByOffset, formatUpdatedAt, toApiDate } from '../utils/date'
-import { getISOWeek, getWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
+import { getWeekStartByOffset, formatUpdatedAt, toApiDate, weekLabels } from '../utils/date'
+import { getISOWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import { prayerVoteApi } from '../api/prayerVote'
 
@@ -40,7 +40,7 @@ export default function PrayerMeetingPage() {
   const isMicTurn  = userGrade && micGroup.grades.includes(userGrade)
   const mondayDate = getWeekStartByOffset(offset, 1)
   const weekStart  = toApiDate(mondayDate)
-  const weekNum    = getWeek(mondayDate, { weekStartsOn: 0 })
+  const labels     = weekLabels(mondayDate)
   const tueDate    = format(addDays(mondayDate, 1), 'M/d')
   const thuDate    = format(addDays(mondayDate, 3), 'M/d')
 
@@ -103,7 +103,8 @@ export default function PrayerMeetingPage() {
         <WeekNavigator
           offset={offset}
           onChange={setOffset}
-          title={`${weekNum}주차 기도모임`}
+          title={`${labels.monthWeek} 기도모임`}
+          sub={labels.yearWeek}
           range={`${tueDate}(화) · ${thuDate}(목) · 지난 주 기록도 수정할 수 있어요`}
         />
         {userGrade && (
