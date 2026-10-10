@@ -34,4 +34,6 @@
 
 운영 백업은 같은 컴퓨터의 별도 `newave_migration_...` DB에 복원합니다. `createMigrationBaseline`과 합성 fixture는 실행하지 않습니다. `MIGRATION_SYNTHETIC_FIXTURE=false`로 같은 `PostgresMigrationTest`를 실행하면 원본 해시·집계·롤백·재실행 거절·앱 기동 검사를 수행합니다. 개인정보 행은 출력하지 않습니다. 합성 사례의 고정 ID를 사용하는 업무 저장 검사는 생략합니다.
 
-2026-10-10 합성 자료 검증 환경: PostgreSQL 17.10, JDK 21. CI는 PostgreSQL 17과 JDK 17을 사용합니다. 포터블 로컬 DB 도구는 [embedded-postgres 배포](https://github.com/leinelissen/embedded-postgres), 백업 클라이언트는 [PostgreSQL에서 안내하는 EDB 배포](https://www.postgresql.org/download/windows/)를 사용했습니다. 검증 파일·실행 도구·접속값·DB 저장 폴더는 `backend/.verification/`에 두며 Git에서 제외합니다.
+2026-10-10 합성 자료 검증 환경: PostgreSQL 17.10, JDK 21. CI는 PostgreSQL 17·18과 JDK 17을 사용합니다. 포터블 로컬 DB 도구는 [embedded-postgres 배포](https://github.com/leinelissen/embedded-postgres), PostgreSQL 18.6과 복원 클라이언트는 [PostgreSQL에서 안내하는 EDB 배포](https://www.postgresql.org/download/windows/)를 사용했습니다. 검증 파일·실행 도구·접속값·DB 저장 폴더는 `backend/.verification/`에 두며 Git에서 제외합니다.
+
+운영 PostgreSQL 18.6의 읽기 전용 백업을 이 PC의 별도 PostgreSQL 18.6에 복원하고, `MIGRATION_SYNTHETIC_FIXTURE=false` 검사도 통과했습니다. 백업은 서버의 `pg_dump -Fc`를 SSH로 실행해 받았으며, 임시 SSH 키는 백업 직후 등록 해제하고 로컬 키 파일도 삭제했습니다. 복원은 `pg_restore --no-owner --no-privileges --exit-on-error --single-transaction`을 사용했습니다. 원본 백업과 검사 로그는 비공개 로컬 검증 폴더에 보관하며, 운영 DB에는 전환 SQL을 실행하지 않았습니다.

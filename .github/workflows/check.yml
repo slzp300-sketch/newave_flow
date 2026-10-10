@@ -34,13 +34,17 @@ jobs:
           cache: gradle
       - run: bash gradlew build --no-daemon
   postgres-migration:
+    name: postgres-migration (PostgreSQL ${{ matrix.postgresql }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgresql: ['17', '18']
     defaults:
       run:
         working-directory: backend
     services:
       postgres:
-        image: postgres:17
+        image: postgres:${{ matrix.postgresql }}
         env:
           POSTGRES_DB: newave_migration_ci
           POSTGRES_USER: verification
