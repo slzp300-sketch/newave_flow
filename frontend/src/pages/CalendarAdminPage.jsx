@@ -94,6 +94,7 @@ export default function CalendarAdminPage() {
       }
       handleCloseForm()
       qc.invalidateQueries({ queryKey: ['events-all'] })
+      qc.invalidateQueries({ queryKey: ['events'] })
       qc.invalidateQueries({ queryKey: ['attendance-required-events'] })
     } catch (err) {
       console.error(err)
@@ -129,6 +130,8 @@ export default function CalendarAdminPage() {
       await client.delete(`/events/${id}`)
       alert('삭제되었습니다.')
       qc.invalidateQueries({ queryKey: ['events-all'] })
+      qc.invalidateQueries({ queryKey: ['events'] })
+      qc.invalidateQueries({ queryKey: ['attendance-required-events'] })
     } catch (err) {
       console.error(err)
       alert('삭제 중 오류가 발생했습니다.')

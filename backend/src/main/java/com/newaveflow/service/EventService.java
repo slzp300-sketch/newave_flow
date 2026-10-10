@@ -148,12 +148,23 @@ public class EventService {
         if (event.getAttendanceDeadline() != null && java.time.LocalDate.now().isAfter(event.getAttendanceDeadline())) {
             throw AppException.badRequest("출석 제출 기한이 마감되었습니다.");
         }
+        if (!event.isAttendanceRequired() || event.getAttendanceTarget() == Event.AttendanceTarget.TEACHER_ONLY) {
+            throw AppException.badRequest("학생 출석 체크 대상 행사가 아닙니다.");
+        }
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+
+        // 담당 반 학생만 체크 가능
+        Set<Long> myClassIds = teacherClassRepository.findByTeacherId(teacherId).stream()
+                .map(tc -> tc.getClassGroup().getId())
+                .collect(Collectors.toSet());
 
         for (EventDto.StudentAttendanceItem item : items) {
             Student student = studentRepository.findById(item.studentId())
                     .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
+            if (student.getClassGroup() == null || !myClassIds.contains(student.getClassGroup().getId())) {
+                throw AppException.forbidden("담당 반 학생만 출석 체크할 수 있습니다.");
+            }
 
             Optional<EventStudentAttendance> existing =
                     eventStudentAttendanceRepository.findByEventIdAndStudentId(eventId, item.studentId());
@@ -194,6 +205,9 @@ public class EventService {
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
         if (event.getAttendanceDeadline() != null && java.time.LocalDate.now().isAfter(event.getAttendanceDeadline())) {
             throw AppException.badRequest("출석 제출 기한이 마감되었습니다.");
+        }
+        if (!event.isAttendanceRequired() || (event.getAttendanceTarget() != Event.AttendanceTarget.TEACHER_ONLY && event.getAttendanceTarget() != Event.AttendanceTarget.BOTH)) {
+            throw AppException.badRequest("교사 출석 체크 대상 행사가 아닙니다.");
         }
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));

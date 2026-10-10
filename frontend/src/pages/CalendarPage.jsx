@@ -218,6 +218,8 @@ export default function CalendarPage() {
       await client.delete(`/events/${id}`)
       refetch()
       qc.invalidateQueries({ queryKey: ['events-all'] })
+      qc.invalidateQueries({ queryKey: ['events'] })
+      qc.invalidateQueries({ queryKey: ['attendance-required-events'] })
     } catch (err) {
       console.error(err)
       alert('삭제 중 오류가 발생했습니다.')
@@ -243,6 +245,8 @@ export default function CalendarPage() {
       setShowForm(false)
       refetch()
       qc.invalidateQueries({ queryKey: ['events-all'] })
+      qc.invalidateQueries({ queryKey: ['events'] })
+      qc.invalidateQueries({ queryKey: ['attendance-required-events'] })
     } catch (err) {
       console.error(err)
       alert('저장 중 오류가 발생했습니다.')
