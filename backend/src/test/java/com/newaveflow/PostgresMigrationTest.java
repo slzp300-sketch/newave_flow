@@ -4,6 +4,7 @@ import com.newaveflow.config.*;
 import com.newaveflow.dto.attendance.AttendanceBatchRequest;
 import com.newaveflow.dto.tts.TtsAnswerRequest;
 import com.newaveflow.entity.*;
+import com.newaveflow.exception.AppException;
 import com.newaveflow.repository.*;
 import com.newaveflow.service.*;
 import org.junit.jupiter.api.Test;
@@ -108,8 +109,16 @@ class PostgresMigrationTest {
         var questions=app.getBean(TtsQuestionRepository.class).findAll(); questions.forEach(q->q.setPoints(50));
         tts.updateQuestions(questions);
         assertEquals(15,tts.getWeek(teacher,day).getScore());
-        tts.saveAnswer(teacher,new TtsAnswerRequest(day,1L,"{\"월\":true,\"화\":true}"));
-        assertEquals(20,tts.getWeek(teacher,day).getScore());
+        // Earlier quarters remain readable, while new TTS writes start in 2026 Q4.
+        String originalAnswers=checksum("tts_answers");
+        assertThrows(AppException.class,()->tts.saveAnswer(teacher,new TtsAnswerRequest(day,1L,"{\"월\":true,\"화\":true}")));
+        assertEquals(originalAnswers,checksum("tts_answers"));
+        assertEquals(15,tts.getWeek(teacher,day).getScore());
+        LocalDate managedWeek=LocalDate.of(2026,9,27);
+        tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"월\":true,\"화\":true}"));
+        assertEquals(10,tts.getWeek(teacher,managedWeek).getScore());
+        tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"월\":true,\"화\":true,\"수\":true}"));
+        assertEquals(15,tts.getWeek(teacher,managedWeek).getScore());
         String snapshot=checksum("event_participants");
         execute("UPDATE students SET class_group_id=2,is_active=false WHERE id=1");
         assertEquals(snapshot,checksum("event_participants"));
