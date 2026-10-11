@@ -1,10 +1,11 @@
+import LegacyImportCard from '../components/tts/LegacyImportCard'
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Trash2, Save, Settings,
   ChevronLeft, ChevronRight, CheckCircle2,
-  MoveDown, LayoutList, ClipboardCheck, Trophy, ChevronDown, ChevronUp, ArrowUpDown, Upload
+  MoveDown, LayoutList, ClipboardCheck, Trophy, ChevronDown, ChevronUp, ArrowUpDown
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -14,9 +15,9 @@ import { ttsApi } from '../api/tts'
 import WeekNavigator from '../components/common/WeekNavigator'
 import { getWeekStartByOffset, formatUpdatedAt, weekLabels, weekLabelsByNum } from '../utils/date'
 import { addDays, format, getWeek } from 'date-fns'
-
-const getCurrentQuarter = () => Math.ceil((new Date().getMonth() + 1) / 3)
-const QUARTER_LABELS = { 1: '1~3월', 2: '4~6월', 3: '7~9월', 4: '10~12월' }
+import QueryNotice from '../components/common/QueryNotice'
+import { queryReadState } from '../utils/queryReadState'
+import { ttsYear, ttsYears, defaultQuarter, quartersForYear, quarterDateLabel, firstTtsOffset } from '../utils/ttsPeriod'
 
 export default function TtsAdminPage() {
   const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'scores' | 'questions'
@@ -72,17 +73,18 @@ export default function TtsAdminPage() {
 const PAGE_SIZE = 10
 
 function ScoresTab() {
-  const year = new Date().getFullYear()
-  const [quarter, setQuarter] = useState(getCurrentQuarter())
+  const [year, setYear] = useState(ttsYear)
+  const [quarter, setQuarter] = useState(() => defaultQuarter(ttsYear()))
   const [threshold, setThreshold] = useState(80)
   const [expanded, setExpanded] = useState(null)
   const [page, setPage] = useState(0)
   const [sortAsc, setSortAsc] = useState(false) // false = 높은순(기본)
 
-  const { data: scores = [], isLoading } = useQuery({
+  const scoresQuery = useQuery({
     queryKey: ['tts-quarterly-scores', year, quarter],
     queryFn: () => ttsApi.getQuarterlyScores(year, quarter).then(r => r.data)
   })
+  const scores = scoresQuery.data || []
 
   const sortedAll = [...scores].sort((a, b) => sortAsc ? a.totalScore - b.totalScore : b.totalScore - a.totalScore)
   const belowCount = scores.filter(t => t.totalScore < threshold).length
@@ -96,8 +98,13 @@ function ScoresTab() {
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="px-4 flex flex-col gap-4">
       {/* 분기 선택 */}
+      <select aria-label="점수 현황 연도" value={year}
+        onChange={e => { const next = Number(e.target.value); setYear(next); handleQuarterChange(defaultQuarter(next)) }}
+        className="self-start px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm font-bold text-gray-700">
+        {ttsYears().map(y => <option key={y} value={y}>{y}년</option>)}
+      </select>
       <div className="flex gap-2">
-        {[1, 2, 3, 4].map(q => (
+        {quartersForYear(year).map(({ q }) => (
           <button
             key={q}
             onClick={() => handleQuarterChange(q)}
@@ -107,11 +114,11 @@ function ScoresTab() {
                 : 'bg-white text-gray-400 border-gray-100'
             }`}
           >
-            <span className="block text-[10px] opacity-70">Q{q}</span>
-            {QUARTER_LABELS[q]}
+            {q}분기
           </button>
         ))}
       </div>
+      <p className="text-[11px] text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
 
       {/* 기준 점수 설정 */}
       <Card className="p-4 flex flex-col gap-3">
@@ -135,11 +142,8 @@ function ScoresTab() {
         </div>
       </Card>
 
-      {isLoading ? (
-        <div className="py-16 text-center">
-          <div className="w-8 h-8 border-4 border-primary-100 border-t-primary-500 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs text-gray-400 font-bold">불러오는 중...</p>
-        </div>
+      {queryReadState([scoresQuery]) !== 'ready' ? (
+        <QueryNotice queries={[scoresQuery]} label="분기 점수" />
       ) : scores.length === 0 ? (
         <div className="py-16 text-center text-gray-300">
           <Trophy size={40} className="mx-auto mb-3 opacity-20" />
@@ -182,14 +186,15 @@ function ScoresTab() {
           <div className="flex flex-col gap-2">
             {pageItems.map((t, idx) => {
               const isBelow = t.totalScore < threshold
-              const isExpanded = expanded === t.teacherId
+              const rowKey = t.key ?? `u${t.teacherId}`
+              const isExpanded = expanded === rowKey
               const globalIdx = page * PAGE_SIZE + idx + 1
               const deficit = threshold - t.totalScore
               const pct = threshold > 0 ? Math.min((t.totalScore / threshold) * 100, 100) : 100
               return (
-                <div key={t.teacherId} className="flex flex-col gap-1.5">
+                <div key={rowKey} className="flex flex-col gap-1.5">
                   <Card
-                    onClick={() => setExpanded(isExpanded ? null : t.teacherId)}
+                    onClick={() => setExpanded(isExpanded ? null : rowKey)}
                     className={`p-4 cursor-pointer active:scale-[0.99] transition-all border ${
                       isBelow ? 'bg-red-50/50 border-red-100' : 'bg-white border-gray-100'
                     }`}
@@ -294,12 +299,13 @@ function SummaryTab({ offset, onOffsetChange }) {
   const week = { weekNum: getWeek(sunday, { weekStartsOn: 0 }), start: format(sunday, 'M/d'), end: format(addDays(sunday, 6), 'M/d') }
   const [expandedGrades, setExpandedGrades] = useState([])
 
-  const { data: summary = [], isLoading } = useQuery({
+  const summaryQuery = useQuery({
     queryKey: ['tts-admin-summary', year, week.weekNum],
     // 교사가 수정한 내용이 바로 보이도록 화면에 돌아올 때마다 다시 불러옴
     refetchOnWindowFocus: 'always',
     queryFn: () => ttsApi.getSummary(year, week.weekNum).then(r => r.data)
   })
+  const summary = summaryQuery.data || []
 
   // 학년별로 그룹화
   const groupedData = summary.reduce((acc, curr) => {
@@ -330,6 +336,7 @@ function SummaryTab({ offset, onOffsetChange }) {
         <WeekNavigator
           offset={offset}
           onChange={onOffsetChange}
+          minOffset={firstTtsOffset()}
           title={`${weekLabels(sunday).monthWeek} TTS`}
           sub={weekLabels(sunday).yearWeek}
           range={`${week.start} ~ ${week.end} · 1점 이상이면 참여로 집계`}
@@ -341,11 +348,8 @@ function SummaryTab({ offset, onOffsetChange }) {
         <span className="text-[10px] font-black text-gray-400">총 {gradeNames.length}개 학년</span>
       </div>
 
-      {isLoading ? (
-        <div className="py-20 text-center">
-          <div className="w-8 h-8 border-4 border-primary-100 border-t-primary-500 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs text-gray-400 font-bold">현황을 불러오는 중...</p>
-        </div>
+      {queryReadState([summaryQuery]) !== 'ready' ? (
+        <QueryNotice queries={[summaryQuery]} label="TTS 참여 현황" />
       ) : (
         <div className="flex flex-col gap-3">
           {gradeNames.length === 0 ? (
@@ -409,7 +413,7 @@ function SummaryTab({ offset, onOffsetChange }) {
                         className="overflow-hidden flex flex-col gap-2 px-1"
                       >
                         {teachers.map(t => (
-                          <div key={t.teacherId} className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100/50">
+                          <div key={t.key ?? `u${t.teacherId}`} className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100/50">
                             <div className="flex items-center gap-3">
                               <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
                                 t.isSubmitted ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-400'
@@ -418,6 +422,7 @@ function SummaryTab({ offset, onOffsetChange }) {
                               </div>
                               <div>
                                 <p className="font-bold text-gray-700 text-sm">{t.teacherName}</p>
+                                {t.scoreSource === 'SHEET' && <p className="text-[10px] text-gray-400">시트 확정 점수</p>}
                                 {t.updatedAt && <p className="text-[10px] text-gray-400 font-bold">마지막 수정 {formatUpdatedAt(t.updatedAt)}</p>}
                               </div>
                             </div>
@@ -517,7 +522,7 @@ function QuestionsTab() {
             <div className="flex items-start gap-3">
               <input
                 type="text"
-                value={q.emoji}
+                value={q.emoji ?? ''}
                 onChange={(e) => updateQuestion(idx, 'emoji', e.target.value)}
                 className="w-10 h-10 bg-gray-50 rounded-xl text-xl flex items-center justify-center text-center border-none outline-none focus:ring-2 focus:ring-primary-500"
               />
@@ -578,8 +583,7 @@ function QuestionsTab() {
         ))}
       </div>
 
-      {/* 기존 시트 점수 가져오기: 당분간 숨김 (다시 쓰려면 아래 줄의 주석만 풀면 됨) */}
-      {/* <LegacyImportCard /> */}
+      <LegacyImportCard />
 
       {hasChanges && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-mobile px-4 z-20">
@@ -589,68 +593,5 @@ function QuestionsTab() {
         </div>
       )}
     </motion.div>
-  )
-}
-
-// 기존 구글 시트(TTS 점수표)를 붙여넣어 통계에 합치는 카드
-function LegacyImportCard() {
-  const queryClient = useQueryClient()
-  const thisYear = new Date().getFullYear()
-  const [year, setYear] = useState(thisYear)
-  const [text, setText] = useState('')
-  const [result, setResult] = useState(null)
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => ttsApi.importLegacy(year, text).then(r => r.data),
-    onSuccess: (data) => {
-      setResult(data)
-      setText('')
-      queryClient.invalidateQueries({ queryKey: ['tts-stats'] })
-    },
-    onError: (err) => alert(err.response?.data?.message || '가져오기 중 오류가 발생했습니다.'),
-  })
-
-  const submit = () => {
-    if (!text.trim()) return alert('시트 내용을 붙여넣어 주세요.')
-    if (!confirm(`${year}년 시트 점수를 가져올까요?\n같은 연도의 이전 시트 데이터는 새 내용으로 바뀝니다.\n(앱에서 체크한 점수가 있는 주는 앱 점수가 우선)`)) return
-    mutate()
-  }
-
-  return (
-    <Card className="flex flex-col gap-3 mt-6">
-      <div className="flex items-center gap-2">
-        <Upload size={16} className="text-primary-500" />
-        <p className="font-black text-gray-900 text-sm">기존 시트 점수 가져오기</p>
-      </div>
-      <p className="text-[11px] text-gray-400 font-medium leading-relaxed">
-        구글 시트에서 이름·주차별 점수 표를 통째로 복사(Ctrl+C)해서 아래에 붙여넣으세요.
-        첫 줄은 제목 줄(이름, 1주차, 2주차 …)이어야 해요.
-      </p>
-      <select
-        value={year}
-        onChange={(e) => setYear(Number(e.target.value))}
-        className="text-xs font-black bg-gray-100 px-3 py-2 rounded-xl border-none outline-none self-start"
-      >
-        {[thisYear, thisYear - 1].map(y => <option key={y} value={y}>{y}년</option>)}
-      </select>
-      <textarea
-        rows={5}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="여기에 붙여넣기"
-        className="w-full px-3 py-2 rounded-xl border border-gray-100 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary-200 bg-gray-50"
-      />
-      <Button onClick={submit} loading={isPending} disabled={isPending}>
-        <Upload size={16} /> 가져오기
-      </Button>
-      {result && (
-        <div className="bg-gray-50 rounded-xl px-3 py-2 text-[11px] font-bold text-gray-600 flex flex-col gap-1">
-          <p>{result.year}년 · {result.names}명 · {result.weeks?.length ?? 0}개 주차 · {result.rows}건 저장</p>
-          {result.unmatchedNames?.length > 0 && (
-            <p className="text-amber-600">앱 계정과 이름이 안 맞는 사람(시트 이름으로 표시): {result.unmatchedNames.join(', ')}</p>
-          )}
-        </div>
-      )}
-    </Card>
   )
 }

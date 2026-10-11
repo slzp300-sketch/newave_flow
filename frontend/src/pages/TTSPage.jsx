@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query'
-import { Check, Trophy, BarChart3, TrendingUp, ListOrdered } from 'lucide-react'
+import { Check, Trophy, BarChart3, TrendingUp } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -11,16 +11,11 @@ import { getWeekStartByOffset, toApiDate, weekLabels, weekLabelsByNum } from '..
 import { ttsApi } from '../api/tts'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState } from '../utils/queryReadState'
+import { ttsYear, ttsYears, defaultQuarter, quartersForYear, quarterDateLabel, quarterPeople, firstTtsOffset } from '../utils/ttsPeriod'
 
 export const DAYS = ['월', '화', '수', '목', '금', '토']
 const LINK_PATH = { SAT_MEETING: '/meeting/sat', PRAYER_MEETING: '/meeting/prayer' }
 const LINK_LABEL = { SAT_MEETING: '교사회의 체크', PRAYER_MEETING: '기도모임 투표' }
-const QUARTERS = [
-  { q: 1, from: 1, to: 13 },
-  { q: 2, from: 14, to: 26 },
-  { q: 3, from: 27, to: 39 },
-  { q: 4, from: 40, to: 53 },
-]
 
 // 서버 TtsService.pointsOf 와 같은 규칙 (점수 미지정이면 매일 항목 5점, 참석 항목 10점)
 export const pointsOf = (q) => q.points ?? (q.type === 'DAYS' ? 5 : 10)
@@ -182,14 +177,24 @@ export function CheckTab({ embedded = false }) {
           offset={offset}
           onChange={setOffset}
           disabled={saving}
+          minOffset={firstTtsOffset()}
           title={`${labels.monthWeek} TTS`}
           sub={labels.yearWeek}
-          range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')} · 탭하면 바로 저장돼요`}
+          range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')} · ${week?.importedPeriod ? '시트 확정 기록' : '탭하면 바로 저장돼요'}`}
         />
       </div>}
 
       {!ready ? (
         <div className={embedded ? '' : 'px-4'}><QueryNotice queries={reads} label="TTS 기록" /></div>
+      ) : week?.importedPeriod ? (
+        <div className={embedded ? '' : 'px-4'}>
+          <Card className="text-center py-6">
+            <p className="text-xs font-bold text-gray-500">시트 확정 점수</p>
+            <p className="text-3xl font-black text-primary-600 mt-2">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
+            <p className="text-xs text-gray-500 mt-3">당시 주간 총점을 보존한 기록입니다.</p>
+            <p className="text-xs text-gray-400 mt-1">수정이 필요하면 관리자에게 알려 주세요.</p>
+          </Card>
+        </div>
       ) : (
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
           <ScoreCard
@@ -449,9 +454,10 @@ function CheckTile({ q, color, checked, onClick }) {
 
 function StatsTab() {
   const { user } = useAuthStore()
-  const thisYear = new Date().getFullYear()
-  const [year, setYear] = useState(thisYear)
-  const [view, setView] = useState('rank')
+  const [year, setYear] = useState(ttsYear)
+  const [quarter, setQuarter] = useState(() => defaultQuarter(ttsYear()))
+  const [view, setView] = useState('quarter')
+  const range = quartersForYear(year).find(x => x.q === quarter)
 
   const statsQuery = useQuery({
     queryKey: ['tts-stats', year],
@@ -459,13 +465,9 @@ function StatsTab() {
   })
   const { data } = statsQuery
 
-  const people = useMemo(() => (data?.people || []).map(p => {
-    const weekly = Object.fromEntries(Object.entries(p.weekly || {}).map(([w, s]) => [Number(w), s]))
-    const scores = Object.values(weekly).filter(s => s > 0)
-    return { ...p, weekly, total: scores.reduce((a, b) => a + b, 0), weeks: scores.length }
-  }), [data])
+  const people = useMemo(() => quarterPeople(data?.people || [], year, quarter), [data, year, quarter])
 
-  const lastWeek = data?.currentWeek ?? Math.max(0, ...people.flatMap(p => Object.keys(p.weekly).map(Number)))
+  const lastWeek = Math.min(range.to, data?.currentWeek ?? Math.max(0, ...people.flatMap(p => Object.keys(p.weekly).map(Number))))
   const me = people.find(p => p.teacherId === user?.id)
 
   return (
@@ -473,15 +475,15 @@ function StatsTab() {
       <div className="flex items-center gap-2">
         <select
           value={year}
-          onChange={e => setYear(Number(e.target.value))}
+          aria-label="통계 연도"
+          onChange={e => { const next = Number(e.target.value); setYear(next); setQuarter(defaultQuarter(next)) }}
           className="px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm font-black text-gray-700"
         >
-          {[thisYear, thisYear - 1].map(y => <option key={y} value={y}>{y}년</option>)}
+          {ttsYears().map(y => <option key={y} value={y}>{y}년</option>)}
         </select>
-        <div className="flex-1 grid grid-cols-4 bg-gray-100 p-1 rounded-xl">
+        <div className="flex-1 grid grid-cols-3 bg-gray-100 p-1 rounded-xl">
           {[
-            ['rank', '누적', Trophy],
-            ['quarter', '분기', ListOrdered],
+            ['quarter', '분기 순위', Trophy],
             ['weekly', '주차별', BarChart3],
             ['mine', '내 추이', TrendingUp],
           ].map(([key, label, Icon]) => (
@@ -495,19 +497,26 @@ function StatsTab() {
           ))}
         </div>
       </div>
+      <div className="flex gap-2">
+        {quartersForYear(year).map(x => (
+          <button key={x.q} onClick={() => setQuarter(x.q)}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold ${quarter === x.q ? 'bg-primary-500 text-white' : 'bg-white text-gray-500'}`}>
+            {x.q}분기
+          </button>
+        ))}
+      </div>
+      <p className="text-[11px] text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
 
       {queryReadState([statsQuery]) !== 'ready' ? (
         <QueryNotice queries={[statsQuery]} label="TTS 통계" />
       ) : people.length === 0 ? (
-        <Card className="py-10 text-center text-sm text-gray-400">{year}년 기록이 아직 없어요</Card>
-      ) : view === 'rank' ? (
-        <CumulativeRank people={people} myId={user?.id} />
+        <Card className="py-10 text-center text-sm text-gray-400">이 분기 기록이 아직 없어요</Card>
       ) : view === 'quarter' ? (
-        <QuarterRank year={year} people={people} myId={user?.id} lastWeek={lastWeek} />
+        <QuarterRank people={people} myId={user?.id} />
       ) : view === 'weekly' ? (
-        <WeeklyTable year={year} people={people} lastWeek={lastWeek} />
+        <WeeklyTable year={year} people={people} firstWeek={range.from} lastWeek={lastWeek} />
       ) : (
-        <MyTrend year={year} me={me} lastWeek={lastWeek} />
+        <MyTrend year={year} me={me} firstWeek={range.from} lastWeek={lastWeek} />
       )}
     </div>
   )
@@ -538,65 +547,29 @@ const withRanks = (list, key) => {
   })
 }
 
-function CumulativeRank({ people, myId }) {
-  const list = withRanks([...people].filter(p => p.total > 0).sort((a, b) => b.total - a.total), 'total')
-  return (
-    <Card className="flex flex-col gap-1 px-2">
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 pb-1">누적 점수 순위</p>
-      {list.map(p => (
-        <RankRow
-          key={p.key}
-          rank={p.rank}
-          p={p}
-          isMe={p.teacherId === myId}
-          sub={`${p.weeks}주 참여 · 주 평균 ${Math.round(p.total / p.weeks)}점`}
-          right={<span className="text-sm font-black text-primary-600">{p.total}점</span>}
-        />
-      ))}
-    </Card>
-  )
-}
-
-function QuarterRank({ year, people, myId, lastWeek }) {
-  const currentQ = QUARTERS.find(x => lastWeek >= x.from && lastWeek <= x.to)?.q ?? 1
-  const [q, setQ] = useState(currentQ)
-  const range = QUARTERS[q - 1]
-  const scored = people.map(p => {
-    const total = Object.entries(p.weekly)
-      .filter(([w]) => w >= range.from && w <= range.to)
-      .reduce((s, [, v]) => s + v, 0)
-    return { ...p, qTotal: total }
-  }).filter(p => p.qTotal > 0)
-  const avg = scored.length ? scored.reduce((s, p) => s + p.qTotal, 0) / scored.length : 0
-  const list = withRanks(scored.sort((a, b) => b.qTotal - a.qTotal), 'qTotal')
+function QuarterRank({ people, myId }) {
+  const scored = people.filter(p => p.total > 0)
+  const avg = scored.length ? scored.reduce((s, p) => s + p.total, 0) / scored.length : 0
+  const list = withRanks(scored.sort((a, b) => b.total - a.total), 'total')
 
   return (
     <Card className="flex flex-col gap-1 px-2">
       <div className="flex items-center justify-between px-2 pb-1">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">분기 순위 · 평균 {Math.round(avg)}점</p>
-        <div className="flex gap-1">
-          {QUARTERS.map(x => (
-            <button
-              key={x.q}
-              onClick={() => setQ(x.q)}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-black ${q === x.q ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-400'}`}
-            >{x.q}Q</button>
-          ))}
-        </div>
       </div>
-      <p className="text-[10px] text-gray-300 font-bold px-2 pb-1">{weekLabelsByNum(year, range.from).monthWeek} ~ {weekLabelsByNum(year, range.to).monthWeek}</p>
       {list.length === 0 && <p className="text-center text-xs text-gray-400 py-6">이 분기 기록이 없어요</p>}
       {list.map(p => {
-        const diff = Math.round(p.qTotal - avg)
+        const diff = Math.round(p.total - avg)
         return (
           <RankRow
             key={p.key}
             rank={p.rank}
             p={p}
             isMe={p.teacherId === myId}
+            sub={`${p.weeks}주 참여 · 주 평균 ${Math.round(p.total / p.weeks)}점`}
             right={
               <>
-                <p className="text-sm font-black text-primary-600">{p.qTotal}점</p>
+                <p className="text-sm font-black text-primary-600">{p.total}점</p>
                 <p className={`text-[10px] font-black ${diff >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>평균 {diff >= 0 ? '+' : ''}{diff}</p>
               </>
             }
@@ -607,9 +580,9 @@ function QuarterRank({ year, people, myId, lastWeek }) {
   )
 }
 
-function WeeklyTable({ year, people, lastWeek }) {
+function WeeklyTable({ year, people, firstWeek, lastWeek }) {
   const rows = []
-  for (let w = lastWeek; w >= 1; w--) {
+  for (let w = lastWeek; w >= firstWeek; w--) {
     const entries = people.map(p => ({ name: p.name, s: p.weekly[w] || 0 })).filter(e => e.s > 0)
     if (entries.length === 0) continue
     const max = Math.max(...entries.map(e => e.s))
@@ -640,15 +613,15 @@ function WeeklyTable({ year, people, lastWeek }) {
   )
 }
 
-function MyTrend({ year, me, lastWeek }) {
+function MyTrend({ year, me, firstWeek, lastWeek }) {
   if (!me) return <Card className="py-10 text-center text-sm text-gray-400">내 기록이 아직 없어요</Card>
-  const weeks = Array.from({ length: lastWeek }, (_, i) => lastWeek - i)
+  const weeks = Array.from({ length: Math.max(0, lastWeek - firstWeek + 1) }, (_, i) => lastWeek - i)
   const max = Math.max(150, ...Object.values(me.weekly))
   return (
     <Card className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">내 주차별 점수</p>
-        <p className="text-xs font-black text-primary-600">누적 {me.total}점 · {me.weeks}주 참여</p>
+        <p className="text-xs font-black text-primary-600">분기 {me.total}점 · {me.weeks}주 참여</p>
       </div>
       {weeks.map(w => {
         const s = me.weekly[w] || 0

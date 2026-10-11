@@ -11,5 +11,6 @@ export const ttsApi = {
   getWeek: (date) => client.get('/tts/week', { params: { date } }),
   saveAnswer: (data) => client.put('/tts/answer', data),
   getStats: (year) => client.get('/tts/stats', { params: { year } }),
-  importLegacy: (year, text) => client.post('/admin/tts/legacy', { year, text }),
+  previewLegacy: (data) => client.post('/admin/tts/legacy/preview', data),
+  importLegacy: (data) => client.post('/admin/tts/legacy', data),
 }

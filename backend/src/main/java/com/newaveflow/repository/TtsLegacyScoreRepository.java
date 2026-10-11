@@ -12,6 +12,6 @@ public interface TtsLegacyScoreRepository extends JpaRepository<TtsLegacyScore, 
     List<TtsLegacyScore> findAllByInfoYear(Integer infoYear);
 
     @Modifying
-    @Query("DELETE FROM TtsLegacyScore s WHERE s.infoYear = :year")
-    void deleteAllByYear(@Param("year") Integer year);
+    @Query("DELETE FROM TtsLegacyScore s WHERE s.infoYear = :year AND s.weekNum BETWEEN :fromWeek AND :toWeek")
+    void deleteInRange(@Param("year") Integer year, @Param("fromWeek") Integer fromWeek, @Param("toWeek") Integer toWeek);
 }

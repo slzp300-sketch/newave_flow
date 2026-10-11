@@ -19,8 +19,6 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,7 +44,7 @@ public class TtsService {
     }
 
     private static LocalDate firstSunday(int year) {
-        return weekSunday(LocalDate.of(year, 1, 1));
+        return TtsPeriod.firstSunday(year);
     }
 
     public static int weekYear(LocalDate sunday) {
@@ -78,8 +76,8 @@ public class TtsService {
 
     @Transactional(readOnly = true)
     public TtsResponse getMyTtsRecord(User teacher, Integer year, Integer week) {
-        if (year == null || year < 1900 || year > 9998 || week == null || week < 1 || week > 53) throw AppException.badRequest("주차가 올바르지 않습니다.");
-        return getWeek(teacher, firstSunday(year).plusWeeks(week - 1));
+        if (year == null || week == null) throw AppException.badRequest("주차가 올바르지 않습니다.");
+        return getWeek(teacher, TtsPeriod.sunday(year, week));
     }
 
     // ── 새 방식: 주 단위 조회 + 항목별 즉시 저장 ──
@@ -103,9 +101,15 @@ public class TtsService {
         if (sunday.isAfter(today)) {
             throw AppException.forbidden("다음 주 이후는 아직 체크할 수 없습니다.");
         }
+        if (!TtsPeriod.includes(weekYear(sunday),weekNum(sunday))) {
+            throw AppException.badRequest("TTS 입력은 2026년 4분기부터 관리합니다.");
+        }
 
         // A user lock also protects simultaneous first writes from multiple devices.
         userRepository.lockById(teacher.getId()).orElseThrow(() -> AppException.unauthorized("교사를 찾을 수 없습니다."));
+        if (isImportedPeriod(sunday)) {
+            throw AppException.badRequest("시트에서 가져온 확정 점수입니다. 관리자에게 원본 점수 수정을 요청해 주세요.");
+        }
         TtsQuestion question = getActiveQuestions(sunday).stream().filter(q -> q.getId().equals(request.questionId())).findFirst()
                 .orElseThrow(() -> AppException.notFound("항목을 찾을 수 없습니다."));
         if (!question.isActive()) {
@@ -175,6 +179,8 @@ public class TtsService {
     }
 
     private TtsResponse buildWeekResponse(Long teacherId, LocalDate sunday, TtsRecord record) {
+        boolean importedPeriod = isImportedPeriod(sunday);
+        Integer importedScore = sheetScoreFor(teacherId, sunday);
         var timeline = questionPolicy.load();
         Set<TtsLinkType> linkedDone = loadLinked(sunday, sunday.plusDays(6))
                 .getOrDefault(teacherId, Map.of())
@@ -196,11 +202,31 @@ public class TtsService {
                 .year(weekYear(sunday))
                 .weekNum(weekNum(sunday))
                 .weekStart(sunday)
-                .isSubmitted(record != null && record.isSubmitted())
+                .isSubmitted(importedPeriod ? importedScore != null && importedScore > 0 : record != null && record.isSubmitted())
                 .answers(answers)
                 .linked(linked)
-                .score(recordScore(record, timeline) + linkedScore(linkedDone, sunday, timeline))
+                .score(importedPeriod ? (importedScore == null ? 0 : importedScore) : recordScore(record, timeline) + linkedScore(linkedDone, sunday, timeline))
+                .importedScore(importedScore)
+                .importedPeriod(importedPeriod)
                 .build();
+    }
+
+    private Integer sheetScoreFor(Long teacherId, LocalDate sunday) {
+        int year = weekYear(sunday), week = weekNum(sunday);
+        if (!TtsPeriod.usesSheet(year, week)) return null;
+        var allUsers = userRepository.findAll();
+        var user = allUsers.stream().filter(u -> u.getId().equals(teacherId)).findFirst().orElse(null);
+        if (user == null) return null;
+        String name = user.getName().trim();
+        if (allUsers.stream().filter(u -> u.getName().trim().equals(name)).count() != 1) return null;
+        return legacyScoreRepository.findAllByInfoYear(year).stream()
+                .filter(s -> s.getWeekNum() == week && s.getName().trim().equals(name))
+                .map(TtsLegacyScore::getScore).findFirst().orElse(null);
+    }
+
+    private boolean isImportedPeriod(LocalDate sunday) {
+        return TtsPeriod.usesSheet(weekYear(sunday),weekNum(sunday)) && legacyScoreRepository.findAllByInfoYear(weekYear(sunday))
+                .stream().anyMatch(s -> s.getWeekNum()==weekNum(sunday));
     }
 
     public TtsResponse submitTts(User teacher, TtsSubmitRequest request) {
@@ -216,11 +242,12 @@ public class TtsService {
     }
 
     /** 교사별 → 주차별 앱 점수 (직접 체크 + 자동 연동) */
-    private Map<Long, Map<Integer, Integer>> computeAppScores(int year, Map<Long, User> usersOut) {
+    Map<Long, Map<Integer, Integer>> computeAppScores(int year, Map<Long, User> usersOut) {
         Map<Long, Map<Integer, Integer>> scores = new HashMap<>();
         var timeline = questionPolicy.load();
 
         for (TtsRecord r : recordRepository.findAllByYearWithAnswers(year)) {
+            if (!TtsPeriod.includes(year, r.getWeekNum())) continue;
             int s = recordScore(r, timeline);
             if (s <= 0) continue;
             usersOut.putIfAbsent(r.getTeacher().getId(), r.getTeacher());
@@ -228,8 +255,9 @@ public class TtsService {
         }
 
         LocalDate from = firstSunday(year);
-        LocalDate to = firstSunday(year + 1).minusDays(1);
+        LocalDate to = from.plusWeeks(TtsPeriod.weeksInYear(year)).minusDays(1);
         loadLinked(from, to).forEach((teacherId, byWeek) -> byWeek.forEach((sunday, types) -> {
+            if (!TtsPeriod.includes(year, weekNum(sunday))) return;
             int s = linkedScore(types, sunday, timeline);
             if (s <= 0) return;
             scores.computeIfAbsent(teacherId, k -> new HashMap<>()).merge(weekNum(sunday), s, Integer::sum);
@@ -240,89 +268,109 @@ public class TtsService {
     /**
      * 모든 교사가 보는 TTS 통계용 데이터.
      * 주차별 점수만 내려주고, 순위·평균 같은 계산은 화면에서 한다.
-     * 같은 주에 앱 점수가 있으면 앱 점수를, 없으면 시트에서 가져온 점수를 쓴다.
+     * 2026년 40·41주는 가져온 시트 점수를 우선하고 42주부터는 앱 점수를 쓴다.
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getStats(int year) {
+        TtsPeriod.firstSunday(year);
+        LocalDate thisSunday = weekSunday(LocalDate.now());
+        Map<String, Object> result = new HashMap<>();
+        result.put("year", year);
+        result.put("firstWeek", TtsPeriod.firstManagedWeek(year));
+        result.put("lastWeek", TtsPeriod.weeksInYear(year));
+        result.put("currentWeek", weekYear(thisSunday) == year ? weekNum(thisSunday) : null);
+        result.put("people", year < TtsPeriod.START_YEAR ? List.of() : scorePeople(year));
+        return result;
+    }
+
+    private List<Map<String, Object>> scorePeople(int year) {
         Map<Long, User> users = new LinkedHashMap<>();
         activeTeachers().forEach(t -> users.put(t.getId(), t));
         Map<Long, Map<Integer, Integer>> appScores = computeAppScores(year, users);
+        var imported = legacyScoreRepository.findAllByInfoYear(year).stream()
+                .filter(s -> TtsPeriod.usesSheet(year,s.getWeekNum())).toList();
+        var importedWeeks = imported.stream().map(TtsLegacyScore::getWeekNum).collect(Collectors.toSet());
+        // Once a whole week is imported, a blank cell stays unrecorded instead of reviving an old app score.
+        appScores.values().forEach(scores -> scores.keySet().removeAll(importedWeeks));
         appScores.keySet().forEach(id -> users.computeIfAbsent(id, k -> userRepository.findById(k).orElse(null)));
         users.values().removeIf(Objects::isNull);
 
         // 이름이 정확히 한 명과 일치할 때만 시트 점수를 그 교사에게 붙인다
-        Map<String, List<User>> byName = users.values().stream()
+        // 활동 상태나 현재 역할이 다른 동명이인도 포함해 잘못된 계정 연결을 막는다.
+        Map<String, List<User>> byName = userRepository.findAll().stream()
                 .collect(Collectors.groupingBy(u -> u.getName().trim()));
 
         Map<String, Map<String, Object>> people = new LinkedHashMap<>();
         for (User u : users.values()) {
-            Map<String, Object> p = new HashMap<>();
-            p.put("key", "u" + u.getId());
-            p.put("teacherId", u.getId());
-            p.put("name", u.getName());
-            p.put("grade", resolveTeacherGrade(u));
+            Map<String, Object> p = scorePerson("u" + u.getId(), u.getName(), u);
             p.put("weekly", new TreeMap<>(appScores.getOrDefault(u.getId(), Map.of())));
             people.put("u" + u.getId(), p);
         }
 
-        for (TtsLegacyScore ls : legacyScoreRepository.findAllByInfoYear(year)) {
+        for (TtsLegacyScore ls : imported) {
             String name = ls.getName().trim();
             List<User> matched = byName.getOrDefault(name, List.of());
             String key = matched.size() == 1 ? "u" + matched.get(0).getId() : "n:" + name;
-            Map<String, Object> p = people.computeIfAbsent(key, k -> {
-                Map<String, Object> np = new HashMap<>();
-                np.put("key", k);
-                np.put("teacherId", null);
-                np.put("name", name);
-                np.put("grade", "");
-                np.put("weekly", new TreeMap<Integer, Integer>());
-                return np;
-            });
+            Map<String, Object> p = people.computeIfAbsent(key,
+                    k -> scorePerson(k, name, matched.size() == 1 ? matched.get(0) : null));
             @SuppressWarnings("unchecked")
             Map<Integer, Integer> weekly = (Map<Integer, Integer>) p.get("weekly");
-            weekly.putIfAbsent(ls.getWeekNum(), ls.getScore());
+            weekly.put(ls.getWeekNum(), ls.getScore());
+            @SuppressWarnings("unchecked")
+            Set<Integer> sheetWeeks = (Set<Integer>) p.get("sheetWeeks");
+            sheetWeeks.add(ls.getWeekNum());
         }
+        return new ArrayList<>(people.values());
+    }
 
-        LocalDate thisSunday = weekSunday(LocalDate.now());
-        Map<String, Object> result = new HashMap<>();
-        result.put("year", year);
-        result.put("currentWeek", weekYear(thisSunday) == year ? weekNum(thisSunday) : null);
-        result.put("people", new ArrayList<>(people.values()));
-        return result;
+    private Map<String, Object> scorePerson(String key, String name, User user) {
+        Map<String, Object> person = new HashMap<>();
+        person.put("key", key);
+        person.put("teacherId", user == null ? null : user.getId());
+        person.put("name", name);
+        person.put("grade", user == null ? "시트 기록" : resolveTeacherGrade(user));
+        person.put("weekly", new TreeMap<Integer, Integer>());
+        person.put("sheetWeeks", new TreeSet<Integer>());
+        return person;
     }
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAdminSummary(Integer year, Integer weekNum) {
-        List<User> teachers = activeTeachers();
-        Map<Long, Map<Integer, Integer>> appScores = computeAppScores(year, new HashMap<>());
+        if (year == null || weekNum == null) throw AppException.badRequest("주차가 올바르지 않습니다.");
+        TtsPeriod.sunday(year, weekNum);
+        if (!TtsPeriod.includes(year, weekNum)) return List.of();
 
         List<TtsRecord> records = recordRepository.findAllByWeekWithAnswers(year, weekNum);
         Map<Long, TtsRecord> recordMap = records.stream()
                 .collect(Collectors.toMap(r -> r.getTeacher().getId(), r -> r));
 
-        return teachers.stream().map(t -> {
-            TtsRecord record = recordMap.get(t.getId());
-            int score = appScores.getOrDefault(t.getId(), Map.of()).getOrDefault(weekNum, 0);
+        return scorePeople(year).stream().filter(p -> p.get("teacherId") != null || weekly(p).containsKey(weekNum)).map(p -> {
+            TtsRecord record = recordMap.get(p.get("teacherId"));
+            int score = weekly(p).getOrDefault(weekNum, 0);
+            boolean fromSheet = ((Set<?>) p.get("sheetWeeks")).contains(weekNum);
             Map<String, Object> map = new java.util.HashMap<>();
-            map.put("teacherId", t.getId());
-            map.put("teacherName", t.getName());
-            map.put("grade", resolveTeacherGrade(t));
+            map.put("key", p.get("key"));
+            map.put("teacherId", p.get("teacherId"));
+            map.put("teacherName", p.get("name"));
+            map.put("grade", p.get("grade"));
             map.put("isSubmitted", score > 0);
             map.put("recordId", record != null ? record.getId() : -1L);
             map.put("score", score);
-            map.put("updatedAt", record != null ? record.getUpdatedAt() : null);
+            map.put("updatedAt", record != null && !fromSheet ? record.getUpdatedAt() : null);
+            map.put("scoreSource", fromSheet ? "SHEET" : "APP");
             return map;
         }).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getQuarterlyScores(Integer year, Integer quarter) {
-        List<User> teachers = activeTeachers();
-        Map<Long, Map<Integer, Integer>> appScores = computeAppScores(year, new HashMap<>());
+        if (year == null || quarter == null) throw AppException.badRequest("연도와 분기를 선택해 주세요.");
+        TtsPeriod.validateQuarter(year, quarter);
+        if (year < TtsPeriod.START_YEAR || (year == TtsPeriod.START_YEAR && quarter < 4)) return List.of();
 
-        return teachers.stream().map(teacher -> {
-            List<Map<String, Object>> weeklyScores = appScores.getOrDefault(teacher.getId(), Map.of()).entrySet().stream()
-                    .filter(e -> getQuarterFromWeek(e.getKey()) == quarter)
+        return scorePeople(year).stream().map(person -> {
+            List<Map<String, Object>> weeklyScores = weekly(person).entrySet().stream()
+                    .filter(e -> TtsPeriod.quarter(e.getKey()) == quarter)
                     .sorted(Map.Entry.comparingByKey())
                     .map(e -> {
                         Map<String, Object> ws = new HashMap<>();
@@ -335,110 +383,20 @@ public class TtsService {
             int totalScore = weeklyScores.stream().mapToInt(ws -> (Integer) ws.get("score")).sum();
 
             Map<String, Object> result = new HashMap<>();
-            result.put("teacherId", teacher.getId());
-            result.put("teacherName", teacher.getName());
-            result.put("grade", resolveTeacherGrade(teacher));
+            result.put("key", person.get("key"));
+            result.put("teacherId", person.get("teacherId"));
+            result.put("teacherName", person.get("name"));
+            result.put("grade", person.get("grade"));
             result.put("totalScore", totalScore);
-            result.put("weekCount", weeklyScores.size());
+            result.put("weekCount", weeklyScores.stream().filter(ws -> (Integer) ws.get("score") > 0).count());
             result.put("weeklyScores", weeklyScores);
             return result;
         }).collect(Collectors.toList());
     }
 
-    // ── 구글 시트 '주차별점수' 가져오기 ──
-
-    private static final Pattern WEEK_HEADER = Pattern.compile("(\\d+)\\s*주차");
-
-    /**
-     * 시트에서 복사한 표(탭 구분) 또는 CSV를 받아 해당 연도 데이터를 통째로 바꾼다.
-     * 첫 줄: 이름, 1주차(...), 2주차(...), ..., 합계
-     */
-    @Transactional
-    public Map<String, Object> importLegacyScores(int year, String text) {
-        if (text == null || text.isBlank()) throw AppException.badRequest("붙여넣은 내용이 없습니다.");
-        List<String> lines = text.lines().filter(l -> !l.isBlank()).toList();
-        char delimiter = lines.get(0).contains("\t") ? '\t' : ',';
-        List<String> header = splitLine(lines.get(0), delimiter);
-
-        int nameCol = -1;
-        Map<Integer, Integer> weekCols = new LinkedHashMap<>();
-        for (int i = 0; i < header.size(); i++) {
-            String h = header.get(i).trim();
-            if (nameCol < 0 && h.contains("이름")) nameCol = i;
-            Matcher m = WEEK_HEADER.matcher(h);
-            if (m.find()) weekCols.put(i, Integer.parseInt(m.group(1)));
-        }
-        if (nameCol < 0 || weekCols.isEmpty()) {
-            throw AppException.badRequest("첫 줄에 '이름'과 'N주차' 칸이 있어야 합니다.");
-        }
-
-        Map<String, TtsLegacyScore> rows = new LinkedHashMap<>();
-        Set<String> names = new LinkedHashSet<>();
-        for (String line : lines.subList(1, lines.size())) {
-            List<String> cells = splitLine(line, delimiter);
-            if (nameCol >= cells.size()) continue;
-            String name = cells.get(nameCol).trim();
-            if (name.isEmpty() || name.equals("합계") || name.equals("평균")) continue;
-            for (Map.Entry<Integer, Integer> wc : weekCols.entrySet()) {
-                if (wc.getKey() >= cells.size()) continue;
-                Integer score = parseScore(cells.get(wc.getKey()));
-                if (score == null || score <= 0) continue;
-                names.add(name);
-                rows.put(name + "|" + wc.getValue(), TtsLegacyScore.builder()
-                        .name(name).infoYear(year).weekNum(wc.getValue()).score(score).build());
-            }
-        }
-
-        legacyScoreRepository.deleteAllByYear(year);
-        legacyScoreRepository.flush();
-        legacyScoreRepository.saveAll(rows.values());
-
-        Set<String> userNames = userRepository.findAll().stream()
-                .map(u -> u.getName().trim()).collect(Collectors.toSet());
-        List<String> unmatched = names.stream().filter(n -> !userNames.contains(n)).toList();
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("year", year);
-        result.put("rows", rows.size());
-        result.put("names", names.size());
-        result.put("weeks", new TreeSet<>(weekCols.values()));
-        result.put("unmatchedNames", unmatched);
-        return result;
-    }
-
-    private static Integer parseScore(String raw) {
-        String s = raw.trim().replace(",", "");
-        if (s.isEmpty()) return null;
-        try {
-            return (int) Math.round(Double.parseDouble(s));
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    // 따옴표로 감싼 칸을 고려한 간단한 CSV/TSV 한 줄 분리
-    private static List<String> splitLine(String line, char delimiter) {
-        List<String> cells = new ArrayList<>();
-        StringBuilder cur = new StringBuilder();
-        boolean quoted = false;
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (c == '"') {
-                if (quoted && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    cur.append('"');
-                    i++;
-                } else {
-                    quoted = !quoted;
-                }
-            } else if (c == delimiter && !quoted) {
-                cells.add(cur.toString());
-                cur.setLength(0);
-            } else {
-                cur.append(c);
-            }
-        }
-        cells.add(cur.toString());
-        return cells;
+    @SuppressWarnings("unchecked")
+    private Map<Integer, Integer> weekly(Map<String, Object> person) {
+        return (Map<Integer, Integer>) person.get("weekly");
     }
 
     public List<TtsQuestion> getAllQuestions() {
@@ -546,11 +504,4 @@ public class TtsService {
         return result;
     }
 
-    // Q1: 1~13주, Q2: 14~26주, Q3: 27~39주, Q4: 40~53주
-    private int getQuarterFromWeek(int weekNum) {
-        if (weekNum <= 13) return 1;
-        if (weekNum <= 26) return 2;
-        if (weekNum <= 39) return 3;
-        return 4;
-    }
 }

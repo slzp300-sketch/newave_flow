@@ -18,6 +18,8 @@ public class TtsResponse {
     private List<AnswerResponse> answers;
     private List<LinkedResponse> linked;
     private int score;
+    private Integer importedScore; // 시트의 확정 총점. 세부 체크 내역은 추정하지 않는다.
+    private boolean importedPeriod;
 
     @Data
     @Builder

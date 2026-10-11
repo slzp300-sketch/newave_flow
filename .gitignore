@@ -22,6 +22,7 @@ backend/bin
 frontend/dist
 frontend/.verification
 backend/.verification
+.backups/
 
 # Optional
 .claude/*

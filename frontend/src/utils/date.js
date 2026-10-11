@@ -46,10 +46,12 @@ export const weekLabels = (date) => {
   }
 }
 
-/** 연도 + 연간 주차 번호로 라벨 만들기 (통계 표처럼 번호만 있을 때). 없는 53주차는 그해 마지막 주로 */
+/** 연도 + 유효한 연간 주차 번호로 라벨 만들기. 없는 주차를 다른 주와 중복 표시하지 않는다. */
 export const weekLabelsByNum = (year, weekNum) => {
-  let sun = addWeeks(startOfWeek(new Date(year, 0, 1), { weekStartsOn: 0 }), weekNum - 1)
-  if (getWeekYear(sun, { weekStartsOn: 0 }) > year) sun = subWeeks(sun, 1)
+  const sun = addWeeks(startOfWeek(new Date(year, 0, 1), { weekStartsOn: 0 }), weekNum - 1)
+  if (!Number.isInteger(weekNum) || weekNum < 1 || getWeekYear(sun, { weekStartsOn: 0 }) !== year) {
+    return { monthWeek: '유효하지 않은 주차', yearWeek: '유효하지 않은 주차' }
+  }
   return weekLabels(sun)
 }
 

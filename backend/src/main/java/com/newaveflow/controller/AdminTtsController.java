@@ -2,6 +2,8 @@ package com.newaveflow.controller;
 
 import com.newaveflow.entity.TtsQuestion;
 import com.newaveflow.service.TtsService;
+import com.newaveflow.service.TtsLegacyImportService;
+import com.newaveflow.dto.tts.TtsImportRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,7 @@ import java.util.Map;
 public class AdminTtsController {
 
     private final TtsService ttsService;
+    private final TtsLegacyImportService importer;
 
     @GetMapping("/summary")
     public ResponseEntity<List<Map<String, Object>>> getSummary(
@@ -41,10 +44,14 @@ public class AdminTtsController {
         return ResponseEntity.ok(ttsService.updateQuestions(questions));
     }
 
-    // 구글 시트 "주차별점수" 표를 붙여넣어 해당 연도 기존 점수를 통째로 교체
+    @PostMapping("/legacy/preview")
+    public ResponseEntity<Map<String, Object>> previewLegacy(@RequestBody TtsImportRequest body) {
+        return ResponseEntity.ok(importer.preview(body));
+    }
+
+    // 검증된 미리보기와 같은 내용으로 선택한 주차만 교체한다.
     @PostMapping("/legacy")
-    public ResponseEntity<Map<String, Object>> importLegacy(@RequestBody Map<String, Object> body) {
-        int year = Integer.parseInt(String.valueOf(body.get("year")));
-        return ResponseEntity.ok(ttsService.importLegacyScores(year, (String) body.get("text")));
+    public ResponseEntity<Map<String, Object>> importLegacy(@RequestBody TtsImportRequest body) {
+        return ResponseEntity.ok(importer.apply(body));
     }
 }

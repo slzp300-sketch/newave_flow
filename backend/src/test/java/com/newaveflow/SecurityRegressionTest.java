@@ -2,6 +2,7 @@ package com.newaveflow;
 
 import com.newaveflow.config.SecurityConfig;
 import com.newaveflow.controller.StudentController;
+import com.newaveflow.controller.AdminTtsController;
 import com.newaveflow.dto.auth.ResetPasswordRequest;
 import com.newaveflow.dto.attendance.AttendanceBatchRequest;
 import com.newaveflow.entity.*;
@@ -120,6 +121,9 @@ class SecurityRegressionTest {
         @Bean JwtTokenProvider provider() { return new JwtTokenProvider(KEY,-1000,604800000); }
         @Bean StudentService students() { return mock(StudentService.class); }
         @Bean StudentController controller(StudentService students) { return new StudentController(students); }
+        @Bean TtsService tts() { return mock(TtsService.class); }
+        @Bean TtsLegacyImportService importer() { return mock(TtsLegacyImportService.class); }
+        @Bean AdminTtsController ttsController(TtsService tts, TtsLegacyImportService importer) { return new AdminTtsController(tts,importer); }
     }
 
     @Test void directDeactivationIsForbiddenForTeacherAndExpiredTokenIs401() throws Exception {
@@ -131,6 +135,20 @@ class SecurityRegressionTest {
             mvc.perform(patch("/api/students/921/deactivate").with(user("admin").roles("ADMIN"))).andExpect(status().isOk());
             String expired = context.getBean(JwtTokenProvider.class).createAccessToken(901L,"audit@example.invalid","TEACHER");
             mvc.perform(get("/api/students/921").header("Authorization","Bearer " + expired)).andExpect(status().isUnauthorized());
+        } finally { SecurityContextHolder.clearContext(); }
+    }
+
+    @Test void sheetPreviewAndImportRequireManagementRole() throws Exception {
+        try(var context=new AnnotationConfigWebApplicationContext()) {
+            context.setServletContext(new MockServletContext()); context.register(MinimalWeb.class); context.refresh();
+            var mvc=MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+            String payload="{\"year\":2026,\"fromWeek\":40,\"toWeek\":41,\"text\":\"synthetic\"}";
+            for(String endpoint:List.of("/api/admin/tts/legacy/preview","/api/admin/tts/legacy")) {
+                mvc.perform(post(endpoint).with(user("teacher").roles("TEACHER")).contentType("application/json").content(payload)).andExpect(status().isForbidden());
+            }
+            verifyNoInteractions(context.getBean(TtsLegacyImportService.class));
+            mvc.perform(post("/api/admin/tts/legacy/preview").with(user("admin").roles("ADMIN")).contentType("application/json").content(payload)).andExpect(status().isOk());
+            verify(context.getBean(TtsLegacyImportService.class)).preview(any());
         } finally { SecurityContextHolder.clearContext(); }
     }
 }

@@ -4,14 +4,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
  * 주 이동 바: 이번 주(offset 0)와 지난 주들(offset < 0)만 선택 가능
  * title: "10월 1주차" 같은 큰 글씨, sub: "26년 41주차" 같은 작은 표시(선택), range: "10/4 ~ 10/10" 같은 작은 글씨
  */
-export default function WeekNavigator({ offset, onChange, title, sub, range, disabled = false }) {
+export default function WeekNavigator({ offset, onChange, title, sub, range, disabled = false, minOffset = -Infinity }) {
   const isCurrent = offset === 0
   return (
     <div className="flex items-center gap-2">
       <button
-        disabled={disabled}
+        disabled={disabled || offset <= minOffset}
         onClick={() => onChange(offset - 1)}
-        className="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center active:scale-95 transition-transform"
+        className="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-40"
         aria-label="이전 주"
       >
         <ChevronLeft size={18} className="text-gray-600" />
