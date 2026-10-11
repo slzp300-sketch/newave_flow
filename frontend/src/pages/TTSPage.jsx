@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query'
 import { Check, Trophy, BarChart3, TrendingUp, ListOrdered } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 import Header from '../components/layout/Header'
@@ -9,6 +9,8 @@ import WeekNavigator from '../components/common/WeekNavigator'
 import useAuthStore from '../store/authStore'
 import { getWeekStartByOffset, toApiDate, weekLabels, weekLabelsByNum } from '../utils/date'
 import { ttsApi } from '../api/tts'
+import QueryNotice from '../components/common/QueryNotice'
+import { queryReadState } from '../utils/queryReadState'
 
 export const DAYS = ['월', '화', '수', '목', '금', '토']
 const LINK_PATH = { SAT_MEETING: '/meeting/sat', PRAYER_MEETING: '/meeting/prayer' }
@@ -85,15 +87,21 @@ export function CheckTab({ embedded = false }) {
   const todayStr  = toApiDate()
   const weekKey   = ['tts-week', weekStart]
 
-  const { data: questions = [], isLoading: qLoading } = useQuery({
+  const questionsQuery = useQuery({
     queryKey: ['tts-questions', weekStart],
     queryFn: () => ttsApi.getQuestions(weekStart).then(r => r.data),
   })
 
-  const { data: week, isLoading: wLoading } = useQuery({
+  const weekQuery = useQuery({
     queryKey: weekKey,
     queryFn: () => ttsApi.getWeek(weekStart).then(r => r.data),
   })
+
+  const questions = questionsQuery.data || []
+  const week = weekQuery.data
+  const reads = [questionsQuery, weekQuery]
+  const ready = queryReadState(reads) === 'ready'
+  const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
 
   // 탭하면 화면에 바로 반영하고(낙관적 저장), 실패하면 원래대로 되돌린다
   const { mutate: saveAnswer } = useMutation({
@@ -101,24 +109,25 @@ export function CheckTab({ embedded = false }) {
     // 빠르게 여러 칸을 탭해도 서버에는 하나씩 차례로 보낸다 (동시에 보내면 같은 주 기록이 겹쳐 실패)
     scope: { id: 'tts-answer' },
     mutationFn: (payload) => ttsApi.saveAnswer(payload).then(r => r.data),
-    onMutate: async ({ questionId, answerData }) => {
-      await queryClient.cancelQueries({ queryKey: weekKey })
-      const prev = queryClient.getQueryData(weekKey)
-      queryClient.setQueryData(weekKey, old => {
+    onMutate: async ({ weekStart: targetWeek, questionId, answerData }) => {
+      const key = ['tts-week', targetWeek]
+      await queryClient.cancelQueries({ queryKey: key })
+      const prev = queryClient.getQueryData(key)
+      queryClient.setQueryData(key, old => {
         if (!old) return old
         const others = (old.answers || []).filter(a => a.questionId !== questionId)
         return { ...old, answers: [...others, { questionId, answerData }] }
       })
-      return { prev }
+      return { prev, key }
     },
     onError: (err, _vars, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(weekKey, ctx.prev)
+      if (ctx?.prev) queryClient.setQueryData(ctx.key, ctx.prev)
       alert(err.response?.data?.message || '저장하지 못했어요. 다시 시도해 주세요.')
     },
-    onSettled: () => {
+    onSettled: (_data, _error, variables) => {
       // 연달아 탭할 때 중간 응답이 화면을 덮어쓰지 않도록 마지막 저장이 끝난 뒤에만 다시 불러온다
       if (queryClient.isMutating({ mutationKey: ['tts-answer'] }) === 1) {
-        queryClient.invalidateQueries({ queryKey: weekKey })
+        queryClient.invalidateQueries({ queryKey: ['tts-week', variables.weekStart] })
         queryClient.invalidateQueries({ queryKey: ['tts-stats'] })
       }
     },
@@ -145,11 +154,13 @@ export function CheckTab({ embedded = false }) {
   const todayIdx = DAYS.findIndex((_, i) => dayDate(i) === todayStr)
 
   const toggleDay = (q, day) => {
+    if (!ready) return
     const cur  = answers[q.id] || {}
     const next = { ...cur, [day]: !cur[day] }
     saveAnswer({ weekStart, questionId: q.id, answerData: JSON.stringify(next) })
   }
   const toggleAttend = (q) => {
+    if (!ready) return
     saveAnswer({ weekStart, questionId: q.id, answerData: String(!(answers[q.id] === true)) })
   }
 
@@ -170,16 +181,15 @@ export function CheckTab({ embedded = false }) {
         <WeekNavigator
           offset={offset}
           onChange={setOffset}
+          disabled={saving}
           title={`${labels.monthWeek} TTS`}
           sub={labels.yearWeek}
           range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')} · 탭하면 바로 저장돼요`}
         />
       </div>}
 
-      {qLoading || wLoading ? (
-        <div className="py-16 flex justify-center">
-          <div className="w-10 h-10 border-4 border-primary-100 border-t-primary-500 rounded-full animate-spin" />
-        </div>
+      {!ready ? (
+        <div className={embedded ? '' : 'px-4'}><QueryNotice queries={reads} label="TTS 기록" /></div>
       ) : (
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
           <ScoreCard
@@ -443,10 +453,11 @@ function StatsTab() {
   const [year, setYear] = useState(thisYear)
   const [view, setView] = useState('rank')
 
-  const { data, isLoading } = useQuery({
+  const statsQuery = useQuery({
     queryKey: ['tts-stats', year],
     queryFn: () => ttsApi.getStats(year).then(r => r.data),
   })
+  const { data } = statsQuery
 
   const people = useMemo(() => (data?.people || []).map(p => {
     const weekly = Object.fromEntries(Object.entries(p.weekly || {}).map(([w, s]) => [Number(w), s]))
@@ -485,8 +496,8 @@ function StatsTab() {
         </div>
       </div>
 
-      {isLoading ? (
-        <Card className="py-10 text-center text-sm text-gray-400">불러오는 중...</Card>
+      {queryReadState([statsQuery]) !== 'ready' ? (
+        <QueryNotice queries={[statsQuery]} label="TTS 통계" />
       ) : people.length === 0 ? (
         <Card className="py-10 text-center text-sm text-gray-400">{year}년 기록이 아직 없어요</Card>
       ) : view === 'rank' ? (

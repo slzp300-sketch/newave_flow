@@ -427,7 +427,7 @@ export default function ProfilePage() {
           <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">앱 정보</p>
           <div className="flex items-center justify-between px-4 py-3.5 border-t border-gray-50">
             <span className="text-sm text-gray-700">버전</span>
-            <span className="text-sm text-gray-400">v0.1.0</span>
+            <span className="text-xs text-gray-400 break-all">{__APP_BUILD_ID__}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-3.5 border-t border-gray-50">
             <span className="text-sm text-gray-700">Newave Flow</span>

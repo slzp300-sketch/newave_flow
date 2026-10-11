@@ -733,7 +733,7 @@ export default function CalendarPage() {
                         </p>
                       ) : (
                         <p className="text-[11px] text-gray-400 mt-1.5">
-                          비워두면 일정 마지막 날({format(new Date(formData.endDate), 'M월 d일', { locale: ko })})까지 제출 가능합니다
+                          비워두면 저장할 때 마감일이 일정 마지막 날({format(new Date(formData.endDate), 'M월 d일', { locale: ko })})로 자동 설정됩니다.
                         </p>
                       )}
                     </div>

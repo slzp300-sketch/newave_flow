@@ -11,6 +11,8 @@ import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
+import QueryNotice from '../components/common/QueryNotice'
+import { queryReadState } from '../utils/queryReadState'
 
 export default function EventAttendancePage() {
   const { id } = useParams()
@@ -18,25 +20,31 @@ export default function EventAttendancePage() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
 
-  const { data: event } = useQuery({
+  const eventQuery = useQuery({
     queryKey: ['event', eventId],
     queryFn: () => eventApi.getEvent(eventId).then(r => r.data),
   })
+  const event = eventQuery.data
 
   const needsStudentCheck = !event || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
   const needsTeacherCheck = event?.attendanceTarget === 'TEACHER_ONLY' || event?.attendanceTarget === 'BOTH'
 
-  const { data: students = [], isLoading } = useQuery({
+  const studentsQuery = useQuery({
     queryKey: ['event-attendance', eventId, user?.id],
     queryFn: () => eventApi.getMyClassAttendance(eventId).then(r => r.data),
-    enabled: !!user && needsStudentCheck,
+    enabled: !!user && !!event && needsStudentCheck,
   })
 
-  const { data: myTeacherAttendance } = useQuery({
+  const teacherQuery = useQuery({
     queryKey: ['event-teacher-attendance', eventId, user?.id],
     queryFn: () => eventApi.getMyTeacherAttendance(eventId).then(r => r.data),
     enabled: !!user && needsTeacherCheck,
   })
+  const students = studentsQuery.data || []
+  const myTeacherAttendance = teacherQuery.data
+  const reads = [eventQuery, ...(event && needsStudentCheck ? [studentsQuery] : []), ...(needsTeacherCheck ? [teacherQuery] : [])]
+  const ready = queryReadState(reads) === 'ready'
+  const isLoading = !ready
 
   const isMultiDay = event?.endDate && event.endDate !== event.eventDate
 
@@ -52,14 +60,12 @@ export default function EventAttendancePage() {
   useEffect(() => {
     if (students.length > 0) {
       const sMap = {}, rMap = {}, pDateMap = {}, pNoteMap = {}
-      let hasAny = false
       students.forEach(s => {
         if (s.status) {
           sMap[s.studentId]     = s.status
           rMap[s.studentId]     = s.absenceReason || ''
           pDateMap[s.studentId] = s.partialFromDate || ''
           pNoteMap[s.studentId] = s.partialNote || ''
-          hasAny = true
         } else {
           sMap[s.studentId]     = 'PRESENT'
           rMap[s.studentId]     = ''
@@ -71,12 +77,13 @@ export default function EventAttendancePage() {
       setReasonMap(rMap)
       setPartialFromDateMap(pDateMap)
       setPartialNoteMap(pNoteMap)
-      if (hasAny) setSubmitted(true)
+      setSubmitted(students.every(s => !!s.status))
     }
   }, [students])
 
   const saveMutation = useMutation({
     mutationFn: (records) => {
+      if (!ready) throw new Error('행사 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
       return eventApi.saveStudentAttendance(eventId, records)
     },
@@ -111,6 +118,7 @@ export default function EventAttendancePage() {
 
   const teacherAttendanceMutation = useMutation({
     mutationFn: () => {
+      if (!ready) throw new Error('행사 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
       return eventApi.saveTeacherAttendance(
         eventId, pendingTeacherStatus,
@@ -153,6 +161,7 @@ export default function EventAttendancePage() {
   }
 
   const handleSubmit = () => {
+    if (!ready) return
     const records = Object.entries(statusMap).map(([studentId, status]) => ({
       studentId: Number(studentId),
       status,
@@ -174,11 +183,17 @@ export default function EventAttendancePage() {
   const missingPartials = Object.entries(statusMap).filter(([id, s]) => s === 'PARTIAL' && !partialFromDateMap[id])
   const canSubmit = missingReasons.length === 0 && missingPartials.length === 0
 
+  if (!ready) return <div className="pb-10">
+    <Header title="행사 출석 체크" showBack />
+    <div className="p-4"><QueryNotice queries={reads} label="행사 출석 기록" /></div>
+  </div>
+
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="행사 출석 체크" showBack />
 
       {/* 행사 정보 */}
+      {event && !event.attendanceDeadline && <p className="px-4 pt-3 text-xs text-gray-500">제출 기한 제한 없음</p>}
       {event && (
         <div className="px-4 py-4 glass-effect">
           <div className="flex items-center gap-3">

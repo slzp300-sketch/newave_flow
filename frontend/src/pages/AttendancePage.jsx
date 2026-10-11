@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -15,6 +15,8 @@ import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
 import WeekNavigator from '../components/common/WeekNavigator'
+import QueryNotice from '../components/common/QueryNotice'
+import { queryReadState } from '../utils/queryReadState'
 
 const STATUS_CONFIG = {
   PRESENT: { label: '출석', color: 'emerald', icon: UserCheck },
@@ -28,21 +30,22 @@ export default function AttendancePage() {
   // 선택한 주의 주일(일요일). 지난 주일 출석도 언제든 수정할 수 있다
   const today = toApiDate(getWeekStartByOffset(offset, 0))
   const labels = weekLabels(getWeekStartByOffset(offset, 0))
-  const [localEdit, setLocalEdit] = useState(false)
-
-  useEffect(() => { setLocalEdit(false) }, [today])
+  const [editingKey, setEditingKey] = useState(null)
+  const [draft, setDraft] = useState(null)
 
   // 1. 담당 반 목록
-  const { data: classes = [], isLoading: classLoading } = useQuery({
+  const classesQuery = useQuery({
     queryKey: ['my-classes', user?.id],
     queryFn:  () => classesApi.getMyClasses().then(r => r.data),
     staleTime: 5 * 60 * 1000,
   })
 
+  const classes = classesQuery.data || []
   const classId = classes[0]?.id
+  const formKey = `${classId}:${today}`
 
   // 2. 해당 반 학생 목록
-  const { data: students = [] } = useQuery({
+  const studentsQuery = useQuery({
     queryKey: ['students', classId],
     queryFn:  () => classesApi.getStudents(classId).then(r => r.data),
     enabled:  !!classId,
@@ -50,7 +53,7 @@ export default function AttendancePage() {
   })
 
   // 3. 선택한 주일 출석 기록
-  const { data: records } = useQuery({
+  const recordsQuery = useQuery({
     queryKey: ['attendance', classId, today],
     queryFn:  () => attendanceApi.getByClass(classId, today).then(r => r.data),
     enabled:  !!classId,
@@ -58,20 +61,20 @@ export default function AttendancePage() {
   })
 
   // 4. 제출 상태 확인
-  const { data: reportStatus } = useQuery({
+  const reportQuery = useQuery({
     queryKey: ['report-status', classId, today],
     queryFn:  () => reportsApi.getByClassAndDate(classId, today).then(r => r.data),
     enabled:  !!classId,
     staleTime: 5 * 60 * 1000,
   })
 
-  const isSubmitted = reportStatus?.status === 'SUBMITTED' && !localEdit
-
-  // 상태 관리: { [studentId]: { status, absentReason, note } }
-  const [formData, setFormData] = useState({})
-
-  // 선택한 주일의 기록으로 화면을 채운다 (주를 바꾸면 이전 주 입력이 섞이지 않게 통째로 교체)
-  useEffect(() => {
+  const students = studentsQuery.data || []
+  const records = recordsQuery.data
+  const reportStatus = reportQuery.data
+  const reads = classId ? [classesQuery, studentsQuery, recordsQuery, reportQuery] : [classesQuery]
+  const ready = queryReadState(reads) === 'ready'
+  const isSubmitted = reportStatus?.status === 'SUBMITTED' && editingKey !== formKey
+  const savedForm = useMemo(() => {
     const initial = {}
     ;(records || []).forEach(r => {
       initial[r.studentId] = {
@@ -80,15 +83,19 @@ export default function AttendancePage() {
         note: r.note || ''
       }
     })
-    setFormData(initial)
+    return initial
   }, [records])
+  // A draft belongs to one class/date and survives background refetches.
+  const formData = draft?.key === formKey ? draft.values : savedForm
 
   const updateStudent = (id, fields) => {
-    if (isSubmitted) return
-    setFormData(prev => ({
-      ...prev,
-      [id]: { ...(prev[id] || { status: 'PRESENT', absentReason: '', note: '' }), ...fields }
-    }))
+    if (!ready || isSubmitted || isSubmitting) return
+    setDraft(prev => {
+      const values = prev?.key === formKey ? prev.values : savedForm
+      return { key: formKey, values: { ...values,
+        [id]: { ...(values[id] || { status: 'PRESENT', absentReason: '', note: '' }), ...fields },
+      } }
+    })
   }
 
   const getStudentData = (id) => formData[id] || { status: 'PRESENT', absentReason: '', note: '' }
@@ -96,6 +103,7 @@ export default function AttendancePage() {
   // 5. 제출 Mutation (저장 후 제출 순서로 처리)
   const { mutate: submitReport, isPending: isSubmitting } = useMutation({
     mutationFn: async () => {
+      if (!ready || !classId || students.length === 0) throw new Error('출석 기록을 모두 불러온 뒤 다시 시도해 주세요.')
       const batchRecords = students.map(s => {
         const data = getStudentData(s.id)
         return {
@@ -109,18 +117,20 @@ export default function AttendancePage() {
       return attendanceApi.submit(classId, today)
     },
     onSuccess: () => {
-      setLocalEdit(false)
+      setEditingKey(null)
+      setDraft(null)
       qc.invalidateQueries({ queryKey: ['attendance'] })
       qc.invalidateQueries({ queryKey: ['report-status'] })
       qc.invalidateQueries({ queryKey: ['weekly-status'] })
     },
-    onError: (err) => alert(err.response?.data?.message || '저장 중 오류가 발생했습니다.'),
+    onError: (err) => alert(err.response?.data?.message || err.message || '저장 중 오류가 발생했습니다.'),
   })
 
   const weekNav = (
     <WeekNavigator
       offset={offset}
-      onChange={setOffset}
+      onChange={value => { setDraft(null); setEditingKey(null); setOffset(value) }}
+      disabled={isSubmitting}
       title={`${labels.monthWeek} 출석`}
       sub={labels.yearWeek}
       range={`${formatShort(today)} 주일 · 지난 주일 출석도 언제든 수정할 수 있어요`}
@@ -128,7 +138,11 @@ export default function AttendancePage() {
   )
   const lastUpdated = reportStatus?.updatedAt || reportStatus?.submittedAt
 
-  if (classLoading) return <div className="py-20 text-center text-gray-400">불러오는 중...</div>
+  if (!ready) return <div className="pb-24">
+    <Header title="출석 체크" showBack />
+    <div className="px-4 py-3">{weekNav}</div>
+    <div className="px-4"><QueryNotice queries={reads} label="출석 기록" /></div>
+  </div>
 
   if (classes.length === 0) {
     return (
@@ -152,7 +166,7 @@ export default function AttendancePage() {
         date={today}
         students={students}
         formData={formData}
-        onEdit={() => setLocalEdit(true)}
+        onEdit={() => setEditingKey(formKey)}
         weekNav={weekNav}
         lastUpdated={lastUpdated}
       />
@@ -180,7 +194,7 @@ export default function AttendancePage() {
       </div>
 
       {/* 학생 목록 */}
-      <div className="px-4 py-4 flex flex-col gap-3">
+      <fieldset disabled={isSubmitting} className="px-4 py-4 flex flex-col gap-3 min-w-0">
         {students.map((student, idx) => (
           <StudentAttendanceCard
             key={student.id}
@@ -190,7 +204,7 @@ export default function AttendancePage() {
             idx={idx}
           />
         ))}
-      </div>
+      </fieldset>
 
       {/* 하단 플로팅 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 z-50">
@@ -198,6 +212,7 @@ export default function AttendancePage() {
           className="w-full premium-gradient shadow-glow"
           onClick={() => submitReport()}
           loading={isSubmitting}
+          disabled={!ready || students.length === 0}
         >
           <Send size={18} />
           제출하기

@@ -14,6 +14,8 @@ import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
 import { toApiDate } from '../utils/date'
 import { isEventAttendanceClosed, assertEventAttendanceOpen } from '../utils/eventAttendance'
+import QueryNotice from '../components/common/QueryNotice'
+import { queryReadState } from '../utils/queryReadState'
 
 const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
 const STATUS_COLOR = {
@@ -36,11 +38,13 @@ function TeacherSelfCheck({ event, userId }) {
   const [submitted, setSubmitted]         = useState(false)
   const [editing, setEditing]             = useState(false)
 
-  const { data: myAtt } = useQuery({
+  const attendanceQuery = useQuery({
     queryKey: ['event-teacher-attendance', eventId, userId],
     queryFn: () => eventApi.getMyTeacherAttendance(eventId).then(r => r.data),
     enabled: !!userId,
   })
+  const myAtt = attendanceQuery.data
+  const ready = queryReadState([attendanceQuery]) === 'ready'
 
   useEffect(() => {
     if (myAtt?.status) {
@@ -54,6 +58,7 @@ function TeacherSelfCheck({ event, userId }) {
 
   const saveMutation = useMutation({
     mutationFn: () => {
+      if (!ready) throw new Error('교사 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
       return eventApi.saveTeacherAttendance(
         eventId, pending,
@@ -75,6 +80,8 @@ function TeacherSelfCheck({ event, userId }) {
     (pending !== 'ABSENT'  || absenceReason.trim() !== '')
   const isEditable = (!submitted || editing) && !isPastDeadline
   const statusKeys = isMultiDay ? ['PRESENT', 'PARTIAL', 'ABSENT'] : ['PRESENT', 'ABSENT']
+
+  if (!ready) return <QueryNotice queries={[attendanceQuery]} label="교사 출석 기록" />
 
   return (
     <div className="flex flex-col gap-3">
@@ -198,31 +205,32 @@ function StudentAttendanceCheck({ event, userId }) {
   const [submitted,          setSubmitted]          = useState(false)
   const [editing,            setEditing]            = useState(false)
 
-  const { data: students = [], isLoading } = useQuery({
+  const studentsQuery = useQuery({
     queryKey: ['event-attendance', eventId, userId],
     queryFn: () => eventApi.getMyClassAttendance(eventId).then(r => r.data),
     enabled: !!userId,
   })
+  const students = studentsQuery.data || []
+  const ready = queryReadState([studentsQuery]) === 'ready'
 
   useEffect(() => {
     if (students.length > 0) {
       const sMap = {}, rMap = {}, pDateMap = {}, pNoteMap = {}
-      let hasAny = false
       students.forEach(s => {
         sMap[s.studentId]     = s.status || 'PRESENT'
         rMap[s.studentId]     = s.absenceReason || ''
         pDateMap[s.studentId] = s.partialFromDate || ''
         pNoteMap[s.studentId] = s.partialNote || ''
-        if (s.status) hasAny = true
       })
       setStatusMap(sMap); setReasonMap(rMap)
       setPartialFromDateMap(pDateMap); setPartialNoteMap(pNoteMap)
-      if (hasAny) setSubmitted(true)
+      setSubmitted(students.every(s => !!s.status))
     }
   }, [students])
 
   const saveMutation = useMutation({
     mutationFn: (records) => {
+      if (!ready) throw new Error('학생 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
       return eventApi.saveStudentAttendance(eventId, records)
     },
@@ -237,6 +245,7 @@ function StudentAttendanceCheck({ event, userId }) {
   const toggleSimple = (sid) => setStatusMap(p => ({ ...p, [sid]: p[sid] === 'PRESENT' ? 'ABSENT' : 'PRESENT' }))
 
   const handleSubmit = () => {
+    if (!ready) return
     const records = Object.entries(statusMap).map(([sid, status]) => ({
       studentId: Number(sid), status,
       absenceReason: status === 'ABSENT' ? (reasonMap[sid] || '') : '',
@@ -255,6 +264,8 @@ function StudentAttendanceCheck({ event, userId }) {
     ? students.filter(s => statusMap[s.studentId] === 'PARTIAL' && !partialFromDateMap[s.studentId])
     : []
   const canSubmit = isEditable && students.length > 0 && missingReasons.length === 0 && missingPartials.length === 0
+
+  if (!ready) return <QueryNotice queries={[studentsQuery]} label="학생 출석 기록" />
 
   return (
     <div className="flex flex-col gap-3">
@@ -292,9 +303,7 @@ function StudentAttendanceCheck({ event, userId }) {
       )}
 
       {/* 학생 목록 */}
-      {isLoading ? (
-        <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
-      ) : students.length === 0 ? (
+      {students.length === 0 ? (
         <Card className="py-8 text-center flex flex-col items-center gap-2">
           <Users size={24} className="text-gray-200" />
           <p className="text-sm font-black text-gray-400">배정된 학생이 없습니다</p>
@@ -429,23 +438,27 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
   const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
   const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
 
-  const { data: teacherAtt } = useQuery({
+  const teacherQuery = useQuery({
     queryKey: ['event-teacher-attendance', event.id, userId],
     queryFn: () => eventApi.getMyTeacherAttendance(event.id).then(r => r.data),
     enabled: !!userId && needsTeacher,
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: students = [] } = useQuery({
+  const studentsQuery = useQuery({
     queryKey: ['event-attendance', event.id, userId],
     queryFn: () => eventApi.getMyClassAttendance(event.id).then(r => r.data),
     enabled: !!userId && needsStudent,
     staleTime: 5 * 60 * 1000,
   })
 
+  const teacherAtt = teacherQuery.data
+  const students = studentsQuery.data || []
+  const reads = [...(needsTeacher ? [teacherQuery] : []), ...(needsStudent ? [studentsQuery] : [])]
+  const readState = queryReadState(reads)
   const teacherDone = !needsTeacher || !!teacherAtt?.status
-  const studentDone = !needsStudent || students.length === 0 || students.some(s => s.status)
-  const isSubmitted = teacherDone && studentDone
+  const studentDone = !needsStudent || students.length === 0 || students.every(s => s.status)
+  const isSubmitted = readState === 'ready' && teacherDone && studentDone
 
   return (
     <button
@@ -471,6 +484,9 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
                 제출 완료
               </span>
             )}
+            {readState !== 'ready' && <span className="text-xs text-gray-500">
+              {readState === 'error' ? '출석 현황 조회 실패 · 펼쳐서 다시 시도' : '출석 현황 확인 중...'}
+            </span>}
           </div>
           <p className="text-[10px] text-gray-400 font-medium mt-0.5">
             {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
@@ -479,11 +495,11 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
             {event.attendanceTarget === 'TEACHER_ONLY' ? '교사 출석' :
              event.attendanceTarget === 'BOTH'         ? '학생 + 교사' : '학생 출석'}
           </p>
-          {event.attendanceDeadline && (
+          {event.attendanceDeadline ? (
             <p className={`mt-1 text-xs font-semibold ${isPastDeadline ? 'text-gray-500' : 'text-primary-700'}`}>
               {isPastDeadline ? '제출 마감됨' : `${format(new Date(event.attendanceDeadline), 'M월 d일')}까지 제출`}
             </p>
-          )}
+          ) : <p className="mt-1 text-xs text-gray-500">제출 기한 제한 없음</p>}
         </div>
       </div>
       <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -498,10 +514,11 @@ export default function EventAttendanceListPage() {
   const { user } = useAuthStore()
   const [selectedId, setSelectedId] = useState(null)
 
-  const { data: rawEvents = [], isLoading } = useQuery({
+  const eventsQuery = useQuery({
     queryKey: ['attendance-required-events'],
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
   })
+  const rawEvents = eventsQuery.data || []
 
   const today = toApiDate()
   const events = useMemo(
@@ -518,9 +535,11 @@ export default function EventAttendanceListPage() {
       <div className="px-4 py-5 flex flex-col gap-3">
         <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">출석 체크가 필요한 행사</p>
 
-        {isLoading ? (
-          <Card className="py-10 text-center text-sm text-gray-400">불러오는 중...</Card>
-        ) : events.length === 0 ? (
+        {queryReadState([eventsQuery]) !== 'ready' && (
+          <QueryNotice queries={[eventsQuery]} label="행사 목록" />
+        )}
+        <div className="space-y-3" hidden={queryReadState([eventsQuery]) !== 'ready'}>
+        {events.length === 0 ? (
           <Card className="py-14 flex flex-col items-center gap-3">
             <Calendar size={32} className="text-gray-200" />
             <p className="text-sm font-black text-gray-400">출석 체크가 필요한 행사가 없습니다</p>
@@ -562,6 +581,7 @@ export default function EventAttendanceListPage() {
             )
           })
         )}
+        </div>
       </div>
     </div>
   )

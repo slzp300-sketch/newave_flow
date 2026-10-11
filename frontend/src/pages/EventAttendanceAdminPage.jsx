@@ -6,6 +6,8 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import QueryNotice from '../components/common/QueryNotice'
+import { queryReadState } from '../utils/queryReadState'
 import { eventApi } from '../api/event'
 import { Users, CheckCircle2, XCircle, Calendar, UserCheck, ChevronRight, Clock } from 'lucide-react'
 
@@ -33,22 +35,28 @@ export default function EventAttendanceAdminPage() {
   const [expandedClassId, setExpandedClassId] = usePersistedState('expandedClassId', null)
   const [activeTab, setActiveTab] = usePersistedState('activeTab', 'student')
 
-  const { data: events = [], isLoading: eventsLoading } = useQuery({
+  const eventsQuery = useQuery({
     queryKey: ['attendance-required-events'],
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
   })
 
-  const { data: summary = [], isLoading: summaryLoading } = useQuery({
+  const summaryQuery = useQuery({
     queryKey: ['attendance-summary', selectedEventId],
     queryFn: () => eventApi.getAttendanceSummary(selectedEventId).then(r => r.data),
     enabled: !!selectedEventId,
   })
 
-  const { data: teacherSummary = [], isLoading: teacherSummaryLoading } = useQuery({
+  const teacherSummaryQuery = useQuery({
     queryKey: ['teacher-attendance-summary', selectedEventId],
     queryFn: () => eventApi.getTeacherAttendanceSummary(selectedEventId).then(r => r.data),
     enabled: !!selectedEventId,
   })
+  const events = eventsQuery.data || []
+  const summary = summaryQuery.data || []
+  const teacherSummary = teacherSummaryQuery.data || []
+  const summaryLoading = !summaryQuery.isSuccess
+  const teacherSummaryLoading = !teacherSummaryQuery.isSuccess
+  const detailReads = activeTab === 'teacher' ? [teacherSummaryQuery] : [summaryQuery]
 
   const selectedEvent = events.find(e => e.id === selectedEventId)
   const showTeacherTab = selectedEvent?.attendanceTarget === 'TEACHER_ONLY'
@@ -150,8 +158,8 @@ export default function EventAttendanceAdminPage() {
         {/* 행사 선택 */}
         <div>
           <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1 mb-2">행사 선택</p>
-          {eventsLoading ? (
-            <div className="text-sm text-gray-400 px-1">불러오는 중...</div>
+          {queryReadState([eventsQuery]) !== 'ready' ? (
+            <QueryNotice queries={[eventsQuery]} label="행사 목록" />
           ) : events.length === 0 ? (
             <Card className="py-8 text-center text-sm text-gray-400">출석 체크 활성화된 행사가 없습니다</Card>
           ) : (
@@ -185,7 +193,7 @@ export default function EventAttendanceAdminPage() {
         </div>
 
         {/* 선택된 행사 결과 */}
-        {selectedEventId && (
+        {selectedEvent && queryReadState([eventsQuery]) === 'ready' && (
           <>
             {/* 탭 (학생/교사) */}
             {showStudentTab && showTeacherTab && (
@@ -210,7 +218,8 @@ export default function EventAttendanceAdminPage() {
             )}
 
             {/* 교사 출석 탭 */}
-            {activeTab === 'teacher' && showTeacherTab && (
+            {queryReadState(detailReads) !== 'ready' && <QueryNotice queries={detailReads} label="행사 출석 기록" />}
+            {queryReadState(detailReads) === 'ready' && activeTab === 'teacher' && showTeacherTab && (
               <>
                 {/* 전체 통계 */}
                 <div className="grid grid-cols-4 gap-2">
@@ -334,7 +343,7 @@ export default function EventAttendanceAdminPage() {
             )}
 
             {/* 학생 출석 탭 */}
-            {activeTab === 'student' && showStudentTab && (<>
+            {queryReadState(detailReads) === 'ready' && activeTab === 'student' && showStudentTab && (<>
             {/* 전체 통계 */}
             <div className="grid grid-cols-4 gap-2">
               <Card className="text-center py-4">
