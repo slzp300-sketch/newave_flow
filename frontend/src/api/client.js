@@ -1,11 +1,10 @@
 import axios from 'axios'
 import useAuthStore from '../store/authStore'
-import { createApiClient } from './createApiClient'
+import { createApiClient, resolveApiBaseUrl } from './createApiClient'
 import { queryClient } from '../queryClient'
 import { invalidateAfterWrite } from './queryPolicy'
 
-export const API = import.meta.env.VITE_API_URL || (import.meta.env.PROD
-  ? 'https://newaveflow-production.up.railway.app/api' : '/api')
+export const API = resolveApiBaseUrl(import.meta.env.VITE_API_URL, import.meta.env.PROD)
 const api = createApiClient({ axios, authStore: useAuthStore, baseURL: API,
   onSessionExpired: () => { window.location.href = '/login' },
   onWriteSuccess: config => { void invalidateAfterWrite(queryClient, config.url) },

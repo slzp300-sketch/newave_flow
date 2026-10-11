@@ -1,7 +1,38 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import axios from 'axios'
-import { createApiClient } from '../src/api/createApiClient.js'
+import { createApiClient, resolveApiBaseUrl } from '../src/api/createApiClient.js'
+
+test('deployment URL supports server origins and existing API paths', () => {
+  for (const value of ['https://backend.example', 'https://backend.example/', 'https://backend.example/api', ' https://backend.example/api/ ']) {
+    assert.equal(resolveApiBaseUrl(value, true), 'https://backend.example/api')
+  }
+  assert.equal(resolveApiBaseUrl('/api/'), '/api')
+  assert.equal(resolveApiBaseUrl('/service/'), '/service/api')
+  assert.equal(resolveApiBaseUrl(undefined), '/api')
+  assert.equal(resolveApiBaseUrl('  ', true), 'https://newaveflow-production.up.railway.app/api')
+})
+
+test('origin-only deployment setting routes login and refresh under /api', async () => {
+  const requests = []
+  const state = { accessToken: null, refreshToken: 'synthetic-refresh', setAuth() {}, clearAuth() {} }
+  const api = createApiClient({
+    axios: { create: axios.create, post: async (url) => {
+      requests.push(url)
+      return { data: { user: {}, accessToken: 'synthetic-access', refreshToken: 'synthetic-refresh' } }
+    } },
+    authStore: { getState: () => state },
+    baseURL: resolveApiBaseUrl('https://backend.example', true),
+    onSessionExpired() {},
+  })
+  api.client.defaults.adapter = async config => {
+    requests.push(api.client.getUri(config))
+    return { config, status: 200, statusText: 'OK', headers: {}, data: {} }
+  }
+  await api.client.post('/auth/login', { email: 'test@example.invalid', password: 'synthetic' })
+  await api.refreshSession()
+  assert.deepEqual(requests, ['https://backend.example/api/auth/login', 'https://backend.example/api/auth/refresh'])
+})
 
 function setup(refresh = async () => ({ data: { user: { id: 1 }, accessToken: 'new-access', refreshToken: 'new-refresh' } })) {
   const state = { accessToken: 'old-access', refreshToken: 'old-refresh', user: { id: 1 },

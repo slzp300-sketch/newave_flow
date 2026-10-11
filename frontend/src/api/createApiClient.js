@@ -1,3 +1,10 @@
+// Accept either a server origin or an API base path from deployment settings.
+export function resolveApiBaseUrl(configuredUrl, production = false) {
+  const base = (configuredUrl?.trim() || (production
+    ? 'https://newaveflow-production.up.railway.app/api' : '/api')).replace(/\/+$/, '')
+  return base.endsWith('/api') ? base : `${base}/api`
+}
+
 // Dependencies are injected so retry/session behavior can be tested without a live server.
 export function createApiClient({ axios, authStore, baseURL, onSessionExpired, onWriteSuccess = () => {}, wait = ms => new Promise(r => setTimeout(r, ms)) }) {
   const client = axios.create({ baseURL, timeout: 20000, headers: { 'Content-Type': 'application/json' } })
