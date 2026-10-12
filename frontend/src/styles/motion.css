@@ -1,0 +1,50 @@
+/* Motion has a short beginning and end; there are no perpetual decorative loops. */
+:root { --motion-ease: cubic-bezier(.22, 1, .36, 1); }
+.motion-page { animation: page-arrive .22s ease-out; }
+.motion-card { animation: card-arrive .38s ease-out backwards; }
+.motion-enter { animation: section-arrive .55s var(--motion-ease) backwards; }
+.motion-week { animation: section-arrive .24s var(--motion-ease); }
+.motion-fade { animation: page-arrive .2s ease-out; }
+.motion-button, .motion-tap, .icon-button, .attendance-actions button, .tts-day {
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .2s ease, scale .18s var(--motion-ease);
+}
+.motion-button:enabled:active, .motion-tap:enabled:active, a.motion-tap:active,
+.icon-button:enabled:active, .attendance-actions button:enabled:active, .tts-day:enabled:active { scale: .96; }
+.motion-button:disabled, .motion-tap:disabled, .tts-day:disabled { scale: 1; }
+.motion-row { transition: background-color .2s ease, scale .18s var(--motion-ease); }
+.motion-row > svg:last-child { transition: translate .22s var(--motion-ease); }
+.motion-card-interactive { transition: box-shadow .22s ease, border-color .22s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .motion-card-interactive:hover, .motion-menu-tile:hover { border-color: #b7dce8; box-shadow: 0 8px 22px -15px #10364b80; }
+  .motion-row:hover { background-color: #eaf5f966; }
+  .motion-row:hover > svg:last-child { translate: 3px 0; }
+  .motion-button:enabled:hover { box-shadow: 0 5px 15px -10px #007fae; }
+}
+.motion-menu-tile { animation: section-arrive .45s var(--motion-ease) backwards; animation-delay: var(--motion-delay, 0ms); }
+.motion-login { position: relative; isolation: isolate; overflow: hidden; }
+.motion-login::before {
+  content: ''; position: absolute; inset: -10px; z-index: -1; background: inherit;
+  animation: ocean-arrive 4.5s var(--motion-ease) both;
+}
+.motion-login .newave-brand { animation: brand-arrive .85s var(--motion-ease) backwards; }
+.motion-login > p { animation: section-arrive .65s var(--motion-ease) .14s backwards; }
+.motion-wave { position: absolute; right: -24px; top: 5px; width: 205px; height: 115px; opacity: .17; pointer-events: none; }
+.motion-wave path { stroke: #b4e7f8; stroke-width: 1.2; stroke-dasharray: 420; animation: wave-arrive 1.5s var(--motion-ease) backwards; }
+.motion-wave path:nth-child(2) { animation-delay: .08s; }
+.motion-wave path:nth-child(3) { animation-delay: .16s; }
+@keyframes page-arrive { from { opacity: .65; } to { opacity: 1; } }
+@keyframes card-arrive { from { opacity: .35; } to { opacity: 1; } }
+@keyframes section-arrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes brand-arrive { from { opacity: 0; transform: translateY(12px) scale(.95); } to { opacity: 1; transform: none; } }
+@keyframes ocean-arrive { from { transform: scale(1.09) translateY(5px); } to { transform: scale(1); } }
+@keyframes wave-arrive { from { stroke-dashoffset: 420; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
+.motion-reduced *, .motion-reduced *::before, .motion-reduced *::after { animation: none !important; transition-duration: 0s !important; }
+.motion-reduced .motion-button, .motion-reduced .motion-tap, .motion-reduced .icon-button,
+.motion-reduced .attendance-actions button, .motion-reduced .tts-day { scale: 1 !important; }
+.motion-reduced .motion-row > svg:last-child { translate: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
+  .motion-button, .motion-tap, .icon-button, .attendance-actions button, .tts-day { scale: 1 !important; }
+  .motion-row > svg:last-child { translate: none !important; }
+}
+@media print { *, *::before, *::after { animation: none !important; } }

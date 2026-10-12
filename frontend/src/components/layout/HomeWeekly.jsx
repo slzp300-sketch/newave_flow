@@ -11,6 +11,7 @@ import { getWeekStartByOffset, toApiDate } from '../../utils/date'
 import { queryReadState } from '../../utils/queryReadState'
 import { parseAnswer, calcScore, maxOf } from '../../pages/TTSPage'
 import QueryNotice from '../common/QueryNotice'
+import { Reveal, AnimatedValue, ProgressFill, WaveAccent } from '../common/Motion'
 
 export default function HomeWeekly({ navigate }) {
   const { user } = useAuthStore()
@@ -63,24 +64,25 @@ export default function HomeWeekly({ navigate }) {
   return (
     <>
       {queryReadState([questionsQuery, weekQuery]) !== 'ready' ? <QueryNotice queries={[questionsQuery, weekQuery]} label="이번 주 TTS 기록" /> : (
-        <section className="rounded-2xl bg-primary-900 text-white p-5">
-          <div className="flex justify-between gap-3 text-sm">
+        <Reveal className="relative isolate overflow-hidden rounded-2xl bg-primary-900 text-white p-5" delay={0.04}>
+          <WaveAccent />
+          <div className="relative flex justify-between gap-3 text-sm">
             <h3 className="font-medium">이번 주 TTS</h3>
             <span className="text-primary-200">{format(sunday, 'M.d')} – {format(addDays(sunday, 6), 'M.d')}</span>
           </div>
           <p className="mt-4 mb-3">
-            <strong className="text-4xl font-semibold tabular-nums">{score ?? '기록 없음'}</strong>
+            <strong className="text-4xl font-semibold tabular-nums"><AnimatedValue value={score ?? '기록 없음'} /></strong>
             {score != null && <span className="ml-2 text-sm text-primary-200">{week?.importedPeriod ? '점 · 시트 확정 기록' : '/ ' + maximum + '점'}</span>}
           </p>
           {!week?.importedPeriod && <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
-            <div className="h-full bg-primary-400 rounded-full" style={{ width: (maximum ? Math.min(100, score / maximum * 100) : 0) + '%' }} />
+            <ProgressFill className="bg-primary-400" ratio={maximum ? score / maximum : 0} />
           </div>}
-          <button onClick={() => navigate('/tts')} className="flex items-center justify-between w-full text-sm min-h-11 mt-2 text-primary-100">
+          <button onClick={() => navigate('/tts')} className="motion-row motion-tap relative flex items-center justify-between w-full text-sm min-h-11 mt-2 text-primary-100 rounded-lg">
             {week?.importedPeriod ? '이번 주 기록 확인하기' : '오늘의 말씀·기도 기록하기'}<ChevronRight size={17} />
           </button>
-        </section>
+        </Reveal>
       )}
-      <section>
+      <Reveal delay={0.1}>
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold">이번 주 할 일</h3>
           <button onClick={() => navigate('/checklist')} className="min-h-11 text-sm text-gray-500">전체 보기</button>
@@ -88,7 +90,7 @@ export default function HomeWeekly({ navigate }) {
         <div className="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200">
           {tasks.map(({ to, icon: Icon, label, sub, query, done }) => {
             const state = queryReadState([query])
-            return <button key={to} onClick={() => navigate(to)} className="w-full flex items-center gap-3 p-4 text-left">
+            return <button key={to} onClick={() => navigate(to)} className="motion-row motion-tap w-full flex items-center gap-3 p-4 text-left">
               <span className="w-10 h-10 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0"><Icon size={19} strokeWidth={1.7} /></span>
               <span className="flex-1 min-w-0"><span className="block text-sm font-semibold">{label}</span><span className="block text-xs text-gray-500 mt-1">{sub}</span></span>
               <span className={'text-xs shrink-0 ' + (state !== 'ready' ? 'text-gray-500' : done ? 'text-success' : 'text-primary-700')}>{state === 'error' ? '확인 필요' : state !== 'ready' ? '확인 중' : done ? '완료' : '미완료'}</span>
@@ -96,7 +98,7 @@ export default function HomeWeekly({ navigate }) {
             </button>
           })}
         </div>
-      </section>
+      </Reveal>
     </>
   )
 }

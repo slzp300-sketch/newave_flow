@@ -1,13 +1,15 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation, ScrollRestoration } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 import BottomNav from './BottomNav'
 import usePullToRefresh from '../../hooks/usePullToRefresh'
 import useAuthStore from '../../store/authStore'
+import { useMotionPreference } from '../common/Motion'
 
 export default function AppLayout() {
   const { pathname } = useLocation()
+  const reduced = useMotionPreference()
   const { isRefreshing, pullDistance } = usePullToRefresh()
   const { user } = useAuthStore()
   const largeFontMode = user?.largeFont ?? false
@@ -15,14 +17,14 @@ export default function AppLayout() {
   useEffect(() => {
     const root = document.documentElement
     root.style.fontSize = largeFontMode ? '120%' : ''
-    root.style.transition = 'font-size 0.3s ease'
+    root.style.transition = reduced ? '' : 'font-size 0.3s ease'
     root.classList.toggle('large-font', largeFontMode)
     return () => {
       root.style.fontSize = ''
       root.style.transition = ''
       root.classList.remove('large-font')
     }
-  }, [largeFontMode])
+  }, [largeFontMode, reduced])
 
   // 당긴 거리 비율 (0 ~ 1)
   const pullProgress = Math.min(pullDistance / 70, 1)
@@ -42,10 +44,10 @@ export default function AppLayout() {
       >
         <motion.div 
           animate={{ 
-            rotate: isRefreshing ? 360 : pullDistance * 2,
-            scale: pullProgress >= 1 ? [1, 1.1, 1] : 1
+            rotate: reduced ? 0 : isRefreshing ? 360 : pullDistance * 2,
+            scale: !reduced && pullProgress >= 1 ? [1, 1.1, 1] : 1
           }}
-          transition={isRefreshing ? { repeat: Infinity, duration: 1, ease: "linear" } : { type: 'spring', damping: 15 }}
+          transition={reduced ? { duration: 0 } : isRefreshing ? { repeat: Infinity, duration: 1, ease: "linear" } : { type: 'spring', damping: 15 }}
           className={`
             w-10 h-10 rounded-full shadow-lg flex items-center justify-center border
             ${isRefreshing ? 'bg-primary-500 text-white border-primary-600' : 'bg-white text-primary-500 border-primary-100'}
@@ -60,7 +62,7 @@ export default function AppLayout() {
             animate={{ opacity: 1, y: 0 }}
             className="absolute top-12 text-xs font-bold text-primary-600 tracking-widest uppercase"
           >
-            Updating
+            새로고침 중
           </motion.div>
         )}
       </div>
@@ -69,7 +71,8 @@ export default function AppLayout() {
         className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom))] max-w-mobile mx-auto w-full transition-transform duration-150"
         style={pullDistance > 0 ? { transform: `translateY(${pullDistance * 0.4}px)` } : undefined}
       >
-        <Outlet />
+        {/* Opacity only: a transform here would displace fixed submit bars and dialogs. */}
+        <div key={pathname} className="motion-page"><Outlet /></div>
       </main>
       <BottomNav />
     </div>

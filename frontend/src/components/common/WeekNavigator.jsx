@@ -17,7 +17,7 @@ export default function WeekNavigator({ offset, onChange, title, sub, range, dis
         <ChevronLeft size={18} className="text-gray-600" />
       </button>
 
-      <div className="flex-1 text-center min-w-0">
+      <div key={title} className="motion-week flex-1 text-center min-w-0">
         <div className="flex items-center justify-center flex-wrap gap-1.5">
           <span className="text-sm font-bold text-gray-900">{title}</span>
           <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${isCurrent ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-500'}`}>

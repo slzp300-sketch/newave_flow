@@ -1,4 +1,4 @@
-export default function Card({ children, className = '', onClick }) {
+export default function Card({ children, className = '', onClick, reveal = true }) {
   const interactive = onClick ? {
     role: 'button', tabIndex: 0, onClick,
     onKeyDown: e => {
@@ -8,5 +8,5 @@ export default function Card({ children, className = '', onClick }) {
       }
     },
   } : {}
-  return <div className={`glass-card rounded-2xl p-4 relative ${onClick ? 'cursor-pointer hover:border-primary-200' : ''} ${className}`} {...interactive}>{children}</div>
+  return <div className={`glass-card rounded-2xl p-4 relative ${reveal ? 'motion-card' : ''} ${onClick ? 'motion-card-interactive cursor-pointer hover:border-primary-200' : ''} ${className}`} {...interactive}>{children}</div>
 }

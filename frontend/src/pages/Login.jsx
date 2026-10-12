@@ -41,11 +41,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-white max-w-mobile mx-auto">
-      <div className="login-hero h-[254px] flex flex-col items-center justify-center text-white">
+      <div className="login-hero motion-login h-[254px] flex flex-col items-center justify-center text-white">
         <Brand emblem light />
         <p className="text-sm font-medium tracking-[.12em] mt-6">시대를 바꿀 새로운 파도</p>
       </div>
-      <div className="px-6 pt-7 pb-8">
+      <div className="motion-enter px-6 pt-7 pb-8" style={{ animationDelay: '100ms' }}>
         <h1 className="text-2xl leading-snug font-semibold tracking-tight">새로운 한 주를<br />함께 시작해요</h1>
         <p className="text-sm text-gray-500 mt-2 mb-6">뉴웨이브 청소년부 교사 공간</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

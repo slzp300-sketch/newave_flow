@@ -23,6 +23,7 @@ import Badge from '../components/common/Badge'
 import PersonalDashboard from '../components/layout/HomeWeekly'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState } from '../utils/queryReadState'
+import { Reveal } from '../components/common/Motion'
 
 export default function Home() {
   const { user }    = useAuthStore()
@@ -36,7 +37,7 @@ export default function Home() {
       <Header title="Newave Flow" right={isExecutive && (
         <button onClick={() => navigate('/admin')} className="icon-button" aria-label="관리자 모드"><ShieldCheck size={20} /></button>
       )} />
-      <div className="px-5 pt-6 pb-5">
+      <div className="motion-enter px-5 pt-6 pb-5">
         <p className="text-xs text-gray-500">{format(new Date(), 'yyyy년 M월 d일 EEEE', { locale: ko })}</p>
         <div className="flex items-center gap-2 mt-2">
           <h2 className="text-xl font-semibold tracking-tight">{user?.name}님, 안녕하세요</h2>
@@ -82,7 +83,7 @@ function WeeklyEventsCard({ navigate }) {
 
   const weeklyEvents = eventsQuery.data || []
   return (
-    <section>
+    <Reveal delay={0.16}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold">이번 주 일정</h3>
         <button onClick={() => navigate('/events')} className="min-h-11 text-sm text-gray-500">전체 보기</button>
@@ -91,7 +92,7 @@ function WeeklyEventsCard({ navigate }) {
         <Card className="!p-0 divide-y divide-gray-200">
           {weeklyEvents.length === 0 ? <p className="p-5 text-sm text-gray-500">이번 주 예정된 일정이 없습니다.</p> :
             weeklyEvents.slice(0, 3).map(e => (
-              <button key={e.id} onClick={() => navigate('/events')} className="w-full flex items-center gap-3 p-4 text-left">
+              <button key={e.id} onClick={() => navigate('/events')} className="motion-row motion-tap w-full flex items-center gap-3 p-4 text-left">
                 <span className="w-11 py-1.5 rounded-xl bg-gray-50 text-center shrink-0"><span className="block text-xs text-gray-500">{format(new Date(e.eventDate), 'M월')}</span><strong className="text-lg font-semibold">{format(new Date(e.eventDate), 'd')}</strong></span>
                 <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{e.title}</span><span className="block text-xs text-gray-500 mt-1">{format(new Date(e.eventDate), 'EEEE', { locale: ko })}{e.startTime && ' · ' + e.startTime}</span></span>
                 <ChevronRight size={16} className="text-gray-300 shrink-0" />
@@ -99,7 +100,7 @@ function WeeklyEventsCard({ navigate }) {
             ))}
         </Card>
       )}
-    </section>
+    </Reveal>
   )
 }
 

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { Reveal } from '../components/common/Motion'
 import {
   ClipboardList, CheckSquare, Users, CalendarCheck, ListChecks,
   Calendar, FileText, MapPin, Bell, BookOpen, CheckCircle2, School,
@@ -54,23 +54,22 @@ export default function MenuPage() {
 
       <div className="px-4 py-4 flex flex-col gap-6">
         {groups.map((group, gi) => (
-          <motion.section
+          <Reveal
             key={group.title}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: gi * 0.05 }}
+            delay={Math.min(gi * 0.04, 0.12)}
           >
             <p className={`text-xs font-bold uppercase tracking-widest mb-2.5 px-1 ${group.admin ? 'text-primary-500' : 'text-gray-400'}`}>
               {group.title}
             </p>
             <div className="grid grid-cols-2 gap-2.5">
-              {group.items.map(item => {
+              {group.items.map((item, index) => {
                 const Icon = item.icon
                 return (
                   <button
                     key={item.to}
                     onClick={() => navigate(item.to)}
-                    className="flex items-center gap-3 text-left bg-white rounded-2xl px-3 py-4 border border-gray-200 active:scale-95 transition-all"
+                    style={{ '--motion-delay': `${Math.min(index, 5) * 35}ms` }}
+                    className="motion-menu-tile motion-tap flex items-center gap-3 text-left bg-white rounded-2xl px-3 py-4 border border-gray-200"
                   >
                     <div className={`w-11 h-11 bg-primary-50 rounded-xl flex items-center justify-center`}>
                       <Icon size={20} className="text-primary-700" />
@@ -80,7 +79,7 @@ export default function MenuPage() {
                 )
               })}
             </div>
-          </motion.section>
+          </Reveal>
         ))}
       </div>
     </div>

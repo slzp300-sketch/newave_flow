@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatedValue, useMotionPreference } from '../components/common/Motion'
 import {
   Check, X, ChevronDown, ChevronUp, Send,
   CheckCircle2, MessageSquare, UserCheck, UserX,
@@ -201,7 +202,7 @@ export default function AttendancePage() {
             ['출석', students.filter(s => getStudentData(s.id).status === 'PRESENT').length, 'text-primary-700'],
             ['불참', students.filter(s => getStudentData(s.id).status === 'ABSENT').length, 'text-danger'],
           ].map(([label, count, color]) => <div key={label} className="bg-white border border-gray-200 rounded-xl py-3 text-center">
-            <p className="text-xs text-gray-500">{label}</p><p className={'mt-1 text-xl font-semibold ' + color}>{count}<span className="text-xs ml-1 font-normal">명</span></p>
+            <p className="text-xs text-gray-500">{label}</p><p className={'mt-1 text-xl font-semibold ' + color}><AnimatedValue value={count} /><span className="text-xs ml-1 font-normal">명</span></p>
           </div>)}
         </div>
       </div>
@@ -239,14 +240,15 @@ export default function AttendancePage() {
 
 function StudentAttendanceCard({ student, data, onChange, idx }) {
   const [isNoteOpen, setNoteOpen] = useState(false)
+  const reduced = useMotionPreference()
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      initial={reduced ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.05 }}
+      transition={{ duration: reduced ? 0 : 0.38, delay: reduced ? 0 : Math.min(idx * 0.04, 0.2) }}
     >
-      <Card className="overflow-visible">
+      <Card className="overflow-visible" reveal={false}>
         <div className="attendance-person">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${

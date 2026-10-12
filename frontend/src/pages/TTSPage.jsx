@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query'
 import { Check, Trophy, BarChart3, TrendingUp } from 'lucide-react'
+import { LayoutGroup, motion } from 'framer-motion'
+import { Reveal, AnimatedValue, ProgressFill, SelectionMark, useMotionPreference } from '../components/common/Motion'
 import { addDays, format } from 'date-fns'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -46,22 +48,28 @@ export function calcScore(questions, answers, linked) {
 
 export default function TTSPage() {
   const [tab, setTab] = useState('check')
+  const reduced = useMotionPreference()
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="TTS" showBack />
       <div className="px-4 pt-3">
-        <div className="grid grid-cols-2 bg-gray-100 p-1 rounded-xl">
+        <LayoutGroup id="tts-navigation"><div className="relative isolate grid grid-cols-2 bg-gray-100 p-1 rounded-xl">
           {[['check', '내 체크'], ['stats', '분기 현황']].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               aria-pressed={tab === key}
-              className={`min-h-11 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === key ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'}`}
-            >{label}</button>
+              className={`motion-tap relative min-h-11 py-2 rounded-lg text-sm font-semibold ${tab === key ? 'text-primary-700' : 'text-gray-500'}`}
+            >
+              {tab === key && <motion.span aria-hidden="true" layoutId="active-tts-tab" initial={false}
+                className="absolute inset-0 -z-10 bg-white rounded-lg shadow-sm"
+                transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 34 }} />}
+              {label}
+            </button>
           ))}
-        </div>
+        </div></LayoutGroup>
       </div>
-      {tab === 'check' ? <CheckTab /> : <StatsTab />}
+      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <StatsTab />}</div>
     </div>
   )
 }
@@ -290,21 +298,21 @@ export function CheckTab({ embedded = false }) {
 function ScoreCard({ score, maxScore, weekLabel, items, message, saving }) {
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
   return (
-    <section className="rounded-2xl border border-primary-100 bg-primary-50 p-5">
+    <Reveal className="rounded-2xl border border-primary-100 bg-primary-50 p-5">
       <div className="flex justify-between gap-3 items-center text-sm">
         <h2 className="font-medium text-primary-800">{weekLabel} 점수</h2>
-        <span className="text-xs text-gray-500" role="status" aria-live="polite">{saving ? '저장 중…' : '자동 저장'}</span>
+        <span className="text-xs text-gray-500" role="status" aria-live="polite"><span key={saving ? 'saving' : 'saved'} className="motion-fade inline-flex items-center gap-1">{saving ? '저장 중…' : '자동 저장'}</span></span>
       </div>
-      <p className="mt-3"><strong className="text-4xl font-semibold tabular-nums">{score}</strong><span className="ml-2 text-sm text-gray-500">/ {maxScore}점</span></p>
+      <p className="mt-3"><strong className="text-4xl font-semibold tabular-nums"><AnimatedValue value={score} /></strong><span className="ml-2 text-sm text-gray-500">/ {maxScore}점</span></p>
       <div className="h-1.5 rounded-full bg-primary-100 overflow-hidden mt-3">
-        <div className="h-full rounded-full bg-primary-600 transition-[width]" style={{ width: ratio * 100 + '%' }} />
+        <ProgressFill className="bg-primary-600" ratio={ratio} />
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
         {items.map(({ q, done, total }) => <p key={q.id} className="text-xs text-gray-600">{splitTitle(q.title)[0]} <span className="font-semibold text-gray-900">{done}/{total}</span></p>)}
       </div>
       {message && <p className="mt-3 text-sm text-primary-800 break-keep">{message.text}</p>}
       {items.length === 0 && <p className="mt-3 text-sm text-gray-500">등록된 체크 항목이 없습니다.</p>}
-    </section>
+    </Reveal>
   )
 }
 
@@ -334,7 +342,7 @@ function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle }) {
                     <button disabled={future} onClick={() => onToggle(q, day)}
                       aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : '')} aria-pressed={done}
                       className={'tts-day w-full flex items-center justify-center border transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-300') + (future ? ' opacity-40' : '') + (i === todayIdx && !done ? ' !border-primary-600' : '')}>
-                      {done ? <Check size={18} strokeWidth={2} /> : <span aria-hidden="true">—</span>}
+                      {done ? <SelectionMark /> : <span aria-hidden="true">—</span>}
                     </button>
                   </div>
                 )
@@ -362,7 +370,7 @@ function CheckRow({ q, color, checked, sub, onClick }) {
       </div>
       <span className={`text-xs font-bold flex-shrink-0 ${checked ? color.text : 'text-gray-300'}`}>+{pointsOf(q)}</span>
       <span className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
-        {checked && <Check size={16} strokeWidth={3} className="text-white" />}
+        {checked && <SelectionMark size={16} className="text-white" />}
       </span>
     </button>
   )
@@ -378,7 +386,7 @@ function CheckTile({ q, color, checked, onClick }) {
       <span className="text-base flex-shrink-0">{q.emoji}</span>
       <span className="flex-1 min-w-0 text-xs font-bold text-gray-900 truncate">{q.title}</span>
       <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
-        {checked && <Check size={12} strokeWidth={3} className="text-white" />}
+        {checked && <SelectionMark size={12} className="text-white" />}
       </span>
     </button>
   )
