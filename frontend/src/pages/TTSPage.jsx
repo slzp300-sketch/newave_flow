@@ -137,7 +137,8 @@ export function CheckTab({ embedded = false }) {
   const currentAnswer = q => parseAnswer(q, queryClient.getQueryData(weekKey)?.answers
     ?.find(a => a.questionId === q.id)?.answerData)
   const toggleDay = (q, day) => {
-    if (!ready || offline) return
+    const dayIndex = DAYS.indexOf(day)
+    if (!ready || offline || !isDaily(q) || dayIndex < 0 || dayDate(dayIndex) > todayStr || week?.importedPeriod) return
     setSaveError('')
     saveAnswer({ weekStart, questionId: q.id, day, checked: !currentAnswer(q)?.[day] })
   }
@@ -224,6 +225,7 @@ export function CheckTab({ embedded = false }) {
             <HomeTtsSummary score={score} maxScore={maxScore}
               range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
               items={summaryItems} answers={answers}
+              onToggleDay={toggleDay} disabled={!ready || offline}
               days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr, today: i === todayIdx }))} />
             <div className="mt-3 flex gap-2">
               <button type="button" aria-expanded={expanded} aria-controls={detailId} onClick={() => setExpanded(!expanded)} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">{expanded ? '기록 수정 접기' : '이번 주 기록 수정'}</button>

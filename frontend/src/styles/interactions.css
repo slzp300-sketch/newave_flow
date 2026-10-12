@@ -59,17 +59,12 @@
     }
   }
 
-  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):is(:active, :focus-visible),
-  :root :is(.glass-card, .brand-card, .ui-list):not([aria-disabled='true']):active {
-    background-color: var(--surface-hover-bg);
-  }
-  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):is(:active, :focus-visible),
-  :root :is(.glass-card, .brand-card, .ui-list):not(.brand-custom-color, [aria-disabled='true']):active { border-color: var(--surface-hover-border); }
-  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):is(:active, :focus-visible) {
-    color: var(--surface-hover-ink);
-  }
-  :root :is(button, .brand-action):not(:disabled, [aria-disabled='true']):is(:active, :focus-visible) > :is(.brand-selection, .brand-nav-indicator) {
-    background-color: var(--surface-hover-bg);
+  /* Touch gets brief blue press feedback on the action itself, never its static parent card.
+     Keyboard focus keeps the normal selected state and adds only the visible outline. */
+  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):active {
+    background-color: var(--surface-bg);
+    box-shadow: inset 0 0 0 2px var(--surface-border);
+    filter: brightness(.96);
   }
   :root :is(button, .brand-action, summary):focus-visible {
     outline: 2px solid theme('colors.secondary.700');

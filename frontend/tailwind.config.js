@@ -2,6 +2,7 @@ import { primary, secondary, neutral } from './brand-theme.js'
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  future: { hoverOnlyWhenSupported: true },
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
