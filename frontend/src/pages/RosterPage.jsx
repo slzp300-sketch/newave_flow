@@ -227,7 +227,7 @@ function StudentRoster() {
             const gc = GRADE_COLORS[grade]
             const isActive = selectedGrade === grade
             return (
-              <button key={grade}
+              <button aria-pressed={isActive} key={grade}
                 onClick={() => { setSelectedGrade(grade); setSelectedClass(null) }}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all active:scale-95 ${
                   isActive ? `${gc.bg} text-white shadow-md` : 'bg-gray-100 text-gray-500'
@@ -369,13 +369,13 @@ function TeacherRoster() {
         {/* 상단 탭 */}
         <div className="sticky top-14 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
           <div className="flex items-center px-4 pt-3 pb-0">
-            <button
+            <button aria-pressed={activeTab === 'executive'}
               onClick={() => setActiveTab('executive')}
               className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all ${
                 activeTab === 'executive' ? 'border-amber-400 text-amber-600' : 'border-transparent text-gray-400'
               }`}
             >목사님 · 임원</button>
-            <button
+            <button aria-pressed={activeTab === 'teacher'}
               onClick={() => { setActiveTab('teacher'); setActiveGrade('전체') }}
               className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all ${
                 activeTab === 'teacher' ? 'border-secondary-500 text-secondary-600' : 'border-transparent text-gray-400'
@@ -452,7 +452,7 @@ function TeacherRoster() {
                     const gc = GRADE_COLORS[grade] || GRADE_COLORS['전체']
                     const isActive = activeGrade === grade
                     return (
-                      <button key={grade}
+                      <button aria-pressed={isActive} key={grade}
                         onClick={() => setActiveGrade(grade)}
                         className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
                           isActive ? `${gc.bg} text-white shadow-sm` : 'bg-gray-100 text-gray-500'
@@ -977,7 +977,7 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
                           key={c}
                           disabled={isDisabled}
                           onClick={() => setSelectedColor(c)}
-                          className={`w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${
+                          className={`brand-color-swatch w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${
                             isDisabled ? 'opacity-20 cursor-not-allowed' :
                             selectedColor === c ? 'border-gray-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'
                           }`}
@@ -998,7 +998,7 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
             <div className="flex flex-wrap gap-1.5 mb-3">
               <button
                 onClick={() => setSelectedColor('')}
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[8px] font-bold ${!selectedColor ? 'border-gray-800 bg-gray-100' : 'border-gray-200 bg-gray-50 text-gray-400'}`}
+                className={`brand-color-swatch w-5 h-5 rounded-full border-2 flex items-center justify-center text-[8px] font-bold ${!selectedColor ? 'border-gray-800 bg-gray-100' : 'border-gray-200 bg-gray-50 text-gray-400'}`}
               >?</button>
               {TAG_COLORS.map(c => {
                 const isDisabled = usedColors.has(c)
@@ -1007,7 +1007,7 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
                     key={c}
                     disabled={isDisabled}
                     onClick={() => setSelectedColor(c)}
-                    className={`w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${
+                    className={`brand-color-swatch w-5 h-5 rounded-full border-2 ${c.split(' ')[0]} ${
                       isDisabled ? 'opacity-20 cursor-not-allowed' :
                       selectedColor === c ? 'border-gray-800 scale-110 shadow-sm' : 'border-transparent hover:scale-105'
                     }`}
@@ -1039,7 +1039,7 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
 
 function InfoRow({ label, value, icon, isPhone = false }) {
   const content = (
-    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-2xl">
+    <div className="brand-card flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-2xl">
       <span className="text-lg flex-shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{label}</p>
@@ -1279,7 +1279,7 @@ function StudentList({ students, colors, mode }) {
               </p>
             </div>
             {s.phone && (
-              <a href={`tel:${s.phone}`} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 active:text-primary-600 flex-shrink-0">
+              <a href={`tel:${s.phone}`} className="brand-action w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 active:text-primary-600 flex-shrink-0">
                 <Phone size={14} />
               </a>
             )}

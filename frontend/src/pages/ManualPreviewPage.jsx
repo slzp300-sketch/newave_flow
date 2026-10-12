@@ -44,7 +44,7 @@ export default function ManualPreviewPage() {
             <p className="text-xs font-medium text-primary-700 mb-2">{String(i + 1).padStart(2, '0')}</p>
             <h2 className="text-lg font-semibold">{section.title}</h2>
             <p className="text-sm text-gray-600 leading-relaxed mt-3">{section.text}</p>
-            <Link to={section.path} className="inline-flex items-center gap-1 min-h-11 text-sm text-primary-700 mt-2 print:hidden">화면 열기<ChevronRight size={16} /></Link>
+            <Link to={section.path} className="brand-action inline-flex items-center gap-1 min-h-11 text-sm text-primary-700 mt-2 print:hidden">화면 열기<ChevronRight size={16} /></Link>
           </section>
         ))}
       </div>

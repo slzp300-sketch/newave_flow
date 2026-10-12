@@ -277,7 +277,7 @@ export default function EventAttendanceAdminPage() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.04 }}
-                          className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
+                          className={`brand-card flex items-start justify-between px-3 py-2.5 rounded-2xl ${
                             teacher.status === 'PRESENT' ? 'bg-secondary-50/60' :
                             teacher.status === 'PARTIAL' ? 'bg-amber-50/60' :
                             teacher.status === 'ABSENT'  ? 'bg-red-50/60' : 'bg-gray-50'
@@ -427,7 +427,7 @@ export default function EventAttendanceAdminPage() {
                           {cls.records.map(student => (
                             <div
                               key={student.studentId}
-                              className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
+                              className={`brand-card flex items-start justify-between px-3 py-2.5 rounded-2xl ${
                                 student.status === 'PRESENT' ? 'bg-secondary-50/50' :
                                 student.status === 'PARTIAL' ? 'bg-amber-50/50' :
                                 student.status === 'ABSENT'  ? 'bg-red-50/50' :

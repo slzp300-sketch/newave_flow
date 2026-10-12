@@ -55,7 +55,7 @@ export default function Home() {
           {[
             ['/attendance', ClipboardList, '출석'], ['/event-attendance', Calendar, '행사 출석'],
             ['/tts', CheckSquare, 'TTS'], ['/roster', BookOpen, '교적부'],
-          ].map(([to, Icon, label]) => <Link key={to} to={to} className={`motion-tap flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-1 py-3 ${to === '/tts' ? 'border-secondary-200 bg-secondary-50 text-secondary-700' : 'border-gray-200 bg-white text-primary-700'}`}>
+          ].map(([to, Icon, label]) => <Link key={to} to={to} className={`brand-action motion-tap flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-1 py-3 border-primary-200 bg-primary-50 text-primary-700`}>
             <Icon size={22} strokeWidth={1.7} /><span className="text-xs font-semibold">{label}</span>
           </Link>)}
         </nav>}
@@ -245,7 +245,7 @@ function AdminView({ navigate, today }) {
       {pendingUsers.length > 0 && (
         <div
           onClick={() => navigate('/admin/pending-users')}
-          className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer"
+          className="brand-card bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center justify-between active:scale-[0.98] transition-transform cursor-pointer"
         >
           <div className="flex items-center gap-2 text-amber-700">
             <Bell size={16} className="" />
@@ -265,7 +265,7 @@ function AdminView({ navigate, today }) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="bg-white rounded-2xl p-4 border border-gray-200 flex flex-col items-center text-center"
+              className="brand-card bg-white rounded-2xl p-4 border border-gray-200 flex flex-col items-center text-center"
             >
               <div className={`w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center mb-2`}>
                 <Icon size={16} className="text-primary-700" />
@@ -369,7 +369,7 @@ function AdminView({ navigate, today }) {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.07 }}
-                className="bg-white rounded-2xl px-4 py-3 border border-gray-200 flex items-center gap-3"
+                className="brand-card bg-white rounded-2xl px-4 py-3 border border-gray-200 flex items-center gap-3"
               >
                 <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Calendar size={16} className="text-rose-500" />

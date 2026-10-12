@@ -162,13 +162,13 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
 
           <div className="flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-4">
             {/* 공통 설정 */}
-            <div className="flex flex-col gap-3 p-4 rounded-2xl bg-gray-50">
+            <div className="brand-card flex flex-col gap-3 p-4 rounded-2xl bg-gray-50">
               <p className="text-xs font-bold text-gray-500">공통 설정 <span className="font-medium text-gray-400">· 모든 줄에 적용</span></p>
               <div>
                 <span className={label}>구분</span>
                 <div className="grid grid-cols-4 gap-1.5">
                   {EVENT_TYPES.map(t => (
-                    <button key={t.value} type="button" onClick={() => setCommon(c => ({ ...c, eventType: t.value }))}
+                    <button aria-pressed={common.eventType === t.value} key={t.value} type="button" onClick={() => setCommon(c => ({ ...c, eventType: t.value }))}
                       className={`py-2 rounded-xl text-xs font-bold border-2 transition-all ${common.eventType === t.value ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-transparent bg-white text-gray-400'}`}>
                       {t.label}
                     </button>
@@ -194,7 +194,7 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
                 <div className="flex gap-1.5">
                   {COLORS.map(c => (
                     <button key={c.value} type="button" onClick={() => setCommon(cm => ({ ...cm, color: c.value }))}
-                      className={`w-6 h-6 rounded-full ${c.class} ${common.color === c.value ? 'ring-2 ring-offset-2 ring-gray-900' : 'opacity-40'}`} />
+                      className={`brand-color-swatch w-6 h-6 rounded-full ${c.class} ${common.color === c.value ? 'ring-2 ring-offset-2 ring-gray-900' : 'opacity-40'}`} />
                   ))}
                 </div>
               </div>
@@ -203,7 +203,7 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
             {/* 일정 줄 */}
             <div className="flex flex-col gap-2">
               {rows.map(r => (
-                <div key={r.key} className={`rounded-2xl border p-3 flex flex-col gap-2 ${r.title.trim() ? 'border-gray-200' : 'border-dashed border-gray-200'}`}>
+                <div key={r.key} className={`brand-card rounded-2xl border p-3 flex flex-col gap-2 ${r.title.trim() ? 'border-gray-200' : 'border-dashed border-gray-200'}`}>
                   <div className="flex items-center gap-2">
                     <DateRangeField
                       start={r.eventDate}
@@ -231,7 +231,7 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                         <div className="flex gap-1.5 pt-0.5">
                           {TARGETS.map(t => (
-                            <button key={t.value} type="button" onClick={() => updateRow(r.key, { attendanceTarget: t.value })}
+                            <button aria-pressed={r.attendanceTarget === t.value} key={t.value} type="button" onClick={() => updateRow(r.key, { attendanceTarget: t.value })}
                               className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 transition-all ${r.attendanceTarget === t.value ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-gray-100 bg-white text-gray-400'}`}>
                               {t.label}
                             </button>

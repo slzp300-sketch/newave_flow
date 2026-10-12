@@ -43,7 +43,7 @@ export default function AdminPendingUsersPage() {
     <Header title="가입 승인 대기" showBack />
     <div className="flex flex-col gap-4 px-4 py-5">
       <AdminIntro title="새로운 교사를 맞이해요" description="가입 정보를 확인해 승인한 뒤, 담당할 반을 배정해 주세요." />
-      <Link to="/admin/class-assignment" className="flex min-h-11 items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm font-semibold text-gray-600">
+      <Link to="/admin/class-assignment" className="brand-action flex min-h-11 items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm font-semibold text-gray-600">
         승인 후 반 배정하기 <span aria-hidden="true">›</span>
       </Link>
       <SearchField label="승인 대기 교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />

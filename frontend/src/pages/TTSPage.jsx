@@ -278,7 +278,7 @@ export function CheckTab({ embedded = false }) {
 function ScoreCard({ score, maxScore, weekLabel, items, message, saveStatus }) {
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
   return (
-    <Reveal className="rounded-2xl border border-primary-100 bg-primary-50 p-5">
+    <Reveal className="brand-card rounded-2xl border border-primary-100 bg-primary-50 p-5">
       <div className="flex justify-between gap-3 items-center text-sm">
         <h2 className="font-medium text-primary-800">{weekLabel} 점수</h2>
         <span className="text-xs text-gray-500" role="status" aria-live="polite"><span key={saveStatus} className="motion-fade inline-flex items-center gap-1">{saveStatus}</span></span>
@@ -321,7 +321,7 @@ function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle, disab
                     <p className="text-xs text-gray-400 mb-2">{dayLabel(i)}</p>
                     <button disabled={future || disabled} onClick={() => onToggle(q, day)}
                       aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : '')} aria-pressed={done}
-                      className={'tts-day w-full flex items-center justify-center border transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-300') + (future ? ' opacity-40' : '') + (i === todayIdx && !done ? ' !border-primary-600' : '')}>
+                      className={'tts-day w-full flex items-center justify-center border transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-300') + (future ? ' opacity-40' : '') + (i === todayIdx && !done ? ' ring-1 ring-primary-600' : '')}>
                       {done ? <SelectionMark /> : <span aria-hidden="true">—</span>}
                     </button>
                   </div>
@@ -360,7 +360,7 @@ function CheckRow({ q, color, checked, sub, onClick, disabled }) {
 // 홈용 참석·자동 반영 항목 작은 타일 (2칸 배치)
 function CheckTile({ q, color, checked, onClick, disabled }) {
   return (
-    <button
+    <button aria-pressed={checked}
       onClick={onClick}
       disabled={disabled}
       className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all active:scale-[0.97] ${checked ? color.soft : 'bg-gray-50'}`}

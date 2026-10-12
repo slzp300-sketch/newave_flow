@@ -304,7 +304,7 @@ export default function CalendarAdminPage() {
                         key={c.value}
                         type="button"
                         onClick={() => setFormData({...formData, color: c.value})}
-                        className={`w-8 h-8 rounded-full border-4 transition-all ${c.class} 
+                        className={`brand-color-swatch w-8 h-8 rounded-full border-4 transition-all ${c.class}
                           ${formData.color === c.value ? 'border-white ring-2 ring-gray-900' : 'border-transparent opacity-60'}`}
                         title={c.name}
                       />
@@ -349,7 +349,7 @@ export default function CalendarAdminPage() {
 
                 {/* 출석 대상 선택 + 마감일 (출석 체크 활성화 시에만 표시) */}
                 {formData.attendanceRequired && (
-                  <div className="flex flex-col gap-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                  <div className="brand-card flex flex-col gap-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                     <div>
                       <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">출석 대상</label>
                       <div className="flex gap-2">
@@ -358,7 +358,7 @@ export default function CalendarAdminPage() {
                           { value: 'TEACHER_ONLY', label: '교사만' },
                           { value: 'BOTH',         label: '학생 + 교사' },
                         ].map(opt => (
-                          <button
+                          <button aria-pressed={formData.attendanceTarget === opt.value}
                             key={opt.value}
                             type="button"
                             onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
@@ -413,7 +413,7 @@ export default function CalendarAdminPage() {
         <FilterResults count={Object.values(categorizedEvents).flat().length} total={events.length} unit="건" filtered={!!search.trim() || period !== 'all'} onReset={() => { setSearch(''); setPeriod('all') }} />
         {events.length > 0 && Object.values(categorizedEvents).flat().length === 0 && <AdminEmpty />}
         {events.length === 0 ? (
-          <div className="py-20 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
+          <div className="brand-card py-20 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
             <CalendarIcon size={48} className="mx-auto mb-3 opacity-20" />
             <p className="text-sm font-bold">등록된 일정이 없습니다.</p>
           </div>
@@ -437,7 +437,7 @@ export default function CalendarAdminPage() {
                   {list.map(event => {
                     const colors = getEventColors(event.color)
                     return (
-                      <Card key={event.id} className={`p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
+                      <Card key={event.id} className={`brand-custom-color p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
                         <div className={`p-4 ${colors.split(' ')[1]}`}>
                           <div className="flex flex-wrap justify-between items-start gap-3">
                             <div className="flex min-w-0 flex-1 items-start gap-3">

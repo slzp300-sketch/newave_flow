@@ -27,14 +27,14 @@ export default function BottomNav() {
               to={to}
               aria-current={isActive ? 'location' : undefined}
               className={
-                `motion-tap relative isolate flex min-h-[68px] flex-col justify-center items-center py-2 gap-1 text-xs font-medium
+                `brand-action motion-tap relative isolate flex min-h-[68px] flex-col justify-center items-center py-2 gap-1 text-xs font-medium
                 ${isActive ? 'text-primary-600' : 'text-gray-500'}`
               }
             >
                 <>
                   {isActive && <motion.span aria-hidden="true" layoutId="active-tab" initial={false}
                     transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 34 }}
-                    className="absolute inset-x-2 top-1.5 h-8 -z-10 rounded-full bg-primary-100" />}
+                    className="brand-nav-indicator absolute inset-x-2 top-1.5 h-8 -z-10 rounded-full bg-primary-100" />}
                   <motion.span animate={{ y: !reduced && isActive ? -1 : 0, scale: !reduced && isActive ? 1.06 : 1 }}>
                     <Icon size={22} strokeWidth={isActive ? 2 : 1.7} />
                   </motion.span>

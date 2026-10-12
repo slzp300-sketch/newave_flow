@@ -5,7 +5,7 @@ export default function QueryNotice({ queries, label = '기록' }) {
   if (state === 'ready') return null
   const retrying = queries.some(q => q.isFetching)
   return (
-    <div role={state === 'error' ? 'alert' : 'status'} className="rounded-2xl border border-gray-200 bg-white p-5 text-center">
+    <div role={state === 'error' ? 'alert' : 'status'} className="brand-card rounded-2xl border border-gray-200 bg-white p-5 text-center">
       <p className="text-sm font-semibold text-gray-700">
         {state === 'error' ? `${label}을 불러오지 못했습니다.` : `${label}을 불러오는 중입니다.`}
       </p>

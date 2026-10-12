@@ -18,7 +18,7 @@ export const MENU_GROUPS = [
       { to: '/admin/pending-users', icon: UserPlus, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '가입 승인 대기', desc: '신규 가입 교사 승인 및 반 배정' },
       { to: '/admin/teachers', icon: UserCog, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
       { to: '/admin/class-assignment', icon: UserCheck, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
-      { to: '/admin/students', icon: GraduationCap, iconBg: 'bg-secondary-50', iconColor: 'text-secondary-600', title: '아이 관리', desc: '전체 아이 명단 및 반 배정 관리' },
+      { to: '/admin/students', icon: GraduationCap, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '아이 관리', desc: '전체 아이 명단 및 반 배정 관리' },
       { to: '/admin/deactivation-requests', icon: UserMinus, iconBg: 'bg-primary-50', iconColor: 'text-primary-500', title: '제적 승인 관리', desc: '교사가 신청한 제적 요청 검토' },
     ]
   },
@@ -38,13 +38,13 @@ export const MENU_GROUPS = [
   {
     title: '출석 및 활동 관리',
     icon: CheckSquare,
-    color: 'text-secondary-600',
-    bg: 'bg-secondary-50',
+    color: 'text-primary-600',
+    bg: 'bg-primary-50',
     desc: '주간 출석, 행사 출석, TTS, 전도 관리',
     items: [
-      { to: '/admin/student-attendance', icon: ClipboardList, iconBg: 'bg-secondary-50', iconColor: 'text-secondary-600', title: '출석 관리', desc: '주차별 학년/반/학생 출석 현황 확인' },
+      { to: '/admin/student-attendance', icon: ClipboardList, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '출석 관리', desc: '주차별 학년/반/학생 출석 현황 확인' },
       { to: '/admin/event-attendance', icon: ClipboardList, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '행사 출석 관리', desc: '행사별 반 학생 출석 현황 확인' },
-      { to: '/admin/tts', icon: CheckSquare, iconBg: 'bg-secondary-50', iconColor: 'text-secondary-600', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
+      { to: '/admin/tts', icon: CheckSquare, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
       { to: '/admin/evangelism', icon: Users, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '전도 관리', desc: '전도 조 편성 및 일정 관리' },
     ]
   }
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
       {search.trim() && <FilterResults count={count} total={13} unit="개" filtered onReset={() => setSearch('')} />}
       {!count && <AdminEmpty />}
       {groups.map((group, idx) => <Reveal key={group.title} delay={idx * 0.04}>
-        <section className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+        <section className="brand-card overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
           <div className="flex items-center gap-3 border-b border-gray-50 px-4 py-4">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${group.bg}`}>
               <group.icon size={19} className={group.color} aria-hidden="true" />
@@ -75,9 +75,9 @@ export default function AdminDashboard() {
           </div>
           <div className="divide-y divide-gray-50 px-2">
             {group.items.map(item => <Link key={item.to} to={item.to}
-              className="motion-tap flex min-h-20 items-center gap-3 rounded-2xl px-3 py-3.5 hover:bg-gray-50">
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.iconBg}`}>
-                <item.icon size={18} className={item.iconColor} aria-hidden="true" />
+              className="brand-action motion-tap flex min-h-20 items-center gap-3 rounded-2xl px-3 py-3.5 hover:bg-gray-50">
+              <span className={`brand-action-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.iconBg}`}>
+                <item.icon size={18} className="text-current" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-gray-900">{item.title}</p>

@@ -23,7 +23,7 @@ export function FilterResults({ count, total, unit = '명', filtered, onReset })
 }
 
 export function AdminEmpty({ title = '조건에 맞는 결과가 없습니다', description = '검색어나 필터를 바꿔 다시 확인해 주세요.' }) {
-  return <div className="rounded-2xl border border-gray-100 bg-white px-5 py-10 text-center">
+  return <div className="brand-card rounded-2xl border border-gray-100 bg-white px-5 py-10 text-center">
     <SearchX size={28} className="mx-auto mb-3 text-gray-300" aria-hidden="true" />
     <p className="text-sm font-semibold text-gray-700">{title}</p>
     <p className="mt-2 text-xs leading-relaxed text-gray-500">{description}</p>

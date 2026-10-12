@@ -135,7 +135,7 @@ export default function MeetingMinutesPage() {
                     href={selected.videoLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-4 bg-red-50 rounded-2xl border border-red-100 group active:scale-[0.98] transition-all"
+                    className="brand-action flex items-center justify-between p-4 bg-red-50 rounded-2xl border border-red-100 group active:scale-[0.98] transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white shadow-sm">

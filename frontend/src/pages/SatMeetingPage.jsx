@@ -161,7 +161,7 @@ function AttendButton({ active, onClick, color, label }) {
   const colors    = { blue: active ? 'border-primary-400 bg-primary-50' : 'border-gray-100 bg-gray-50/50', red: active ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-gray-50/50' }
   const textColors = { blue: active ? 'text-primary-700' : 'text-gray-400', red: active ? 'text-red-600' : 'text-gray-400' }
   return (
-    <button onClick={onClick} className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
+    <button aria-pressed={active} onClick={onClick} className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
       {active ? <CheckCircle2 size={22} className={textColors[color]} /> : <div className="w-[22px] h-[22px] rounded-full border-2 border-gray-200" />}
       <span className={`font-bold text-sm ${textColors[color]}`}>{label}</span>
     </button>

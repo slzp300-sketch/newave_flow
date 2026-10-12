@@ -82,7 +82,7 @@ function ScoresTab() {
       </select>
       <div className="flex gap-2">
         {quartersForYear(year).map(({ q }) => (
-          <button
+          <button aria-pressed={quarter === q}
             key={q}
             onClick={() => handleQuarterChange(q)}
             className={`flex-1 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
@@ -111,7 +111,7 @@ function ScoresTab() {
         />
         <div className="flex gap-2">
           {[50, 100, 150, 200, 300].map(v => (
-            <button key={v} onClick={() => handleThresholdChange(v)}
+            <button aria-pressed={threshold === v} key={v} onClick={() => handleThresholdChange(v)}
               className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                 threshold === v ? 'bg-primary-500 text-white border-primary-500' : 'bg-gray-50 text-gray-400 border-gray-100'
               }`}
@@ -130,7 +130,7 @@ function ScoresTab() {
       ) : (
         <div className="flex flex-col gap-4">
           {/* 요약 배너 */}
-          <div className={`rounded-3xl p-4 flex items-center justify-between ${
+          <div className={`brand-card rounded-3xl p-4 flex items-center justify-between ${
             belowCount > 0 ? 'bg-red-50 border border-red-100' : 'bg-secondary-50 border border-secondary-100'
           }`}>
             <div>
@@ -220,7 +220,7 @@ function ScoresTab() {
 
           {/* 페이지 네비게이션 */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
+            <div className="brand-card flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
               <button
                 aria-label="이전 점수 목록"
                 onClick={() => { setPage(currentPage - 1); setExpanded(null) }}
@@ -314,7 +314,7 @@ function SummaryTab({ offset, onOffsetChange }) {
   return (
     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="px-4 flex flex-col gap-5">
       {/* 주차 선택 */}
-      <div className="bg-white p-4 rounded-3xl shadow-sm">
+      <div className="brand-card bg-white p-4 rounded-3xl shadow-sm">
         <WeekNavigator
           offset={offset}
           onChange={onOffsetChange}
@@ -396,7 +396,7 @@ function SummaryTab({ offset, onOffsetChange }) {
                         className="overflow-hidden flex flex-col gap-2 px-1"
                       >
                         {teachers.map(t => (
-                          <div key={t.key ?? `u${t.teacherId}`} className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100/50">
+                          <div key={t.key ?? `u${t.teacherId}`} className="brand-card flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100/50">
                             <div className="flex items-center gap-3">
                               <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
                                 t.isSubmitted ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-400'

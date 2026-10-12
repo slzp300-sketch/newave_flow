@@ -52,7 +52,7 @@ export default function ClassManagePage() {
           { id: 'list', label: '학생 목록' },
           { id: 'memo', label: '메모' },
         ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
+          <button aria-pressed={tab === t.id} key={t.id} onClick={() => setTab(t.id)}
             className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
               tab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
             }`}>{t.label}</button>
@@ -551,7 +551,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
             <FormField label="성별">
               <div className="flex gap-2">
                 {['남', '여'].map(g => (
-                  <button key={g} onClick={() => set('gender', g)}
+                  <button aria-pressed={form.gender === g} key={g} onClick={() => set('gender', g)}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                       form.gender === g ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-100 bg-gray-50 text-gray-400'
                     }`}>{g}</button>

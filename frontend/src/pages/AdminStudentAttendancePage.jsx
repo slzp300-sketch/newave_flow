@@ -103,7 +103,7 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.03 }}
-              className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
+              className={`brand-card flex items-start justify-between px-3 py-2.5 rounded-2xl ${
                 s.status === 'PRESENT' ? 'bg-secondary-50/60' :
                 s.status === 'ABSENT'  ? 'bg-red-50/60' :
                 s.status === 'LATE'    ? 'bg-amber-50/60' : 'bg-gray-50'
@@ -281,7 +281,7 @@ function AbsentListPanel({ date }) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.02 }}
-              className="flex items-start gap-3 px-3 py-3 rounded-2xl bg-red-50/50"
+              className="brand-card flex items-start gap-3 px-3 py-3 rounded-2xl bg-red-50/50"
             >
               {/* 학년 뱃지 */}
               <div className={`px-2 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${gradeColor.accent} ${gradeColor.text}`}>

@@ -334,7 +334,7 @@ function GroupDropZone({ groupId, color, children }) {
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-2xl border-2 ${color.border} overflow-hidden flex flex-col transition-all ${isOver ? 'ring-2 ring-offset-1 ring-primary-400 scale-[1.02]' : ''}`}
+      className={`brand-card rounded-2xl border-2 ${color.border} overflow-hidden flex flex-col transition-all ${isOver ? 'ring-2 ring-offset-1 ring-primary-400 scale-[1.02]' : ''}`}
     >
       {children}
     </div>
@@ -555,7 +555,7 @@ function ScheduleManagementTab({ teachers }) {
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">담당 조</label>
                 <div className="flex flex-col gap-2">
                   {groups.map((g, idx) => (
-                    <button
+                    <button aria-pressed={form.groupId === String(g.id)}
                       key={g.id}
                       type="button"
                       onClick={() => setForm(f => ({ ...f, groupId: String(g.id) }))}

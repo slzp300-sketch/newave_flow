@@ -1,0 +1,78 @@
+/* One interaction palette for native buttons, navigation actions and cards.
+   Each surface resets its own variables so hovering a card never selects its children. */
+@layer utilities {
+  :root :is(button, .brand-action, summary):not(.brand-color-swatch),
+  :root :is(.glass-card, .brand-card, .ui-list) {
+    --surface-bg: theme('colors.primary.50');
+    --surface-border: theme('colors.primary.200');
+    --surface-ink: theme('colors.primary.700');
+    --surface-hover-bg: theme('colors.secondary.50');
+    --surface-hover-border: theme('colors.secondary.400');
+    --surface-hover-ink: theme('colors.secondary.800');
+    background-color: var(--surface-bg);
+    transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .2s ease, scale .18s var(--motion-ease);
+  }
+
+  :root :is(button, .brand-action, summary):not(.brand-color-swatch),
+  :root :is(.glass-card, .brand-card, .ui-list):not(.brand-custom-color) {
+    border-color: var(--surface-border);
+  }
+
+  :root :is(button, .brand-action, summary):not(.brand-color-swatch) {
+    color: var(--surface-ink);
+  }
+
+  /* White-text actions already identify the existing filled/selected variant. */
+  :root :is(button, .brand-action).text-white:not(.brand-color-swatch),
+  :root .brand-card.brand-card-solid {
+    --surface-bg: theme('colors.primary.600');
+    --surface-border: theme('colors.primary.600');
+    --surface-ink: white;
+    --surface-hover-bg: theme('colors.secondary.700');
+    --surface-hover-border: theme('colors.secondary.700');
+    --surface-hover-ink: white;
+  }
+
+  /* Keep selection visible after pointer/touch feedback has ended. */
+  :root :is(button, .brand-action)[aria-pressed='true']:not(.text-white, .brand-color-swatch) {
+    --surface-bg: theme('colors.primary.100');
+    --surface-border: theme('colors.primary.600');
+    box-shadow: inset 0 0 0 1px var(--surface-border);
+  }
+  :root .brand-selection { background-color: var(--surface-bg); }
+  :root .brand-nav-indicator { background-color: theme('colors.primary.100'); }
+  :root :is(.brand-action-icon, .brand-action > .ui-list-icon) { background-color: inherit; color: inherit; }
+
+  /* Hover only on a real pointing device: mobile taps must not stay green. */
+  @media (hover: hover) and (pointer: fine) {
+    :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):hover,
+    :root :is(.glass-card, .brand-card, .ui-list):not([aria-disabled='true']):hover {
+      background-color: var(--surface-hover-bg);
+    }
+    :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):hover,
+    :root :is(.glass-card, .brand-card, .ui-list):not(.brand-custom-color, [aria-disabled='true']):hover { border-color: var(--surface-hover-border); }
+    :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):hover {
+      color: var(--surface-hover-ink);
+    }
+    :root :is(button, .brand-action):not(:disabled, [aria-disabled='true']):hover > :is(.brand-selection, .brand-nav-indicator) {
+      background-color: var(--surface-hover-bg);
+    }
+  }
+
+  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):is(:active, :focus-visible),
+  :root :is(.glass-card, .brand-card, .ui-list):not([aria-disabled='true']):active {
+    background-color: var(--surface-hover-bg);
+  }
+  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):is(:active, :focus-visible),
+  :root :is(.glass-card, .brand-card, .ui-list):not(.brand-custom-color, [aria-disabled='true']):active { border-color: var(--surface-hover-border); }
+  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):is(:active, :focus-visible) {
+    color: var(--surface-hover-ink);
+  }
+  :root :is(button, .brand-action):not(:disabled, [aria-disabled='true']):is(:active, :focus-visible) > :is(.brand-selection, .brand-nav-indicator) {
+    background-color: var(--surface-hover-bg);
+  }
+  :root :is(button, .brand-action, summary):focus-visible {
+    outline: 2px solid theme('colors.secondary.700');
+    outline-offset: 3px;
+  }
+}

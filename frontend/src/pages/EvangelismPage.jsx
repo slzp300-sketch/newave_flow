@@ -200,7 +200,7 @@ function AllGroupsSection({ allGroups, myGroupId }) {
           const isSelected = idx === selectedIdx
           const isMine = g.id === myGroupId
           return (
-            <button
+            <button aria-pressed={isSelected}
               key={g.id}
               onClick={() => setSelectedIdx(idx)}
               className={`flex-shrink-0 flex flex-col items-center gap-0.5 px-4 py-2.5 rounded-2xl border-2 transition-all active:scale-95 ${
@@ -222,7 +222,7 @@ function AllGroupsSection({ allGroups, myGroupId }) {
           key={selectedGroup.id}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`rounded-3xl border-2 ${color.border} overflow-hidden`}
+          className={`brand-card rounded-3xl border-2 ${color.border} overflow-hidden`}
         >
           <div className={`${color.light} px-5 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">

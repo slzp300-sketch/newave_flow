@@ -65,7 +65,7 @@ function Metrics({ people, value }) {
   const summary = scoreSummary(people, value)
   return <div className="grid grid-cols-3 gap-2">
     {[[scoreText(summary.average), '기록 평균'], [`${summary.participating}/${people.length}명`, '점수 있는 인원'], [scoreText(summary.highest), '최고 점수']].map(([number, label]) =>
-      <div key={label} className="rounded-2xl bg-primary-50 border border-primary-100 py-4 px-1 text-center">
+      <div key={label} className="brand-card rounded-2xl bg-primary-50 border border-primary-100 py-4 px-1 text-center">
         <p className="text-lg font-semibold tabular-nums text-primary-900">{number}</p><p className="mt-1 text-xs text-gray-600">{label}</p>
       </div>)}
     <p className="col-span-3 text-xs text-gray-500 leading-relaxed">현재 필터 기준 · 기록 {summary.recorded}명 · 평균은 0점 기록을 포함하고 ‘기록 없음’은 제외합니다.</p>
@@ -123,7 +123,7 @@ function WeeklyDetail({ year, week, weeks, onWeek, myId, focusKey }) {
 function PersonDetail({ person: p, myId, imported, maxScore, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen)
   const detailId = useId()
-  return <article className={`rounded-2xl border overflow-hidden ${p.teacherId === myId ? 'border-primary-200 bg-primary-50/40' : 'border-gray-200 bg-white'}`}>
+  return <article className={`brand-card rounded-2xl border overflow-hidden ${p.teacherId === myId ? 'border-primary-200 bg-primary-50/40' : 'border-gray-200 bg-white'}`}>
     <button className="w-full p-4 text-left" aria-expanded={open} aria-controls={detailId} onClick={() => setOpen(!open)}>
       <div className="flex gap-3 items-center">
         <span className="w-5 text-center text-xs text-gray-400 font-semibold">{p.rank ?? '—'}</span>
@@ -159,7 +159,7 @@ function QuarterSummary({ people, year, weeks, myId, onWeek }) {
     <Metrics people={filtered} value={total} />
     <Filters people={people} filters={filters} onChange={setFilters} />
     <p className="text-xs text-gray-500">이름을 펼친 뒤 주차를 누르면 그 주의 세부 내역을 볼 수 있어요.</p>
-    {filtered.map(p => <details key={p.key} className={`rounded-2xl border p-4 ${p.teacherId === myId ? 'border-primary-200 bg-primary-50/40' : 'border-gray-200 bg-white'}`}>
+    {filtered.map(p => <details key={p.key} className={`brand-card rounded-2xl border p-4 ${p.teacherId === myId ? 'border-primary-200 bg-primary-50/40' : 'border-gray-200 bg-white'}`}>
       <summary className="cursor-pointer text-sm font-semibold"><span className="text-gray-400 mr-2">{p.rank ?? '—'}</span>{p.name}{p.teacherId === myId ? ' · 나' : ''}<span className="float-right text-primary-700">{scoreText(total(p))}</span></summary>
       <p className="mt-2 text-xs text-gray-500">{p.grade} · {p.weeks}주 점수 있음 · 기록 {Object.keys(p.weekly).length}주{Object.keys(p.weekly).length ? ` · 기록 주 평균 ${Math.round(p.total / Object.keys(p.weekly).length)}점` : ''}</p>
       <div className="flex flex-col mt-3 border-t border-gray-100">{weeks.map(w => <WeekScore key={w} year={year} week={w} person={p} onClick={() => onWeek(w, p.key)} />)}</div>
@@ -189,7 +189,7 @@ function PersonalTrend({ people, year, weeks, myId, onWeek }) {
   const count = Object.keys(me.weekly).length
   const max = Math.max(1, ...Object.values(me.weekly))
   return <>
-    <Card className="!bg-primary-50 !border-primary-100"><p className="text-sm text-primary-800">나의 {year}년 분기 기록</p>
+    <Card className="bg-primary-50 border-primary-100"><p className="text-sm text-primary-800">나의 {year}년 분기 기록</p>
       <p className="mt-3 text-3xl font-semibold text-primary-900">{scoreText(count ? me.total : null)}</p>
       <p className="mt-2 text-xs text-gray-600">기록 {count}주 · 점수 있는 주 {me.weeks}주{count ? ` · 주 평균 ${Math.round(me.total / count)}점` : ''}</p>
     </Card>

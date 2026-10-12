@@ -69,7 +69,7 @@ export default function HomeWeekly({ navigate }) {
     <>
       {ttsState.hasData && ttsState.error && <QueryNotice queries={[questionsQuery, weekQuery]} label="최신 TTS 기록" />}
       {!ttsState.hasData ? <QueryNotice queries={[questionsQuery, weekQuery]} label="이번 주 TTS 기록" /> : (
-        <Reveal className="relative isolate overflow-hidden rounded-2xl bg-primary-600 text-white p-5 shadow-premium" delay={0.04}>
+        <Reveal className="brand-card brand-card-solid relative isolate overflow-hidden rounded-2xl bg-primary-600 text-white p-5 shadow-premium" delay={0.04}>
           <WaveAccent />
           <div className="relative flex justify-between gap-3 text-sm">
             <h3 className="font-medium">이번 주 TTS</h3>
@@ -93,7 +93,7 @@ export default function HomeWeekly({ navigate }) {
           <h3 className="font-semibold">이번 주 할 일</h3>
           <button onClick={() => navigate('/checklist')} className="min-h-11 text-sm text-gray-500">전체 보기</button>
         </div>
-        <div className="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200">
+        <div className="brand-card bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200">
           {tasks.map(({ to, icon: Icon, label, sub, query, done }) => {
             const state = queryReadState([query])
             return <button key={to} onClick={() => navigate(to)} className="motion-row motion-tap w-full flex items-center gap-3 p-4 text-left">

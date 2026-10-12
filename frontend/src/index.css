@@ -1,5 +1,6 @@
 @import './styles/design-tokens.css';
 @import './styles/motion.css';
+@import './styles/interactions.css';
 @font-face { font-family: Pretendard; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/Pretendard-Regular.woff2') format('woff2'); }
 @font-face { font-family: Pretendard; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/Pretendard-Medium.woff2') format('woff2'); }
 @font-face { font-family: Pretendard; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/Pretendard-SemiBold.woff2') format('woff2'); }
@@ -11,7 +12,7 @@
   * { -webkit-tap-highlight-color: transparent; }
   body { @apply bg-surface text-gray-900 antialiased selection:bg-primary-100 selection:text-primary-800; font-family: Pretendard, 'Apple SD Gothic Neo', sans-serif; }
   button, a, input, select, textarea { touch-action: manipulation; }
-  button { white-space: normal; }
+  button { white-space: normal; border-radius: .5rem; }
   button:disabled { cursor: not-allowed; }
   :focus-visible { outline: 2px solid var(--newave-blue); outline-offset: 3px; }
   input[type='checkbox'], input[type='radio'] { accent-color: var(--newave-blue); }

@@ -56,7 +56,7 @@ export default function ViewModeToggle({ mode, onChange }) {
  */
 export function DetailTable({ columns, rows, rowKey = r => r.id, onRowClick, rowClassName }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+    <div className="brand-card bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
       <table className="w-full text-xs whitespace-nowrap">
         <thead>
           <tr className="bg-gray-50 text-gray-400 font-bold text-left">

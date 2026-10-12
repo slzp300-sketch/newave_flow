@@ -392,11 +392,11 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
         </div>
 
         <div className="w-full grid grid-cols-2 gap-3 mt-4">
-          <div className="bg-secondary-50 p-4 rounded-3xl text-center">
+          <div className="brand-card bg-secondary-50 p-4 rounded-3xl text-center">
             <p className="text-xs font-bold text-secondary-700 uppercase tracking-widest mb-1">출석</p>
             <p className="text-2xl font-bold text-secondary-600">{counts.PRESENT}명</p>
           </div>
-          <div className="bg-red-50 p-4 rounded-3xl text-center">
+          <div className="brand-card bg-red-50 p-4 rounded-3xl text-center">
             <p className="text-xs font-bold text-red-300 uppercase tracking-widest mb-1">불참</p>
             <p className="text-2xl font-bold text-red-400">{counts.ABSENT}명</p>
           </div>
@@ -405,7 +405,7 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
         <div className="w-full flex flex-col gap-3 mt-2">
           <p className="text-xs font-bold text-gray-400 ml-1">상세 현황</p>
           {students.map(s => (
-            <div key={s.id} className="flex items-center justify-between px-4 py-3 bg-white border border-gray-100 rounded-2xl">
+            <div key={s.id} className="brand-card flex items-center justify-between px-4 py-3 bg-white border border-gray-100 rounded-2xl">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-gray-700">{s.name}</span>
                 {formData[s.id]?.status === 'ABSENT' && formData[s.id]?.absentReason && (

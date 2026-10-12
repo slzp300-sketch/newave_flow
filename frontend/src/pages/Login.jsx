@@ -41,7 +41,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-white max-w-mobile mx-auto">
       <div className="login-hero motion-login text-white">
-        <img src="/brand/newave-blue-artwork.png" alt="NEWAVE" width="566" height="317" className="login-artwork" fetchPriority="high" />
+        <img src="/brand/newave-blue-artwork.png" alt="NEWAVE" width="566" height="317" className="login-artwork" fetchpriority="high" />
         <p className="flex items-center justify-center gap-2 px-4 py-4 text-xs font-medium tracking-[.12em]">
           <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-secondary-300" />시대를 바꿀 새로운 파도
         </p>

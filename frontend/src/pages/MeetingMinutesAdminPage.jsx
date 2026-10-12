@@ -199,7 +199,7 @@ export default function MeetingMinutesAdminPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <div className="brand-card flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <div className="flex-1">
                     <p className="text-sm font-bold text-gray-900">교사 공개 여부</p>
                     <p className="text-xs text-gray-400 font-medium">활성화 시 일반 교사들이 이 회의록을 볼 수 있습니다.</p>

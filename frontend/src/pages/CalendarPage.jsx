@@ -431,7 +431,7 @@ export default function CalendarPage() {
           ) : (
             selectedEvents.map((e, idx) => (
               <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                <Card className={`p-4 border-l-4 overflow-hidden relative ${getEventBorderColor(e.color)}`}>
+                <Card className={`brand-custom-color p-4 border-l-4 overflow-hidden relative ${getEventBorderColor(e.color)}`}>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant={e.eventType === 'SPECIAL' ? 'info' : e.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
                       {EVENT_TYPES.find(t => t.value === e.eventType)?.label || '정기'}
@@ -516,7 +516,7 @@ export default function CalendarPage() {
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
                 {list.map(e => (
-                  <Card key={e.id} className={`p-4 border-l-4 ${getEventBorderColor(e.color)}`}>
+                  <Card key={e.id} className={`brand-custom-color p-4 border-l-4 ${getEventBorderColor(e.color)}`}>
                     <div className="flex justify-between items-start mb-1">
                       <p className="text-xs font-bold text-gray-400">
                         {format(new Date(e.eventDate), 'M월 d일 (EEE)', { locale: ko })}
@@ -643,7 +643,7 @@ export default function CalendarPage() {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">색상</label>
                   <div className="flex gap-2">
                     {COLORS.map(c => (
-                      <button key={c.value} type="button" onClick={() => setFormData({...formData, color: c.value})} className={`w-7 h-7 rounded-full ${c.class} ${formData.color === c.value ? 'ring-2 ring-offset-2 ring-gray-900' : 'opacity-40'}`} />
+                      <button key={c.value} type="button" onClick={() => setFormData({...formData, color: c.value})} className={`brand-color-swatch w-7 h-7 rounded-full ${c.class} ${formData.color === c.value ? 'ring-2 ring-offset-2 ring-gray-900' : 'opacity-40'}`} />
                     ))}
                   </div>
                 </div>
@@ -677,7 +677,7 @@ export default function CalendarPage() {
 
                 {/* 출석 대상 선택 + 마감일 (출석 체크 활성화 시에만 표시) */}
                 {formData.attendanceRequired && (
-                  <div className="flex flex-col gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                  <div className="brand-card flex flex-col gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                     <div>
                       <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1.5 block">출석 대상</label>
                       <div className="flex gap-2">
@@ -686,7 +686,7 @@ export default function CalendarPage() {
                           { value: 'TEACHER_ONLY', label: '교사만' },
                           { value: 'BOTH',         label: '학생 + 교사' },
                         ].map(opt => (
-                          <button
+                          <button aria-pressed={formData.attendanceTarget === opt.value}
                             key={opt.value}
                             type="button"
                             onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}

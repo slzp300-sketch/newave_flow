@@ -296,7 +296,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
   if (mode === 'large') {
     return (
       <motion.div {...motionProps}
-        className={`bg-white rounded-2xl border shadow-sm p-3 flex flex-col items-center gap-1.5 text-center ${
+        className={`brand-card bg-white rounded-2xl border shadow-sm p-3 flex flex-col items-center gap-1.5 text-center ${
           !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
         }`}>
         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold overflow-hidden ${avatarColor}`}>
@@ -344,7 +344,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-      className={`bg-white rounded-2xl border shadow-sm px-4 py-3.5 flex items-center gap-3 ${
+      className={`brand-card bg-white rounded-2xl border shadow-sm px-4 py-3.5 flex items-center gap-3 ${
         !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
       }`}
     >
@@ -457,7 +457,7 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
       {/* 학년 필터 */}
       <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 ">
         {gradeFilter.map(g => (
-          <button
+          <button aria-pressed={activeGradeFilter === g}
             key={g}
             onClick={() => setActiveGradeFilter(g)}
             className={`flex-shrink-0 min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -510,7 +510,7 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+            className="brand-card bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 bg-gray-50/50">
               <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-2">
@@ -637,7 +637,7 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">{grade}</p>
                 <div className="flex flex-col gap-1.5">
                   {gradeGroups[grade].map(cls => (
-                    <button
+                    <button aria-pressed={student.classGroupId === cls.id}
                       key={cls.id}
                       disabled={assignMut.isPending}
                       onClick={() => assignMut.mutate(cls.id)}

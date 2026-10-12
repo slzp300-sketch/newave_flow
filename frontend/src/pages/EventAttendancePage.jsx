@@ -177,7 +177,7 @@ export default function EventAttendancePage() {
 
             {teacherSubmitted && !teacherEditing && pendingTeacherStatus && (
               <div className="flex flex-col gap-1.5">
-                <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${
+                <div className={`brand-card flex items-center justify-between px-4 py-3 rounded-2xl border ${
                   pendingTeacherStatus === 'PRESENT' ? 'bg-secondary-50 border-secondary-200' :
                   pendingTeacherStatus === 'PARTIAL' ? 'bg-amber-50 border-amber-200' :
                   'bg-red-50 border-red-200'
@@ -228,7 +228,7 @@ export default function EventAttendancePage() {
                   <>
                     <div className={`grid gap-2 ${isMultiDay ? 'grid-cols-3' : 'grid-cols-2'}`}>
                       {(isMultiDay ? ['PRESENT','PARTIAL','ABSENT'] : ['PRESENT','ABSENT']).map(key => (
-                        <button key={key} onClick={() => setPendingTeacherStatus(key)}
+                        <button aria-pressed={pendingTeacherStatus === key} key={key} onClick={() => setPendingTeacherStatus(key)}
                           className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center gap-1 active:scale-[0.98] transition-all ${
                             pendingTeacherStatus === key
                               ? key === 'PRESENT' ? 'border-secondary-400 bg-secondary-50 text-secondary-700'
@@ -314,7 +314,7 @@ export default function EventAttendancePage() {
         {/* 제출 완료 배너 */}
         {submitted && !editing && (
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 rounded-2xl border border-secondary-200">
+            <div className="brand-card flex items-center justify-between px-4 py-3 bg-secondary-50 rounded-2xl border border-secondary-200">
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-secondary-600" />
                 <span className="text-xs font-bold text-secondary-700">출석 체크 제출 완료</span>
@@ -362,7 +362,7 @@ export default function EventAttendancePage() {
                     className="flex flex-col gap-2"
                   >
                     {/* 학생 카드 + 상태 버튼 */}
-                    <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 transition-all ${
+                    <div className={`brand-card flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 transition-all ${
                       status === 'PRESENT' ? 'border-secondary-200 bg-secondary-50' :
                       status === 'PARTIAL' ? 'border-amber-200 bg-amber-50' :
                                              'border-red-200 bg-red-50'

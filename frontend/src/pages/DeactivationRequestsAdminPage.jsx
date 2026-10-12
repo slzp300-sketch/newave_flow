@@ -93,7 +93,7 @@ export default function DeactivationRequestsAdminPage() {
                 </div>
 
                 {/* 제적 사유 */}
-                <div className="bg-gray-50 rounded-2xl px-4 py-3">
+                <div className="brand-card bg-gray-50 rounded-2xl px-4 py-3">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">제적 사유</p>
                   <p className="text-sm text-gray-700 leading-relaxed">{req.reason}</p>
                 </div>

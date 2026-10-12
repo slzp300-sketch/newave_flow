@@ -76,7 +76,7 @@ export default function WeeklyCheckPage() {
       <Header title="주간 체크" />
       <div className="space-y-5 px-4 py-5">
         <Reveal>
-          <section className="rounded-3xl border border-gray-200 bg-white p-5">
+          <section className="brand-card rounded-3xl border border-gray-200 bg-white p-5">
             <p className="text-xs text-gray-500">{getCurrentWeekRange()}</p>
             <div className="mt-3 flex items-end justify-between gap-3">
               <div><h2 className="text-xl font-semibold tracking-tight">{summary.allDone ? '이번 주 제출 완료' : '이번 주 제출 현황'}</h2>
@@ -93,7 +93,7 @@ export default function WeeklyCheckPage() {
           <SegmentedControl label="체크 상태 필터" value={filter} onChange={setFilter}
             options={[{ value: 'all', label: '전체' }, { value: 'pending', label: '할 일' }, { value: 'done', label: '완료' }]} />
           <div className="ui-list mt-3">
-            {visibleTasks.map(task => <Link key={task.id} to={task.path} className="ui-list-row motion-tap">
+            {visibleTasks.map(task => <Link key={task.id} to={task.path} className="brand-action ui-list-row motion-tap">
               <span className="ui-list-icon"><task.icon size={20} /></span>
               <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-gray-900">{task.title}</span>
@@ -106,7 +106,7 @@ export default function WeeklyCheckPage() {
         </section>
         <section>
           <h2 className="ui-section-title mb-3 px-1">매일 이어가는 TTS</h2>
-          <Link to="/tts" className="ui-list ui-list-row motion-tap">
+          <Link to="/tts" className="brand-action ui-list ui-list-row motion-tap">
             <span className="ui-list-icon"><CheckSquare size={21} /></span>
             <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{savingTts ? 'TTS 저장 중' : knownQuery(tts) ? `이번 주 ${tts.data?.score ?? 0}점` : 'TTS 기록 확인'}</span>
               <span className="mt-1 block text-xs leading-relaxed text-gray-500">하루씩 기록해요 · 제출 완료 개수에 포함되지 않아요</span></span>

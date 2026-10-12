@@ -151,7 +151,7 @@ export default function PrayerMeetingPage() {
 function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMicTurn, saving, tueDate, thuDate }) {
   return (
     <Card className="flex flex-col gap-5">
-      <div className="bg-primary-50 rounded-2xl px-4 py-3 border border-primary-100 flex items-center justify-between">
+      <div className="brand-card bg-primary-50 rounded-2xl px-4 py-3 border border-primary-100 flex items-center justify-between">
         <div>
           <p className="text-xs font-bold text-primary-400 uppercase tracking-widest">마이크 순서</p>
           <p className="text-sm font-bold text-primary-800 mt-0.5">🎤 {micLabel}</p>
@@ -178,10 +178,10 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMic
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">마이크 가능 여부</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => update({ micAvailable: true, micReason: '' })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95 ${prayer.micAvailable === true ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
+              <button aria-pressed={prayer.micAvailable === true} onClick={() => update({ micAvailable: true, micReason: '' })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95 ${prayer.micAvailable === true ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
                 <Mic2 size={16} /> 켤 수 있어요
               </button>
-              <button onClick={() => update({ micAvailable: false })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95 ${prayer.micAvailable === false ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
+              <button aria-pressed={prayer.micAvailable === false} onClick={() => update({ micAvailable: false })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95 ${prayer.micAvailable === false ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
                 <MicOff size={16} /> 어려워요
               </button>
             </div>
@@ -223,7 +223,7 @@ function VoteButton({ active, onClick, label, sub, color }) {
     red:    active ? 'border-red-400 bg-red-50 text-red-600'         : 'border-gray-100 bg-gray-50/50 text-gray-400',
   }
   return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center gap-0.5 py-4 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
+    <button aria-pressed={active} onClick={onClick} className={`flex flex-col items-center justify-center gap-0.5 py-4 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
       <span className="text-sm font-bold">{label}</span>
       <span className="text-xs font-bold opacity-60">{sub}</span>
       {active && <CheckCircle2 size={14} className="mt-1" />}
@@ -252,7 +252,7 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
         {vote?.updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(vote.updatedAt)} muted />}
       </div>
       {isAbsent && (
-        <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${vote.scriptureCopySubmitted ? 'bg-secondary-50 border-secondary-200' : 'bg-amber-50 border-amber-200'}`}>
+        <div className={`brand-card flex items-start gap-3 px-4 py-3 rounded-2xl border ${vote.scriptureCopySubmitted ? 'bg-secondary-50 border-secondary-200' : 'bg-amber-50 border-amber-200'}`}>
           <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-secondary-700 mt-0.5' : 'text-amber-500 mt-0.5'} />
           <div>
             <p className={`text-xs font-bold ${vote.scriptureCopySubmitted ? 'text-secondary-700' : 'text-amber-700'}`}>

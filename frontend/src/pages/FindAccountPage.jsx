@@ -29,7 +29,7 @@ export default function FindAccountPage() {
       <div className="w-full max-w-sm bg-white rounded-3xl border border-gray-200 overflow-hidden animate-[slideUp_0.4s_ease]">
         {/* 탭 */}
         <div className="flex">
-          <button
+          <button aria-pressed={tab === TAB_ID}
             type="button"
             onClick={() => setTab(TAB_ID)}
             className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-1.5
@@ -41,7 +41,7 @@ export default function FindAccountPage() {
             <User size={15} />
             아이디 찾기
           </button>
-          <button
+          <button aria-pressed={tab === TAB_PW}
             type="button"
             onClick={() => setTab(TAB_PW)}
             className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-1.5

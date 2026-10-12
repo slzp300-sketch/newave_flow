@@ -15,7 +15,7 @@
   .ui-list { @apply overflow-hidden rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100; }
   .ui-list-row { @apply flex w-full min-h-[76px] items-center gap-3 p-4 text-left transition-colors hover:bg-gray-50 active:bg-primary-50; }
   .ui-list-icon { @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700; }
-  .ui-list-icon-green { @apply bg-secondary-50 text-secondary-700; }
+  .ui-list-icon-green { @apply bg-primary-50 text-primary-700; }
   .ui-admin-intro { @apply border-l-4 border-secondary-500 pl-3; }
   .ui-section-title { @apply text-base font-semibold tracking-tight text-gray-900; }
   /* Keep existing component names while retiring the old glass treatment. */

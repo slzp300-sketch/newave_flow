@@ -80,7 +80,7 @@ function TeacherSelfCheck({ event, userId }) {
 
       {/* 제출 완료 배너 */}
       {submitted && !editing && pending && (
-        <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${STATUS_COLOR[pending]?.banner || 'bg-gray-50 border-gray-200'}`}>
+        <div className={`brand-card flex items-center justify-between px-4 py-3 rounded-2xl border ${STATUS_COLOR[pending]?.banner || 'bg-gray-50 border-gray-200'}`}>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               {STATUS_COLOR[pending]?.icon}
@@ -106,7 +106,7 @@ function TeacherSelfCheck({ event, userId }) {
         <div className="flex flex-col gap-3">
           <div className={`grid gap-2 ${statusKeys.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {statusKeys.map(key => (
-              <button
+              <button aria-pressed={pending === key}
                 key={key}
                 onClick={() => setPending(key)}
                 className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] ${
@@ -268,7 +268,7 @@ function StudentAttendanceCheck({ event, userId }) {
 
       {/* 제출 완료 배너 */}
       {submitted && !editing && (
-        <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 rounded-2xl border border-secondary-200">
+        <div className="brand-card flex items-center justify-between px-4 py-3 bg-secondary-50 rounded-2xl border border-secondary-200">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-secondary-600" />
             <span className="text-xs font-bold text-secondary-700">출석 체크 제출 완료</span>
@@ -295,7 +295,7 @@ function StudentAttendanceCheck({ event, userId }) {
                 className="flex flex-col gap-1.5"
               >
                 {/* 학생 카드 */}
-                <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 ${
+                <div className={`brand-card flex items-center justify-between px-4 py-3 rounded-2xl border-2 ${
                   status === 'PRESENT' ? 'border-secondary-200 bg-secondary-50' :
                   status === 'PARTIAL' ? 'border-amber-200 bg-amber-50' :
                   'border-red-200 bg-red-50'
@@ -316,7 +316,7 @@ function StudentAttendanceCheck({ event, userId }) {
                   {isMultiDay && isEditable ? (
                     <div className="flex gap-1">
                       {['PRESENT','PARTIAL','ABSENT'].map(k => (
-                        <button key={k} onClick={() => setStatus(sid, k)}
+                        <button aria-pressed={status === k} key={k} onClick={() => setStatus(sid, k)}
                           className={`text-[0.6875rem] font-bold px-2 py-1.5 rounded-lg transition-all ${
                             status === k
                               ? k === 'PRESENT' ? 'bg-secondary-200 text-secondary-800'
@@ -532,7 +532,7 @@ export default function EventAttendanceListPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.06 }}
-                className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+                className="brand-card bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
               >
                 {/* 행사 헤더 (클릭으로 펼치기) */}
                 <EventCardHeader

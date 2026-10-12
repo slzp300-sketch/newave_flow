@@ -15,7 +15,7 @@ export default function SegmentedControl({ label, value, onChange, options, disa
             className={`motion-tap relative isolate min-w-0 flex-1 min-h-11 rounded-xl px-2 py-2 text-sm font-semibold disabled:opacity-40 ${value === option.value ? selectedClassName : 'text-gray-500'}`}>
             {value === option.value && <motion.span aria-hidden="true" layoutId="selection" initial={false}
               transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 34 }}
-              className="absolute inset-0 -z-10 rounded-xl bg-white shadow-sm" />}
+              className="brand-selection absolute inset-0 -z-10 rounded-xl shadow-sm" />}
             {option.label}
           </button>
         ))}

@@ -327,13 +327,13 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
             <div className="space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">배정된 교사</p>
               {localTeachers.length === 0 ? (
-                <div className="py-8 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-gray-300">
+                <div className="brand-card py-8 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-gray-300">
                   <p className="text-xs font-bold">배정된 교사가 없습니다</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   {localTeachers.map(t => (
-                    <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div key={t.id} className="brand-card flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="w-8 h-8 shrink-0 rounded-xl bg-white flex items-center justify-center text-xs font-bold text-gray-700 shadow-sm">
                           {t.name[0]}

@@ -15,10 +15,9 @@
 .motion-row > svg:last-child { transition: translate .22s var(--motion-ease); }
 .motion-card-interactive { transition: box-shadow .22s ease, border-color .22s ease; }
 @media (hover: hover) and (pointer: fine) {
-  .motion-card-interactive:hover, .motion-menu-tile:hover { border-color: theme('colors.primary.200'); box-shadow: 0 8px 22px -15px rgb(6 49 144 / .2); }
-  .motion-row:hover { background-color: theme('colors.primary.50'); }
+  .motion-card-interactive:hover, .motion-menu-tile:hover { box-shadow: 0 8px 22px -15px rgb(33 100 63 / .2); }
   .motion-row:hover > svg:last-child { translate: 3px 0; }
-  .motion-button:enabled:hover { box-shadow: 0 5px 15px -10px var(--newave-blue); }
+  .motion-button:enabled:hover { box-shadow: 0 5px 15px -10px theme('colors.secondary.700'); }
 }
 .motion-menu-tile { animation: section-arrive .45s var(--motion-ease) backwards; animation-delay: var(--motion-delay, 0ms); }
 .motion-login { position: relative; isolation: isolate; overflow: hidden; }

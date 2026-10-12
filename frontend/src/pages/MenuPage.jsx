@@ -84,7 +84,7 @@ export default function MenuPage() {
             <h2 className="ui-section-title mb-3 px-1">{group.title}</h2>
             <div className="ui-list">
               {group.items.map(item => (
-                <Link key={item.to} to={item.to} className="ui-list-row motion-tap">
+                <Link key={item.to} to={item.to} className="brand-action ui-list-row motion-tap">
                   <span className={`ui-list-icon ${item.iconBg === 'bg-secondary-50' ? 'ui-list-icon-green' : ''}`}><item.icon size={21} strokeWidth={1.8} /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-gray-900">{item.title}</span>
                     <span className="mt-1 block text-xs leading-relaxed text-gray-500">{item.desc}</span></span>
@@ -94,7 +94,7 @@ export default function MenuPage() {
             </div>
           </Reveal>
         ))}
-        {!count && <div className="rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center">
+        {!count && <div className="brand-card rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center">
           <SearchX size={28} className="mx-auto mb-3 text-gray-400" />
           <p className="font-semibold">검색 결과가 없어요</p>
           <p className="mt-2 text-sm text-gray-500">다른 단어나 메뉴 범위로 다시 찾아보세요.</p>

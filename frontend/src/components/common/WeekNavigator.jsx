@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 export default function WeekNavigator({ offset, onChange, title, sub, range, disabled = false, minOffset = -Infinity }) {
   const isCurrent = offset === 0
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-2">
+    <div className="brand-card rounded-2xl border border-gray-200 bg-white p-2">
     <div className="flex items-center gap-2">
       <button
         disabled={disabled || offset <= minOffset}

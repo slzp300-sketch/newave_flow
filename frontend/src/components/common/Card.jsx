@@ -8,5 +8,5 @@ export default function Card({ children, className = '', onClick, reveal = true 
       }
     },
   } : {}
-  return <div className={`glass-card rounded-2xl p-4 relative ${reveal ? 'motion-card' : ''} ${onClick ? 'motion-card-interactive cursor-pointer hover:border-primary-200' : ''} ${className}`} {...interactive}>{children}</div>
+  return <div className={`glass-card rounded-2xl p-4 relative ${reveal ? 'motion-card' : ''} ${onClick ? 'brand-action motion-card-interactive cursor-pointer' : ''} ${className}`} {...interactive}>{children}</div>
 }
