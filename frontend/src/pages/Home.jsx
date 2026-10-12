@@ -11,22 +11,22 @@ import useAuthStore from '../store/authStore'
 import { reportsApi } from '../api/reports'
 import { adminUsersApi } from '../api/adminUsers'
 import { toApiDate } from '../utils/date'
-import { startOfWeek, endOfWeek, format, startOfMonth, endOfMonth } from 'date-fns'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
 import Header from '../components/layout/Header'
 import FeatureIcon from '../components/common/FeatureIcon'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
-import PersonalDashboard from '../components/layout/HomeWeekly'
-import QueryNotice from '../components/common/QueryNotice'
-import { queryReadState } from '../utils/queryReadState'
-import { Reveal } from '../components/common/Motion'
+import HomeWeekly from '../components/layout/HomeWeekly'
+import HomeSchedule from '../components/layout/HomeSchedule'
+import { CheckTab } from './TTSPage'
+import useToday from '../hooks/useToday'
 
 export default function Home() {
   const { user }    = useAuthStore()
   const navigate    = useNavigate()
-  const today       = toApiDate()
+  const today       = useToday()
   const isTeacher   = user?.role === 'TEACHER'
   const isExecutive = user?.role === 'EXECUTIVE'
 
@@ -35,31 +35,17 @@ export default function Home() {
       <Header title="Newave Flow" right={isExecutive && (
         <button onClick={() => navigate('/admin')} className="icon-button" aria-label="관리자 모드"><ShieldCheck size={20} /></button>
       )} />
-      <div className="motion-enter px-5 pt-6 pb-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-gray-500">{format(new Date(), 'yyyy년 M월 d일 EEEE', { locale: ko })}</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight break-keep">{user?.name}님,<br />안녕하세요</h2>
-          </div>
-          <img src="/brand/newave-color-emblem.png" alt="" width="450" height="360" className="w-20 shrink-0 rounded-2xl" />
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <RoleBadge role={user?.role} />
-        </div>
+      <div className="motion-enter flex items-center justify-between gap-3 px-5 py-3">
+        <div className="min-w-0"><p className="text-xs text-gray-500">{format(new Date(today + 'T12:00:00'), 'M월 d일 EEEE', { locale: ko })}</p>
+          <h2 className="mt-1 text-sm font-semibold break-keep">{user?.name}님 <RoleBadge role={user?.role} /></h2></div>
+        <img src="/brand/newave-color-emblem.png" alt="" width="450" height="360" className="w-12 shrink-0 rounded-xl" />
       </div>
-      <div className="px-4 flex flex-col gap-5">
-        {(isTeacher || isExecutive) && <nav aria-label="자주 쓰는 기능" className="grid grid-cols-2 gap-2.5">
-          {[
-            ['/attendance', '출석', '우리 반 주일 출석'], ['/event-attendance', '행사 출석', '학생·교사 행사 참석'],
-            ['/tts', 'TTS', '말씀·기도 생활 기록'], ['/roster', '교적부', '학생 명단과 정보'],
-          ].map(([to, label, desc]) => <Link key={to} to={to} className="brand-action motion-tap flex min-h-[120px] flex-col items-start justify-center gap-2 rounded-2xl border p-4 border-primary-200 bg-primary-50 text-primary-700">
-            <FeatureIcon path={to} /><span className="text-sm font-semibold">{label}</span>
-            <span className="text-xs leading-relaxed text-gray-500 break-keep">{desc}</span>
-          </Link>)}
-        </nav>}
+      <div className="px-4 flex flex-col gap-4">
+        <CheckTab embedded />
+        <HomeSchedule />
         <AnimatePresence mode="wait">
           {(isTeacher || isExecutive)
-            ? <TeacherView key="teacher" navigate={navigate} />
+            ? <TeacherView key="teacher" />
             : <AdminView  key="admin"   navigate={navigate} today={today} />
           }
         </AnimatePresence>
@@ -79,54 +65,18 @@ function RoleBadge({ role }) {
   return <span className={`text-xs uppercase font-bold px-2 py-1 rounded-lg flex-shrink-0 ${cls}`}>{label}</span>
 }
 
-// ────────── 이번 주 주요 일정 ──────────
-function WeeklyEventsCard({ navigate }) {
-  const eventsQuery = useQuery({
-    queryKey: ['weekly-events', toApiDate(startOfWeek(new Date(), { weekStartsOn: 0 }))],
-    queryFn: async () => {
-      const start = toApiDate(startOfWeek(new Date(), { weekStartsOn: 0 }))
-      const end = toApiDate(endOfWeek(new Date(), { weekStartsOn: 0 }))
-      const res = await client.get(`/events?from=${start}&to=${end}`)
-      return res.data
-    },
-    staleTime: 5 * 60 * 1000,
-  })
-
-  const weeklyEvents = eventsQuery.data || []
-  return (
-    <Reveal delay={0.16}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold">이번 주 일정</h3>
-        <button onClick={() => navigate('/events')} className="min-h-11 text-sm text-gray-500">전체 보기</button>
-      </div>
-      {queryReadState([eventsQuery]) !== 'ready' ? <QueryNotice queries={[eventsQuery]} label="이번 주 일정" /> : (
-        <Card className="!p-0 divide-y divide-gray-200">
-          {weeklyEvents.length === 0 ? <p className="p-5 text-sm text-gray-500">이번 주 예정된 일정이 없습니다.</p> :
-            weeklyEvents.slice(0, 3).map(e => (
-              <button key={e.id} onClick={() => navigate('/events')} className="motion-row motion-tap w-full flex items-center gap-3 p-4 text-left">
-                <span className="w-11 py-1.5 rounded-xl bg-gray-50 text-center shrink-0"><span className="block text-xs text-gray-500">{format(new Date(e.eventDate), 'M월')}</span><strong className="text-lg font-semibold">{format(new Date(e.eventDate), 'd')}</strong></span>
-                <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{e.title}</span><span className="block text-xs text-gray-500 mt-1">{format(new Date(e.eventDate), 'EEEE', { locale: ko })}{e.startTime && ' · ' + e.startTime}</span></span>
-                <ChevronRight size={16} className="text-gray-300 shrink-0" />
-              </button>
-            ))}
-        </Card>
-      )}
-    </Reveal>
-  )
-}
-
-// ────────── Teacher View ──────────
-function TeacherView({ navigate }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col gap-4"
-    >
-      <PersonalDashboard navigate={navigate} />
-      <WeeklyEventsCard navigate={navigate} />
-    </motion.div>
-  )
+// Daily checking and this week's schedule live above secondary tools for every role.
+function TeacherView() {
+  return <div className="flex flex-col gap-4">
+    <HomeWeekly />
+    <nav aria-label="기타 기능" className="grid grid-cols-3 gap-2">
+      {[
+        ['/roster', '교적부'], ['/class-manage', '반관리'], ['/menu', '전체 메뉴'],
+      ].map(([to, label]) => <Link key={to} to={to} className="brand-action flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border border-primary-200 p-3">
+        <FeatureIcon path={to} size={24} /><span className="text-xs font-semibold">{label}</span>
+      </Link>)}
+    </nav>
+  </div>
 }
 
 const ALL_QUICK_LINKS = [
@@ -228,7 +178,7 @@ function AdminView({ navigate, today }) {
     >
       {/* 내 영성체크 */}
       <div className="flex flex-col gap-4">
-        <PersonalDashboard navigate={navigate} />
+        <HomeWeekly />
       </div>
 
       <button type="button" onClick={() => navigate('/admin')}

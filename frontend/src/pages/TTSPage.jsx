@@ -1,4 +1,4 @@
-import { useState, useMemo, useSyncExternalStore } from 'react'
+import { useState, useMemo, useSyncExternalStore, useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
 import { Reveal, AnimatedValue, ProgressFill, SelectionMark } from '../components/common/Motion'
@@ -13,6 +13,10 @@ import { ttsReadState, ttsAnswerOptions } from '../utils/ttsQuery'
 import SegmentedControl from '../components/common/SegmentedControl'
 import TtsStats from '../components/tts/TtsStats'
 import { firstTtsOffset } from '../utils/ttsPeriod'
+import useToday from '../hooks/useToday'
+import { todayTtsChecks } from '../utils/attention'
+import AttentionDot from '../components/common/AttentionDot'
+import FeatureIcon from '../components/common/FeatureIcon'
 
 export const DAYS = ['월', '화', '수', '목', '금', '토']
 const LINK_PATH = { SAT_MEETING: '/meeting/sat', PRAYER_MEETING: '/meeting/prayer' }
@@ -67,11 +71,13 @@ export function CheckTab({ embedded = false }) {
   const queryClient = useQueryClient()
   const [offset, setOffset] = useState(0)
   const [saveError, setSaveError] = useState('')
+  const [expanded, setExpanded] = useState(false)
+  const detailId = useId()
+  const todayStr = useToday()
   const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const offline = useSyncExternalStore(onlineManager.subscribe, () => !onlineManager.isOnline())
   const sunday    = getWeekStartByOffset(offset, 0)
   const weekStart = toApiDate(sunday)
-  const todayStr  = toApiDate()
   const weekKey   = ['tts-week', weekStart]
 
   const questionsQuery = useQuery({
@@ -143,6 +149,7 @@ export function CheckTab({ embedded = false }) {
   const remainingToday = todayIdx >= 0
     ? questions.filter(q => q.type === 'DAYS' && !isLinked(q) && !answers[q.id]?.[DAYS[todayIdx]])
     : []
+  const todayChecks = todayTtsChecks(questions, week, todayStr)
 
   return (
     <>
@@ -179,7 +186,32 @@ export function CheckTab({ embedded = false }) {
         </div>
       ) : (
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
-          <ScoreCard
+          {embedded ? <section aria-label="오늘의 영성체크" className="brand-card relative rounded-2xl border border-primary-200 p-4">
+            <AttentionDot show={ready && todayChecks.length > 0 && (saving || todayChecks.some(c => !c.checked))} label="오늘 영성체크가 남았어요" />
+            <div className="flex items-center justify-between gap-2 pr-2">
+              <h2 className="flex items-center gap-2 text-base font-semibold"><FeatureIcon path="/tts" size={24} />오늘의 영성체크</h2>
+              <span className="shrink-0 text-xs text-gray-500">{format(new Date(todayStr + 'T12:00:00'), 'M.d')}</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {todayChecks.map(({ q, day, checked }) => <button key={q.id} type="button" aria-pressed={checked}
+                disabled={!ready || offline} onClick={() => day ? toggleDay(q, day) : toggleAttend(q)}
+                aria-label={`오늘 ${q.title}`} className={`relative flex min-h-24 flex-col items-start gap-1 rounded-xl border p-3 text-left ${checked ? 'text-white border-primary-600' : 'border-primary-200'}`}>
+                <AttentionDot show={ready && !checked} label="아직 체크하지 않았어요" />
+                <span className="flex w-full items-center justify-between gap-2 pr-1"><span className="font-semibold text-sm break-keep">{splitTitle(q.title)[0]}</span>{checked && <SelectionMark size={18} />}</span>
+                {splitTitle(q.title)[1] && <span className="text-xs">{splitTitle(q.title)[1]}</span>}
+                <span className="mt-auto text-xs">{checked ? '체크됨' : '탭해서 체크'}</span>
+              </button>)}
+            </div>
+            {!todayChecks.length && <p className="mt-3 text-sm text-gray-500">오늘 직접 체크할 항목이 없어요. 이번 주 기록을 확인해 주세요.</p>}
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <p>이번 주 <strong className="text-primary-700">{score}</strong> / {maxScore}점</p>
+              <p role="status" aria-live="polite">{offline ? (saving ? '연결 대기 · 미저장' : '연결 확인 필요') : saving ? '저장 중…' : saveError ? '저장 실패 확인' : !ready ? '연결 확인 필요' : readState.refreshing ? '최신 기록 확인 중…' : todayChecks.length > 0 && todayChecks.every(c => c.checked) ? '오늘 체크 저장 완료' : '자동 저장'}</p>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button type="button" aria-expanded={expanded} aria-controls={detailId} onClick={() => setExpanded(!expanded)} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">{expanded ? '이번 주 접기' : '이번 주 펼치기'}</button>
+              <button type="button" onClick={() => navigate('/tts')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">기록 · 통계</button>
+            </div>
+          </section> : <ScoreCard
             compact={embedded}
             saveStatus={offline ? (saving ? '연결 대기 · 미저장' : '연결 확인 필요') : saving ? '저장 중…' : saveError ? '저장 실패 확인' : readState.error || readState.paused ? '연결 확인 필요' : readState.refreshing ? '최신 기록 확인 중…' : '자동 저장'}
             range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
@@ -201,8 +233,9 @@ export function CheckTab({ embedded = false }) {
                 : { done: true, text: `오늘(${DAYS[todayIdx]}) 체크를 모두 마쳤어요` })
               : null
             }
-          />
+          />}
 
+          <div id={detailId} hidden={embedded && !expanded} className="space-y-3">
           {dayQuestions.length > 0 && (
             <DayGrid
               items={dayQuestions}
@@ -261,11 +294,8 @@ export function CheckTab({ embedded = false }) {
             </Card>
           )}
 
-          {embedded ? (
-            <button onClick={() => navigate('/tts')} className="text-xs text-primary-600 font-bold text-center mt-1">
-              지난 주 기록 수정 · 통계는 TTS 화면에서 →
-            </button>
-          ) : (
+          </div>
+          {!embedded && (
             <p className="text-xs text-gray-400 font-medium text-center mt-1">
               지난 주 기록도 언제든 고칠 수 있어요. 아직 오지 않은 요일은 체크할 수 없어요.
             </p>

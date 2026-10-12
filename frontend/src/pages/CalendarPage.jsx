@@ -25,6 +25,10 @@ import useAuthStore from '../store/authStore'
 import { toApiDate } from '../utils/date'
 import { DateRangeField } from '../components/calendar/DateRangePicker'
 import BulkEventForm, { AddEventChoice } from '../components/calendar/BulkEventForm'
+import useEventSeen from '../hooks/useEventSeen'
+import useToday from '../hooks/useToday'
+import AttentionDot from '../components/common/AttentionDot'
+import { knownRead } from '../utils/attention'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -47,6 +51,12 @@ const EVENT_TYPES = [
 
 export default function CalendarPage() {
   const { user } = useAuthStore()
+  const today = useToday()
+  const { isNew, markSeen } = useEventSeen(today)
+  const acknowledge = event => knownRead(viewMode === 'list' ? allEventsQuery : eventsQuery) && isNew(event) && <button type="button" aria-label={`${event.title} 내용 확인`} onClick={() => markSeen([event])}
+    className="relative mt-3 min-h-11 rounded-xl border border-primary-200 py-2 pl-3 pr-6 text-xs">
+    <AttentionDot show label="새 일정 또는 변경된 일정" />내용 확인했어요
+  </button>
   const qc = useQueryClient()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'PASTOR' || user?.role === 'EXECUTIVE'
 
@@ -84,7 +94,7 @@ export default function CalendarPage() {
   
   const [viewMode, setViewMode] = useState('calendar')
 
-  const { data: events = [], isLoading, refetch } = useQuery({
+  const eventsQuery = useQuery({
     queryKey: eventRangeKey(format(startOfWeek(startOfMonth(current)), 'yyyy-MM-dd'), format(endOfWeek(endOfMonth(current)), 'yyyy-MM-dd')),
     queryFn:  () => client.get('/events', {
       params: {
@@ -94,13 +104,14 @@ export default function CalendarPage() {
     }).then(r => r.data),
   })
 
-  const { data: allEvents = [] } = useQuery({
+  const { data: events = [], isLoading, refetch } = eventsQuery
+  const allEventsQuery = useQuery({
     queryKey: ['events-all'],
     queryFn:  () => eventApi.getAllEvents().then(r => r.data),
     enabled: viewMode === 'list',
   })
+  const { data: allEvents = [] } = allEventsQuery
 
-  const today = toApiDate()
   const categorizedEvents = useMemo(() => {
     const upcoming = [], ongoing = [], past = []
     allEvents.forEach(e => {
@@ -113,7 +124,7 @@ export default function CalendarPage() {
     ongoing.sort((a, b) => a.eventDate.localeCompare(b.eventDate))
     past.sort((a, b) => b.eventDate.localeCompare(a.eventDate))
     return { upcoming, ongoing, past }
-  }, [allEvents])
+  }, [allEvents, today])
 
   // Lane Allocation Logic
   const eventLanes = useMemo(() => {
@@ -463,6 +474,7 @@ export default function CalendarPage() {
                     </div>
                   </div>
                   <h4 className="font-bold text-gray-900 text-base mb-1">{e.title}</h4>
+                  {acknowledge(e)}
                   {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
                   {e.attendanceRequired && (isAdmin || !e.attendanceDeadline || e.attendanceDeadline >= today) && (
                     <div className="flex flex-wrap gap-1.5 mt-1">
@@ -530,6 +542,7 @@ export default function CalendarPage() {
                       )}
                     </div>
                     <h4 className="font-bold text-gray-900 text-sm mb-1">{e.title}</h4>
+                    {acknowledge(e)}
                     {e.description && <p className="text-xs text-gray-500 leading-relaxed">{e.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {!e.startTime ? (

@@ -9,6 +9,10 @@ import { MENU_GROUPS } from './AdminDashboard'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { filterMenuGroups } from '../utils/navigation'
+import useWeeklyTasks from '../hooks/useWeeklyTasks'
+import useWeeklyEvents from '../hooks/useWeeklyEvents'
+import useTtsAttention from '../hooks/useTtsAttention'
+import AttentionDot from '../components/common/AttentionDot'
 
 const COMMON_GROUPS = [
   {
@@ -59,6 +63,11 @@ const DESCRIPTIONS = {
 
 export default function MenuPage() {
   const { user } = useAuthStore()
+  const tasks = useWeeklyTasks()
+  const schedule = useWeeklyEvents()
+  const tts = useTtsAttention()
+  const attention = path => path === '/tts' ? tts.pending : path === '/events' ? schedule.hasNew
+    : path === '/checklist' ? tasks.tasks.some(t => t.state === 'pending') : tasks.needsAction(path)
   const [search, setSearch] = useState('')
   const [scope, setScope] = useState('all')
   const canManage = ADMIN_ROLES.includes(user?.role)
@@ -82,7 +91,8 @@ export default function MenuPage() {
             <h2 className="ui-section-title mb-3 px-1">{group.title}</h2>
             <div className="ui-list">
               {group.items.map(item => (
-                <Link key={item.to} to={item.to} className="brand-action ui-list-row motion-tap">
+                <Link key={item.to} to={item.to} className="brand-action ui-list-row motion-tap relative">
+                  <AttentionDot show={attention(item.to)} label={item.to === '/events' ? '이번 주 새 일정이 있어요' : '해야 할 일이 있어요'} />
                   <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"><FeatureIcon path={item.to} /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-gray-900">{item.title}</span>
                     <span className="mt-1 block text-xs leading-relaxed text-gray-500">{item.desc}</span></span>

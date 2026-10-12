@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery, useQueries, useIsMutating } from '@tanstack/react-query'
+import { useQuery, useIsMutating } from '@tanstack/react-query'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import FeatureIcon from '../components/common/FeatureIcon'
@@ -8,67 +8,25 @@ import SegmentedControl from '../components/common/SegmentedControl'
 import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
 import QueryNotice from '../components/common/QueryNotice'
 import { ProgressFill, Reveal } from '../components/common/Motion'
-import useAuthStore from '../store/authStore'
-import { weeklyStatusApi } from '../api/weeklyStatus'
-import { eventApi } from '../api/event'
-import { prayerVoteApi } from '../api/prayerVote'
+import useWeeklyTasks from '../hooks/useWeeklyTasks'
+import useTtsAttention from '../hooks/useTtsAttention'
+import useToday from '../hooks/useToday'
+import AttentionDot from '../components/common/AttentionDot'
 import { ttsApi } from '../api/tts'
-import client from '../api/client'
 import { toApiDate, getCurrentWeekRange, getWeekStartByOffset } from '../utils/date'
-import { eventCheckState, knownQuery, summarizeChecks } from '../utils/checkProgress'
-import { addDays, startOfWeek } from 'date-fns'
+import { knownQuery } from '../utils/checkProgress'
 
-const checkState = (query, done) => knownQuery(query) ? (done ? 'done' : 'pending') : 'unknown'
 const STATE_LABEL = { done: '완료', pending: '미완료', unknown: '확인 필요', none: '대상 없음' }
 
 export default function WeeklyCheckPage() {
-  const { user } = useAuthStore()
   const [filter, setFilter] = useState('all')
-  const savingTts = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
+  const { tasks, reads, summary } = useWeeklyTasks()
+  const ttsAttention = useTtsAttention()
+  useToday()
   const sunday = toApiDate(getWeekStartByOffset(0, 0))
-  const monday = startOfWeek(new Date(), { weekStartsOn: 1 })
-  const weekMonday = toApiDate(monday)
-  const satDate = toApiDate(addDays(monday, 5))
+  const savingTts = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const tts = useQuery({ queryKey: ['tts-week', sunday], enabled: !savingTts,
     queryFn: () => ttsApi.getWeek(sunday).then(r => r.data), staleTime: 60_000 })
-  const prayer = useQuery({ queryKey: ['prayer-vote', weekMonday, user?.id], enabled: !!user,
-    queryFn: () => prayerVoteApi.getMine(weekMonday).then(r => r.data), staleTime: 120_000 })
-  const meeting = useQuery({ queryKey: ['meeting-attendance', satDate, user?.id], enabled: !!user,
-    queryFn: () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data), staleTime: 120_000 })
-  const weekly = useQuery({ queryKey: ['weekly-status'],
-    queryFn: () => weeklyStatusApi.getStatus().then(r => r.data), staleTime: 120_000 })
-  const eventQuery = useQuery({ queryKey: ['attendance-required-events'],
-    queryFn: () => eventApi.getAttendanceRequired().then(r => r.data), staleTime: 300_000 })
-  const events = (eventQuery.data || []).filter(e => !e.attendanceDeadline || e.attendanceDeadline >= toApiDate())
-  const teacherEvents = events.filter(e => ['BOTH', 'TEACHER_ONLY'].includes(e.attendanceTarget))
-  const studentEvents = events.filter(e => !e.attendanceTarget || ['BOTH', 'STUDENT_ONLY'].includes(e.attendanceTarget))
-  const teacherQueries = useQueries({ queries: teacherEvents.map(e => ({
-    queryKey: ['event-teacher-attendance', e.id, user?.id], enabled: !!user,
-    queryFn: () => eventApi.getMyTeacherAttendance(e.id).then(r => r.data), staleTime: 120_000,
-  })) })
-  const studentQueries = useQueries({ queries: studentEvents.map(e => ({
-    queryKey: ['event-attendance', e.id, user?.id], enabled: !!user,
-    queryFn: () => eventApi.getMyClassAttendance(e.id).then(r => r.data), staleTime: 120_000,
-  })) })
-  const eventState = eventCheckState(eventQuery, events,
-    new Map(teacherEvents.map((e, i) => [e.id, teacherQueries[i]])),
-    new Map(studentEvents.map((e, i) => [e.id, studentQueries[i]])))
-  const tasks = [
-    { id: 'attendance', title: '우리 반 출석', desc: '담임·부담임이 함께 제출하는 주일 출석', path: '/attendance',
-      state: checkState(weekly, weekly.data?.attendanceSubmittedThisWeek) },
-    { id: 'prayer', title: '기도모임 투표', desc: '온라인 기도모임 참석 여부를 알려주세요', path: '/meeting/prayer',
-      state: checkState(prayer, !!prayer.data) },
-    { id: 'meeting', title: '교사회의 체크', desc: '토요일 교사회의 참석 기록', path: '/meeting/sat',
-      state: checkState(meeting, !!meeting.data?.status) },
-    ...(meeting.data?.status === 'ABSENT' ? [{ id: 'minutes', title: '회의록 및 영상', path: '/minutes',
-      desc: weekly.data?.currentWeekMinutesExists ? '회의 내용과 영상을 확인해 주세요' : '이번 주 회의록 등록을 기다리고 있어요',
-      state: checkState(weekly, weekly.data?.currentWeekMinutesConfirmed) }] : []),
-    { id: 'event', title: '행사 출석',
-      desc: eventState === 'none' ? '현재 제출할 행사가 없어요' : `내 출석과 우리 반 출석 확인${events.length ? ` · ${events.length}개 행사` : ''}`,
-      path: events.length === 1 ? `/event-attendance/${events[0].id}` : '/event-attendance', state: eventState },
-  ]
-  const summary = summarizeChecks(tasks)
-  const reads = [weekly, prayer, meeting, eventQuery, ...teacherQueries, ...studentQueries]
   const failedReads = reads.filter(q => q.isError)
   const visibleTasks = tasks.filter(t => filter === 'all' || (filter === 'done' ? t.state === 'done' : ['pending', 'unknown'].includes(t.state)))
 
@@ -94,7 +52,8 @@ export default function WeeklyCheckPage() {
           <SegmentedControl label="체크 상태 필터" value={filter} onChange={setFilter}
             options={[{ value: 'all', label: '전체' }, { value: 'pending', label: '할 일' }, { value: 'done', label: '완료' }]} />
           <div className="ui-list mt-3">
-            {visibleTasks.map(task => <Link key={task.id} to={task.path} className="brand-action ui-list-row motion-tap">
+            {visibleTasks.map(task => <Link key={task.id} to={task.path} className="brand-action ui-list-row motion-tap relative">
+              <AttentionDot show={task.state === 'pending'} label="아직 제출하지 않았어요" />
               <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"><FeatureIcon path={task.path} /></span>
               <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-gray-900">{task.title}</span>
@@ -107,7 +66,8 @@ export default function WeeklyCheckPage() {
         </section>
         <section>
           <h2 className="ui-section-title mb-3 px-1">매일 이어가는 TTS</h2>
-          <Link to="/tts" className="brand-action ui-list ui-list-row motion-tap">
+          <Link to="/tts" className="brand-action ui-list ui-list-row motion-tap relative">
+            <AttentionDot show={ttsAttention.pending} label="오늘 영성체크가 남았어요" />
             <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"><FeatureIcon path="/tts" /></span>
             <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{savingTts ? 'TTS 저장 중' : knownQuery(tts) ? `이번 주 ${tts.data?.score ?? 0}점` : 'TTS 기록 확인'}</span>
               <span className="mt-1 block text-xs leading-relaxed text-gray-500">하루씩 기록해요 · 제출 완료 개수에 포함되지 않아요</span></span>
