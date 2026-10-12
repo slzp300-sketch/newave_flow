@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 export default function WeekNavigator({ offset, onChange, title, sub, range, disabled = false, minOffset = -Infinity }) {
   const isCurrent = offset === 0
   return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-2">
     <div className="flex items-center gap-2">
       <button
         disabled={disabled || offset <= minOffset}
@@ -25,7 +26,7 @@ export default function WeekNavigator({ offset, onChange, title, sub, range, dis
           </span>
         </div>
         {sub && <p className="text-xs font-bold text-gray-400 mt-0.5">{sub}</p>}
-        <p className="text-xs font-bold text-gray-400 mt-0.5">{range}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{range}</p>
       </div>
 
       {isCurrent ? (
@@ -46,6 +47,9 @@ export default function WeekNavigator({ offset, onChange, title, sub, range, dis
           <ChevronRight size={18} className="text-gray-600" />
         </button>
       )}
+    </div>
+    {!isCurrent && <button type="button" disabled={disabled} onClick={() => onChange(0)}
+      className="mt-2 min-h-11 w-full rounded-xl bg-primary-50 text-sm font-semibold text-primary-700 disabled:opacity-40">이번 주로 돌아가기</button>}
     </div>
   )
 }

@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { parentPath } from '../../utils/navigation'
 import { ChevronLeft, LogOut, Bell } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '../../store/authStore'
@@ -8,6 +9,7 @@ import Brand from '../common/Brand'
 
 export default function Header({ title, showBack = false, onBack, showLogout = false, showNotification = true, right }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { user, clearAuth } = useAuthStore()
 
@@ -32,7 +34,7 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
     <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 min-h-14 flex items-center gap-2">
       {showBack && (
         <button
-          onClick={onBack ?? (() => navigate(-1))}
+          onClick={onBack ?? (() => location.key === 'default' ? navigate(parentPath(location.pathname), { replace: true }) : navigate(-1))}
           className="icon-button -ml-2 shrink-0"
           aria-label="이전 화면"
         >

@@ -1,9 +1,11 @@
 import { useId, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Search } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import { addDays, addWeeks, format, startOfWeek } from 'date-fns'
 import { ttsApi } from '../../api/tts'
 import useAuthStore from '../../store/authStore'
+import SearchField from '../common/SearchField'
+import SegmentedControl from '../common/SegmentedControl'
 import Card from '../common/Card'
 import QueryNotice from '../common/QueryNotice'
 import { ProgressFill } from '../common/Motion'
@@ -46,11 +48,8 @@ export default function TtsStats() {
         className={`flex-1 min-h-11 rounded-xl text-sm font-medium ${quarter === q.q ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border border-gray-200'}`}>{q.q}분기</button>)}</div>
     </div>
     <p className="text-xs text-gray-500">{quarterDateLabel(year, quarter)}</p>
-    <div className="grid grid-cols-3 rounded-xl bg-gray-100 p-1 gap-1">
-      {[['weekly', '주간 상세'], ['quarter', '분기 순위'], ['mine', '내 추이']].map(([key, label]) => <button key={key}
-        aria-pressed={view === key} onClick={() => setView(key)}
-        className={`motion-tap min-h-11 rounded-lg text-sm font-semibold ${view === key ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'}`}>{label}</button>)}
-    </div>
+    <SegmentedControl label="통계 보기" value={view} onChange={setView}
+      options={[{ value: 'weekly', label: '주간 상세' }, { value: 'quarter', label: '분기 순위' }, { value: 'mine', label: '내 추이' }]} />
     {!ttsReadState([stats]).hasData ? <QueryNotice queries={[stats]} label="TTS 통계 기록" /> : <>
       {stats.isError && <QueryNotice queries={[stats]} label="최신 TTS 통계 기록" />}
       {weeks.length === 0 ? <Empty>아직 시작하지 않은 분기입니다.</Empty> : view === 'weekly' ? <WeeklyDetail key={`${year}-${quarter}`}
@@ -76,10 +75,8 @@ function Metrics({ people, value }) {
 function Filters({ people, filters, onChange }) {
   const grades = [...new Set(people.map(p => p.grade).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'))
   return <div className="flex flex-col gap-2">
-    <label className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3"><Search size={16} className="text-gray-400" />
-      <input aria-label="교사 이름 검색" placeholder="이름으로 찾기" value={filters.search}
-        onChange={e => onChange({ ...filters, search: e.target.value })} className="w-full min-w-0 bg-transparent py-3 text-sm outline-none" />
-    </label>
+    <SearchField label="교사 이름 검색" placeholder="이름으로 찾기" value={filters.search}
+      onChange={search => onChange({ ...filters, search })} />
     <div className="flex gap-2">
       <select aria-label="소속 필터" value={filters.grade} onChange={e => onChange({ ...filters, grade: e.target.value })} className="min-w-0 flex-1 rounded-xl bg-white border border-gray-200 p-3 text-sm">
         <option value="">전체 소속</option>{grades.map(g => <option key={g} value={g}>{g}</option>)}

@@ -76,7 +76,7 @@ function TeacherSelfCheck({ event, userId }) {
     <div className="flex flex-col gap-3">
       <QueryRefreshNotice queries={[attendanceQuery]} label="교사 출석 기록" />
       <fieldset disabled={!ready || saveMutation.isPending} className="min-w-0 flex flex-col gap-3">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">내 출석 체크</p>
+      <p className="ui-section-title px-1">내 출석 체크</p>
 
       {/* 제출 완료 배너 */}
       {submitted && !editing && pending && (
@@ -174,7 +174,7 @@ function TeacherSelfCheck({ event, userId }) {
 
           <Button size="lg" onClick={() => saveMutation.mutate()} disabled={!canSubmit || saveMutation.isPending}>
             <UserCheck size={17} />
-            {saveMutation.isPending ? '저장 중...' : '출석 제출'}
+            {saveMutation.isPending ? '저장 중...' : '내 출석 제출'}
           </Button>
         </div>
       )}
@@ -246,7 +246,7 @@ function StudentAttendanceCheck({ event, userId }) {
     <div className="flex flex-col gap-3">
       <QueryRefreshNotice queries={[studentsQuery]} label="학생 출석 기록" />
       <fieldset disabled={!ready || saveMutation.isPending} className="min-w-0 flex flex-col gap-3">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학생 출석 현황</p>
+      <p className="ui-section-title px-1">우리 반 학생 출석</p>
 
       {/* 통계 */}
       {students.length > 0 && (
@@ -381,7 +381,7 @@ function StudentAttendanceCheck({ event, userId }) {
           {missingPartials.length > 0 && <p className="text-xs font-bold text-amber-500 text-center">부분참석 날짜를 모두 입력해 주세요 ({missingPartials.length}명 누락)</p>}
           <Button size="lg" onClick={handleSubmit} disabled={saveMutation.isPending || !canSubmit}>
             <CalendarCheck size={17} />
-            {saveMutation.isPending ? '저장 중...' : '출석 체크 제출'}
+            {saveMutation.isPending ? '저장 중...' : '학생 출석 제출'}
           </Button>
         </div>
       )}

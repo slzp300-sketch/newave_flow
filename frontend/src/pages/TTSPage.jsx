@@ -1,8 +1,7 @@
 import { useState, useMemo, useSyncExternalStore } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
-import { LayoutGroup, motion } from 'framer-motion'
-import { Reveal, AnimatedValue, ProgressFill, SelectionMark, useMotionPreference } from '../components/common/Motion'
+import { Reveal, AnimatedValue, ProgressFill, SelectionMark } from '../components/common/Motion'
 import { addDays, format } from 'date-fns'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -11,6 +10,7 @@ import { getWeekStartByOffset, toApiDate, weekLabels } from '../utils/date'
 import { ttsApi } from '../api/tts'
 import QueryNotice from '../components/common/QueryNotice'
 import { ttsReadState, ttsAnswerOptions } from '../utils/ttsQuery'
+import SegmentedControl from '../components/common/SegmentedControl'
 import TtsStats from '../components/tts/TtsStats'
 import { firstTtsOffset } from '../utils/ttsPeriod'
 
@@ -47,26 +47,12 @@ export function calcScore(questions, answers, linked) {
 
 export default function TTSPage() {
   const [tab, setTab] = useState('check')
-  const reduced = useMotionPreference()
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="TTS" showBack />
       <div className="px-4 pt-3">
-        <LayoutGroup id="tts-navigation"><div className="relative isolate grid grid-cols-2 bg-gray-100 p-1 rounded-xl">
-          {[['check', '내 체크'], ['stats', '통계 · 상세']].map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              aria-pressed={tab === key}
-              className={`motion-tap relative min-h-11 py-2 rounded-lg text-sm font-semibold ${tab === key ? 'text-primary-700' : 'text-gray-500'}`}
-            >
-              {tab === key && <motion.span aria-hidden="true" layoutId="active-tts-tab" initial={false}
-                className="absolute inset-0 -z-10 bg-white rounded-lg shadow-sm"
-                transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 34 }} />}
-              {label}
-            </button>
-          ))}
-        </div></LayoutGroup>
+        <SegmentedControl label="TTS 보기" value={tab} onChange={setTab}
+          options={[{ value: 'check', label: '내 체크' }, { value: 'stats', label: '통계 · 상세' }]} />
       </div>
       <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats />}</div>
     </div>

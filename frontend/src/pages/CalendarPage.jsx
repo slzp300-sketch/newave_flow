@@ -5,7 +5,7 @@ import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon,
-  Clock, PenLine, Trash2, X, List
+  Clock, PenLine, Trash2, X
 } from 'lucide-react'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -15,6 +15,7 @@ import {
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
 import { eventApi } from '../api/event'
+import SegmentedControl from '../components/common/SegmentedControl'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
@@ -284,32 +285,17 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50/50">
-      <Header title="캘린더" showBack />
+      <Header title="일정" />
 
-      {/* 캘린더 / 목록 탭 */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-3 pb-0 flex gap-0">
-        <button
-          onClick={() => setViewMode('calendar')}
-          className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 ${
-            viewMode === 'calendar' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-400'
-          }`}
-        >
-          <CalendarIcon size={14} /> 캘린더
-        </button>
-        <button
-          onClick={() => setViewMode('list')}
-          className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 ${
-            viewMode === 'list' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-400'
-          }`}
-        >
-          <List size={14} /> 목록
-        </button>
+      <div className="bg-white px-4 pb-3 pt-3">
+        <SegmentedControl label="일정 보기" value={viewMode} onChange={setViewMode}
+          options={[{ value: 'calendar', label: '달력' }, { value: 'list', label: '목록' }]} />
       </div>
 
       {/* Calendar Section */}
       {viewMode === 'calendar' && <>
       <div className="bg-white px-2 pb-6 shadow-sm border-b border-gray-100">
-        <div className="flex items-center justify-between px-2 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-4">
           <div className="flex items-center gap-1">
             <h2 className="text-xl font-bold text-gray-900">
               {format(current, 'yyyy년 M월', { locale: ko })}
@@ -317,16 +303,16 @@ export default function CalendarPage() {
             {isAdmin && (
               <button 
                 onClick={() => setShowChoice(true)}
-                className="ml-2 w-7 h-7 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center hover:bg-primary-100 transition-colors"
+                aria-label="일정 추가" className="ml-2 min-w-11 min-h-11 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center hover:bg-primary-100 transition-colors"
               >
                 <Plus size={16} />
               </button>
             )}
           </div>
           <div className="flex items-center bg-gray-100 rounded-xl p-1">
-            <button onClick={() => setCurrent(subMonths(current, 1))} className="p-1.5 hover:bg-white rounded-lg transition-all"><ChevronLeft size={18} /></button>
-            <button onClick={() => setCurrent(new Date())} className="px-3 py-1 text-xs font-bold uppercase tracking-widest hover:bg-white rounded-lg transition-all">오늘</button>
-            <button onClick={() => setCurrent(addMonths(current, 1))} className="p-1.5 hover:bg-white rounded-lg transition-all"><ChevronRight size={18} /></button>
+            <button onClick={() => setCurrent(subMonths(current, 1))} aria-label="이전 달" className="min-w-11 min-h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all"><ChevronLeft size={18} /></button>
+            <button onClick={() => setCurrent(new Date())} className="min-h-11 px-3 py-1 text-xs font-bold uppercase tracking-widest hover:bg-white rounded-lg transition-all">오늘</button>
+            <button onClick={() => setCurrent(addMonths(current, 1))} aria-label="다음 달" className="min-w-11 min-h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all"><ChevronRight size={18} /></button>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { eventRangeKey } from '../api/queryPolicy'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -46,6 +46,14 @@ export default function Home() {
         <p className="text-sm text-gray-500 mt-1">함께 만들어 가는 새로운 한 주</p>
       </div>
       <div className="px-4 flex flex-col gap-5">
+        {(isTeacher || isExecutive) && <nav aria-label="자주 쓰는 기능" className="grid grid-cols-4 gap-2">
+          {[
+            ['/attendance', ClipboardList, '출석'], ['/event-attendance', Calendar, '행사 출석'],
+            ['/tts', CheckSquare, 'TTS'], ['/roster', BookOpen, '교적부'],
+          ].map(([to, Icon, label]) => <Link key={to} to={to} className="motion-tap flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-1 py-3 text-primary-800">
+            <Icon size={22} strokeWidth={1.7} /><span className="text-xs font-semibold">{label}</span>
+          </Link>)}
+        </nav>}
         <AnimatePresence mode="wait">
           {(isTeacher || isExecutive)
             ? <TeacherView key="teacher" navigate={navigate} />

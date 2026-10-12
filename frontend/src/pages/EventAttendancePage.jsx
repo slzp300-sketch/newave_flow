@@ -165,7 +165,7 @@ export default function EventAttendancePage() {
         {needsTeacherCheck && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between px-1">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">내 출석 체크</p>
+              <p className="ui-section-title">내 출석 체크</p>
               {event?.attendanceDeadline && (
                 <p className={`text-xs font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
                   {isPastDeadline ? '제출 마감됨' : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
@@ -273,7 +273,7 @@ export default function EventAttendancePage() {
                     <Button size="lg" onClick={() => teacherAttendanceMutation.mutate()}
                       disabled={!teacherCanSubmit || teacherAttendanceMutation.isPending}>
                       <UserCheck size={17} />
-                      {teacherAttendanceMutation.isPending ? '저장 중...' : '제출하기'}
+                      {teacherAttendanceMutation.isPending ? '저장 중...' : '내 출석 제출'}
                     </Button>
                   </>
                 )}
@@ -332,7 +332,7 @@ export default function EventAttendancePage() {
         {/* 학생 목록 */}
         <div>
           <div className="flex items-center justify-between px-1 mb-3">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">학생 출석 현황</p>
+            <p className="ui-section-title">우리 반 학생 출석</p>
             {event?.attendanceDeadline && (
               <p className={`text-xs font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
                 {isPastDeadline ? '제출 마감됨' : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
@@ -536,7 +536,7 @@ export default function EventAttendancePage() {
                   disabled={saveMutation.isPending || (isEditable && !canSubmit)}
                 >
                   <CalendarCheck size={17} />
-                  {saveMutation.isPending ? '저장 중...' : '제출하기'}
+                  {saveMutation.isPending ? '저장 중...' : '학생 출석 제출'}
                 </Button>
               </>
             )}

@@ -15,6 +15,7 @@ import useAuthStore from '../store/authStore'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
+import SearchField from '../components/common/SearchField'
 import WeekNavigator from '../components/common/WeekNavigator'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState, hasQueryData } from '../utils/queryReadState'
@@ -30,6 +31,7 @@ export default function AttendancePage() {
   const qc    = useQueryClient()
   const { user } = useAuthStore()
   const [offset, setOffset] = useState(0)
+  const [search, setSearch] = useState('')
   // 선택한 주의 주일(일요일). 지난 주일 출석도 언제든 수정할 수 있다
   const today = toApiDate(getWeekStartByOffset(offset, 0))
   const labels = weekLabels(getWeekStartByOffset(offset, 0))
@@ -136,7 +138,7 @@ export default function AttendancePage() {
   const weekNav = (
     <WeekNavigator
       offset={offset}
-      onChange={value => { setDraft(null); setEditingKey(null); setOffset(value) }}
+      onChange={value => { setDraft(null); setEditingKey(null); setSearch(''); setOffset(value) }}
       disabled={isSubmitting}
       title={`${labels.monthWeek} 출석`}
       sub={labels.yearWeek}
@@ -217,8 +219,12 @@ export default function AttendancePage() {
         </div>
       </div>
       {/* 학생 목록 */}
+      <div className="px-4 pt-4">
+        <SearchField label="출석 학생 검색" value={search} onChange={setSearch} placeholder="학생 이름으로 찾기" />
+        {search.trim() && <p className="mt-2 text-xs text-gray-500" role="status">검색 중에도 우리 반 {students.length}명의 출석을 함께 제출합니다.</p>}
+      </div>
       <fieldset disabled={!ready || isSubmitting} className="px-4 py-4 flex flex-col gap-3 min-w-0">
-        {students.map((student, idx) => (
+        {students.filter(student => student.name.includes(search.trim())).map((student, idx) => (
           <StudentAttendanceCard
             key={student.id}
             student={student}
@@ -227,6 +233,7 @@ export default function AttendancePage() {
             idx={idx}
           />
         ))}
+        {!students.some(student => student.name.includes(search.trim())) && <p className="rounded-2xl bg-white p-5 text-center text-sm text-gray-500">{students.length ? '이름에 맞는 학생이 없어요. 검색어를 확인해 주세요.' : '등록된 학생이 없습니다.'}</p>}
       </fieldset>
 
       {/* 하단 플로팅 버튼 */}

@@ -1,361 +1,119 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useQuery, useQueries } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import {
-  Users, FileText, Calendar, CheckSquare, CalendarCheck,
-  ChevronRight, AlertCircle, Sparkles, CheckCircle2, Mic2
-} from 'lucide-react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery, useQueries, useIsMutating } from '@tanstack/react-query'
+import { Users, FileText, Calendar, CheckSquare, CalendarCheck, ChevronRight, CheckCircle2 } from 'lucide-react'
 import Header from '../components/layout/Header'
+import SegmentedControl from '../components/common/SegmentedControl'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import QueryNotice from '../components/common/QueryNotice'
+import { ProgressFill, Reveal } from '../components/common/Motion'
 import useAuthStore from '../store/authStore'
-import { evangelismApi } from '../api/evangelism'
 import { weeklyStatusApi } from '../api/weeklyStatus'
 import { eventApi } from '../api/event'
 import { prayerVoteApi } from '../api/prayerVote'
 import { ttsApi } from '../api/tts'
 import client from '../api/client'
-import { toApiDate, getTTSWeekRange, getCurrentWeekRange, getWeekStartByOffset } from '../utils/date'
-import { format, addDays } from 'date-fns'
+import { toApiDate, getCurrentWeekRange, getWeekStartByOffset } from '../utils/date'
+import { eventCheckState, knownQuery, summarizeChecks } from '../utils/checkProgress'
+import { addDays, startOfWeek } from 'date-fns'
 
-function getThisWeekMonday() {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + diff)
-  return format(monday, 'yyyy-MM-dd')
-}
+const checkState = (query, done) => knownQuery(query) ? (done ? 'done' : 'pending') : 'unknown'
+const STATE_LABEL = { done: '완료', pending: '미완료', unknown: '확인 필요', none: '대상 없음' }
 
-// ── localStorage 상태 훅 ────────────────────────
-function useTTSSubmitted() {
-  const [submitted, setSubmitted] = useState(false)
-  useEffect(() => {
-    const { weekNum } = getTTSWeekRange()
-    const year = new Date().getFullYear()
-    const saved = localStorage.getItem(`tts_${year}_week${weekNum}`)
-    if (saved) setSubmitted(!!JSON.parse(saved).submitted)
-  }, [])
-  return submitted
-}
-
-function useMeetingChecked(user) {
-  const { data: voteData } = useQuery({
-    queryKey: ['prayer-vote', getThisWeekMonday(), user?.id],
-    queryFn: () => prayerVoteApi.getMine(getThisWeekMonday()).then(r => r.data),
-    enabled: !!user,
-    staleTime: 2 * 60 * 1000,
-  })
-
-  const [satChecked, setSatChecked] = useState(false)
-  useEffect(() => {
-    const { weekNum } = getTTSWeekRange()
-    const year = new Date().getFullYear()
-    const sat = localStorage.getItem(`sat_meeting_${year}_w${weekNum}`)
-    setSatChecked(sat ? JSON.parse(sat).submitted === true : false)
-  }, [])
-
-  // 기도모임 투표 완료 && 토요모임 제출 완료
-  return !!voteData && satChecked
-}
-
-function useWeeklyStatus() {
-  const { data } = useQuery({
-    queryKey: ['weekly-status'],
-    queryFn: () => weeklyStatusApi.getStatus().then(r => r.data),
-    staleTime: 2 * 60 * 1000,
-  })
-  return data ?? {
-    attendanceSubmittedThisWeek: false,
-    unconfirmedMinutesCount: 0,
-    currentWeekMinutesExists: false,
-    currentWeekMinutesConfirmed: false,
-  }
-}
-
-function useAttendanceRequiredEvents() {
-  const { data = [] } = useQuery({
-    queryKey: ['attendance-required-events'],
-    queryFn: () => eventApi.getAttendanceRequired().then(r => r.data),
-    staleTime: 5 * 60 * 1000,
-  })
-  const today = toApiDate()
-  return data.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today)
-}
-
-function useEvangelismStatus() {
-  const { data } = useQuery({
-    queryKey: ['evangelism-status'],
-    queryFn: () => evangelismApi.getMyStatus().then(r => r.data),
-    staleTime: 5 * 60 * 1000,
-  })
-  return data ?? null
-}
-
-// ── 메인 페이지 ─────────────────────────────────
 export default function WeeklyCheckPage() {
-  const navigate      = useNavigate()
-  const { user }      = useAuthStore()
-  // 이번 주(일~토) TTS — 1점 이상 체크했으면 완료로 표시
-  const { data: ttsRecord } = useQuery({
-    queryKey: ['tts-week', toApiDate(getWeekStartByOffset(0, 0))],
-    queryFn: () => ttsApi.getWeek(toApiDate()).then(r => r.data),
-    staleTime: 60 * 1000,
-  })
-  const ttsScore = ttsRecord?.score ?? 0
-  const ttsSubmitted = ttsScore > 0
-
-  // 기도모임 투표 완료 여부 (API)
-  const weekMonday = getThisWeekMonday()
-  const { data: prayerVoteData } = useQuery({
-    queryKey: ['prayer-vote', weekMonday, user?.id],
-    queryFn:  () => prayerVoteApi.getMine(weekMonday).then(r => r.data),
-    enabled:  !!user,
-    staleTime: 2 * 60 * 1000,
-  })
-  const prayerDone = !!prayerVoteData
-
-  // 교사회의 체크 완료 여부 (API)
-  const satDate = format(addDays(new Date(weekMonday), 5), 'yyyy-MM-dd')
-  const { data: satData } = useQuery({
-    queryKey: ['meeting-attendance', satDate, user?.id],
-    queryFn:  () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data),
-    enabled:  !!user,
-    staleTime: 2 * 60 * 1000,
-  })
-  const satDone = !!satData?.status
-  const weeklyStatus  = useWeeklyStatus()
-  const _rawAttendanceEvents = useAttendanceRequiredEvents()
-  const _today = toApiDate()
-  const attendanceEvents = _rawAttendanceEvents.filter(e => !e.attendanceDeadline || e.attendanceDeadline >= _today)
-  const weekRange     = getCurrentWeekRange()
-
-  // 행사별 제출 상태 확인 (교사 출석)
-  const teacherAttQueries = useQueries({
-    queries: attendanceEvents
-      .filter(e => e.attendanceTarget === 'TEACHER_ONLY' || e.attendanceTarget === 'BOTH')
-      .map(event => ({
-        queryKey: ['event-teacher-attendance', event.id, user?.id],
-        queryFn: () => eventApi.getMyTeacherAttendance(event.id).then(r => r.data),
-        enabled: !!user,
-        staleTime: 2 * 60 * 1000,
-      })),
-  })
-
-  // 행사별 제출 상태 확인 (학생 출석)
-  const studentAttQueries = useQueries({
-    queries: attendanceEvents
-      .filter(e => !e.attendanceTarget || e.attendanceTarget === 'STUDENT_ONLY' || e.attendanceTarget === 'BOTH')
-      .map(event => ({
-        queryKey: ['event-attendance', event.id, user?.id],
-        queryFn: () => eventApi.getMyClassAttendance(event.id).then(r => r.data),
-        enabled: !!user,
-        staleTime: 2 * 60 * 1000,
-      })),
-  })
-
-  const teacherEventIds = attendanceEvents
-    .filter(e => e.attendanceTarget === 'TEACHER_ONLY' || e.attendanceTarget === 'BOTH')
-    .map(e => e.id)
-  const studentEventIds = attendanceEvents
-    .filter(e => !e.attendanceTarget || e.attendanceTarget === 'STUDENT_ONLY' || e.attendanceTarget === 'BOTH')
-    .map(e => e.id)
-
-  const allEventsDone = attendanceEvents.length > 0 && attendanceEvents.every(event => {
-    const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
-    const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
-    const tIdx = teacherEventIds.indexOf(event.id)
-    const sIdx = studentEventIds.indexOf(event.id)
-    const teacherDone = !needsTeacher || !!teacherAttQueries[tIdx]?.data?.status
-    const studentData = sIdx >= 0 ? (studentAttQueries[sIdx]?.data ?? []) : []
-    const studentDone = !needsStudent || studentData.length === 0 || studentData.some(s => s.status)
-    return teacherDone && studentDone
-  })
-
-  // 출석·TTS·기도모임·교사회의는 언제든 입력/수정 가능, 행사 출석만 진행 중인 행사가 있을 때
-  const eventAttendanceOpen = attendanceEvents.length > 0
-
+  const { user } = useAuthStore()
+  const [filter, setFilter] = useState('all')
+  const savingTts = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
+  const sunday = toApiDate(getWeekStartByOffset(0, 0))
+  const monday = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekMonday = toApiDate(monday)
+  const satDate = toApiDate(addDays(monday, 5))
+  const tts = useQuery({ queryKey: ['tts-week', sunday], enabled: !savingTts,
+    queryFn: () => ttsApi.getWeek(sunday).then(r => r.data), staleTime: 60_000 })
+  const prayer = useQuery({ queryKey: ['prayer-vote', weekMonday, user?.id], enabled: !!user,
+    queryFn: () => prayerVoteApi.getMine(weekMonday).then(r => r.data), staleTime: 120_000 })
+  const meeting = useQuery({ queryKey: ['meeting-attendance', satDate, user?.id], enabled: !!user,
+    queryFn: () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data), staleTime: 120_000 })
+  const weekly = useQuery({ queryKey: ['weekly-status'],
+    queryFn: () => weeklyStatusApi.getStatus().then(r => r.data), staleTime: 120_000 })
+  const eventQuery = useQuery({ queryKey: ['attendance-required-events'],
+    queryFn: () => eventApi.getAttendanceRequired().then(r => r.data), staleTime: 300_000 })
+  const events = (eventQuery.data || []).filter(e => !e.attendanceDeadline || e.attendanceDeadline >= toApiDate())
+  const teacherEvents = events.filter(e => ['BOTH', 'TEACHER_ONLY'].includes(e.attendanceTarget))
+  const studentEvents = events.filter(e => !e.attendanceTarget || ['BOTH', 'STUDENT_ONLY'].includes(e.attendanceTarget))
+  const teacherQueries = useQueries({ queries: teacherEvents.map(e => ({
+    queryKey: ['event-teacher-attendance', e.id, user?.id], enabled: !!user,
+    queryFn: () => eventApi.getMyTeacherAttendance(e.id).then(r => r.data), staleTime: 120_000,
+  })) })
+  const studentQueries = useQueries({ queries: studentEvents.map(e => ({
+    queryKey: ['event-attendance', e.id, user?.id], enabled: !!user,
+    queryFn: () => eventApi.getMyClassAttendance(e.id).then(r => r.data), staleTime: 120_000,
+  })) })
+  const eventState = eventCheckState(eventQuery, events,
+    new Map(teacherEvents.map((e, i) => [e.id, teacherQueries[i]])),
+    new Map(studentEvents.map((e, i) => [e.id, studentQueries[i]])))
   const tasks = [
-    {
-      id: 'attendance',
-      icon: Users,
-      color: weeklyStatus.attendanceSubmittedThisWeek ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-50 text-blue-600',
-      title: '출석 체크',
-      desc: weeklyStatus.attendanceSubmittedThisWeek ? '✅ 이번 주 출결 완료되었습니다.' : '학생들의 출결 현황을 기록하세요',
-      done: weeklyStatus.attendanceSubmittedThisWeek,
-      disabled: false, // 항목 항상 활성화 (페이지 진입 후 안내)
-      path: '/attendance',
-    },
-    {
-      id: 'tts',
-      icon: CheckSquare,
-      color: ttsSubmitted ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-50 text-amber-600',
-      title: 'TTS 체크',
-      desc: ttsSubmitted ? `✅ 이번 주 ${ttsScore}점 · 계속 체크할 수 있어요` : '이번 주 활동을 기록해 주세요',
-      done: ttsSubmitted,
-      disabled: false, // 항목 항상 활성화 (페이지 진입 후 안내)
-      path: '/tts',
-    },
-    {
-      id: 'prayer',
-      icon: Users,
-      color: prayerDone ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600',
-      title: '기도모임 투표',
-      desc: prayerDone ? '✅ 기도모임 투표 완료되었습니다.' : '온라인 기도모임 참석 여부를 투표하세요',
-      done: prayerDone,
-      disabled: false,
-      path: '/meeting/prayer',
-    },
-    {
-      id: 'sat-meeting',
-      icon: CalendarCheck,
-      color: satDone ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-50 text-blue-600',
-      title: '교사회의 체크',
-      desc: satDone
-        ? '✅ 교사 회의 참석 여부 제출 완료'
-        : '토요일 교사 회의 참석 여부를 제출하세요',
-      done: satDone,
-      disabled: false,
-      path: '/meeting/sat',
-    },
-    ...(satData?.status === 'ABSENT' ? [{
-      id: 'minutes',
-      icon: FileText,
-      color: weeklyStatus.currentWeekMinutesConfirmed ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600',
-      title: '회의록 및 영상',
-      desc: weeklyStatus.currentWeekMinutesConfirmed
-        ? '✅ 이번 주 회의록을 확인하셨습니다.'
-        : weeklyStatus.currentWeekMinutesExists
-          ? '이번 주 회의록 확인이 필요합니다.'
-          : '⚠️ 이번 주 회의록이 아직 업로드되지 않았습니다.',
-      done: weeklyStatus.currentWeekMinutesConfirmed,
-      disabled: !weeklyStatus.currentWeekMinutesExists,
-      path: '/minutes',
-    }] : []),
-    {
-      id: 'event-attendance',
-      icon: Calendar,
-      color: allEventsDone ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-50 text-rose-600',
-      title: '행사 출석 체크',
-      desc: !eventAttendanceOpen
-        ? '⚠️ 현재 진행 중인 행사 출석 체크가 없습니다.'
-        : allEventsDone
-          ? `✅ ${attendanceEvents.length}개 행사 출석 체크 완료되었습니다.`
-          : `출석 체크가 필요한 행사 ${attendanceEvents.length}건이 있습니다.`,
-      done: eventAttendanceOpen ? allEventsDone : true,
-      disabled: !eventAttendanceOpen,
-      path: attendanceEvents.length === 1 ? `/event-attendance/${attendanceEvents[0].id}` : '/event-attendance',
-    },
+    { id: 'attendance', icon: Users, title: '우리 반 출석', desc: '담임·부담임이 함께 제출하는 주일 출석', path: '/attendance',
+      state: checkState(weekly, weekly.data?.attendanceSubmittedThisWeek) },
+    { id: 'prayer', icon: Users, title: '기도모임 투표', desc: '온라인 기도모임 참석 여부를 알려주세요', path: '/meeting/prayer',
+      state: checkState(prayer, !!prayer.data) },
+    { id: 'meeting', icon: CalendarCheck, title: '교사회의 체크', desc: '토요일 교사회의 참석 기록', path: '/meeting/sat',
+      state: checkState(meeting, !!meeting.data?.status) },
+    ...(meeting.data?.status === 'ABSENT' ? [{ id: 'minutes', icon: FileText, title: '회의록 및 영상', path: '/minutes',
+      desc: weekly.data?.currentWeekMinutesExists ? '회의 내용과 영상을 확인해 주세요' : '이번 주 회의록 등록을 기다리고 있어요',
+      state: checkState(weekly, weekly.data?.currentWeekMinutesConfirmed) }] : []),
+    { id: 'event', icon: Calendar, title: '행사 출석',
+      desc: eventState === 'none' ? '현재 제출할 행사가 없어요' : `내 출석과 우리 반 출석 확인${events.length ? ` · ${events.length}개 행사` : ''}`,
+      path: events.length === 1 ? `/event-attendance/${events[0].id}` : '/event-attendance', state: eventState },
   ]
-
-  // done이 null이 아닌 항목만 집계
-  const trackable = tasks.filter(t => t.done !== null)
-  const completedCount = trackable.filter(t => t.done).length
-  const incompleteTrackable = trackable.filter(t => !t.done)
-  const allDone = incompleteTrackable.length === 0
-  const progress = Math.round((completedCount / trackable.length) * 100)
+  const summary = summarizeChecks(tasks)
+  const reads = [weekly, prayer, meeting, eventQuery, ...teacherQueries, ...studentQueries]
+  const failedReads = reads.filter(q => q.isError)
+  const visibleTasks = tasks.filter(t => filter === 'all' || (filter === 'done' ? t.state === 'done' : ['pending', 'unknown'].includes(t.state)))
 
   return (
-    <div className="flex flex-col min-h-screen pb-20">
-      <Header title="주간 체크" showBack />
-
-      {/* 서브 헤더 */}
-      <div className="px-4 py-4 glass-effect">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">이번 주 할 일</p>
-            <p className="text-sm font-bold text-gray-700 mt-0.5">{weekRange}</p>
+    <div className="min-h-screen pb-10">
+      <Header title="주간 체크" />
+      <div className="space-y-5 px-4 py-5">
+        <Reveal>
+          <section className="rounded-3xl border border-gray-200 bg-white p-5">
+            <p className="text-xs text-gray-500">{getCurrentWeekRange()}</p>
+            <div className="mt-3 flex items-end justify-between gap-3">
+              <div><h2 className="text-xl font-semibold tracking-tight">{summary.allDone ? '이번 주 제출 완료' : '이번 주 제출 현황'}</h2>
+                <p className="mt-2 text-sm text-gray-500" role="status">{reads.some(q => q.isFetching) ? '최신 제출 상태를 확인하고 있어요' : summary.unknown ? `${summary.unknown}개 항목은 상태 확인이 필요해요` : summary.allDone ? '제출한 기록도 다시 확인할 수 있어요' : `제출할 항목 ${summary.pending}개가 남았어요`}</p></div>
+              <p className="shrink-0 text-2xl font-semibold tabular-nums text-primary-800">{summary.done}<span className="text-sm font-medium text-gray-400"> / {summary.total}</span></p>
+            </div>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-label="주간 제출 완료" aria-valuemin={0} aria-valuemax={summary.total} aria-valuenow={summary.done}>
+              <ProgressFill ratio={summary.total ? summary.done / summary.total : 0} className="bg-primary-600" />
+            </div>
+          </section>
+        </Reveal>
+        {!!failedReads.length && <QueryNotice queries={failedReads} label="주간 체크 기록" />}
+        <section>
+          <SegmentedControl label="체크 상태 필터" value={filter} onChange={setFilter}
+            options={[{ value: 'all', label: '전체' }, { value: 'pending', label: '할 일' }, { value: 'done', label: '완료' }]} />
+          <div className="ui-list mt-3">
+            {visibleTasks.map(task => <Link key={task.id} to={task.path} className="ui-list-row motion-tap">
+              <span className="ui-list-icon"><task.icon size={20} /></span>
+              <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-gray-900">{task.title}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${task.state === 'done' ? 'bg-emerald-50 text-emerald-700' : task.state === 'unknown' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{STATE_LABEL[task.state]}</span>
+              </span><span className="mt-1.5 block text-xs leading-relaxed text-gray-500">{task.desc}</span></span>
+              {task.state === 'done' ? <CheckCircle2 size={18} className="shrink-0 text-emerald-600" /> : <ChevronRight size={17} className="shrink-0 text-gray-400" />}
+            </Link>)}
+            {!visibleTasks.length && <p role="status" className="p-6 text-center text-sm text-gray-500">{filter === 'done' ? '아직 완료된 항목이 없어요.' : '남은 제출 항목이 없어요.'}</p>}
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <p className="text-xs font-bold text-primary-600">{completedCount}/{trackable.length} 완료</p>
-            <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary-500 rounded-full transition-all duration-700"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 py-3 flex flex-col gap-4">
-
-        {/* 대시보드 리스트 */}
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-          {allDone && (
-            <div className="rounded-[1.5rem] p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                <Sparkles size={18} className="text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-emerald-800">이번 주 할 일 모두 완료!</p>
-                <p className="text-xs text-emerald-500 font-bold mt-0.5">수고하셨어요 😊</p>
-              </div>
-            </div>
-          )}
-          <div className="rounded-[1.5rem] mt-3 overflow-hidden border border-amber-100 bg-white">
-            {!allDone && (
-              <div className="px-5 py-4 bg-gradient-to-r from-amber-50 to-orange-50 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
-                    <AlertCircle size={16} className="text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">이번 주 미완료</p>
-                    <p className="text-xs text-amber-500 font-bold mt-0.5">
-                      {incompleteTrackable.length}개 항목 남음
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <p className="text-xs font-bold text-amber-600">{progress}%</p>
-                  <div className="w-20 h-1.5 bg-amber-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-amber-400 rounded-full transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-              <div className="bg-white divide-y divide-gray-50 flex flex-col gap-2 p-3">
-                {tasks.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => { if (!t.disabled) navigate(t.path) }}
-                    disabled={t.disabled}
-                    className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl border transition-all group ${
-                      t.done ? 'bg-emerald-50/50 border-emerald-100 shadow-sm' : 
-                      t.disabled ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed' : 'bg-white border-gray-100 shadow-sm hover:border-primary-200 active:scale-[0.98]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                        t.disabled && !t.done ? 'bg-gray-200 text-gray-400' : t.color
-                      }`}>
-                        <t.icon size={18} />
-                      </div>
-                      <div className="text-left">
-                        <p className={`text-sm font-bold ${t.disabled && !t.done ? 'text-gray-500' : 'text-gray-800'}`}>
-                          {t.title}
-                        </p>
-                        <p className={`text-xs font-medium mt-0.5 ${
-                          t.done ? 'text-emerald-600' : t.disabled ? 'text-red-400' : 'text-gray-400'
-                        }`}>
-                          {t.desc}
-                        </p>
-                      </div>
-                    </div>
-                    {t.done ? (
-                      <CheckCircle2 size={18} className="text-emerald-500 flex-shrink-0" />
-                    ) : (
-                      !t.disabled && <ChevronRight size={16} className="text-gray-300 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-        </motion.div>
-
+        </section>
+        <section>
+          <h2 className="ui-section-title mb-3 px-1">매일 이어가는 TTS</h2>
+          <Link to="/tts" className="ui-list ui-list-row motion-tap">
+            <span className="ui-list-icon"><CheckSquare size={21} /></span>
+            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{savingTts ? 'TTS 저장 중' : knownQuery(tts) ? `이번 주 ${tts.data?.score ?? 0}점` : 'TTS 기록 확인'}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-gray-500">하루씩 기록해요 · 제출 완료 개수에 포함되지 않아요</span></span>
+            <ChevronRight size={17} className="shrink-0 text-gray-400" />
+          </Link>
+          <QueryRefreshNotice queries={[tts]} label="TTS 기록" />
+        </section>
       </div>
     </div>
   )
