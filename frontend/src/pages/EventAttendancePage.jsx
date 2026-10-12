@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -12,7 +11,10 @@ import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
 import QueryNotice from '../components/common/QueryNotice'
-import { queryReadState } from '../utils/queryReadState'
+import { queryReadState, hasQueryData } from '../utils/queryReadState'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import { useStudentAttendanceDraft, useTeacherAttendanceDraft } from '../hooks/useAttendanceDraft'
+import { confirmAttendance } from '../utils/attendanceDraft'
 
 export default function EventAttendancePage() {
   const { id } = useParams()
@@ -44,53 +46,24 @@ export default function EventAttendancePage() {
   const myTeacherAttendance = teacherQuery.data
   const reads = [eventQuery, ...(event && needsStudentCheck ? [studentsQuery] : []), ...(needsTeacherCheck ? [teacherQuery] : [])]
   const ready = queryReadState(reads) === 'ready'
-  const isLoading = !ready
+  const isLoading = !hasQueryData(reads)
 
   const isMultiDay = event?.endDate && event.endDate !== event.eventDate
 
-  // 학생 출석 상태 맵
-  const [statusMap,          setStatusMap]          = useState({})
-  const [reasonMap,          setReasonMap]          = useState({})
-  const [partialFromDateMap, setPartialFromDateMap] = useState({})
-  const [partialNoteMap,     setPartialNoteMap]     = useState({})
-  const [submitted,          setSubmitted]          = useState(false)
-  const [editing,            setEditing]            = useState(false)
-
-  // 기존 데이터로 초기화
-  useEffect(() => {
-    if (students.length > 0) {
-      const sMap = {}, rMap = {}, pDateMap = {}, pNoteMap = {}
-      students.forEach(s => {
-        if (s.status) {
-          sMap[s.studentId]     = s.status
-          rMap[s.studentId]     = s.absenceReason || ''
-          pDateMap[s.studentId] = s.partialFromDate || ''
-          pNoteMap[s.studentId] = s.partialNote || ''
-        } else {
-          sMap[s.studentId]     = 'PRESENT'
-          rMap[s.studentId]     = ''
-          pDateMap[s.studentId] = ''
-          pNoteMap[s.studentId] = ''
-        }
-      })
-      setStatusMap(sMap)
-      setReasonMap(rMap)
-      setPartialFromDateMap(pDateMap)
-      setPartialNoteMap(pNoteMap)
-      setSubmitted(students.every(s => !!s.status))
-    }
-  }, [students])
+  const studentDraft = useStudentAttendanceDraft(`${eventId}:${user?.id}:students`, students)
+  const { statusMap, setStatusMap, reasonMap, setReasonMap, partialFromDateMap, setPartialFromDateMap,
+    partialNoteMap, setPartialNoteMap, submitted, editing, setEditing } = studentDraft
 
   const saveMutation = useMutation({
-    mutationFn: (records) => {
+    mutationFn: async (records) => {
       if (!ready) throw new Error('행사 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
-      return eventApi.saveStudentAttendance(eventId, records)
+      await eventApi.saveStudentAttendance(eventId, records)
+      return { records, queryKey: ['event-attendance', eventId, user?.id], key: studentDraft.key }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event-attendance', eventId, user?.id] })
-      setSubmitted(true)
-      setEditing(false)
+    onSuccess: async ({ records, queryKey, key }) => {
+      await confirmAttendance(queryClient, queryKey, records)
+      studentDraft.reset(key)
     },
     onError: (err) => {
       console.error(err)
@@ -98,39 +71,25 @@ export default function EventAttendancePage() {
     }
   })
 
-  // 교사 출석 상태
-  const [pendingTeacherStatus, setPendingTeacherStatus] = useState(null)
-  const [partialFromDate,       setPartialFromDate]      = useState('')
-  const [partialNote,           setPartialNote]          = useState('')
-  const [teacherAbsenceReason,  setTeacherAbsenceReason] = useState('')
-  const [teacherSubmitted,      setTeacherSubmitted]     = useState(false)
-  const [teacherEditing,        setTeacherEditing]       = useState(false)
-
-  useEffect(() => {
-    if (myTeacherAttendance?.status) {
-      setPendingTeacherStatus(myTeacherAttendance.status)
-      setPartialFromDate(myTeacherAttendance.partialFromDate || '')
-      setPartialNote(myTeacherAttendance.partialNote || '')
-      setTeacherAbsenceReason(myTeacherAttendance.absenceReason || '')
-      setTeacherSubmitted(true)
-    }
-  }, [myTeacherAttendance])
+  const teacherDraft = useTeacherAttendanceDraft(`${eventId}:${user?.id}:teacher`, myTeacherAttendance)
+  const { pending: pendingTeacherStatus, setPending: setPendingTeacherStatus, partialFromDate, setPartialFromDate,
+    partialNote, setPartialNote, absenceReason: teacherAbsenceReason, setAbsenceReason: setTeacherAbsenceReason,
+    submitted: teacherSubmitted, editing: teacherEditing, setEditing: setTeacherEditing } = teacherDraft
 
   const teacherAttendanceMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!ready) throw new Error('행사 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
-      return eventApi.saveTeacherAttendance(
-        eventId, pendingTeacherStatus,
-        pendingTeacherStatus === 'PARTIAL' ? partialFromDate || null : null,
-        pendingTeacherStatus === 'PARTIAL' ? partialNote || null : null,
-        pendingTeacherStatus === 'ABSENT' ? teacherAbsenceReason || null : null
-      )
+      const record = { status: pendingTeacherStatus,
+        partialFromDate: pendingTeacherStatus === 'PARTIAL' ? partialFromDate || null : null,
+        partialNote: pendingTeacherStatus === 'PARTIAL' ? partialNote || null : null,
+        absenceReason: pendingTeacherStatus === 'ABSENT' ? teacherAbsenceReason || null : null }
+      await eventApi.saveTeacherAttendance(eventId, record.status, record.partialFromDate, record.partialNote, record.absenceReason)
+      return { record, queryKey: ['event-teacher-attendance', eventId, user?.id], key: teacherDraft.key }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, user?.id] })
-      setTeacherSubmitted(true)
-      setTeacherEditing(false)
+    onSuccess: async ({ record, queryKey, key }) => {
+      await confirmAttendance(queryClient, queryKey, record)
+      teacherDraft.reset(key)
     },
     onError: (err) => {
       alert(err.response?.data?.message || err.message || '제출 중 오류가 발생했습니다.')
@@ -140,20 +99,6 @@ export default function EventAttendancePage() {
   const teacherCanSubmit = pendingTeacherStatus &&
     (pendingTeacherStatus !== 'PARTIAL' || partialFromDate) &&
     (pendingTeacherStatus !== 'ABSENT' || teacherAbsenceReason.trim() !== '')
-
-  // 학생 상태 설정 (3단 순환: PRESENT → PARTIAL → ABSENT, 단일 행사면 2단)
-  const cycleStatus = (studentId) => {
-    setStatusMap(prev => {
-      const cur = prev[studentId] || 'PRESENT'
-      let next
-      if (isMultiDay) {
-        next = cur === 'PRESENT' ? 'PARTIAL' : cur === 'PARTIAL' ? 'ABSENT' : 'PRESENT'
-      } else {
-        next = cur === 'PRESENT' ? 'ABSENT' : 'PRESENT'
-      }
-      return { ...prev, [studentId]: next }
-    })
-  }
 
   // 특정 상태로 직접 설정
   const setStudentStatus = (studentId, status) => {
@@ -183,7 +128,7 @@ export default function EventAttendancePage() {
   const missingPartials = Object.entries(statusMap).filter(([id, s]) => s === 'PARTIAL' && !partialFromDateMap[id])
   const canSubmit = missingReasons.length === 0 && missingPartials.length === 0
 
-  if (!ready) return <div className="pb-10">
+  if (!hasQueryData(reads)) return <div className="pb-10">
     <Header title="행사 출석 체크" showBack />
     <div className="p-4"><QueryNotice queries={reads} label="행사 출석 기록" /></div>
   </div>
@@ -213,7 +158,8 @@ export default function EventAttendancePage() {
         </div>
       )}
 
-      <div className="px-4 py-5 flex flex-col gap-4">
+      <div className="px-4 pt-3"><QueryRefreshNotice queries={reads} label="행사 출석 기록" /></div>
+      <fieldset disabled={!ready || saveMutation.isPending || teacherAttendanceMutation.isPending} className="min-w-0 px-4 py-5 flex flex-col gap-4">
 
         {/* 교사 본인 출석 체크 */}
         {needsTeacherCheck && (
@@ -598,7 +544,7 @@ export default function EventAttendancePage() {
         )}
 
         </>)}
-      </div>
+      </fieldset>
     </div>
   )
 }

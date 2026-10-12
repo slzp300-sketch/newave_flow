@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -15,7 +15,10 @@ import useAuthStore from '../store/authStore'
 import { toApiDate } from '../utils/date'
 import { isEventAttendanceClosed, assertEventAttendanceOpen } from '../utils/eventAttendance'
 import QueryNotice from '../components/common/QueryNotice'
-import { queryReadState } from '../utils/queryReadState'
+import { queryReadState, hasQueryData } from '../utils/queryReadState'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import { useStudentAttendanceDraft, useTeacherAttendanceDraft } from '../hooks/useAttendanceDraft'
+import { confirmAttendance } from '../utils/attendanceDraft'
 
 const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
 const STATUS_COLOR = {
@@ -31,13 +34,6 @@ function TeacherSelfCheck({ event, userId }) {
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
 
-  const [pending, setPending]             = useState(null)
-  const [partialFromDate, setPartialFromDate] = useState('')
-  const [partialNote, setPartialNote]     = useState('')
-  const [absenceReason, setAbsenceReason] = useState('')
-  const [submitted, setSubmitted]         = useState(false)
-  const [editing, setEditing]             = useState(false)
-
   const attendanceQuery = useQuery({
     queryKey: ['event-teacher-attendance', eventId, userId],
     queryFn: () => eventApi.getMyTeacherAttendance(eventId).then(r => r.data),
@@ -46,31 +42,24 @@ function TeacherSelfCheck({ event, userId }) {
   const myAtt = attendanceQuery.data
   const ready = queryReadState([attendanceQuery]) === 'ready'
 
-  useEffect(() => {
-    if (myAtt?.status) {
-      setPending(myAtt.status)
-      setPartialFromDate(myAtt.partialFromDate || '')
-      setPartialNote(myAtt.partialNote || '')
-      setAbsenceReason(myAtt.absenceReason || '')
-      setSubmitted(true)
-    }
-  }, [myAtt])
+  const draft = useTeacherAttendanceDraft(`${eventId}:${userId}:teacher`, myAtt)
+  const { pending, setPending, partialFromDate, setPartialFromDate, partialNote, setPartialNote,
+    absenceReason, setAbsenceReason, submitted, editing, setEditing } = draft
 
   const saveMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!ready) throw new Error('교사 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
-      return eventApi.saveTeacherAttendance(
-        eventId, pending,
-        pending === 'PARTIAL' ? partialFromDate || null : null,
-        pending === 'PARTIAL' ? partialNote || null : null,
-        pending === 'ABSENT'  ? absenceReason || null : null,
-      )
+      const record = { status: pending,
+        partialFromDate: pending === 'PARTIAL' ? partialFromDate || null : null,
+        partialNote: pending === 'PARTIAL' ? partialNote || null : null,
+        absenceReason: pending === 'ABSENT' ? absenceReason || null : null }
+      await eventApi.saveTeacherAttendance(eventId, record.status, record.partialFromDate, record.partialNote, record.absenceReason)
+      return { record, queryKey: ['event-teacher-attendance', eventId, userId], key: draft.key }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['event-teacher-attendance', eventId, userId] })
-      setSubmitted(true)
-      setEditing(false)
+    onSuccess: async ({ record, queryKey, key }) => {
+      await confirmAttendance(qc, queryKey, record)
+      draft.reset(key)
     },
     onError: (err) => alert(err.response?.data?.message || err.message || '출석을 저장하지 못했어요. 다시 시도해 주세요.'),
   })
@@ -81,10 +70,12 @@ function TeacherSelfCheck({ event, userId }) {
   const isEditable = (!submitted || editing) && !isPastDeadline
   const statusKeys = isMultiDay ? ['PRESENT', 'PARTIAL', 'ABSENT'] : ['PRESENT', 'ABSENT']
 
-  if (!ready) return <QueryNotice queries={[attendanceQuery]} label="교사 출석 기록" />
+  if (!hasQueryData([attendanceQuery])) return <QueryNotice queries={[attendanceQuery]} label="교사 출석 기록" />
 
   return (
     <div className="flex flex-col gap-3">
+      <QueryRefreshNotice queries={[attendanceQuery]} label="교사 출석 기록" />
+      <fieldset disabled={!ready || saveMutation.isPending} className="min-w-0 flex flex-col gap-3">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">내 출석 체크</p>
 
       {/* 제출 완료 배너 */}
@@ -187,6 +178,7 @@ function TeacherSelfCheck({ event, userId }) {
           </Button>
         </div>
       )}
+      </fieldset>
     </div>
   )
 }
@@ -198,13 +190,6 @@ function StudentAttendanceCheck({ event, userId }) {
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
 
-  const [statusMap,          setStatusMap]          = useState({})
-  const [reasonMap,          setReasonMap]          = useState({})
-  const [partialFromDateMap, setPartialFromDateMap] = useState({})
-  const [partialNoteMap,     setPartialNoteMap]     = useState({})
-  const [submitted,          setSubmitted]          = useState(false)
-  const [editing,            setEditing]            = useState(false)
-
   const studentsQuery = useQuery({
     queryKey: ['event-attendance', eventId, userId],
     queryFn: () => eventApi.getMyClassAttendance(eventId).then(r => r.data),
@@ -213,30 +198,20 @@ function StudentAttendanceCheck({ event, userId }) {
   const students = studentsQuery.data || []
   const ready = queryReadState([studentsQuery]) === 'ready'
 
-  useEffect(() => {
-    if (students.length > 0) {
-      const sMap = {}, rMap = {}, pDateMap = {}, pNoteMap = {}
-      students.forEach(s => {
-        sMap[s.studentId]     = s.status || 'PRESENT'
-        rMap[s.studentId]     = s.absenceReason || ''
-        pDateMap[s.studentId] = s.partialFromDate || ''
-        pNoteMap[s.studentId] = s.partialNote || ''
-      })
-      setStatusMap(sMap); setReasonMap(rMap)
-      setPartialFromDateMap(pDateMap); setPartialNoteMap(pNoteMap)
-      setSubmitted(students.every(s => !!s.status))
-    }
-  }, [students])
+  const draft = useStudentAttendanceDraft(`${eventId}:${userId}:students`, students)
+  const { statusMap, setStatusMap, reasonMap, setReasonMap, partialFromDateMap, setPartialFromDateMap,
+    partialNoteMap, setPartialNoteMap, submitted, editing, setEditing } = draft
 
   const saveMutation = useMutation({
-    mutationFn: (records) => {
+    mutationFn: async (records) => {
       if (!ready) throw new Error('학생 출석 기록을 불러온 뒤 다시 시도해 주세요.')
       assertEventAttendanceOpen(event)
-      return eventApi.saveStudentAttendance(eventId, records)
+      await eventApi.saveStudentAttendance(eventId, records)
+      return { records, queryKey: ['event-attendance', eventId, userId], key: draft.key }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['event-attendance', eventId, userId] })
-      setSubmitted(true); setEditing(false)
+    onSuccess: async ({ records, queryKey, key }) => {
+      await confirmAttendance(qc, queryKey, records)
+      draft.reset(key)
     },
     onError: (err) => alert('제출 중 오류: ' + (err.response?.data?.message || err.message)),
   })
@@ -265,10 +240,12 @@ function StudentAttendanceCheck({ event, userId }) {
     : []
   const canSubmit = isEditable && students.length > 0 && missingReasons.length === 0 && missingPartials.length === 0
 
-  if (!ready) return <QueryNotice queries={[studentsQuery]} label="학생 출석 기록" />
+  if (!hasQueryData([studentsQuery])) return <QueryNotice queries={[studentsQuery]} label="학생 출석 기록" />
 
   return (
     <div className="flex flex-col gap-3">
+      <QueryRefreshNotice queries={[studentsQuery]} label="학생 출석 기록" />
+      <fieldset disabled={!ready || saveMutation.isPending} className="min-w-0 flex flex-col gap-3">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학생 출석 현황</p>
 
       {/* 통계 */}
@@ -408,6 +385,7 @@ function StudentAttendanceCheck({ event, userId }) {
           </Button>
         </div>
       )}
+      </fieldset>
     </div>
   )
 }
@@ -458,7 +436,7 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
   const readState = queryReadState(reads)
   const teacherDone = !needsTeacher || !!teacherAtt?.status
   const studentDone = !needsStudent || students.length === 0 || students.every(s => s.status)
-  const isSubmitted = readState === 'ready' && teacherDone && studentDone
+  const isSubmitted = hasQueryData(reads) && teacherDone && studentDone
 
   return (
     <button
@@ -484,7 +462,7 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
                 제출 완료
               </span>
             )}
-            {readState !== 'ready' && <span className="text-xs text-gray-500">
+            {(readState === 'error' || !hasQueryData(reads)) && <span className="text-xs text-gray-500">
               {readState === 'error' ? '출석 현황 조회 실패 · 펼쳐서 다시 시도' : '출석 현황 확인 중...'}
             </span>}
           </div>
@@ -535,10 +513,11 @@ export default function EventAttendanceListPage() {
       <div className="px-4 py-5 flex flex-col gap-3">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">출석 체크가 필요한 행사</p>
 
-        {queryReadState([eventsQuery]) !== 'ready' && (
+        {!hasQueryData([eventsQuery]) && (
           <QueryNotice queries={[eventsQuery]} label="행사 목록" />
         )}
-        <div className="space-y-3" hidden={queryReadState([eventsQuery]) !== 'ready'}>
+        <div className="space-y-3" hidden={!hasQueryData([eventsQuery])}>
+        <QueryRefreshNotice queries={[eventsQuery]} label="행사 목록" />
         {events.length === 0 ? (
           <Card className="py-14 flex flex-col items-center gap-3">
             <Calendar size={32} className="text-gray-200" />
@@ -573,7 +552,9 @@ export default function EventAttendanceListPage() {
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                     >
                       <div className="border-t border-gray-50" />
-                      <EventPanel event={event} user={user} />
+                      <fieldset disabled={queryReadState([eventsQuery]) !== 'ready'} className="min-w-0">
+                        <EventPanel event={event} user={user} />
+                      </fieldset>
                     </motion.div>
                   )}
                 </AnimatePresence>

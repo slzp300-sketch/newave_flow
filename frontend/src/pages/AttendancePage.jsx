@@ -17,7 +17,9 @@ import Button from '../components/common/Button'
 import Card from '../components/common/Card'
 import WeekNavigator from '../components/common/WeekNavigator'
 import QueryNotice from '../components/common/QueryNotice'
-import { queryReadState } from '../utils/queryReadState'
+import { queryReadState, hasQueryData } from '../utils/queryReadState'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import { confirmAttendance } from '../utils/attendanceDraft'
 
 const STATUS_CONFIG = {
   PRESENT: { label: '출석', color: 'emerald', icon: UserCheck },
@@ -74,7 +76,7 @@ export default function AttendancePage() {
   const reportStatus = reportQuery.data
   const reads = classId ? [classesQuery, studentsQuery, recordsQuery, reportQuery] : [classesQuery]
   const ready = queryReadState(reads) === 'ready'
-  const isSubmitted = reportStatus?.status === 'SUBMITTED' && editingKey !== formKey
+  const isSubmitted = reportStatus?.status === 'SUBMITTED' && editingKey !== formKey && draft?.key !== formKey
   const savedForm = useMemo(() => {
     const initial = {}
     ;(records || []).forEach(r => {
@@ -115,14 +117,18 @@ export default function AttendancePage() {
         }
       })
       await attendanceApi.saveBatch(classId, today, batchRecords)
-      return attendanceApi.submit(classId, today)
+      await attendanceApi.submit(classId, today)
+      return { classId, today, batchRecords, formKey }
     },
-    onSuccess: () => {
-      setEditingKey(null)
-      setDraft(null)
-      qc.invalidateQueries({ queryKey: ['attendance'] })
-      qc.invalidateQueries({ queryKey: ['report-status'] })
-      qc.invalidateQueries({ queryKey: ['weekly-status'] })
+    onSuccess: async ({ classId, today, batchRecords, formKey: savedKey }) => {
+      await Promise.all([
+        confirmAttendance(qc, ['attendance', classId, today], batchRecords),
+        // The submit endpoint has no body. Do not reuse an older submission time.
+        confirmAttendance(qc, ['report-status', classId, today], { status: 'SUBMITTED', updatedAt: null, submittedAt: null }),
+      ])
+      setEditingKey(previous => previous === savedKey ? null : previous)
+      setDraft(previous => previous?.key === savedKey ? null : previous)
+      void qc.invalidateQueries({ queryKey: ['weekly-status'] })
     },
     onError: (err) => alert(err.response?.data?.message || err.message || '저장 중 오류가 발생했습니다.'),
   })
@@ -139,7 +145,7 @@ export default function AttendancePage() {
   )
   const lastUpdated = reportStatus?.updatedAt || reportStatus?.submittedAt
 
-  if (!ready) return <div className="pb-24">
+  if (!hasQueryData(reads)) return <div className="pb-24">
     <Header title="출석 체크" showBack />
     <div className="px-4 py-3">{weekNav}</div>
     <div className="px-4"><QueryNotice queries={reads} label="출석 기록" /></div>
@@ -149,6 +155,7 @@ export default function AttendancePage() {
     return (
       <div className="flex flex-col min-h-screen">
         <Header title="출석 체크" showBack />
+        <div className="px-4"><QueryRefreshNotice queries={reads} label="담당 반" /></div>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
           <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center text-4xl">📋</div>
           <div>
@@ -170,6 +177,8 @@ export default function AttendancePage() {
         onEdit={() => setEditingKey(formKey)}
         weekNav={weekNav}
         lastUpdated={lastUpdated}
+        reads={reads}
+        canEdit={ready && !isSubmitting}
       />
     )
   }
@@ -195,6 +204,7 @@ export default function AttendancePage() {
       </div>
 
       <div className="px-4 pt-4">
+        <QueryRefreshNotice queries={reads} label="출석 기록" />
         <p className="text-sm text-gray-500 mb-3">담임·부담임 공동 기록</p>
         <div className="grid grid-cols-3 gap-2" aria-label="출석 인원 요약">
           {[
@@ -207,7 +217,7 @@ export default function AttendancePage() {
         </div>
       </div>
       {/* 학생 목록 */}
-      <fieldset disabled={isSubmitting} className="px-4 py-4 flex flex-col gap-3 min-w-0">
+      <fieldset disabled={!ready || isSubmitting} className="px-4 py-4 flex flex-col gap-3 min-w-0">
         {students.map((student, idx) => (
           <StudentAttendanceCard
             key={student.id}
@@ -344,7 +354,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
   )
 }
 
-function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit, weekNav, lastUpdated }) {
+function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit, weekNav, lastUpdated, reads, canEdit }) {
   const counts = students.reduce((acc, s) => {
     const status = formData[s.id]?.status || 'ABSENT'
     acc[status] = (acc[status] || 0) + 1
@@ -355,6 +365,7 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="출석 완료" showBack />
       <div className="px-4 py-3 glass-effect border-b border-gray-100">{weekNav}</div>
+      <div className="px-4"><QueryRefreshNotice queries={reads} label="출석 기록" /></div>
 
       <div className="px-6 pt-10 pb-6 flex flex-col items-center gap-6">
         <motion.div
@@ -404,6 +415,7 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
         <div className="mt-6 flex flex-col items-center gap-4">
           <button
               onClick={onEdit}
+              disabled={!canEdit}
               className="text-primary-600 font-bold text-sm underline underline-offset-4 active:opacity-60"
             >
               수정하기
