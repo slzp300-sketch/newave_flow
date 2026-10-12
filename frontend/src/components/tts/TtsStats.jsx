@@ -21,11 +21,11 @@ const weekRange = (year, week) => {
   return `${format(sunday, 'M/d')}~${format(addDays(sunday, 6), 'M/d')}`
 }
 
-export default function TtsStats() {
+export default function TtsStats({ initialView = 'weekly' }) {
   const { user } = useAuthStore()
   const [year, setYear] = useState(ttsYear)
   const [quarter, setQuarter] = useState(() => defaultQuarter(ttsYear()))
-  const [view, setView] = useState('weekly')
+  const [view, setView] = useState(initialView)
   const [selectedWeek, setSelectedWeek] = useState(null)
   const [focusKey, setFocusKey] = useState(null)
   const range = quartersForYear(year).find(x => x.q === quarter)

@@ -1,5 +1,11 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { isNativeApp, secureAuthStorage } from '../native/platform'
+
+let hydrationError = null
+export function assertAuthHydrated() {
+  if (hydrationError) throw hydrationError
+}
 
 const useAuthStore = create(
   persist(
@@ -27,13 +33,16 @@ const useAuthStore = create(
     }),
     {
       name: 'newave-auth',
+      storage: createJSONStorage(() => isNativeApp ? secureAuthStorage : localStorage),
+      skipHydration: isNativeApp,
       partialize: (state) => ({
         user:         state.user,
         accessToken:  state.accessToken,
         refreshToken: state.refreshToken,
       }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHydrated()
+      onRehydrateStorage: () => (state, error) => {
+        hydrationError = error ?? null
+        if (!error) state?.setHydrated()
       },
     }
   )

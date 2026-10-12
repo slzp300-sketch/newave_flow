@@ -1,5 +1,5 @@
 import { useState, useMemo, useSyncExternalStore, useId } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
 import { Reveal, AnimatedValue, ProgressFill, SelectionMark } from '../components/common/Motion'
 import { addDays, format } from 'date-fns'
@@ -12,6 +12,7 @@ import QueryNotice from '../components/common/QueryNotice'
 import { ttsReadState, ttsAnswerOptions } from '../utils/ttsQuery'
 import SegmentedControl from '../components/common/SegmentedControl'
 import TtsStats from '../components/tts/TtsStats'
+import HomeTtsSummary from '../components/tts/HomeTtsSummary'
 import { firstTtsOffset } from '../utils/ttsPeriod'
 import useToday from '../hooks/useToday'
 import { todayTtsChecks } from '../utils/attention'
@@ -50,7 +51,14 @@ export function calcScore(questions, answers, linked) {
 }
 
 export default function TTSPage() {
-  const [tab, setTab] = useState('check')
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'stats' ? 'stats' : 'check'
+  const setTab = value => setParams(previous => {
+    const next = new URLSearchParams(previous)
+    next.set('tab', value)
+    if (value === 'check') next.delete('view')
+    return next
+  }, { replace: true })
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="TTS" showBack />
@@ -58,7 +66,7 @@ export default function TTSPage() {
         <SegmentedControl label="TTS 보기" value={tab} onChange={setTab}
           options={[{ value: 'check', label: '내 체크' }, { value: 'stats', label: '통계 · 상세' }]} />
       </div>
-      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats />}</div>
+      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats initialView={params.get('view') === 'mine' ? 'mine' : 'weekly'} />}</div>
     </div>
   )
 }
@@ -143,6 +151,13 @@ export function CheckTab({ embedded = false }) {
   const withColor      = questions.map((q, i) => ({ q, color: PALETTE[i % PALETTE.length] }))
   const dayQuestions   = withColor.filter(({ q }) => isDaily(q))
   const otherQuestions = withColor.filter(({ q }) => !isDaily(q))
+  const summaryItems = withColor.map(({ q, color }) => ({
+    q, color, daily: isDaily(q),
+    done: isLinked(q) ? (linked[q.id] ? 1 : 0)
+      : q.type === 'ATTEND' ? (answers[q.id] === true ? 1 : 0)
+      : DAYS.filter(d => answers[q.id]?.[d]).length,
+    total: isDaily(q) ? DAYS.length : 1,
+  }))
 
   const labels = weekLabels(sunday)
 
@@ -203,13 +218,16 @@ export function CheckTab({ embedded = false }) {
               </button>)}
             </div>
             {!todayChecks.length && <p className="mt-3 text-sm text-gray-500">오늘 직접 체크할 항목이 없어요. 이번 주 기록을 확인해 주세요.</p>}
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <p>이번 주 <strong className="text-primary-700">{score}</strong> / {maxScore}점</p>
+            <div className="mt-2 min-h-4 text-right text-xs text-gray-500">
               <p role="status" aria-live="polite">{offline ? (saving ? '연결 대기 · 미저장' : '연결 확인 필요') : saving ? '저장 중…' : saveError ? '저장 실패 확인' : !ready ? '연결 확인 필요' : readState.refreshing ? '최신 기록 확인 중…' : todayChecks.length > 0 && todayChecks.every(c => c.checked) ? '오늘 체크 저장 완료' : '자동 저장'}</p>
             </div>
+            <HomeTtsSummary score={score} maxScore={maxScore}
+              range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
+              items={summaryItems} answers={answers}
+              days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr, today: i === todayIdx }))} />
             <div className="mt-3 flex gap-2">
-              <button type="button" aria-expanded={expanded} aria-controls={detailId} onClick={() => setExpanded(!expanded)} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">{expanded ? '이번 주 접기' : '이번 주 펼치기'}</button>
-              <button type="button" onClick={() => navigate('/tts')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">기록 · 통계</button>
+              <button type="button" aria-expanded={expanded} aria-controls={detailId} onClick={() => setExpanded(!expanded)} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">{expanded ? '기록 수정 접기' : '이번 주 기록 수정'}</button>
+              <button type="button" onClick={() => navigate('/tts?tab=stats&view=mine')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">내 상세 통계</button>
             </div>
           </section> : <ScoreCard
             compact={embedded}
@@ -218,14 +236,7 @@ export function CheckTab({ embedded = false }) {
             score={score}
             maxScore={maxScore}
             weekLabel={labels.monthWeek}
-            items={withColor.map(({ q, color }) => ({
-              q,
-              color,
-              done: isLinked(q) ? (linked[q.id] ? 1 : 0)
-                : q.type === 'ATTEND' ? (answers[q.id] === true ? 1 : 0)
-                : DAYS.filter(d => answers[q.id]?.[d]).length,
-              total: isDaily(q) ? DAYS.length : 1,
-            }))}
+            items={summaryItems}
             message={
               maxScore > 0 && score >= maxScore ? { done: true, text: '이번 주 만점이에요! 수고했어요' }
               : offset === 0 && todayIdx >= 0 ? (remainingToday.length

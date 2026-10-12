@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
@@ -33,6 +33,34 @@ jobs:
           java-version: '17'
           cache: gradle
       - run: bash gradlew build --no-daemon
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run android:sync
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - run: bash android/gradlew -p android assembleDebug bundleRelease lintDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-internal-build
+          path: |
+            frontend/android/app/build/outputs/apk/debug/*.apk
+            frontend/android/app/build/outputs/bundle/release/*.aab
+            frontend/android/app/build/reports/lint-results-debug.html
+          retention-days: 14
   postgres-migration:
     name: postgres-migration (PostgreSQL ${{ matrix.postgresql }})
     runs-on: ubuntu-latest

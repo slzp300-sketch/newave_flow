@@ -3,13 +3,14 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { primary, neutral } from './brand-theme.js'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   define: {
     __APP_BUILD_ID__: JSON.stringify((process.env.VERCEL_GIT_COMMIT_SHA || process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 7) || new Date().toISOString()),
   },
   plugins: [
     react(),
     VitePWA({
+      disable: mode === 'native',
       registerType: 'prompt',
       injectRegister: false,
       workbox: { clientsClaim: true },
@@ -36,4 +37,4 @@ export default defineConfig({
       '/api': { target: 'http://localhost:8080', changeOrigin: true },
     },
   },
-})
+}))

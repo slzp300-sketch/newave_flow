@@ -1,0 +1,7 @@
+{
+  "appId": "app.newaveflow.mobile",
+  "appName": "Newave Flow",
+  "webDir": "dist-native",
+  "server": { "hostname": "localhost", "androidScheme": "https", "cleartext": false },
+  "android": { "allowMixedContent": false, "webContentsDebuggingEnabled": false, "adjustMarginsForEdgeToEdge": "auto" }
+}

@@ -7,6 +7,7 @@ import useAuthStore from '../store/authStore'
 import Button from '../components/common/Button'
 import Brand from '../components/common/Brand'
 import EmailInput from '../components/common/EmailInput'
+import { flushAuthStorage } from '../native/platform'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -30,9 +31,10 @@ export default function Login() {
       const { data } = await authApi.login(form.email, form.password)
       queryClient.clear()
       setAuth(data.user, data.accessToken, data.refreshToken)
+      await flushAuthStorage()
       navigate('/', { replace: true })
     } catch (err) {
-      setError(err.response?.data?.message ?? '로그인에 실패했습니다.')
+      setError(err.response?.data?.message ?? '로그인 또는 기기 저장에 실패했습니다. 다시 시도해 주세요.')
     } finally {
       setLoading(false)
     }
@@ -76,6 +78,10 @@ export default function Login() {
         </div>
         <div className="mt-5 pt-5 border-t border-gray-200 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-500">
           <span>처음 오셨나요?</span> <button onClick={() => navigate('/signup')} className="min-h-11 rounded-xl px-5 py-3 font-semibold text-primary-700">회원가입</button>
+        </div>
+        <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
+          <button className="min-h-11 px-4 py-3 rounded-xl" onClick={() => navigate('/support')}>고객지원</button>
+          <button className="min-h-11 px-4 py-3 rounded-xl" onClick={() => navigate('/account-deletion')}>계정 삭제 요청</button>
         </div>
         <p className="text-center mt-5 text-xs tracking-[.2em] text-gray-400">NEWAVE YOUTH MINISTRY</p>
       </div>

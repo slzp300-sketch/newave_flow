@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useIsMutating } from '@tanstack/react-query'
 import AppUpdateNotice from './AppUpdateNotice'
 import { applyAppUpdate } from '../../utils/appUpdate'
+import { isNativeApp } from '../../native/platform'
 
 export default function AppUpdate() {
   const [registration, setRegistration] = useState(null)
@@ -9,7 +10,7 @@ export default function AppUpdate() {
   const saving = useIsMutating()
 
   useEffect(() => {
-    if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
+    if (isNativeApp || !import.meta.env.PROD || !('serviceWorker' in navigator)) return
     let disposed = false
     let registration
     let worker

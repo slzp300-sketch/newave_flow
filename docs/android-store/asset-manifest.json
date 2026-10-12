@@ -1,0 +1,59 @@
+{
+  "generated": "2026-10-12",
+  "status": "Web screenshot drafts; Android comparison pending",
+  "listingCharacterCounts": {
+    "title": 8,
+    "shortDescription": 48,
+    "fullDescription": 577
+  },
+  "assets": [
+    {
+      "file": "assets/app-icon-512.png",
+      "width": 512,
+      "height": 512,
+      "channels": 4,
+      "alpha": true,
+      "bytes": 21423
+    },
+    {
+      "file": "assets/feature-graphic.png",
+      "width": 1024,
+      "height": 500,
+      "channels": 3,
+      "alpha": false,
+      "bytes": 295541
+    },
+    {
+      "file": "screenshots-draft/01-home.png",
+      "width": 385,
+      "height": 770,
+      "channels": 3,
+      "alpha": false,
+      "bytes": 169691
+    },
+    {
+      "file": "screenshots-draft/02-my-tts.png",
+      "width": 385,
+      "height": 770,
+      "channels": 3,
+      "alpha": false,
+      "bytes": 140530
+    },
+    {
+      "file": "screenshots-draft/03-calendar.png",
+      "width": 385,
+      "height": 770,
+      "channels": 3,
+      "alpha": false,
+      "bytes": 112237
+    },
+    {
+      "file": "screenshots-draft/04-attendance.png",
+      "width": 385,
+      "height": 770,
+      "channels": 3,
+      "alpha": false,
+      "bytes": 150031
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Newave Flow</string>
+    <string name="title_activity_main">Newave Flow</string>
+    <string name="package_name">app.newaveflow.mobile</string>
+    <string name="custom_url_scheme">app.newaveflow.mobile</string>
+</resources>

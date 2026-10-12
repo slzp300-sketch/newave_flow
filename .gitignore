@@ -21,6 +21,18 @@ backend/target
 backend/bin
 frontend/dist
 frontend/.verification
+frontend/dist-native/
+frontend/android/.gradle/
+frontend/android/build/
+frontend/android/app/build/
+frontend/android/local.properties
+frontend/android/app/src/main/assets/public/
+frontend/android/app/src/main/assets/capacitor.config.json
+frontend/android/app/src/main/assets/capacitor.plugins.json
+frontend/android/capacitor-cordova-android-plugins/
+*.jks
+*.keystore
+keystore.properties
 backend/.verification
 .backups/
 
