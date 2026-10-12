@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery, useIsMutating } from '@tanstack/react-query'
-import { ChevronRight, ClipboardList, BookOpen, Users } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { addDays, format, startOfWeek } from 'date-fns'
 import { weeklyStatusApi } from '../../api/weeklyStatus'
 import { prayerVoteApi } from '../../api/prayerVote'
@@ -12,6 +12,7 @@ import { queryReadState } from '../../utils/queryReadState'
 import { ttsReadState } from '../../utils/ttsQuery'
 import { parseAnswer, calcScore, maxOf } from '../../pages/TTSPage'
 import QueryNotice from '../common/QueryNotice'
+import FeatureIcon from '../common/FeatureIcon'
 import { Reveal, AnimatedValue, ProgressFill, WaveAccent } from '../common/Motion'
 
 export default function HomeWeekly({ navigate }) {
@@ -61,9 +62,9 @@ export default function HomeWeekly({ navigate }) {
   const score = week?.importedPeriod ? week.importedScore : calcScore(questions, answers, linked)
   const maximum = questions.reduce((total, q) => total + maxOf(q), 0)
   const tasks = [
-    { to: '/attendance', icon: ClipboardList, label: '우리 반 출석', sub: '담임·부담임 공동 기록', query: statusQuery, done: statusQuery.data?.attendanceSubmittedThisWeek },
-    { to: '/meeting/prayer', icon: BookOpen, label: '기도모임 투표', sub: '이번 주 참석 여부를 알려 주세요', query: prayerQuery, done: !!prayerQuery.data },
-    { to: '/meeting/sat', icon: Users, label: '교사회의 체크', sub: '교사회의 참석 기록', query: meetingQuery, done: !!meetingQuery.data?.status },
+    { to: '/attendance', label: '우리 반 출석', sub: '담임·부담임 공동 기록', query: statusQuery, done: statusQuery.data?.attendanceSubmittedThisWeek },
+    { to: '/meeting/prayer', label: '기도모임 투표', sub: '이번 주 참석 여부를 알려 주세요', query: prayerQuery, done: !!prayerQuery.data },
+    { to: '/meeting/sat', label: '교사회의 체크', sub: '교사회의 참석 기록', query: meetingQuery, done: !!meetingQuery.data?.status },
   ]
   return (
     <>
@@ -71,9 +72,9 @@ export default function HomeWeekly({ navigate }) {
       {!ttsState.hasData ? <QueryNotice queries={[questionsQuery, weekQuery]} label="이번 주 TTS 기록" /> : (
         <Reveal className="brand-card brand-card-solid relative isolate overflow-hidden rounded-2xl bg-primary-600 text-white p-5 shadow-premium" delay={0.04}>
           <WaveAccent />
-          <div className="relative flex justify-between gap-3 text-sm">
-            <h3 className="font-medium">이번 주 TTS</h3>
-            <span className="text-primary-200">{format(sunday, 'M.d')} – {format(addDays(sunday, 6), 'M.d')}</span>
+          <div className="relative flex flex-wrap items-center justify-between gap-3 text-sm">
+            <h3 className="flex items-center gap-2 font-medium"><FeatureIcon path="/tts" />이번 주 TTS</h3>
+            <span className="shrink-0 self-center text-primary-200">{format(sunday, 'M.d')} – {format(addDays(sunday, 6), 'M.d')}</span>
           </div>
           <p className="mt-4 mb-3">
             <strong className="text-4xl font-semibold tabular-nums"><AnimatedValue value={score ?? '기록 없음'} /></strong>
@@ -94,10 +95,10 @@ export default function HomeWeekly({ navigate }) {
           <button onClick={() => navigate('/checklist')} className="min-h-11 text-sm text-gray-500">전체 보기</button>
         </div>
         <div className="brand-card bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200">
-          {tasks.map(({ to, icon: Icon, label, sub, query, done }) => {
+          {tasks.map(({ to, label, sub, query, done }) => {
             const state = queryReadState([query])
             return <button key={to} onClick={() => navigate(to)} className="motion-row motion-tap w-full flex items-center gap-3 p-4 text-left">
-              <span className="w-10 h-10 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0"><Icon size={19} strokeWidth={1.7} /></span>
+              <span className="brand-action-icon w-12 h-12 rounded-xl flex items-center justify-center shrink-0"><FeatureIcon path={to} /></span>
               <span className="flex-1 min-w-0"><span className="block text-sm font-semibold">{label}</span><span className="block text-xs text-gray-500 mt-1">{sub}</span></span>
               <span className={'text-xs shrink-0 ' + (state !== 'ready' ? 'text-gray-500' : done ? 'text-success' : 'text-primary-700')}>{state === 'error' ? '확인 필요' : state !== 'ready' ? '확인 중' : done ? '완료' : '미완료'}</span>
               <ChevronRight size={15} className="text-gray-300 shrink-0" />

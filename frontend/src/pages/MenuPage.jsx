@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Reveal } from '../components/common/Motion'
-import {
-  ClipboardList, CheckSquare, Users, CalendarCheck, ListChecks,
-  Calendar, FileText, MapPin, Bell, BookOpen, CheckCircle2, School, ChevronRight, SearchX,
-} from 'lucide-react'
+import FeatureIcon from '../components/common/FeatureIcon'
+import { ChevronRight, SearchX } from 'lucide-react'
 import Header from '../components/layout/Header'
 import useAuthStore from '../store/authStore'
 import { MENU_GROUPS } from './AdminDashboard'
@@ -16,28 +14,28 @@ const COMMON_GROUPS = [
   {
     title: '주간 체크',
     items: [
-      { to: '/checklist',      icon: ListChecks,    iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '주간 체크 현황' },
-      { to: '/attendance',     icon: ClipboardList, iconBg: 'bg-secondary-50', iconColor: 'text-secondary-600', title: '출석' },
-      { to: '/tts',            icon: CheckSquare,   iconBg: 'bg-secondary-50',    iconColor: 'text-secondary-600',    title: 'TTS' },
-      { to: '/meeting/prayer', icon: Users,         iconBg: 'bg-primary-50',  iconColor: 'text-primary-600',  title: '기도모임 투표' },
-      { to: '/meeting/sat',    icon: CalendarCheck, iconBg: 'bg-primary-50',    iconColor: 'text-primary-600',    title: '교사회의 체크' },
+      { to: '/checklist',      title: '주간 체크 현황' },
+      { to: '/attendance',     title: '출석' },
+      { to: '/tts',            title: 'TTS' },
+      { to: '/meeting/prayer', title: '기도모임 투표' },
+      { to: '/meeting/sat',    title: '교사회의 체크' },
     ],
   },
   {
     title: '모임 및 일정',
     items: [
-      { to: '/events',        icon: Calendar, iconBg: 'bg-primary-50',   iconColor: 'text-primary-600',   title: '행사일정' },
-      { to: '/minutes',       icon: FileText, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '회의록 및 영상' },
-      { to: '/evangelism',    icon: MapPin,   iconBg: 'bg-primary-50', iconColor: 'text-primary-500', title: '전도 로테이션' },
-      { to: '/notifications', icon: Bell,     iconBg: 'bg-primary-50',  iconColor: 'text-primary-600',  title: '알림' },
+      { to: '/events',        title: '행사일정' },
+      { to: '/minutes',       title: '회의록 및 영상' },
+      { to: '/evangelism',    title: '전도 로테이션' },
+      { to: '/notifications', title: '알림' },
     ],
   },
   {
     title: '학생 및 반 관리',
     items: [
-      { to: '/roster',           icon: BookOpen,     iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '교적부' },
-      { to: '/class-manage',     icon: School,       iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '반관리' },
-      { to: '/event-attendance', icon: CheckCircle2, iconBg: 'bg-primary-50',    iconColor: 'text-primary-600',    title: '행사 출석 체크' },
+      { to: '/roster',           title: '교적부' },
+      { to: '/class-manage',     title: '반관리' },
+      { to: '/event-attendance', title: '행사 출석 체크' },
     ],
   },
 ]
@@ -85,7 +83,7 @@ export default function MenuPage() {
             <div className="ui-list">
               {group.items.map(item => (
                 <Link key={item.to} to={item.to} className="brand-action ui-list-row motion-tap">
-                  <span className={`ui-list-icon ${item.iconBg === 'bg-secondary-50' ? 'ui-list-icon-green' : ''}`}><item.icon size={21} strokeWidth={1.8} /></span>
+                  <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"><FeatureIcon path={item.to} /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-gray-900">{item.title}</span>
                     <span className="mt-1 block text-xs leading-relaxed text-gray-500">{item.desc}</span></span>
                   <ChevronRight size={17} aria-hidden="true" className="shrink-0 text-gray-400" />

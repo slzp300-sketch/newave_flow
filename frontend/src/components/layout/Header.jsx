@@ -6,6 +6,7 @@ import useAuthStore from '../../store/authStore'
 import { notificationApi } from '../../api/notifications'
 import { authApi } from '../../api/auth'
 import Brand from '../common/Brand'
+import FeatureIcon from '../common/FeatureIcon'
 
 export default function Header({ title, showBack = false, onBack, showLogout = false, showNotification = true, right }) {
   const navigate = useNavigate()
@@ -41,7 +42,12 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
           <ChevronLeft size={22} className="text-gray-900" />
         </button>
       )}
-      <h1 className="flex-1 min-w-0 text-lg font-semibold text-gray-900 tracking-tight">{title === 'Newave Flow' ? <Brand /> : title}</h1>
+      <h1 className="flex flex-1 min-w-0 items-center gap-2 py-2 text-lg font-semibold text-gray-900 tracking-tight">
+        {title === 'Newave Flow' ? <Brand /> : <>
+          <FeatureIcon path={location.pathname} size={24} className="text-primary-700" />
+          <span className="min-w-0 break-keep">{title}</span>
+        </>}
+      </h1>
       
       <div className="flex items-center gap-1 shrink-0">
         {right}

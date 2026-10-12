@@ -4,10 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ChevronRight, Users, FileText, Calendar, CheckSquare,
-  BookOpen, ClipboardList, Bell,
-  UserMinus, Megaphone,
-  UserPlus, UserCog, GraduationCap, UserCheck,
+  ChevronRight, Users, Calendar, Bell, Megaphone,
   Settings2, Plus, X, Trash2, ShieldCheck
 } from 'lucide-react'
 import useAuthStore from '../store/authStore'
@@ -18,6 +15,7 @@ import { startOfWeek, endOfWeek, format, startOfMonth, endOfMonth } from 'date-f
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
 import Header from '../components/layout/Header'
+import FeatureIcon from '../components/common/FeatureIcon'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
 import PersonalDashboard from '../components/layout/HomeWeekly'
@@ -50,12 +48,13 @@ export default function Home() {
         </div>
       </div>
       <div className="px-4 flex flex-col gap-5">
-        {(isTeacher || isExecutive) && <nav aria-label="자주 쓰는 기능" className="grid grid-cols-4 gap-2">
+        {(isTeacher || isExecutive) && <nav aria-label="자주 쓰는 기능" className="grid grid-cols-2 gap-2.5">
           {[
-            ['/attendance', ClipboardList, '출석'], ['/event-attendance', Calendar, '행사 출석'],
-            ['/tts', CheckSquare, 'TTS'], ['/roster', BookOpen, '교적부'],
-          ].map(([to, Icon, label]) => <Link key={to} to={to} className={`brand-action motion-tap flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-1 py-3 border-primary-200 bg-primary-50 text-primary-700`}>
-            <Icon size={22} strokeWidth={1.7} /><span className="text-xs font-semibold">{label}</span>
+            ['/attendance', '출석', '우리 반 주일 출석'], ['/event-attendance', '행사 출석', '학생·교사 행사 참석'],
+            ['/tts', 'TTS', '말씀·기도 생활 기록'], ['/roster', '교적부', '학생 명단과 정보'],
+          ].map(([to, label, desc]) => <Link key={to} to={to} className="brand-action motion-tap flex min-h-[120px] flex-col items-start justify-center gap-2 rounded-2xl border p-4 border-primary-200 bg-primary-50 text-primary-700">
+            <FeatureIcon path={to} /><span className="text-sm font-semibold">{label}</span>
+            <span className="text-xs leading-relaxed text-gray-500 break-keep">{desc}</span>
           </Link>)}
         </nav>}
         <AnimatePresence mode="wait">
@@ -131,18 +130,18 @@ function TeacherView({ navigate }) {
 }
 
 const ALL_QUICK_LINKS = [
-  { to: '/admin/student-attendance', icon: ClipboardList, label: '출석 현황', bg: 'bg-secondary-50', color: 'text-secondary-600' },
-  { to: '/admin/event-attendance',   icon: CheckSquare,   label: '행사 출석', bg: 'bg-primary-50',     color: 'text-primary-600'    },
-  { to: '/admin/calendar',      icon: Calendar,     label: '일정 관리',  bg: 'bg-rose-50',    color: 'text-rose-500'    },
-  { to: '/admin/meeting-attendance', icon: Users,   label: '교사회의',   bg: 'bg-primary-50',    color: 'text-primary-600'    },
-  { to: '/admin/prayer',        icon: BookOpen,     label: '기도모임',   bg: 'bg-amber-50',   color: 'text-amber-600'   },
-  { to: '/admin/minutes',       icon: FileText,     label: '회의록',     bg: 'bg-primary-50',  color: 'text-primary-600'  },
-  { to: '/admin/tts',           icon: CheckSquare,  label: 'TTS 점검',   bg: 'bg-secondary-50',    color: 'text-secondary-600'    },
-  { to: '/admin/pending-users', icon: UserPlus,     label: '가입 승인',  bg: 'bg-amber-50',   color: 'text-amber-600',   badge: true },
-  { to: '/admin/teachers',      icon: UserCog,      label: '교사 관리',  bg: 'bg-primary-50',  color: 'text-primary-600'  },
-  { to: '/admin/students',      icon: GraduationCap,label: '아이 관리',  bg: 'bg-secondary-50',    color: 'text-secondary-600'    },
-  { to: '/admin/class-assignment',icon: UserCheck,  label: '반 배정',    bg: 'bg-primary-50',    color: 'text-primary-600'    },
-  { to: '/admin/deactivation-requests', icon: UserMinus, label: '제적 승인', bg: 'bg-rose-50', color: 'text-rose-500'   },
+  { to: '/admin/student-attendance', label: '출석 현황', bg: 'bg-secondary-50', color: 'text-secondary-600' },
+  { to: '/admin/event-attendance',   label: '행사 출석', bg: 'bg-primary-50',     color: 'text-primary-600'    },
+  { to: '/admin/calendar',      label: '일정 관리',  bg: 'bg-rose-50',    color: 'text-rose-500'    },
+  { to: '/admin/meeting-attendance', label: '교사회의',   bg: 'bg-primary-50',    color: 'text-primary-600'    },
+  { to: '/admin/prayer',        label: '기도모임',   bg: 'bg-amber-50',   color: 'text-amber-600'   },
+  { to: '/admin/minutes',       label: '회의록',     bg: 'bg-primary-50',  color: 'text-primary-600'  },
+  { to: '/admin/tts',           label: 'TTS 점검',   bg: 'bg-secondary-50',    color: 'text-secondary-600'    },
+  { to: '/admin/pending-users', label: '가입 승인',  bg: 'bg-amber-50',   color: 'text-amber-600',   badge: true },
+  { to: '/admin/teachers',      label: '교사 관리',  bg: 'bg-primary-50',  color: 'text-primary-600'  },
+  { to: '/admin/students',      label: '아이 관리',  bg: 'bg-secondary-50',    color: 'text-secondary-600'    },
+  { to: '/admin/class-assignment',label: '반 배정',    bg: 'bg-primary-50',    color: 'text-primary-600'    },
+  { to: '/admin/deactivation-requests', label: '제적 승인', bg: 'bg-rose-50', color: 'text-rose-500'   },
 ]
 
 // ────────── Admin View (Dashboard) ──────────
@@ -234,7 +233,7 @@ function AdminView({ navigate, today }) {
 
       <button type="button" onClick={() => navigate('/admin')}
         className="motion-tap flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-left">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><ShieldCheck size={21} /></span>
+        <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"><FeatureIcon path="/admin" /></span>
         <span className="min-w-0 flex-1"><span className="block text-sm font-bold text-gray-900">관리자 메뉴</span><span className="mt-1 block text-xs text-gray-500">회원·반 배정·출석·활동 관리</span></span>
         <ChevronRight size={18} className="shrink-0 text-gray-400" />
       </button>
@@ -294,7 +293,6 @@ function AdminView({ navigate, today }) {
         <div className="grid grid-cols-3 gap-2.5">
           <AnimatePresence>
             {activeLinks.map((link, i) => {
-              const Icon = link.icon
               const showBadge = link.badge && pendingUsers.length > 0
               return (
                 <motion.div
@@ -322,10 +320,10 @@ function AdminView({ navigate, today }) {
                         <Trash2 size={10} />
                       </span>
                     )}
-                    <div className={`w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center`}>
-                      <Icon size={18} className="text-primary-700" />
+                    <div className="brand-action-icon w-12 h-12 rounded-xl flex items-center justify-center">
+                      <FeatureIcon path={link.to} />
                     </div>
-                    <p className="text-xs font-bold text-gray-600 text-center leading-tight truncate w-full">{link.label}</p>
+                    <p className="text-xs font-bold text-gray-600 text-center leading-relaxed break-keep w-full">{link.label}</p>
                   </button>
                 </motion.div>
               )
@@ -459,15 +457,14 @@ function AdminView({ navigate, today }) {
                   </div>
                 ) : (
                   unselectedLinks.map(link => {
-                    const Icon = link.icon
                     return (
                       <button
                         key={link.to}
                         onClick={() => handleAddLink(link.to)}
                         className="flex items-center gap-4 p-3.5 hover:bg-gray-50 active:bg-gray-100 active:scale-[0.98] rounded-2xl text-left border border-transparent hover:border-gray-100 transition-all group"
                       >
-                        <div className={`w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-sm`}>
-                          <Icon size={20} className="text-primary-700"/>
+                        <div className="brand-action-icon w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                          <FeatureIcon path={link.to} />
                         </div>
                         <div>
                           <span className="font-bold text-sm text-gray-800">{link.label}</span>

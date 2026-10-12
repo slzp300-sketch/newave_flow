@@ -2,7 +2,8 @@ import { useId } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, XCircle, Calendar, Users, PenLine, CalendarCheck, UserCheck, Clock } from 'lucide-react'
+import { CheckCircle2, XCircle, Users, PenLine, CalendarCheck, UserCheck, Clock } from 'lucide-react'
+import FeatureIcon from '../components/common/FeatureIcon'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { isEventAttendanceClosed, assertEventAttendanceOpen } from '../utils/eventAttendance'
@@ -144,8 +145,8 @@ export default function EventAttendancePage() {
       {event && (
         <div className="px-4 py-4 glass-effect">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-secondary-100 flex items-center justify-center flex-shrink-0">
-              <Calendar size={18} className="text-secondary-600" />
+            <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center flex-shrink-0">
+              <FeatureIcon path="/event-attendance" />
             </div>
             <div>
               <p className="font-bold text-gray-900 text-sm">{event.title}</p>

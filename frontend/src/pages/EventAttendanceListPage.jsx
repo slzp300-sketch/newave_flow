@@ -8,6 +8,7 @@ import {
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
+import FeatureIcon from '../components/common/FeatureIcon'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
@@ -443,16 +444,11 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
       onClick={onToggle}
       className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors text-left"
     >
-      <div className="flex items-center gap-3">
-        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-          isSubmitted ? 'bg-secondary-100' : isOpen ? 'bg-secondary-50' : 'bg-gray-50'
-        }`}>
-          {isSubmitted
-            ? <CheckCircle2 size={18} className="text-secondary-600" />
-            : <Calendar size={18} className={isOpen ? 'text-secondary-600' : 'text-gray-400'} />
-          }
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="brand-action-icon w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0">
+          <FeatureIcon path="/event-attendance" />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <p className={`font-bold text-sm ${isSubmitted ? 'text-secondary-800' : isOpen ? 'text-secondary-800' : 'text-gray-900'}`}>
               {event.title}
