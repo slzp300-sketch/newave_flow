@@ -17,7 +17,7 @@ export default function useWeeklyEvents() {
     staleTime: 60_000, refetchInterval: 60_000 })
   const events = [...(query.data || [])].sort((a, b) =>
     a.eventDate.localeCompare(b.eventDate) || (a.startTime || '').localeCompare(b.startTime || '') || a.id - b.id)
-  const seen = useEventSeen(today)
+  const seen = useEventSeen(today, events)
   return { query, events, from, to, today, ...seen,
     hasNew: knownRead(query) && events.some(seen.isNew) }
 }

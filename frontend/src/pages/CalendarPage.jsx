@@ -28,6 +28,7 @@ import BulkEventForm, { AddEventChoice } from '../components/calendar/BulkEventF
 import useEventSeen from '../hooks/useEventSeen'
 import useToday from '../hooks/useToday'
 import AttentionDot from '../components/common/AttentionDot'
+import EventReadNotice from '../components/common/EventReadNotice'
 import { knownRead } from '../utils/attention'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
@@ -52,11 +53,6 @@ const EVENT_TYPES = [
 export default function CalendarPage() {
   const { user } = useAuthStore()
   const today = useToday()
-  const { isNew, markSeen } = useEventSeen(today)
-  const acknowledge = event => knownRead(viewMode === 'list' ? allEventsQuery : eventsQuery) && isNew(event) && <button type="button" aria-label={`${event.title} 내용 확인`} onClick={() => markSeen([event])}
-    className="relative mt-3 min-h-11 rounded-xl border border-primary-200 py-2 pl-3 pr-6 text-xs">
-    <AttentionDot show label="새 일정 또는 변경된 일정" />내용 확인했어요
-  </button>
   const qc = useQueryClient()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'PASTOR' || user?.role === 'EXECUTIVE'
 
@@ -111,6 +107,12 @@ export default function CalendarPage() {
     enabled: viewMode === 'list',
   })
   const { data: allEvents = [] } = allEventsQuery
+  const { isNew, markSeen, isSaving, readError, retryReads } = useEventSeen(today, viewMode === 'list' ? allEvents : events)
+  const acknowledge = event => knownRead(viewMode === 'list' ? allEventsQuery : eventsQuery) && isNew(event) && <button type="button" disabled={isSaving}
+    aria-label={`${event.title} 내용 확인`} onClick={() => markSeen([event])}
+    className="relative mt-3 min-h-11 rounded-xl border border-primary-200 py-2 pl-3 pr-6 text-xs disabled:opacity-50">
+    <AttentionDot show label="새 일정 또는 변경된 일정" />{isSaving ? '확인 상태 저장 중…' : '내용 확인했어요'}
+  </button>
 
   const categorizedEvents = useMemo(() => {
     const upcoming = [], ongoing = [], past = []
@@ -297,6 +299,7 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50/50">
       <Header title="일정" />
+      <EventReadNotice error={readError} retry={retryReads} />
 
       <div className="bg-white px-4 pb-3 pt-3">
         <SegmentedControl label="일정 보기" value={viewMode} onChange={setViewMode}

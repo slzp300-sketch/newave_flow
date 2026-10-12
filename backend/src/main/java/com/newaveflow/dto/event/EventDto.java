@@ -25,7 +25,8 @@ public class EventDto {
             String eventType,
             boolean attendanceRequired,
             LocalDate attendanceDeadline,
-            String attendanceTarget
+            String attendanceTarget,
+            String readVersion
     ) {
         public static EventResponse from(Event event) {
             return new EventResponse(
@@ -42,7 +43,8 @@ public class EventDto {
                     event.getAttendanceDeadline(),
                     event.getAttendanceTarget() != null
                             ? event.getAttendanceTarget().name()
-                            : Event.AttendanceTarget.STUDENT_ONLY.name()
+                            : Event.AttendanceTarget.STUDENT_ONLY.name(),
+                    com.newaveflow.service.EventReadVersion.of(event)
             );
         }
     }

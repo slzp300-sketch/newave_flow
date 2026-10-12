@@ -9,6 +9,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM Event e WHERE e.id = :id")
+    java.util.Optional<Event> lockById(@Param("id") Long id);
     
     // 기간과 하루라도 겹치는 일정 (앞 달에 시작해 이번 달까지 이어지는 일정 포함)
     @Query("SELECT e FROM Event e WHERE e.eventDate <= :toDate AND COALESCE(e.endDate, e.eventDate) >= :fromDate ORDER BY e.eventDate ASC")

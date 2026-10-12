@@ -7,12 +7,13 @@ import useWeeklyEvents from '../../hooks/useWeeklyEvents'
 import AttentionDot from '../common/AttentionDot'
 import FeatureIcon from '../common/FeatureIcon'
 import QueryNotice from '../common/QueryNotice'
+import EventReadNotice from '../common/EventReadNotice'
 import { knownRead } from '../../utils/attention'
 
 const dateOf = value => new Date(value + 'T12:00:00')
 
 export default function HomeSchedule() {
-  const { query, events, today, from, to, isNew, markSeen, hasNew } = useWeeklyEvents()
+  const { query, events, today, from, to, isNew, markSeen, hasNew, isSaving, readError, retryReads } = useWeeklyEvents()
   const [openId, setOpenId] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const upcoming = events.filter(e => (e.endDate || e.eventDate) >= today)
@@ -25,10 +26,12 @@ export default function HomeSchedule() {
     </div>
     <p className="mb-3 text-xs text-gray-500">{format(dateOf(from), 'M.d')} – {format(dateOf(to), 'M.d')} · 새 일정은 눌러서 확인해 주세요</p>
     {!knownRead(query) && <QueryNotice queries={[query]} label="이번 주 일정" />}
+    <EventReadNotice error={readError} retry={retryReads} />
+    {isSaving && <p role="status" className="mb-2 text-xs text-gray-500">확인 상태 저장 중…</p>}
     {query.data && <div className="space-y-2">
       {visible.map(event => <div key={event.id} className="rounded-xl border border-primary-100">
         <button type="button" aria-expanded={openId === event.id} aria-controls={`home-event-${event.id}`}
-          onClick={() => { setOpenId(openId === event.id ? null : event.id); if (knownRead(query)) markSeen([event]) }}
+          onClick={() => { setOpenId(openId === event.id ? null : event.id); if (knownRead(query) && isNew(event)) markSeen([event]) }}
           className="relative flex min-h-20 w-full items-center gap-3 rounded-xl p-3 pr-5 text-left">
           <AttentionDot show={knownRead(query) && isNew(event)} label="새 일정 또는 변경된 일정" />
           <span className="shrink-0 text-center"><strong className="block text-lg">{format(dateOf(event.eventDate), 'd')}</strong><span className="text-xs">{format(dateOf(event.eventDate), 'E', { locale: ko })}</span></span>

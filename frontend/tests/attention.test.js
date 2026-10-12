@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { todayTtsChecks, attendanceTaskState, knownRead, eventFingerprint, parseSeenEvents,
-  eventSeenKey, isUnseenEvent, mergeSeenEvents } from '../src/utils/attention.js'
+  eventSeenKey, isUnseenEvent, mergeSeenEvents, legacyReadMatches } from '../src/utils/attention.js'
 
 const questions = [
   { id: 1, type: 'DAYS', title: '말씀', linkType: 'NONE' },
@@ -11,7 +11,7 @@ const questions = [
 ]
 const week = { answers: [{ questionId: 1, answerData: '{"월":true,"화":false}' }, { questionId: 3, answerData: 'true' }] }
 const success = data => ({ isSuccess: true, data, fetchStatus: 'idle' })
-const event = { id: 1, title: '가상 행사', eventDate: '2026-10-17', endDate: '2026-10-18', description: '가상 안내', startTime: '10:00' }
+const event = { id: 1, title: '가상 행사', eventDate: '2026-10-17', endDate: '2026-10-18', description: '가상 안내', startTime: '10:00', readVersion: 'a'.repeat(64) }
 
 test('Home checks today only and resets reminders at the next day', () => {
   const monday = todayTtsChecks(questions, week, '2026-10-12')
@@ -39,11 +39,11 @@ test('Collective attendance completion, no assigned class, and unavailable reads
 })
 
 test('Opening an event acknowledges that version only; a changed date or description is new again', () => {
-  const seen = mergeSeenEvents({}, [event])
+  const seen = { [event.id]: event.readVersion }
   assert.equal(isUnseenEvent(event, {}, '2026-10-12'), true)
   assert.equal(isUnseenEvent(event, seen, '2026-10-12'), false)
   for (const field of ['title', 'description', 'eventDate', 'endDate', 'startTime', 'endTime', 'attendanceDeadline', 'attendanceTarget']) {
-    assert.equal(isUnseenEvent({ ...event, [field]: 'changed' }, seen, '2026-10-12'), true, field)
+    assert.equal(isUnseenEvent({ ...event, [field]: 'changed', readVersion: 'b'.repeat(64) }, seen, '2026-10-12'), true, field)
   }
   assert.equal(eventFingerprint({ ...event, updatedAt: 'irrelevant' }), eventFingerprint(event))
   assert.equal(isUnseenEvent({ ...event, id: 2 }, seen, '2026-10-12'), true)
@@ -56,8 +56,18 @@ test('Ended events do not keep reminders; ongoing events do, and read state surv
   const next = mergeSeenEvents(original, [{ ...event, id: 2 }])
   assert.equal(Object.keys(original).length, 1)
   assert.equal(Object.keys(next).length, 2)
-  assert.equal(isUnseenEvent(event, parseSeenEvents(JSON.stringify(next)), '2026-10-12'), false)
+  assert.equal(legacyReadMatches(event, parseSeenEvents(JSON.stringify(next))), true)
   assert.ok(!JSON.stringify(next).includes(event.description))
   assert.notEqual(eventSeenKey(1), eventSeenKey(2))
   for (const raw of ['bad json', 'null', '[]', 'false', '1']) assert.deepEqual(parseSeenEvents(raw), {})
+})
+
+test('Only matching legacy content migrates; absent server versions cannot be acknowledged', () => {
+  const legacy = mergeSeenEvents({}, [event])
+  assert.equal(legacyReadMatches(event, legacy), true)
+  assert.equal(legacyReadMatches({ ...event, description: '새 안내' }, legacy), false)
+  assert.equal(legacyReadMatches({ ...event, readVersion: undefined }, legacy), false)
+  assert.equal(legacyReadMatches(event, {}), false)
+  assert.equal(isUnseenEvent({ ...event, readVersion: undefined }, {}, '2026-10-12'), false)
+  assert.equal(isUnseenEvent(event, legacy, '2026-10-12'), true)
 })

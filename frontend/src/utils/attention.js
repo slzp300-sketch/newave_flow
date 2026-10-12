@@ -42,8 +42,11 @@ export function parseSeenEvents(raw) {
 }
 
 export const eventSeenKey = userId => `newave:event-seen:v1:${userId}`
-export const isUnseenEvent = (event, seen, today) => !!event?.id &&
-  (event.endDate || event.eventDate) >= today && seen[event.id] !== eventFingerprint(event)
+export const isUnseenEvent = (event, seen, today) => !!event?.id && !!event.readVersion &&
+  (event.endDate || event.eventDate) >= today && seen[event.id] !== event.readVersion
+
+export const legacyReadMatches = (event, legacy) => !!event?.id && !!event.readVersion &&
+  legacy[event.id] === eventFingerprint(event)
 
 export function mergeSeenEvents(seen, events) {
   const next = { ...seen }

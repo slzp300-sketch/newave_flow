@@ -1,6 +1,8 @@
 import client from './client'
 
 export const eventApi = {
+  getReads:                  ()               => client.get('/event-reads'),
+  acknowledge:               (id, version)    => client.put(`/event-reads/${id}`, { version }),
   getEvents:                  (params)         => client.get('/events', { params }),
   getAllEvents:                ()               => client.get('/events/all'),
   getEvent:                   (id)             => client.get(`/events/${id}`),

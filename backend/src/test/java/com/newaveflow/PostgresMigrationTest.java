@@ -78,6 +78,14 @@ class PostgresMigrationTest {
         assertEquals(merged,checksum("daily_reports")); assertEquals(roster,checksum("event_participants"));
         assertEquals(1,count("SELECT count(*) FROM schema_migrations"));
 
+        String eventReads=Files.readString(Path.of("db/migrations/V002__account_event_reads.sql"));
+        assertThrows(SQLException.class,()->execute(eventReads.replace("INSERT INTO schema_migrations(version)","SELECT 1/0;\nINSERT INTO schema_migrations(version)")));
+        assertEquals(0,count("SELECT count(*) FROM information_schema.tables WHERE table_name='event_reads' AND table_schema='public'"));
+        execute(eventReads);
+        assertThrows(SQLException.class,()->execute(eventReads));
+        assertEquals(2,count("SELECT count(*) FROM schema_migrations"));
+        assertEquals(0,count("SELECT count(*) FROM event_reads"));
+
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,
                 "--spring.datasource.username="+user,"--spring.datasource.password="+password,
@@ -103,6 +111,19 @@ class PostgresMigrationTest {
         assertEquals(2,count("SELECT count(*) FROM event_participants WHERE kind='STUDENT' AND person_id=2"));
         assertEquals(2,count("SELECT count(*) FROM event_participants WHERE kind='TEACHER' AND person_id=3"));
         var teacher=app.getBean(UserRepository.class).findById(1L).orElseThrow();
+        var readService=app.getBean(EventReadService.class);
+        var readEvent=app.getBean(EventRepository.class).findById(1L).orElseThrow();
+        String version=EventReadVersion.of(readEvent);
+        // Both devices can acknowledge concurrently without duplicate inserts.
+        var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            var first=pool.submit(()->readService.acknowledge(1L,1L,version));
+            var second=pool.submit(()->readService.acknowledge(1L,1L,version));
+            first.get(); second.get();
+        } finally { pool.shutdownNow(); }
+        assertEquals(1,count("SELECT count(*) FROM event_reads"));
+        assertEquals(version,readService.getReads(1L).get(1L));
+        assertTrue(readService.getReads(2L).isEmpty());
         var tts=app.getBean(TtsService.class); var events=app.getBean(EventService.class);
         LocalDate day=LocalDate.of(2026,1,4);
         assertEquals(15,tts.getWeek(teacher,day).getScore());
