@@ -19,6 +19,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm test
+      - run: node --test ../tools/backup/retention.test.cjs ../tools/privacy/deletion.test.cjs
       - run: npm run build
   backend:
     runs-on: ubuntu-latest
@@ -101,3 +102,12 @@ jobs:
           cache: gradle
       - run: bash gradlew createMigrationBaseline --init-script db/verification/legacy.init.gradle --no-daemon
       - run: bash gradlew test --tests com.newaveflow.PostgresMigrationTest --no-daemon
+      - name: Create isolated privacy rehearsal database
+        env:
+          PGPASSWORD: migration-ci-only
+        run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_privacy_ci'
+      - name: Verify account deletion and shared records
+        env:
+          RUN_PRIVACY_TEST: 'true'
+          PRIVACY_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_privacy_ci
+        run: bash gradlew test --tests com.newaveflow.PrivacyDeletionTest --no-daemon

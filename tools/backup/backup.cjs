@@ -1,6 +1,8 @@
 // Windows PC backup. No production writes; credentials and plaintext dumps are never logged.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const crypto=require('node:crypto'),dns=require('node:dns').promises,tls=require('node:tls');
+const {pruneExpired,assertRestorable}=require('./retention.cjs');
+const {replayLedger}=require('../privacy/deletion.cjs');
 const root=path.resolve(__dirname,'../..'),folder=path.join(root,'.backups');
 const configFile=path.join(folder,'config.json');
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -92,6 +94,7 @@ async function createBackup(){
 }
 async function verifyRestore(){
   const receipt=JSON.parse(fs.readFileSync(path.join(folder,'last-success.json'),'utf8'));
+  assertRestorable(receipt);
   if(!/^newave-[\dTZ.-]+\.dump\.dpapi$/.test(receipt.file))throw Error('Invalid backup path');
   stage='decrypt';const dump=crypt('Unprotect',fs.readFileSync(path.join(folder,receipt.file)));
   if(hash(dump)!==receipt.sha256)throw Error('Backup hash mismatch');
@@ -109,15 +112,24 @@ async function verifyRestore(){
   stage='restore';withDumpFile(dump,file=>cp.execFileSync(path.join(config.pgBin,'pg_restore.exe'),['--host=127.0.0.1','--port=55440','--username='+verify.user,'--dbname='+localDb,'--no-owner','--no-privileges','--exit-on-error','--single-transaction',file],
     {...options,env:{...process.env,PGPASSWORD:local.password,PGSSLMODE:'disable',PGHOSTADDR:'127.0.0.1',PGOPTIONS:'',PGSSLROOTCERT:''}}));
   const restored=new Client({...local,database:localDb});await restored.connect();
-  let actual;try{actual=await fingerprints(restored);}finally{await restored.end();}
-  stage='compare';if(!require('node:util').isDeepStrictEqual(actual,receipt.tables))throw Error('Restored tables differ from source snapshot');
+  let actual,privacy;
+  try{
+    actual=await fingerprints(restored);
+    stage='compare';if(!require('node:util').isDeepStrictEqual(actual,receipt.tables))throw Error('Restored tables differ from source snapshot');
+    stage='privacy-replay';privacy=await replayLedger(restored,path.join(folder,'privacy'),buffer=>crypt('Unprotect',buffer));
+  }finally{await restored.end();}
   const result={at:new Date().toISOString(),file:receipt.file,sha256:receipt.sha256,tables:Object.keys(actual).length,
-    rows:Object.values(actual).reduce((n,t)=>n+t.rows,0),allTableHashesMatch:true};
+    rows:Object.values(actual).reduce((n,t)=>n+t.rows,0),allTableHashesMatch:true,privacy};
   jsonWrite(path.join(folder,'last-restore-verification.json'),result);log({event:'restore-verified',...result});
   console.log(JSON.stringify({restore:'verified',...result}));
 }
 (async()=>{
   config=JSON.parse(fs.readFileSync(configFile,'utf8'));acquireLock();
+  stage='retention';
+  const retention=pruneExpired(folder,{dryRun:process.argv.includes('--dry-run')});
+  log({event:'retention',...retention});
+  if(action==='prune'){console.log(JSON.stringify(retention));return;}
+  if(process.argv.includes('--dry-run'))throw Error('Dry run is only supported for prune');
   if(action==='backup') {
     await createBackup();
     const lastVerifyFile=path.join(folder,'last-restore-verification.json');

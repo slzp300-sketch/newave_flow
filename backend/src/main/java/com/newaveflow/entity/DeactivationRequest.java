@@ -27,7 +27,7 @@ public class DeactivationRequest {
     private Student student;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id", nullable = false)
+    @JoinColumn(name = "teacher_id")
     private User teacher;
 
     @Column(nullable = false, length = 500)

@@ -25,11 +25,13 @@ export default function AccountHelpPage({ deletion = false }) {
         </Card>
         <Card><h3 className="font-bold mb-3">삭제되는 정보와 남는 기록</h3>
           <p className="text-sm leading-6 text-gray-700">계정의 로그인 정보, 이름·연락처·프로필, 개인 TTS 기록은 삭제 대상입니다. 반 공동 출석·보고서는 요청자를 식별할 수 없게 처리한 뒤 보존합니다.</p>
-          <p className="mt-3 text-sm leading-6 text-gray-600">공동 문서와 과거 명단에 남은 개인정보도 확인합니다. 처리 일정과 백업에 남은 정보의 처리 방법은 본인 확인 후 안내합니다.</p>
+          <p className="mt-3 text-sm leading-6 text-gray-600">공동 문서와 과거 명단에 남은 개인정보도 확인합니다. 본인 확인 후 지체 없이 처리하며, 7일 이내 완료를 목표로 합니다. 지연되면 사유와 예정일을 안내합니다.</p>
+          <p className="mt-3 text-sm leading-6 text-gray-600">암호화 백업의 보관 기간은 생성 후 30일입니다. 보관 PC가 켜져 있을 때 만료본을 정리하며, 꺼져 있었다면 다음 실행 때 삭제합니다. 백업을 복원할 때는 삭제한 정보를 다시 제거하고 확인한 뒤 사용합니다.</p>
         </Card>
       </>}
       <Card><h3 className="font-bold mb-2">운영 담당자에게 문의</h3>
         <p className="text-sm leading-6 text-gray-700">제자광성교회 뉴웨이브 청소년부</p>
+        <p className="mt-1 text-sm leading-6 text-gray-600">개인정보 문의 담당자: 김재현</p>
         <a href={`mailto:${EMAIL}${deletion ? `?subject=${SUBJECT}&body=${BODY}` : ''}`} className="brand-action mt-3 flex min-h-12 items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold">
           {deletion ? '삭제 요청 이메일 작성' : '문의 이메일 작성'}
         </a>

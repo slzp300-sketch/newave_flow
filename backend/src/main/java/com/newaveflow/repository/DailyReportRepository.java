@@ -24,7 +24,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
 
     @Query("""
         SELECT r FROM DailyReport r
-        JOIN FETCH r.teacher t
+        LEFT JOIN FETCH r.teacher t
         JOIN FETCH r.classGroup c
         WHERE r.reportDate = :date
         ORDER BY t.name

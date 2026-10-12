@@ -47,4 +47,6 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    inputs.dir('db/privacy')
+    inputs.dir('db/migrations')
 }
