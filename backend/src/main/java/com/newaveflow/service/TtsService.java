@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newaveflow.dto.tts.TtsAnswerRequest;
 import com.newaveflow.dto.tts.TtsResponse;
 import com.newaveflow.dto.tts.TtsSubmitRequest;
+import com.newaveflow.dto.tts.TtsWeekStatsResponse;
 import com.newaveflow.entity.*;
 import com.newaveflow.entity.TtsQuestion.TtsLinkType;
 import com.newaveflow.entity.TtsQuestion.TtsQuestionType;
@@ -249,7 +250,6 @@ public class TtsService {
         for (TtsRecord r : recordRepository.findAllByYearWithAnswers(year)) {
             if (!TtsPeriod.includes(year, r.getWeekNum())) continue;
             int s = recordScore(r, timeline);
-            if (s <= 0) continue;
             usersOut.putIfAbsent(r.getTeacher().getId(), r.getTeacher());
             scores.computeIfAbsent(r.getTeacher().getId(), k -> new HashMap<>()).merge(r.getWeekNum(), s, Integer::sum);
         }
@@ -281,6 +281,53 @@ public class TtsService {
         result.put("currentWeek", weekYear(thisSunday) == year ? weekNum(thisSunday) : null);
         result.put("people", year < TtsPeriod.START_YEAR ? List.of() : scorePeople(year));
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public TtsWeekStatsResponse getWeekStats(int year, int week) {
+        LocalDate sunday = TtsPeriod.sunday(year, week);
+        if (!TtsPeriod.includes(year, week) || sunday.isAfter(weekSunday(LocalDate.now()))) {
+            throw AppException.badRequest("관리 중인 지난 주 또는 이번 주를 선택해 주세요.");
+        }
+        boolean imported = isImportedPeriod(sunday);
+        var timeline = questionPolicy.load();
+        var rules = timeline.allAt(sunday);
+        int max = timeline.at(sunday).stream().mapToInt(q -> pointsOf(q)
+                * (q.getType() == TtsQuestionType.DAYS && !isLinked(q) ? DAY_LABELS.size() : 1)).sum();
+        var records = recordRepository.findAllByWeekWithAnswers(year, week).stream()
+                .collect(Collectors.toMap(r -> r.getTeacher().getId(), r -> r));
+        var linked = loadLinked(sunday, sunday.plusDays(6));
+        var people = scorePeople(year).stream()
+                .filter(p -> p.get("teacherId") != null || weekly(p).containsKey(week))
+                .map(p -> {
+                    Long id = (Long) p.get("teacherId");
+                    var record = records.get(id);
+                    var done = linked.getOrDefault(id, Map.of()).getOrDefault(sunday, Set.of());
+                    Map<Long, TtsAnswer> answers = record == null ? Map.of() : record.getAnswers().stream()
+                            .collect(Collectors.toMap(a -> a.getQuestion().getId(), a -> a, (first, ignored) -> first));
+                    List<TtsWeekStatsResponse.Item> items = imported ? List.of() : rules.stream()
+                            .filter(q -> q.isActive() || (!isLinked(q) && answers.containsKey(q.getId())))
+                            .map(q -> detailItem(q, answers.get(q.getId()), done)).toList();
+                    return new TtsWeekStatsResponse.Person((String) p.get("key"), id, (String) p.get("name"),
+                            (String) p.get("grade"), weekly(p).get(week), imported ? "SHEET" : "APP",
+                            !imported && record != null ? record.getUpdatedAt() : null, items);
+                }).toList();
+        return new TtsWeekStatsResponse(year, week, sunday, imported ? null : max, imported, people);
+    }
+
+    private TtsWeekStatsResponse.Item detailItem(TtsQuestion q, TtsAnswer answer, Set<TtsLinkType> linked) {
+        List<String> days = List.of();
+        boolean checked = isLinked(q) ? q.isActive() && linked.contains(q.getLinkType())
+                : answer != null && "true".equals(answer.getAnswerData());
+        if (!isLinked(q) && q.getType() == TtsQuestionType.DAYS && answer != null) {
+            try {
+                Map<String, Boolean> values = objectMapper.readValue(answer.getAnswerData(), new TypeReference<>() {});
+                if (values != null) days = DAY_LABELS.stream().filter(d -> Boolean.TRUE.equals(values.get(d))).toList();
+            } catch (Exception ignored) { /* Same invalid-value policy as answerScore. */ }
+        }
+        int score = isLinked(q) ? (checked ? pointsOf(q) : 0) : answer == null ? 0 : answerScore(answer, q);
+        return new TtsWeekStatsResponse.Item(q.getId(), q.getTitle(), q.getType().name(), pointsOf(q),
+                isLinked(q), q.isActive(), days, checked, score);
     }
 
     private List<Map<String, Object>> scorePeople(int year) {

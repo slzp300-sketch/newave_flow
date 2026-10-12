@@ -1,19 +1,18 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient, useIsMutating } from '@tanstack/react-query'
-import { Check, Trophy, BarChart3, TrendingUp } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
 import { LayoutGroup, motion } from 'framer-motion'
 import { Reveal, AnimatedValue, ProgressFill, SelectionMark, useMotionPreference } from '../components/common/Motion'
 import { addDays, format } from 'date-fns'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import WeekNavigator from '../components/common/WeekNavigator'
-import useAuthStore from '../store/authStore'
-import { getWeekStartByOffset, toApiDate, weekLabels, weekLabelsByNum } from '../utils/date'
+import { getWeekStartByOffset, toApiDate, weekLabels } from '../utils/date'
 import { ttsApi } from '../api/tts'
 import QueryNotice from '../components/common/QueryNotice'
-import { queryReadState } from '../utils/queryReadState'
-import { ttsYear, ttsYears, defaultQuarter, quartersForYear, quarterDateLabel, quarterPeople, firstTtsOffset } from '../utils/ttsPeriod'
+import { ttsReadState, ttsAnswerOptions } from '../utils/ttsQuery'
+import TtsStats from '../components/tts/TtsStats'
+import { firstTtsOffset } from '../utils/ttsPeriod'
 
 export const DAYS = ['월', '화', '수', '목', '금', '토']
 const LINK_PATH = { SAT_MEETING: '/meeting/sat', PRAYER_MEETING: '/meeting/prayer' }
@@ -54,7 +53,7 @@ export default function TTSPage() {
       <Header title="TTS" showBack />
       <div className="px-4 pt-3">
         <LayoutGroup id="tts-navigation"><div className="relative isolate grid grid-cols-2 bg-gray-100 p-1 rounded-xl">
-          {[['check', '내 체크'], ['stats', '분기 현황']].map(([key, label]) => (
+          {[['check', '내 체크'], ['stats', '통계 · 상세']].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -69,7 +68,7 @@ export default function TTSPage() {
           ))}
         </div></LayoutGroup>
       </div>
-      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <StatsTab />}</div>
+      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats />}</div>
     </div>
   )
 }
@@ -81,6 +80,9 @@ export function CheckTab({ embedded = false }) {
   const navigate    = useNavigate()
   const queryClient = useQueryClient()
   const [offset, setOffset] = useState(0)
+  const [saveError, setSaveError] = useState('')
+  const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
+  const offline = useSyncExternalStore(onlineManager.subscribe, () => !onlineManager.isOnline())
   const sunday    = getWeekStartByOffset(offset, 0)
   const weekStart = toApiDate(sunday)
   const todayStr  = toApiDate()
@@ -93,42 +95,22 @@ export function CheckTab({ embedded = false }) {
 
   const weekQuery = useQuery({
     queryKey: weekKey,
+    enabled: !saving,
     queryFn: () => ttsApi.getWeek(weekStart).then(r => r.data),
   })
 
   const questions = questionsQuery.data || []
   const week = weekQuery.data
   const reads = [questionsQuery, weekQuery]
-  const ready = queryReadState(reads) === 'ready'
-  const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
-
-  // 탭하면 화면에 바로 반영하고(낙관적 저장), 실패하면 원래대로 되돌린다
+  const readState = ttsReadState(reads)
+  const ready = readState.editable
+  const mutationOptions = useMemo(() => ttsAnswerOptions(queryClient,
+    payload => ttsApi.saveAnswer(payload).then(r => r.data)), [queryClient])
   const { mutate: saveAnswer } = useMutation({
-    mutationKey: ['tts-answer'],
-    // 빠르게 여러 칸을 탭해도 서버에는 하나씩 차례로 보낸다 (동시에 보내면 같은 주 기록이 겹쳐 실패)
-    scope: { id: 'tts-answer' },
-    mutationFn: (payload) => ttsApi.saveAnswer(payload).then(r => r.data),
-    onMutate: async ({ weekStart: targetWeek, questionId, answerData }) => {
-      const key = ['tts-week', targetWeek]
-      await queryClient.cancelQueries({ queryKey: key })
-      const prev = queryClient.getQueryData(key)
-      queryClient.setQueryData(key, old => {
-        if (!old) return old
-        const others = (old.answers || []).filter(a => a.questionId !== questionId)
-        return { ...old, answers: [...others, { questionId, answerData }] }
-      })
-      return { prev, key }
-    },
-    onError: (err, _vars, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(ctx.key, ctx.prev)
-      alert(err.response?.data?.message || '저장하지 못했어요. 다시 시도해 주세요.')
-    },
-    onSettled: (_data, _error, variables) => {
-      // 연달아 탭할 때 중간 응답이 화면을 덮어쓰지 않도록 마지막 저장이 끝난 뒤에만 다시 불러온다
-      if (queryClient.isMutating({ mutationKey: ['tts-answer'] }) === 1) {
-        queryClient.invalidateQueries({ queryKey: ['tts-week', variables.weekStart] })
-        queryClient.invalidateQueries({ queryKey: ['tts-stats'] })
-      }
+    ...mutationOptions,
+    onError: (err, intent) => {
+      mutationOptions.onError(err, intent)
+      setSaveError(err.response?.data?.message || '저장하지 못한 체크를 되돌렸어요. 연결을 확인하고 다시 체크해 주세요.')
     },
   })
 
@@ -152,15 +134,17 @@ export function CheckTab({ embedded = false }) {
   const dayDate  = (i) => toApiDate(addDays(sunday, i + 1)) // 월=0
   const todayIdx = DAYS.findIndex((_, i) => dayDate(i) === todayStr)
 
+  const currentAnswer = q => parseAnswer(q, queryClient.getQueryData(weekKey)?.answers
+    ?.find(a => a.questionId === q.id)?.answerData)
   const toggleDay = (q, day) => {
-    if (!ready) return
-    const cur  = answers[q.id] || {}
-    const next = { ...cur, [day]: !cur[day] }
-    saveAnswer({ weekStart, questionId: q.id, answerData: JSON.stringify(next) })
+    if (!ready || offline) return
+    setSaveError('')
+    saveAnswer({ weekStart, questionId: q.id, day, checked: !currentAnswer(q)?.[day] })
   }
-  const toggleAttend = (q) => {
-    if (!ready) return
-    saveAnswer({ weekStart, questionId: q.id, answerData: String(!(answers[q.id] === true)) })
+  const toggleAttend = q => {
+    if (!ready || offline) return
+    setSaveError('')
+    saveAnswer({ weekStart, questionId: q.id, checked: currentAnswer(q) !== true })
   }
 
   // 매일 항목은 한 카드의 표로, 참석·자동 반영 항목은 아래 목록으로 (색은 항목 순서대로)
@@ -188,7 +172,15 @@ export function CheckTab({ embedded = false }) {
         />
       </div>}
 
-      {!ready ? (
+      {readState.hasData && (readState.error || readState.paused || saveError || offline) && (
+        <div className={embedded ? 'mb-3' : 'px-4 mb-3'}>
+          <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            {offline ? (saving ? '연결을 기다리고 있어요. 아직 저장이 완료되지 않았습니다.' : '인터넷 연결을 확인해 주세요. 체크를 잠시 멈췄어요.') : saveError || '최신 기록을 확인할 수 없어 체크를 잠시 멈췄어요.'}
+            {(readState.error || readState.paused) && <button className="block mt-2 font-semibold underline" onClick={() => reads.forEach(q => q.refetch())}>다시 불러오기</button>}
+          </div>
+        </div>
+      )}
+      {!readState.hasData ? (
         <div className={embedded ? '' : 'px-4'}><QueryNotice queries={reads} label="TTS 기록" /></div>
       ) : week?.importedPeriod ? (
         <div className={embedded ? '' : 'px-4'}>
@@ -203,7 +195,7 @@ export function CheckTab({ embedded = false }) {
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
           <ScoreCard
             compact={embedded}
-            saving={saving}
+            saveStatus={offline ? (saving ? '연결 대기 · 미저장' : '연결 확인 필요') : saving ? '저장 중…' : saveError ? '저장 실패 확인' : readState.error || readState.paused ? '연결 확인 필요' : readState.refreshing ? '최신 기록 확인 중…' : '자동 저장'}
             range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
             score={score}
             maxScore={maxScore}
@@ -233,6 +225,7 @@ export function CheckTab({ embedded = false }) {
               isFuture={(i) => dayDate(i) > todayStr}
               todayIdx={todayIdx}
               onToggle={toggleDay}
+              disabled={!ready || offline}
             />
           )}
 
@@ -250,6 +243,7 @@ export function CheckTab({ embedded = false }) {
                       q={q}
                       color={color}
                       checked={isLinked(q) ? !!linked[q.id] : answers[q.id] === true}
+                      disabled={!isLinked(q) && (!ready || offline)}
                       onClick={() => isLinked(q) ? navigate(LINK_PATH[q.linkType]) : toggleAttend(q)}
                     />
                   ))}
@@ -271,6 +265,7 @@ export function CheckTab({ embedded = false }) {
                     q={q}
                     color={color}
                     checked={answers[q.id] === true}
+                    disabled={!ready || offline}
                     sub="탭해서 체크"
                     onClick={() => toggleAttend(q)}
                   />
@@ -294,14 +289,13 @@ export function CheckTab({ embedded = false }) {
     </>
   )
 }
-
-function ScoreCard({ score, maxScore, weekLabel, items, message, saving }) {
+function ScoreCard({ score, maxScore, weekLabel, items, message, saveStatus }) {
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
   return (
     <Reveal className="rounded-2xl border border-primary-100 bg-primary-50 p-5">
       <div className="flex justify-between gap-3 items-center text-sm">
         <h2 className="font-medium text-primary-800">{weekLabel} 점수</h2>
-        <span className="text-xs text-gray-500" role="status" aria-live="polite"><span key={saving ? 'saving' : 'saved'} className="motion-fade inline-flex items-center gap-1">{saving ? '저장 중…' : '자동 저장'}</span></span>
+        <span className="text-xs text-gray-500" role="status" aria-live="polite"><span key={saveStatus} className="motion-fade inline-flex items-center gap-1">{saveStatus}</span></span>
       </div>
       <p className="mt-3"><strong className="text-4xl font-semibold tabular-nums"><AnimatedValue value={score} /></strong><span className="ml-2 text-sm text-gray-500">/ {maxScore}점</span></p>
       <div className="h-1.5 rounded-full bg-primary-100 overflow-hidden mt-3">
@@ -317,7 +311,7 @@ function ScoreCard({ score, maxScore, weekLabel, items, message, saving }) {
 }
 
 // Labels above controls keep weekdays readable on narrow phones.
-function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle }) {
+function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle, disabled }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4 gap-2">
@@ -339,7 +333,7 @@ function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle }) {
                   <div key={day} className="min-w-0 text-center">
                     <p className={'text-xs mb-1 ' + (i === todayIdx ? 'text-primary-700 font-semibold' : 'text-gray-500')}>{day}</p>
                     <p className="text-xs text-gray-400 mb-2">{dayLabel(i)}</p>
-                    <button disabled={future} onClick={() => onToggle(q, day)}
+                    <button disabled={future || disabled} onClick={() => onToggle(q, day)}
                       aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : '')} aria-pressed={done}
                       className={'tts-day w-full flex items-center justify-center border transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-300') + (future ? ' opacity-40' : '') + (i === todayIdx && !done ? ' !border-primary-600' : '')}>
                       {done ? <SelectionMark /> : <span aria-hidden="true">—</span>}
@@ -356,10 +350,11 @@ function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle }) {
 }
 
 // 참석·자동 반영 항목 한 줄
-function CheckRow({ q, color, checked, sub, onClick }) {
+function CheckRow({ q, color, checked, sub, onClick, disabled }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={isLinked(q) ? undefined : checked}
       className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all active:scale-[0.98] ${checked ? color.soft : 'bg-gray-50'}`}
     >
@@ -377,10 +372,11 @@ function CheckRow({ q, color, checked, sub, onClick }) {
 }
 
 // 홈용 참석·자동 반영 항목 작은 타일 (2칸 배치)
-function CheckTile({ q, color, checked, onClick }) {
+function CheckTile({ q, color, checked, onClick, disabled }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all active:scale-[0.97] ${checked ? color.soft : 'bg-gray-50'}`}
     >
       <span className="text-base flex-shrink-0">{q.emoji}</span>
@@ -389,194 +385,5 @@ function CheckTile({ q, color, checked, onClick }) {
         {checked && <SelectionMark size={12} className="text-white" />}
       </span>
     </button>
-  )
-}
-
-/* ───────────────────────── 통계 ───────────────────────── */
-
-function StatsTab() {
-  const { user } = useAuthStore()
-  const [year, setYear] = useState(ttsYear)
-  const [quarter, setQuarter] = useState(() => defaultQuarter(ttsYear()))
-  const [view, setView] = useState('quarter')
-  const range = quartersForYear(year).find(x => x.q === quarter)
-
-  const statsQuery = useQuery({
-    queryKey: ['tts-stats', year],
-    queryFn: () => ttsApi.getStats(year).then(r => r.data),
-  })
-  const { data } = statsQuery
-
-  const people = useMemo(() => quarterPeople(data?.people || [], year, quarter), [data, year, quarter])
-
-  const lastWeek = Math.min(range.to, data?.currentWeek ?? Math.max(0, ...people.flatMap(p => Object.keys(p.weekly).map(Number))))
-  const me = people.find(p => p.teacherId === user?.id)
-
-  return (
-    <div className="px-4 py-3 flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <select
-          value={year}
-          aria-label="통계 연도"
-          onChange={e => { const next = Number(e.target.value); setYear(next); setQuarter(defaultQuarter(next)) }}
-          className="px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm font-bold text-gray-700"
-        >
-          {ttsYears().map(y => <option key={y} value={y}>{y}년</option>)}
-        </select>
-        <div className="flex-1 grid grid-cols-3 bg-gray-100 p-1 rounded-xl">
-          {[
-            ['quarter', '분기 순위', Trophy],
-            ['weekly', '주차별', BarChart3],
-            ['mine', '내 추이', TrendingUp],
-          ].map(([key, label, Icon]) => (
-            <button
-              key={key}
-              onClick={() => setView(key)}
-              className={`py-1.5 rounded-lg text-xs font-bold flex flex-col items-center gap-0.5 ${view === key ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-400'}`}
-            >
-              <Icon size={13} />{label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex gap-2">
-        {quartersForYear(year).map(x => (
-          <button key={x.q} onClick={() => setQuarter(x.q)}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold ${quarter === x.q ? 'bg-primary-500 text-white' : 'bg-white text-gray-500'}`}>
-            {x.q}분기
-          </button>
-        ))}
-      </div>
-      <p className="text-xs text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
-
-      {queryReadState([statsQuery]) !== 'ready' ? (
-        <QueryNotice queries={[statsQuery]} label="TTS 통계" />
-      ) : people.length === 0 ? (
-        <Card className="py-10 text-center text-sm text-gray-400">이 분기 기록이 아직 없어요</Card>
-      ) : view === 'quarter' ? (
-        <QuarterRank people={people} myId={user?.id} />
-      ) : view === 'weekly' ? (
-        <WeeklyTable year={year} people={people} firstWeek={range.from} lastWeek={lastWeek} />
-      ) : (
-        <MyTrend year={year} me={me} firstWeek={range.from} lastWeek={lastWeek} />
-      )}
-    </div>
-  )
-}
-
-function RankRow({ rank, p, isMe, right, sub }) {
-  const medal = ['🥇', '🥈', '🥉'][rank - 1]
-  return (
-    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${isMe ? 'bg-primary-50 border border-primary-100' : ''}`}>
-      <span className="w-7 text-center text-sm font-bold text-gray-400">{medal || rank}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900">
-          {p.name}{isMe && <span className="text-xs text-primary-500 ml-1">나</span>}
-        </p>
-        {sub && <p className="text-xs text-gray-400 font-bold">{sub}</p>}
-      </div>
-      <div className="text-right flex-shrink-0">{right}</div>
-    </div>
-  )
-}
-
-// 같은 점수는 같은 순위
-const withRanks = (list, key) => {
-  let prev = null, rank = 0
-  return list.map((p, i) => {
-    if (p[key] !== prev) { rank = i + 1; prev = p[key] }
-    return { ...p, rank }
-  })
-}
-
-function QuarterRank({ people, myId }) {
-  const scored = people.filter(p => p.total > 0)
-  const avg = scored.length ? scored.reduce((s, p) => s + p.total, 0) / scored.length : 0
-  const list = withRanks(scored.sort((a, b) => b.total - a.total), 'total')
-
-  return (
-    <Card className="flex flex-col gap-1 px-2">
-      <div className="flex items-center justify-between px-2 pb-1">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">분기 순위 · 평균 {Math.round(avg)}점</p>
-      </div>
-      {list.length === 0 && <p className="text-center text-xs text-gray-400 py-6">이 분기 기록이 없어요</p>}
-      {list.map(p => {
-        const diff = Math.round(p.total - avg)
-        return (
-          <RankRow
-            key={p.key}
-            rank={p.rank}
-            p={p}
-            isMe={p.teacherId === myId}
-            sub={`${p.weeks}주 참여 · 주 평균 ${Math.round(p.total / p.weeks)}점`}
-            right={
-              <>
-                <p className="text-sm font-bold text-primary-600">{p.total}점</p>
-                <p className={`text-xs font-bold ${diff >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>평균 {diff >= 0 ? '+' : ''}{diff}</p>
-              </>
-            }
-          />
-        )
-      })}
-    </Card>
-  )
-}
-
-function WeeklyTable({ year, people, firstWeek, lastWeek }) {
-  const rows = []
-  for (let w = lastWeek; w >= firstWeek; w--) {
-    const entries = people.map(p => ({ name: p.name, s: p.weekly[w] || 0 })).filter(e => e.s > 0)
-    if (entries.length === 0) continue
-    const max = Math.max(...entries.map(e => e.s))
-    rows.push({
-      w,
-      count: entries.length,
-      avg: Math.round(entries.reduce((a, e) => a + e.s, 0) / entries.length),
-      max,
-      top: entries.filter(e => e.s === max).map(e => e.name),
-    })
-  }
-  return (
-    <Card className="flex flex-col px-3">
-      <div className="grid grid-cols-[64px_32px_36px_36px_1fr] gap-1 text-xs font-bold text-gray-400 pb-2 border-b border-gray-50">
-        <span>주차</span><span className="text-right">인원</span><span className="text-right">평균</span><span className="text-right">최고</span><span className="pl-2">최고점</span>
-      </div>
-      {rows.length === 0 && <p className="text-center text-xs text-gray-400 py-6">기록이 없어요</p>}
-      {rows.map(r => (
-        <div key={r.w} className="grid grid-cols-[64px_32px_36px_36px_1fr] gap-1 py-2 text-xs border-b border-gray-50 last:border-0">
-          <span className="font-bold text-gray-700">{weekLabelsByNum(year, r.w).monthWeek}</span>
-          <span className="text-right font-bold text-gray-500">{r.count}</span>
-          <span className="text-right font-bold text-gray-500">{r.avg}</span>
-          <span className="text-right font-bold text-primary-600">{r.max}</span>
-          <span className="pl-2 font-bold text-gray-600 truncate">{r.top.join(', ')}</span>
-        </div>
-      ))}
-    </Card>
-  )
-}
-
-function MyTrend({ year, me, firstWeek, lastWeek }) {
-  if (!me) return <Card className="py-10 text-center text-sm text-gray-400">내 기록이 아직 없어요</Card>
-  const weeks = Array.from({ length: Math.max(0, lastWeek - firstWeek + 1) }, (_, i) => lastWeek - i)
-  const max = Math.max(150, ...Object.values(me.weekly))
-  return (
-    <Card className="flex flex-col gap-2">
-      <div className="flex items-baseline justify-between">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">내 주차별 점수</p>
-        <p className="text-xs font-bold text-primary-600">분기 {me.total}점 · {me.weeks}주 참여</p>
-      </div>
-      {weeks.map(w => {
-        const s = me.weekly[w]
-        return (
-          <div key={w} className="flex items-center gap-2">
-            <span className="w-16 flex-shrink-0 text-xs font-bold text-gray-400">{weekLabelsByNum(year, w).monthWeek}</span>
-            <div className="flex-1 h-3 bg-gray-50 rounded-full overflow-hidden">
-              <div className="h-full bg-primary-400 rounded-full" style={{ width: `${((s ?? 0) / max) * 100}%` }} />
-            </div>
-            <span className={`w-14 shrink-0 text-right text-xs ${s != null ? 'font-semibold text-gray-700' : 'text-gray-500'}`}>{s != null ? s : '기록 없음'}</span>
-          </div>
-        )
-      })}
-    </Card>
   )
 }

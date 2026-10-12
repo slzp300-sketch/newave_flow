@@ -87,6 +87,10 @@ class HistoryAndReportingTest {
         em.flush(); em.clear();
         assertEquals(15,tts.getWeek(teacher,sunday).getScore());
         assertEquals(5,tts.getActiveQuestions(sunday).get(0).getPoints());
+        var detail = tts.getWeekStats(TtsService.weekYear(sunday), TtsService.weekNum(sunday)).people().get(0);
+        assertEquals(15, detail.score());
+        assertEquals(15, detail.items().stream().mapToInt(i -> i.score()).sum());
+        assertEquals(5, detail.items().stream().filter(i -> i.questionId().equals(daily.getId())).findFirst().orElseThrow().points());
         assertEquals(50,policy.load().at(TtsService.weekSunday(LocalDate.now()).plusWeeks(1)).get(0).getPoints());
     }
 

@@ -3,6 +3,7 @@ package com.newaveflow.controller;
 import com.newaveflow.dto.tts.TtsAnswerRequest;
 import com.newaveflow.dto.tts.TtsResponse;
 import com.newaveflow.dto.tts.TtsSubmitRequest;
+import com.newaveflow.dto.tts.TtsWeekStatsResponse;
 import com.newaveflow.entity.TtsQuestion;
 import com.newaveflow.entity.User;
 import com.newaveflow.service.TtsService;
@@ -70,6 +71,11 @@ public class TtsController {
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(@RequestParam Integer year) {
         return ResponseEntity.ok(ttsService.getStats(year));
+    }
+
+    @GetMapping("/stats/week")
+    public ResponseEntity<TtsWeekStatsResponse> getWeekStats(@RequestParam int year, @RequestParam int weekNum) {
+        return ResponseEntity.ok(ttsService.getWeekStats(year, weekNum));
     }
 
     @GetMapping("/window")

@@ -3,6 +3,7 @@ package com.newaveflow;
 import com.newaveflow.config.SecurityConfig;
 import com.newaveflow.controller.StudentController;
 import com.newaveflow.controller.AdminTtsController;
+import com.newaveflow.controller.TtsController;
 import com.newaveflow.dto.auth.ResetPasswordRequest;
 import com.newaveflow.dto.attendance.AttendanceBatchRequest;
 import com.newaveflow.entity.*;
@@ -124,6 +125,7 @@ class SecurityRegressionTest {
         @Bean TtsService tts() { return mock(TtsService.class); }
         @Bean TtsLegacyImportService importer() { return mock(TtsLegacyImportService.class); }
         @Bean AdminTtsController ttsController(TtsService tts, TtsLegacyImportService importer) { return new AdminTtsController(tts,importer); }
+        @Bean TtsController teacherTtsController(TtsService tts) { return new TtsController(tts); }
     }
 
     @Test void directDeactivationIsForbiddenForTeacherAndExpiredTokenIs401() throws Exception {
@@ -149,6 +151,18 @@ class SecurityRegressionTest {
             verifyNoInteractions(context.getBean(TtsLegacyImportService.class));
             mvc.perform(post("/api/admin/tts/legacy/preview").with(user("admin").roles("ADMIN")).contentType("application/json").content(payload)).andExpect(status().isOk());
             verify(context.getBean(TtsLegacyImportService.class)).preview(any());
+        } finally { SecurityContextHolder.clearContext(); }
+    }
+
+    @Test void weeklyDetailsRequireLoginAndUseTheExistingTeacherStatsAccess() throws Exception {
+        try (var context = new AnnotationConfigWebApplicationContext()) {
+            context.setServletContext(new MockServletContext()); context.register(MinimalWeb.class); context.refresh();
+            var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+            mvc.perform(get("/api/tts/stats/week?year=2026&weekNum=42")).andExpect(status().isUnauthorized());
+            verifyNoInteractions(context.getBean(TtsService.class));
+            mvc.perform(get("/api/tts/stats/week?year=2026&weekNum=42").with(user("teacher").roles("TEACHER")))
+                    .andExpect(status().isOk());
+            verify(context.getBean(TtsService.class)).getWeekStats(2026,42);
         } finally { SecurityContextHolder.clearContext(); }
     }
 }
