@@ -184,7 +184,7 @@ export default function CalendarAdminPage() {
 
       <div className="px-4 py-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-black text-gray-900">전체 일정</h2>
+          <h2 className="text-xl font-bold text-gray-900">전체 일정</h2>
           <Button size="sm" onClick={() => setShowChoice(true)}>
             <Plus size={16} /> 일정 추가
           </Button>
@@ -195,7 +195,7 @@ export default function CalendarAdminPage() {
             <Card className="p-6 border-2 border-primary-100 shadow-xl shadow-primary-50">
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">일정 제목</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">일정 제목</label>
                   <input 
                     type="text" 
                     value={formData.title}
@@ -207,7 +207,7 @@ export default function CalendarAdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">날짜 <span className="normal-case tracking-normal font-medium">(하루 또는 기간)</span></label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">날짜 <span className="normal-case tracking-normal font-medium">(하루 또는 기간)</span></label>
                   <DateRangeField
                     start={formData.eventDate}
                     end={formData.endDate}
@@ -224,8 +224,8 @@ export default function CalendarAdminPage() {
                   }`}
                 >
                   <div>
-                    <p className={`text-sm font-black ${formData.allDay ? 'text-primary-700' : 'text-gray-500'}`}>하루종일</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
+                    <p className={`text-sm font-bold ${formData.allDay ? 'text-primary-700' : 'text-gray-500'}`}>하루종일</p>
+                    <p className="text-xs text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-primary-500' : 'bg-gray-200'}`}>
                     <motion.div
@@ -248,7 +248,7 @@ export default function CalendarAdminPage() {
                     >
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">시작 시간</label>
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">시작 시간</label>
                           <input
                             type="time"
                             value={formData.startTime}
@@ -266,7 +266,7 @@ export default function CalendarAdminPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">종료 시간</label>
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">종료 시간</label>
                           <input
                             type="time"
                             value={formData.endTime}
@@ -280,7 +280,7 @@ export default function CalendarAdminPage() {
                 </AnimatePresence>
 
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">구분</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">구분</label>
                   <select 
                     value={formData.eventType}
                     onChange={e => setFormData({...formData, eventType: e.target.value})}
@@ -291,7 +291,7 @@ export default function CalendarAdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">색상 테마</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">색상 테마</label>
                   <div className="flex flex-wrap gap-2">
                     {COLORS.map(c => (
                       <button
@@ -307,7 +307,7 @@ export default function CalendarAdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">설명 (선택)</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">설명 (선택)</label>
                   <textarea 
                     rows={3}
                     value={formData.description}
@@ -327,10 +327,10 @@ export default function CalendarAdminPage() {
                   }`}
                 >
                   <div>
-                    <p className={`text-sm font-black ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
+                    <p className={`text-sm font-bold ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
                       출석 체크 활성화
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
+                    <p className="text-xs text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
                     formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'
@@ -345,7 +345,7 @@ export default function CalendarAdminPage() {
                 {formData.attendanceRequired && (
                   <div className="flex flex-col gap-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                     <div>
-                      <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-2 block">출석 대상</label>
+                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">출석 대상</label>
                       <div className="flex gap-2">
                         {[
                           { value: 'STUDENT_ONLY', label: '학생만' },
@@ -356,7 +356,7 @@ export default function CalendarAdminPage() {
                             key={opt.value}
                             type="button"
                             onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
-                            className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
                               formData.attendanceTarget === opt.value
                                 ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
                                 : 'border-gray-100 bg-white text-gray-400'
@@ -369,7 +369,7 @@ export default function CalendarAdminPage() {
                     </div>
 
                     <div>
-                      <label className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-2 block">
+                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">
                         출석 제출 마감일 <span className="text-gray-400 font-medium normal-case">(선택)</span>
                       </label>
                       <input
@@ -379,12 +379,12 @@ export default function CalendarAdminPage() {
                         className="w-full px-4 py-3 rounded-xl border border-emerald-100 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300"
                       />
                       {formData.attendanceDeadline && (
-                        <p className="text-[11px] text-emerald-600 mt-1.5 font-medium">
+                        <p className="text-xs text-emerald-600 mt-1.5 font-medium">
                           ✓ {formData.attendanceDeadline} 까지 출석 제출 가능합니다
                         </p>
                       )}
                       {!formData.attendanceDeadline && (
-                        <p className="text-[11px] text-gray-400 mt-1.5">
+                        <p className="text-xs text-gray-400 mt-1.5">
                           비워두면 저장할 때 마감일이 일정 마지막 날({formData.endDate})로 자동 설정됩니다.
                         </p>
                       )}
@@ -417,7 +417,7 @@ export default function CalendarAdminPage() {
             ].map(({ key, label, dot, list }) => list.length > 0 && (
               <div key={key} className="flex flex-col gap-4">
                 <div className="flex items-center gap-3 px-1">
-                  <h3 className="text-sm font-black text-gray-900 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-50 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-gray-900 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-50 flex items-center gap-2">
                     <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
                     {label}
                     <span className="text-gray-400 font-medium">{list.length}</span>
@@ -440,16 +440,16 @@ export default function CalendarAdminPage() {
                                   <Badge variant={event.eventType === 'SPECIAL' ? 'info' : event.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
                                     {EVENT_TYPES.find(t => t.value === event.eventType)?.label}
                                   </Badge>
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                                     {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
                                     {event.endDate && event.endDate !== event.eventDate && ` ~ ${format(new Date(event.endDate), 'M월 d일', { locale: ko })}`}
                                   </span>
                                 </div>
-                                <h3 className="font-black text-gray-900 text-base mb-1">{event.title}</h3>
+                                <h3 className="font-bold text-gray-900 text-base mb-1">{event.title}</h3>
                                 {event.description && (
-                                  <p className="text-gray-500 text-[11px] font-medium leading-relaxed mb-3">{event.description}</p>
+                                  <p className="text-gray-500 text-xs font-medium leading-relaxed mb-3">{event.description}</p>
                                 )}
-                                <div className="flex flex-wrap items-center gap-2 text-[11px] font-black text-gray-400">
+                                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-400">
                                   {!event.startTime ? (
                                     <span className="flex items-center gap-1 text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
                                   ) : (event.startTime || event.endTime) && (

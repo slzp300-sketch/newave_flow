@@ -262,11 +262,11 @@ export default function WeeklyCheckPage() {
       <div className="px-4 py-4 glass-effect">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Weekly Tasks</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">이번 주 할 일</p>
             <p className="text-sm font-bold text-gray-700 mt-0.5">{weekRange}</p>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <p className="text-[10px] font-black text-primary-600">{completedCount}/{trackable.length} 완료</p>
+            <p className="text-xs font-bold text-primary-600">{completedCount}/{trackable.length} 완료</p>
             <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary-500 rounded-full transition-all duration-700"
@@ -287,8 +287,8 @@ export default function WeeklyCheckPage() {
                 <Sparkles size={18} className="text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm font-black text-emerald-800">이번 주 할 일 모두 완료!</p>
-                <p className="text-[11px] text-emerald-500 font-bold mt-0.5">수고하셨어요 😊</p>
+                <p className="text-sm font-bold text-emerald-800">이번 주 할 일 모두 완료!</p>
+                <p className="text-xs text-emerald-500 font-bold mt-0.5">수고하셨어요 😊</p>
               </div>
             </div>
           )}
@@ -300,14 +300,14 @@ export default function WeeklyCheckPage() {
                     <AlertCircle size={16} className="text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-gray-900">이번 주 미완료</p>
-                    <p className="text-[10px] text-amber-500 font-bold mt-0.5">
+                    <p className="text-sm font-bold text-gray-900">이번 주 미완료</p>
+                    <p className="text-xs text-amber-500 font-bold mt-0.5">
                       {incompleteTrackable.length}개 항목 남음
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  <p className="text-[10px] font-black text-amber-600">{progress}%</p>
+                  <p className="text-xs font-bold text-amber-600">{progress}%</p>
                   <div className="w-20 h-1.5 bg-amber-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-amber-400 rounded-full transition-all duration-500"
@@ -335,10 +335,10 @@ export default function WeeklyCheckPage() {
                         <t.icon size={18} />
                       </div>
                       <div className="text-left">
-                        <p className={`text-sm font-black ${t.disabled && !t.done ? 'text-gray-500' : 'text-gray-800'}`}>
+                        <p className={`text-sm font-bold ${t.disabled && !t.done ? 'text-gray-500' : 'text-gray-800'}`}>
                           {t.title}
                         </p>
-                        <p className={`text-[11px] font-medium mt-0.5 ${
+                        <p className={`text-xs font-medium mt-0.5 ${
                           t.done ? 'text-emerald-600' : t.disabled ? 'text-red-400' : 'text-gray-400'
                         }`}>
                           {t.desc}

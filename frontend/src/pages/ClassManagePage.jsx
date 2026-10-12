@@ -53,7 +53,7 @@ export default function ClassManagePage() {
           { id: 'memo', label: '메모' },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 py-2 text-sm font-black rounded-xl transition-all ${
+            className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
               tab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
             }`}>{t.label}</button>
         ))}
@@ -67,7 +67,7 @@ export default function ClassManagePage() {
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4 mt-20">
           <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center text-4xl">📋</div>
           <div>
-            <p className="font-black text-gray-900 text-lg">배정된 반이 없습니다</p>
+            <p className="font-bold text-gray-900 text-lg">배정된 반이 없습니다</p>
             <p className="text-gray-400 text-sm mt-2 leading-relaxed">관리자에게 반 배정을 요청해 주세요.</p>
           </div>
         </div>
@@ -78,27 +78,27 @@ export default function ClassManagePage() {
           {/* 통계 */}
           <div className="grid grid-cols-4 gap-2">
             <Card className="text-center py-3">
-              <p className="text-xl font-black text-gray-900">{students.length}</p>
-              <p className="text-[10px] font-black text-gray-400 mt-0.5">전체</p>
+              <p className="text-xl font-bold text-gray-900">{students.length}</p>
+              <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
             </Card>
             <Card className="text-center py-3">
-              <p className="text-xl font-black text-emerald-500">{activeStudents.length}</p>
-              <p className="text-[10px] font-black text-gray-400 mt-0.5">재적</p>
+              <p className="text-xl font-bold text-emerald-500">{activeStudents.length}</p>
+              <p className="text-xs font-bold text-gray-400 mt-0.5">재적</p>
             </Card>
             <Card className="text-center py-3">
-              <p className="text-xl font-black text-amber-500">{pendingStudents.length}</p>
-              <p className="text-[10px] font-black text-gray-400 mt-0.5">대기</p>
+              <p className="text-xl font-bold text-amber-500">{pendingStudents.length}</p>
+              <p className="text-xs font-bold text-gray-400 mt-0.5">대기</p>
             </Card>
             <Card className="text-center py-3">
-              <p className="text-xl font-black text-red-400">{inactiveStudents.length}</p>
-              <p className="text-[10px] font-black text-gray-400 mt-0.5">제적</p>
+              <p className="text-xl font-bold text-red-400">{inactiveStudents.length}</p>
+              <p className="text-xs font-bold text-gray-400 mt-0.5">제적</p>
             </Card>
           </div>
 
           {/* 재적 학생 */}
           {activeStudents.length > 0 && (
             <div>
-              <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1 mb-2">재적 학생</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">재적 학생</p>
               <div className="flex flex-col gap-2">
                 {activeStudents.map((student, idx) => (
                   <ManageStudentCard
@@ -116,7 +116,7 @@ export default function ClassManagePage() {
           {/* 승인 대기 학생 */}
           {pendingStudents.length > 0 && (
             <div>
-              <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest px-1 mb-2">승인 대기</p>
+              <p className="text-xs font-bold text-amber-500 uppercase tracking-widest px-1 mb-2">승인 대기</p>
               <div className="flex flex-col gap-2">
                 {pendingStudents.map((student, idx) => (
                   <ManageStudentCard
@@ -134,7 +134,7 @@ export default function ClassManagePage() {
           {/* 제적 학생 */}
           {inactiveStudents.length > 0 && (
             <div>
-              <p className="text-[11px] font-black text-red-400 uppercase tracking-widest px-1 mb-2">제적 학생</p>
+              <p className="text-xs font-bold text-red-400 uppercase tracking-widest px-1 mb-2">제적 학생</p>
               <div className="flex flex-col gap-2">
                 {inactiveStudents.map((student, idx) => (
                   <ManageStudentCard
@@ -154,7 +154,7 @@ export default function ClassManagePage() {
           {students.length === 0 && (
             <Card className="py-14 flex flex-col items-center gap-2">
               <Users size={32} className="text-gray-200" />
-              <p className="text-sm font-black text-gray-400">배정된 학생이 없습니다</p>
+              <p className="text-sm font-bold text-gray-400">배정된 학생이 없습니다</p>
             </Card>
           )}
 
@@ -213,26 +213,26 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
           {student.profileImage ? (
             <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
           ) : (
-            <span className="font-black text-sm">{student.name[0]}</span>
+            <span className="font-bold text-sm">{student.name[0]}</span>
           )}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="font-black text-gray-900 text-sm">{student.name}</p>
+            <p className="font-bold text-gray-900 text-sm">{student.name}</p>
             {student.baptism && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-black">세례</span>
+              <span className="text-[0.6875rem] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-bold">세례</span>
             )}
             {isPendingApproval && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-black flex items-center gap-0.5">
+              <span className="text-[0.6875rem] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-bold flex items-center gap-0.5">
                 <Clock size={8} />승인 대기
               </span>
             )}
             {isInactive && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-500 font-black">제적</span>
+              <span className="text-[0.6875rem] px-1.5 py-0.5 rounded-full bg-red-100 text-red-500 font-bold">제적</span>
             )}
           </div>
-          <p className="text-[11px] text-gray-400 mt-0.5">
+          <p className="text-xs text-gray-400 mt-0.5">
             {[student.grade, student.school].filter(Boolean).join(' · ')}
           </p>
         </div>
@@ -276,7 +276,7 @@ function MemoTab({ students, onEditMemo }) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center mt-20 gap-2">
         <StickyNote size={32} className="text-gray-200" />
-        <p className="text-sm font-black text-gray-400">배정된 학생이 없습니다</p>
+        <p className="text-sm font-bold text-gray-400">배정된 학생이 없습니다</p>
       </div>
     )
   }
@@ -294,22 +294,22 @@ function MemoTab({ students, onEditMemo }) {
                 {student.profileImage ? (
                   <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="font-black text-sm">{student.name[0]}</span>
+                  <span className="font-bold text-sm">{student.name[0]}</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-gray-900 text-sm">{student.name}</p>
+                <p className="font-bold text-gray-900 text-sm">{student.name}</p>
                 <div className="flex flex-col gap-1 mt-1.5">
                   {student.prayerRequest ? (
                     <div className="flex items-start gap-1.5">
-                      <span className="text-[9px] font-black text-emerald-500 bg-emerald-50 px-1 rounded flex-shrink-0 mt-0.5">기도</span>
-                      <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-1">{student.prayerRequest}</p>
+                      <span className="text-[0.6875rem] font-bold text-emerald-500 bg-emerald-50 px-1 rounded flex-shrink-0 mt-0.5">기도</span>
+                      <p className="text-xs text-gray-500 leading-relaxed line-clamp-1">{student.prayerRequest}</p>
                     </div>
                   ) : null}
                   {student.sketch ? (
                     <div className="flex items-start gap-1.5">
-                      <span className="text-[9px] font-black text-blue-500 bg-blue-50 px-1 rounded flex-shrink-0 mt-0.5">스케치</span>
-                      <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-1">{student.sketch}</p>
+                      <span className="text-[0.6875rem] font-bold text-blue-500 bg-blue-50 px-1 rounded flex-shrink-0 mt-0.5">스케치</span>
+                      <p className="text-xs text-gray-500 leading-relaxed line-clamp-1">{student.sketch}</p>
                     </div>
                   ) : null}
                   {!hasContent && (
@@ -349,7 +349,7 @@ function MemoSheet({ student, onClose, onSaved }) {
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <StickyNote size={18} className="text-amber-400" />
-              <p className="font-black text-gray-900 text-lg">{student.name} 메모</p>
+              <p className="font-bold text-gray-900 text-lg">{student.name} 메모</p>
             </div>
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100">
               <X size={18} className="text-gray-500" />
@@ -360,7 +360,7 @@ function MemoSheet({ student, onClose, onSaved }) {
             <section>
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">기도제목</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">기도제목</p>
               </div>
               <textarea
                 value={prayerRequest}
@@ -373,7 +373,7 @@ function MemoSheet({ student, onClose, onSaved }) {
             <section>
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">스케치 (인계 사항)</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">스케치 (인계 사항)</p>
               </div>
               <textarea
                 value={sketch}
@@ -418,7 +418,7 @@ function DeactivationReasonModal({ student, onClose, onSubmitted }) {
         <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 flex flex-col gap-4">
           <div className="flex items-start justify-between">
             <div>
-              <p className="font-black text-gray-900 text-base">{student.name} 제적 신청</p>
+              <p className="font-bold text-gray-900 text-base">{student.name} 제적 신청</p>
               <p className="text-xs text-gray-400 mt-0.5">관리자 승인 후 제적 처리됩니다</p>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-full bg-gray-100">
@@ -427,7 +427,7 @@ function DeactivationReasonModal({ student, onClose, onSubmitted }) {
           </div>
 
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">제적 사유</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">제적 사유</p>
             <textarea
               rows={4}
               value={reason}
@@ -496,7 +496,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
       >
         <div className="w-full max-w-[430px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '90vh' }}>
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-            <p className="font-black text-gray-900 text-lg">{student.name} 정보 수정</p>
+            <p className="font-bold text-gray-900 text-lg">{student.name} 정보 수정</p>
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100">
               <X size={18} className="text-gray-500" />
             </button>
@@ -540,7 +540,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
                   </button>
                 )}
               </div>
-              <p className="text-[10px] font-black text-gray-300">학생 사진 (JPG, PNG)</p>
+              <p className="text-xs font-bold text-gray-300">학생 사진 (JPG, PNG)</p>
             </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -552,7 +552,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
               <div className="flex gap-2">
                 {['남', '여'].map(g => (
                   <button key={g} onClick={() => set('gender', g)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-black border-2 transition-all ${
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                       form.gender === g ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-100 bg-gray-50 text-gray-400'
                     }`}>{g}</button>
                 ))}
@@ -629,7 +629,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
 function FormField({ label, children }) {
   return (
     <div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{label}</p>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">{label}</p>
       {children}
     </div>
   )

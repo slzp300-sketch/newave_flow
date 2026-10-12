@@ -5,6 +5,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
 import Button from '../components/common/Button'
+import Brand from '../components/common/Brand'
 import EmailInput from '../components/common/EmailInput'
 
 export default function Login() {
@@ -37,89 +38,46 @@ export default function Login() {
     }
   }
 
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 to-primary-900 flex flex-col items-center justify-center px-6">
-
-      {/* 로고 영역 */}
-      <div className="mb-10 text-center animate-[fadeIn_0.5s_ease]">
-        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur">
-          <span className="text-3xl">⛪</span>
-        </div>
-        <h1 className="text-3xl font-black text-white tracking-tight">Newave Flow</h1>
-        <p className="text-primary-200 mt-1 text-sm">교육부 교사 관리 시스템</p>
+    <div className="min-h-screen bg-white max-w-mobile mx-auto">
+      <div className="login-hero h-[254px] flex flex-col items-center justify-center text-white">
+        <Brand emblem light />
+        <p className="text-sm font-medium tracking-[.12em] mt-6">시대를 바꿀 새로운 파도</p>
       </div>
-
-      {/* 로그인 카드 */}
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-7 animate-[slideUp_0.4s_ease]">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">로그인</h2>
-
+      <div className="px-6 pt-7 pb-8">
+        <h1 className="text-2xl leading-snug font-semibold tracking-tight">새로운 한 주를<br />함께 시작해요</h1>
+        <p className="text-sm text-gray-500 mt-2 mb-6">뉴웨이브 청소년부 교사 공간</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">아이디</label>
-            <EmailInput onChange={(email) => setForm(f => ({ ...f, email }))} />
+            <label className="block text-sm font-medium mb-2">아이디</label>
+            <EmailInput onChange={email => setForm(f => ({ ...f, email }))} />
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">비밀번호</label>
+            <label htmlFor="login-password" className="block text-sm font-medium mb-2">비밀번호</label>
             <div className="relative">
-              <input
-                type={showPw ? 'text' : 'password'}
-                value={form.password}
-                onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
-                placeholder="비밀번호를 입력하세요"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base pr-12 transition"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 p-1"
-              >
+              <input id="login-password" type={showPw ? 'text' : 'password'} autoComplete="current-password"
+                value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                placeholder="비밀번호를 입력하세요" required className="input-field pr-12" />
+              <button type="button" onClick={() => setShowPw(v => !v)}
+                aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 보기'} aria-pressed={showPw}
+                className="absolute right-1 top-1/2 -translate-y-1/2 icon-button">
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
-
-          {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">
-              {error}
-            </div>
-          )}
-
-          <Button type="submit" size="lg" loading={loading} className="mt-2">
-            로그인
-          </Button>
+          {error && <div role="alert" className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>}
+          <Button type="submit" size="lg" loading={loading} className="mt-1">로그인</Button>
         </form>
-      </div>
-
-      <div className="text-center mt-6 flex flex-col gap-2">
-        <p className="text-primary-300 text-sm">
-          <button
-            type="button"
-            onClick={() => navigate('/find-account?tab=id')}
-            className="text-primary-200 hover:text-white transition-colors underline underline-offset-4"
-          >
-            아이디 찾기
-          </button>
-          <span className="text-primary-500 mx-2">|</span>
-          <button
-            type="button"
-            onClick={() => navigate('/find-account?tab=pw')}
-            className="text-primary-200 hover:text-white transition-colors underline underline-offset-4"
-          >
-            비밀번호 찾기
-          </button>
-        </p>
-        <p className="text-primary-300 text-sm">
-          계정이 없으신가요?{' '}
-          <button
-            type="button"
-            onClick={() => navigate('/signup')}
-            className="text-white font-bold underline underline-offset-4"
-          >
-            회원가입
-          </button>
-        </p>
+        <div className="flex items-center justify-center gap-4 text-sm text-gray-500 mt-3">
+          <button onClick={() => navigate('/find-account?tab=id')} className="min-h-11">아이디 찾기</button>
+          <span aria-hidden="true" className="text-gray-300">·</span>
+          <button onClick={() => navigate('/find-account?tab=pw')} className="min-h-11">비밀번호 찾기</button>
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-200 text-center text-sm text-gray-500">
+          처음 오셨나요? <button onClick={() => navigate('/signup')} className="min-h-11 ml-2 font-semibold text-primary-700">회원가입</button>
+        </div>
+        <p className="text-center mt-5 text-xs tracking-[.2em] text-gray-400">NEWAVE YOUTH MINISTRY</p>
       </div>
     </div>
   )

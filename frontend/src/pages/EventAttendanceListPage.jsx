@@ -85,7 +85,7 @@ function TeacherSelfCheck({ event, userId }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">내 출석 체크</p>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">내 출석 체크</p>
 
       {/* 제출 완료 배너 */}
       {submitted && !editing && pending && (
@@ -93,18 +93,18 @@ function TeacherSelfCheck({ event, userId }) {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               {STATUS_COLOR[pending]?.icon}
-              <span className="text-xs font-black">{STATUS_LABEL[pending]}으로 제출 완료</span>
+              <span className="text-xs font-bold">{STATUS_LABEL[pending]}으로 제출 완료</span>
             </div>
             {pending === 'PARTIAL' && (partialFromDate || partialNote) && (
-              <p className="text-[10px] text-gray-500 font-medium pl-6">
+              <p className="text-xs text-gray-500 font-medium pl-6">
                 {partialFromDate && `${partialFromDate}부터`}{partialNote && ` · ${partialNote}`}
               </p>
             )}
             {pending === 'ABSENT' && absenceReason && (
-              <p className="text-[10px] text-gray-500 font-medium pl-6">사유: {absenceReason}</p>
+              <p className="text-xs text-gray-500 font-medium pl-6">사유: {absenceReason}</p>
             )}
           </div>
-          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
+          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-xs text-gray-500 font-bold flex items-center gap-1 flex-shrink-0">
             <PenLine size={12} /> 수정
           </button>}
         </div>
@@ -118,7 +118,7 @@ function TeacherSelfCheck({ event, userId }) {
               <button
                 key={key}
                 onClick={() => setPending(key)}
-                className={`py-3 rounded-2xl border-2 text-xs font-black flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] ${
+                className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] ${
                   pending === key ? STATUS_COLOR[key].btn : 'border-gray-100 bg-gray-50 text-gray-400'
                 }`}
               >
@@ -138,7 +138,7 @@ function TeacherSelfCheck({ event, userId }) {
               className="flex flex-col gap-2 overflow-hidden"
             >
               <div>
-                <label className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
+                <label className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
                 <input
                   type="text"
                   value={absenceReason}
@@ -158,7 +158,7 @@ function TeacherSelfCheck({ event, userId }) {
               className="flex flex-col gap-2"
             >
               <div>
-                <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
+                <label className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
                 <input
                   type="date"
                   value={partialFromDate}
@@ -169,7 +169,7 @@ function TeacherSelfCheck({ event, userId }) {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
                 <input
                   type="text"
                   value={partialNote}
@@ -269,22 +269,22 @@ function StudentAttendanceCheck({ event, userId }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">학생 출석 현황</p>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학생 출석 현황</p>
 
       {/* 통계 */}
       {students.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
           <Card className="text-center py-3">
-            <p className="text-lg font-black text-gray-900">{students.length}</p>
-            <p className="text-[10px] font-black text-gray-400 mt-0.5">전체</p>
+            <p className="text-lg font-bold text-gray-900">{students.length}</p>
+            <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
           </Card>
           <Card className="text-center py-3">
-            <p className="text-lg font-black text-emerald-500">{presentCount}</p>
-            <p className="text-[10px] font-black text-gray-400 mt-0.5">출석</p>
+            <p className="text-lg font-bold text-emerald-500">{presentCount}</p>
+            <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
           </Card>
           <Card className="text-center py-3">
-            <p className="text-lg font-black text-red-400">{absentCount}</p>
-            <p className="text-[10px] font-black text-gray-400 mt-0.5">결석</p>
+            <p className="text-lg font-bold text-red-400">{absentCount}</p>
+            <p className="text-xs font-bold text-gray-400 mt-0.5">결석</p>
           </Card>
         </div>
       )}
@@ -294,9 +294,9 @@ function StudentAttendanceCheck({ event, userId }) {
         <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-200">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-600" />
-            <span className="text-xs font-black text-emerald-700">출석 체크 제출 완료</span>
+            <span className="text-xs font-bold text-emerald-700">출석 체크 제출 완료</span>
           </div>
-          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-[11px] text-emerald-600 font-black flex items-center gap-1">
+          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-xs text-emerald-600 font-bold flex items-center gap-1">
             <PenLine size={12} /> 수정
           </button>}
         </div>
@@ -306,7 +306,7 @@ function StudentAttendanceCheck({ event, userId }) {
       {students.length === 0 ? (
         <Card className="py-8 text-center flex flex-col items-center gap-2">
           <Users size={24} className="text-gray-200" />
-          <p className="text-sm font-black text-gray-400">배정된 학생이 없습니다</p>
+          <p className="text-sm font-bold text-gray-400">배정된 학생이 없습니다</p>
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
@@ -324,14 +324,14 @@ function StudentAttendanceCheck({ event, userId }) {
                   'border-red-200 bg-red-50'
                 }`}>
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
                       status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
                       status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                       'bg-red-200 text-red-700'
                     }`}>{student.studentName[0]}</div>
                     <div>
-                      <p className="font-black text-gray-900 text-sm">{student.studentName}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">{student.grade}</p>
+                      <p className="font-bold text-gray-900 text-sm">{student.studentName}</p>
+                      <p className="text-xs text-gray-400 font-medium">{student.grade}</p>
                     </div>
                   </div>
 
@@ -340,7 +340,7 @@ function StudentAttendanceCheck({ event, userId }) {
                     <div className="flex gap-1">
                       {['PRESENT','PARTIAL','ABSENT'].map(k => (
                         <button key={k} onClick={() => setStatus(sid, k)}
-                          className={`text-[9px] font-black px-2 py-1.5 rounded-lg transition-all ${
+                          className={`text-[0.6875rem] font-bold px-2 py-1.5 rounded-lg transition-all ${
                             status === k
                               ? k === 'PRESENT' ? 'bg-emerald-200 text-emerald-800'
                               : k === 'PARTIAL' ? 'bg-amber-200 text-amber-800'
@@ -353,7 +353,7 @@ function StudentAttendanceCheck({ event, userId }) {
                     </div>
                   ) : (
                     <button onClick={() => isEditable && toggleSimple(sid)} disabled={!isEditable}
-                      className={`text-xs font-black flex items-center gap-1 ${
+                      className={`text-xs font-bold flex items-center gap-1 ${
                         status === 'PRESENT' ? 'text-emerald-600' : status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
                       } ${!isEditable ? 'cursor-default' : ''}`}>
                       {status === 'PRESENT' ? <><CheckCircle2 size={14} /> 출석</> :
@@ -368,7 +368,7 @@ function StudentAttendanceCheck({ event, userId }) {
                     <input type="text" value={reasonMap[sid] || ''}
                       onChange={e => setReasonMap(p => ({ ...p, [sid]: e.target.value }))}
                       placeholder="결석 사유를 입력해 주세요 (필수)" disabled={!isEditable}
-                      className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-medium border transition-all ${
+                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
                         isEditable ? 'bg-white border-red-100 focus:border-red-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
                       }`} />
                   </motion.div>
@@ -380,13 +380,13 @@ function StudentAttendanceCheck({ event, userId }) {
                     <input type="date" value={partialFromDateMap[sid] || ''}
                       min={event.eventDate} max={event.endDate} disabled={!isEditable}
                       onChange={e => setPartialFromDateMap(p => ({ ...p, [sid]: e.target.value }))}
-                      className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-bold border transition-all ${
+                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border transition-all ${
                         isEditable ? 'bg-amber-50/40 border-amber-200 focus:ring-2 focus:ring-amber-200 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
                       }`} />
                     <input type="text" value={partialNoteMap[sid] || ''}
                       onChange={e => setPartialNoteMap(p => ({ ...p, [sid]: e.target.value }))}
                       placeholder="세부 시간 / 메모 (선택)" disabled={!isEditable}
-                      className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-medium border transition-all ${
+                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
                         isEditable ? 'bg-white border-amber-100 focus:border-amber-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
                       }`} />
                   </motion.div>
@@ -400,8 +400,8 @@ function StudentAttendanceCheck({ event, userId }) {
       {/* 제출 버튼 */}
       {isEditable && students.length > 0 && (
         <div className="flex flex-col gap-2">
-          {missingReasons.length > 0 && <p className="text-[10px] font-black text-red-400 text-center">결석 사유를 모두 입력해 주세요 ({missingReasons.length}명 누락)</p>}
-          {missingPartials.length > 0 && <p className="text-[10px] font-black text-amber-500 text-center">부분참석 날짜를 모두 입력해 주세요 ({missingPartials.length}명 누락)</p>}
+          {missingReasons.length > 0 && <p className="text-xs font-bold text-red-400 text-center">결석 사유를 모두 입력해 주세요 ({missingReasons.length}명 누락)</p>}
+          {missingPartials.length > 0 && <p className="text-xs font-bold text-amber-500 text-center">부분참석 날짜를 모두 입력해 주세요 ({missingPartials.length}명 누락)</p>}
           <Button size="lg" onClick={handleSubmit} disabled={saveMutation.isPending || !canSubmit}>
             <CalendarCheck size={17} />
             {saveMutation.isPending ? '저장 중...' : '출석 체크 제출'}
@@ -476,11 +476,11 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
         </div>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className={`font-black text-sm ${isSubmitted ? 'text-emerald-800' : isOpen ? 'text-emerald-800' : 'text-gray-900'}`}>
+            <p className={`font-bold text-sm ${isSubmitted ? 'text-emerald-800' : isOpen ? 'text-emerald-800' : 'text-gray-900'}`}>
               {event.title}
             </p>
             {isSubmitted && (
-              <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+              <span className="text-[0.6875rem] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">
                 제출 완료
               </span>
             )}
@@ -488,7 +488,7 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
               {readState === 'error' ? '출석 현황 조회 실패 · 펼쳐서 다시 시도' : '출석 현황 확인 중...'}
             </span>}
           </div>
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+          <p className="text-xs text-gray-400 font-medium mt-0.5">
             {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
             {event.startTime && ` · ${event.startTime}`}
             {' · '}
@@ -533,7 +533,7 @@ export default function EventAttendanceListPage() {
       <Header title="행사 출석 체크" showBack />
 
       <div className="px-4 py-5 flex flex-col gap-3">
-        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">출석 체크가 필요한 행사</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">출석 체크가 필요한 행사</p>
 
         {queryReadState([eventsQuery]) !== 'ready' && (
           <QueryNotice queries={[eventsQuery]} label="행사 목록" />
@@ -542,7 +542,7 @@ export default function EventAttendanceListPage() {
         {events.length === 0 ? (
           <Card className="py-14 flex flex-col items-center gap-3">
             <Calendar size={32} className="text-gray-200" />
-            <p className="text-sm font-black text-gray-400">출석 체크가 필요한 행사가 없습니다</p>
+            <p className="text-sm font-bold text-gray-400">출석 체크가 필요한 행사가 없습니다</p>
           </Card>
         ) : (
           events.map((event, idx) => {

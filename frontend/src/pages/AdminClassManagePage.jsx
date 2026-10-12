@@ -67,12 +67,12 @@ export default function AdminClassManagePage() {
       <Header title="반 담임/부담임 관리" showBack />
 
       {!isLoading && (
-        <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 sticky top-[64px] z-10 shadow-sm">
+        <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 sticky top-14 z-10 shadow-sm">
           {grades.map(g => (
             <button
               key={g}
               onClick={() => setActiveGrade(g)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black transition-all ${
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeGrade === g 
                   ? 'bg-primary-500 text-white shadow-lg' 
                   : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
@@ -100,7 +100,7 @@ export default function AdminClassManagePage() {
             >
               <div className="flex items-center gap-2 px-1">
                  <div className="w-1 h-4 bg-primary-500 rounded-full" />
-                 <p className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">{grade}</p>
+                 <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">{grade}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
@@ -144,15 +144,15 @@ function ClassAssignmentCard({ cls, onManage }) {
       <div className="flex flex-col gap-4 flex-1">
         {/* 상단: 반 이름 */}
         <div className="flex items-center gap-2">
-           <span className="text-xs font-black text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">{cls.grade}</span>
-           <h3 className="text-lg font-black text-gray-900">{cls.name}</h3>
+           <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">{cls.grade}</span>
+           <h3 className="text-lg font-bold text-gray-900">{cls.name}</h3>
         </div>
 
         {/* 하단: 담임 및 부담임 */}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 text-xs">
             <span className="text-gray-400 font-bold w-12">담임</span>
-            <span className="text-gray-900 font-black">{primaryTeacher?.name || '미배정'}</span>
+            <span className="text-gray-900 font-bold">{primaryTeacher?.name || '미배정'}</span>
           </div>
           <div className="flex items-start gap-2 text-xs">
             <span className="text-gray-400 font-bold w-12 pt-0.5">부담임</span>
@@ -256,8 +256,8 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
         <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pointer-events-auto">
           <div className="p-6 border-b border-gray-50 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">{cls.grade}</p>
-              <h3 className="text-xl font-black text-gray-900">{cls.name} 배정 현황</h3>
+              <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">{cls.grade}</p>
+              <h3 className="text-xl font-bold text-gray-900">{cls.name} 배정 현황</h3>
             </div>
             <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
               <X size={20} />
@@ -267,7 +267,7 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* 현재 배정 된 명단 */}
             <div className="space-y-3">
-              <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">배정된 교사</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">배정된 교사</p>
               {localTeachers.length === 0 ? (
                 <div className="py-8 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-gray-300">
                   <p className="text-xs font-bold">배정된 교사가 없습니다</p>
@@ -277,12 +277,12 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                   {localTeachers.map(t => (
                     <div key={t.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-xs font-black text-gray-700 shadow-sm">
+                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-xs font-bold text-gray-700 shadow-sm">
                           {t.name[0]}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-gray-700">{t.name}</p>
-                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
+                          <span className={`text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-md ${
                             t.isPrimary ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-500'
                           }`}>
                             {t.isPrimary ? '담임' : '부담임'}
@@ -317,7 +317,7 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
             {!isAdding ? (
               <button 
                 onClick={() => setIsAdding(true)}
-                className="w-full py-4 border-2 border-dashed border-primary-200 rounded-3xl text-primary-500 font-black text-sm flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
+                className="w-full py-4 border-2 border-dashed border-primary-200 rounded-3xl text-primary-500 font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
               >
                 <UserPlus size={18} /> 배정 교사 추가
               </button>
@@ -347,22 +347,22 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                     filteredUsers.map(u => (
                       <div key={u.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-primary-200 transition-colors">
                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-[10px] font-black text-gray-400">{u.name[0]}</div>
+                           <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-400">{u.name[0]}</div>
                            <div>
                               <p className="text-sm font-bold text-gray-700">{u.name}</p>
-                              <p className="text-[10px] text-gray-400">{u.email}</p>
+                              <p className="text-xs text-gray-400">{u.email}</p>
                            </div>
                         </div>
                         <div className="flex gap-1">
                           <button 
                             onClick={() => handleAddTeacher(u, true)}
-                            className="px-3 py-1.5 bg-primary-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1"
+                            className="px-3 py-1.5 bg-primary-500 text-white rounded-xl text-xs font-bold flex items-center gap-1"
                           >
                             담임 추가
                           </button>
                           <button 
                             onClick={() => handleAddTeacher(u, false)}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black flex items-center gap-1"
+                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold flex items-center gap-1"
                           >
                             부담임
                           </button>

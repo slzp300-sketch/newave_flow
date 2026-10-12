@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '../../store/authStore'
 import { notificationApi } from '../../api/notifications'
 import { authApi } from '../../api/auth'
+import Brand from '../common/Brand'
 
 export default function Header({ title, showBack = false, onBack, showLogout = false, showNotification = true, right }) {
   const navigate = useNavigate()
@@ -28,34 +29,36 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
   }
 
   return (
-    <header className="sticky top-0 z-50 glass-effect px-4 py-4 flex items-center gap-3">
+    <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 min-h-14 flex items-center gap-2">
       {showBack && (
         <button
           onClick={onBack ?? (() => navigate(-1))}
-          className="p-1.5 -ml-1.5 rounded-xl active:scale-95 transition-transform"
+          className="icon-button -ml-2 shrink-0"
+          aria-label="이전 화면"
         >
           <ChevronLeft size={22} className="text-gray-900" />
         </button>
       )}
-      <h1 className="flex-1 text-[19px] font-black text-gray-900 tracking-tight text-glow">{title}</h1>
+      <h1 className="flex-1 min-w-0 text-lg font-semibold text-gray-900 tracking-tight">{title === 'Newave Flow' ? <Brand /> : title}</h1>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 shrink-0">
         {right}
         {user && showNotification && (
           <button
             onClick={() => navigate('/notifications')}
-            className="relative p-1.5 rounded-xl text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-all"
+            className="relative icon-button"
+            aria-label={unreadCount > 0 ? `알림 ${unreadCount}개 읽지 않음` : '알림'}
           >
             <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-primary-600 border-2 border-white rounded-full"></span>
             )}
           </button>
         )}
         {showLogout && (
           <button
             onClick={handleLogout}
-            className="p-1.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all"
+            className="icon-button hover:text-red-600"
             title="로그아웃"
           >
             <LogOut size={20} />

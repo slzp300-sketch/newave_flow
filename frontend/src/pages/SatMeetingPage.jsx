@@ -96,7 +96,7 @@ export default function SatMeetingPage() {
             satDateLabel={satDateLabel}
           />
         )}
-        <p className="text-[11px] text-gray-400 font-medium text-center mt-3">
+        <p className="text-xs text-gray-400 font-medium text-center mt-3">
           참석으로 체크하면 TTS의 '교사회의' 점수에 자동으로 반영돼요.
         </p>
       </div>
@@ -108,7 +108,7 @@ function SatForm({ sat, update, onSubmit, onCancel, valid, saving, satDateLabel 
   return (
     <Card className="flex flex-col gap-5">
       <div>
-        <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">교사 회의 참석 여부 ({satDateLabel} 토요일)</p>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">교사 회의 참석 여부 ({satDateLabel} 토요일)</p>
         <div className="grid grid-cols-2 gap-3">
           <AttendButton active={sat.status === 'ATTEND'} onClick={() => update({ status: 'ATTEND', reason: '' })} color="blue" label="참석" />
           <AttendButton active={sat.status === 'ABSENT'} onClick={() => update({ status: 'ABSENT' })} color="red" label="불참" />
@@ -142,9 +142,9 @@ function SatSubmittedCard({ sat, updatedAt, onEdit }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CheckCircle2 size={18} className="text-blue-500" />
-          <span className="font-black text-gray-900 text-sm">교사 회의 체크 완료</span>
+          <span className="font-bold text-gray-900 text-sm">교사 회의 체크 완료</span>
         </div>
-        <button onClick={onEdit} className="text-[11px] text-blue-600 font-black flex items-center gap-1">
+        <button onClick={onEdit} className="text-xs text-blue-600 font-bold flex items-center gap-1">
           <PenLine size={12} /> 수정
         </button>
       </div>
@@ -163,7 +163,7 @@ function AttendButton({ active, onClick, color, label }) {
   return (
     <button onClick={onClick} className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
       {active ? <CheckCircle2 size={22} className={textColors[color]} /> : <div className="w-[22px] h-[22px] rounded-full border-2 border-gray-200" />}
-      <span className={`font-black text-sm ${textColors[color]}`}>{label}</span>
+      <span className={`font-bold text-sm ${textColors[color]}`}>{label}</span>
     </button>
   )
 }
@@ -173,8 +173,8 @@ function ReasonInput({ value, onChange, placeholder, required }) {
     <div>
       <div className="flex items-center gap-1.5 mb-2">
         <MessageSquare size={13} className="text-red-400" />
-        <span className="text-xs font-black text-gray-500">사유 입력</span>
-        {required && <span className="text-[10px] text-red-400 font-bold">*필수</span>}
+        <span className="text-xs font-bold text-gray-500">사유 입력</span>
+        {required && <span className="text-xs text-red-400 font-bold">*필수</span>}
       </div>
       <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border border-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-200 text-gray-700 placeholder-gray-300 font-medium bg-gray-50" />
     </div>
@@ -184,8 +184,8 @@ function ReasonInput({ value, onChange, placeholder, required }) {
 function Row({ label, value, muted }) {
   return (
     <div className="flex justify-between items-start gap-3">
-      <span className={`text-[11px] font-bold ${muted ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
-      <span className={`text-[11px] font-black text-right max-w-[200px] ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{value}</span>
+      <span className={`text-xs font-bold ${muted ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
+      <span className={`text-xs font-bold text-right max-w-[200px] ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{value}</span>
     </div>
   )
 }

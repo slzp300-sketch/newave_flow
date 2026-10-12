@@ -34,7 +34,7 @@ export default function LegacyImportCard() {
   const busy = previewMutation.isPending || applyMutation.isPending
   return (
     <Card className="flex flex-col gap-3 mt-6">
-      <p className="font-black text-gray-900 text-sm">2026년 4분기 시트 점수 가져오기</p>
+      <p className="font-bold text-gray-900 text-sm">2026년 4분기 시트 점수 가져오기</p>
       <p className="text-xs text-gray-500 leading-relaxed">
         이름과 40·41주차 제목을 포함한 표를 붙여넣으세요. 선택한 주차는 시트의 확정값을 사용하고, 42주차부터 앱으로 기록합니다.
       </p>

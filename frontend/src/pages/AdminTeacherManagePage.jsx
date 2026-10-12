@@ -93,7 +93,7 @@ export default function AdminTeacherManagePage() {
         ) : (
           <div className="flex flex-col gap-4">
              <div className="px-1 mb-1 flex items-center justify-between">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Management Target ({filteredUsers.length})</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">관리 대상 ({filteredUsers.length})</p>
                 <ViewModeToggle mode={viewMode} onChange={setViewMode} />
              </div>
             {viewMode === 'large' ? (
@@ -146,7 +146,7 @@ export default function AdminTeacherManagePage() {
                   isUpdating={mutation.isPending && mutation.variables?.id === selectedUser.id}
                 />
                 <button onClick={() => setSelectedId(null)}
-                  className="py-3 rounded-2xl bg-white text-sm font-black text-gray-500 shadow-sm active:scale-[0.98] transition-all">
+                  className="py-3 rounded-2xl bg-white text-sm font-bold text-gray-500 shadow-sm active:scale-[0.98] transition-all">
                   닫기
                 </button>
               </motion.div>
@@ -169,10 +169,10 @@ function UserCompactItem({ user, idx, mode, onClick }) {
     return (
       <motion.button {...motionProps}
         className="bg-white rounded-2xl shadow-sm p-2 flex flex-col items-center gap-1 active:scale-95 transition-all">
-        <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-black">
+        <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold">
           {user.name[0]}
         </div>
-        <p className="text-[11px] font-black text-gray-900 truncate w-full text-center">{user.name}</p>
+        <p className="text-xs font-bold text-gray-900 truncate w-full text-center">{user.name}</p>
         <RoleBadge role={user.role} />
       </motion.button>
     )
@@ -180,15 +180,15 @@ function UserCompactItem({ user, idx, mode, onClick }) {
   return (
     <motion.button {...motionProps}
       className="w-full bg-white rounded-2xl shadow-sm px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-all">
-      <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-black flex-shrink-0">
+      <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold flex-shrink-0">
         {user.name[0]}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-black text-gray-900 text-sm flex-shrink-0">{user.name}</p>
+          <p className="font-bold text-gray-900 text-sm flex-shrink-0">{user.name}</p>
           <RoleBadge role={user.role} />
         </div>
-        <p className="text-[11px] font-medium text-gray-400 truncate mt-0.5">{user.email}</p>
+        <p className="text-xs font-medium text-gray-400 truncate mt-0.5">{user.email}</p>
       </div>
       <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
     </motion.button>
@@ -213,12 +213,12 @@ const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpda
         )}
         
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-black text-lg shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg shadow-sm">
             {user.name[0]}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-black text-gray-900 text-base flex-shrink-0">{user.name}</p>
+              <p className="font-bold text-gray-900 text-base flex-shrink-0">{user.name}</p>
               <RoleBadge role={user.role} />
             </div>
             <p className="text-xs font-medium text-gray-400 mt-0.5 truncate">{user.email}</p>
@@ -273,7 +273,7 @@ function RoleButton({ active, label, onClick, variant = 'default' }) {
   return (
     <button
       onClick={onClick}
-      className={`py-2.5 px-1 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 ${styles[variant]}`}
+      className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 ${styles[variant]}`}
     >
       {active && <Check size={12} />}
       {label}
@@ -289,5 +289,5 @@ function RoleBadge({ role }) {
     ADMIN:     ['최종관리자', 'bg-purple-50 text-purple-600'],
   }
   const [label, cls] = map[role] ?? ['사용자', 'bg-gray-50 text-gray-600']
-  return <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${cls}`}>{label}</span>
+  return <span className={`text-[0.6875rem] font-bold px-2 py-0.5 rounded-lg ${cls}`}>{label}</span>
 }

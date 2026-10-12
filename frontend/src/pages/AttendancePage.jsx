@@ -133,7 +133,7 @@ export default function AttendancePage() {
       disabled={isSubmitting}
       title={`${labels.monthWeek} 출석`}
       sub={labels.yearWeek}
-      range={`${formatShort(today)} 주일 · 지난 주일 출석도 언제든 수정할 수 있어요`}
+      range={`${formatShort(today)} 주일`}
     />
   )
   const lastUpdated = reportStatus?.updatedAt || reportStatus?.submittedAt
@@ -151,7 +151,7 @@ export default function AttendancePage() {
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
           <div className="w-20 h-20 rounded-3xl bg-gray-50 flex items-center justify-center text-4xl">📋</div>
           <div>
-            <p className="font-black text-gray-900 text-lg">배정된 반이 없습니다</p>
+            <p className="font-bold text-gray-900 text-lg">배정된 반이 없습니다</p>
             <p className="text-gray-400 text-sm mt-2 leading-relaxed">관리자에게 반 배정을 요청해 주세요.</p>
           </div>
         </div>
@@ -161,7 +161,7 @@ export default function AttendancePage() {
 
   if (isSubmitted) {
     return (
-      <SubmittedAttendanceView 
+      <SubmittedAttendanceView
         classGroup={classes.find(c => c.id === classId)}
         date={today}
         students={students}
@@ -182,17 +182,29 @@ export default function AttendancePage() {
         {weekNav}
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest flex items-center gap-1">
+            <p className="text-xs font-bold text-primary-500 uppercase tracking-widest flex items-center gap-1">
               <Calendar size={10} /> {formatDate(today)}
             </p>
             <div className="flex items-center gap-2 mt-0.5">
-              <h2 className="text-lg font-black text-gray-900">{classes.find(c => c.id === classId)?.name}</h2>
+              <h2 className="text-lg font-bold text-gray-900">{classes.find(c => c.id === classId)?.name}</h2>
               <span className="text-xs font-bold text-gray-400">총 {students.length}명</span>
             </div>
           </div>
         </div>
       </div>
 
+      <div className="px-4 pt-4">
+        <p className="text-sm text-gray-500 mb-3">담임·부담임 공동 기록</p>
+        <div className="grid grid-cols-3 gap-2" aria-label="출석 인원 요약">
+          {[
+            ['전체', students.length, 'text-gray-900'],
+            ['출석', students.filter(s => getStudentData(s.id).status === 'PRESENT').length, 'text-primary-700'],
+            ['불참', students.filter(s => getStudentData(s.id).status === 'ABSENT').length, 'text-danger'],
+          ].map(([label, count, color]) => <div key={label} className="bg-white border border-gray-200 rounded-xl py-3 text-center">
+            <p className="text-xs text-gray-500">{label}</p><p className={'mt-1 text-xl font-semibold ' + color}>{count}<span className="text-xs ml-1 font-normal">명</span></p>
+          </div>)}
+        </div>
+      </div>
       {/* 학생 목록 */}
       <fieldset disabled={isSubmitting} className="px-4 py-4 flex flex-col gap-3 min-w-0">
         {students.map((student, idx) => (
@@ -207,18 +219,18 @@ export default function AttendancePage() {
       </fieldset>
 
       {/* 하단 플로팅 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 z-50">
+      <div className="attendance-submit">
         <Button
-          className="w-full premium-gradient shadow-glow"
+          className="w-full"
           onClick={() => submitReport()}
           loading={isSubmitting}
           disabled={!ready || students.length === 0}
         >
           <Send size={18} />
-          제출하기
+          우리 반 출석 제출하기
         </Button>
-        <p className="text-center text-[10px] text-gray-400 mt-2 font-medium">
-          제출 후에도 언제든 다시 고쳐서 제출할 수 있어요
+        <p className="text-center text-xs text-gray-400 mt-2 font-medium">
+          한 분이 제출하면 우리 반 출석이 함께 완료돼요
         </p>
       </div>
     </div>
@@ -235,36 +247,38 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
       transition={{ delay: idx * 0.05 }}
     >
       <Card className="overflow-visible">
-        <div className="flex items-center justify-between gap-4">
+        <div className="attendance-person">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${
-              data.status === 'PRESENT' ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-400'
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+              data.status === 'PRESENT' ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-red-400'
             }`}>
-              <span className="font-black text-sm">{student.name[0]}</span>
+              <span className="font-bold text-sm">{student.name[0]}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-black text-gray-900 text-sm">{student.name}</p>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{student.grade} · {student.school || '학교미입력'}</p>
+              <p className="font-semibold text-gray-900 text-base">{student.name}</p>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">{student.grade} · {student.school || '학교미입력'}</p>
             </div>
           </div>
 
-          <div className="flex bg-gray-100 p-1 rounded-xl">
+          <div className="attendance-actions">
             <button
               onClick={() => onChange({ status: 'PRESENT' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
-                data.status === 'PRESENT' 
-                  ? 'bg-white text-emerald-600 shadow-sm' 
-                  : 'text-gray-400 hover:text-gray-600'
+              aria-pressed={data.status === 'PRESENT'} aria-label={student.name + ' 출석'}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                data.status === 'PRESENT'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-500'
               }`}
             >
               출석
             </button>
             <button
               onClick={() => onChange({ status: 'ABSENT' })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
-                data.status === 'ABSENT' 
-                  ? 'bg-white text-red-500 shadow-sm' 
-                  : 'text-gray-400 hover:text-gray-600'
+              aria-pressed={data.status === 'ABSENT'} aria-label={student.name + ' 불참'}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                data.status === 'ABSENT'
+                  ? 'bg-red-50 text-danger border border-red-200'
+                  : 'bg-white border border-gray-200 text-gray-500'
               }`}
             >
               불참
@@ -280,13 +294,14 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
               exit={{ opacity: 0, height: 0 }}
               className="mt-3 pt-3 border-t border-gray-50"
             >
-              <label className="text-[10px] font-black text-gray-400 mb-1.5 block">불참 사유</label>
+              <label className="text-xs font-bold text-gray-400 mb-1.5 block">불참 사유</label>
               <input
                 type="text"
+                aria-label={student.name + ' 불참 사유'}
                 placeholder="예: 가족여행, 학업, 몸살 등"
                 value={data.absentReason}
                 onChange={(e) => onChange({ absentReason: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-xs font-bold border-none focus:ring-1 focus:ring-red-200 placeholder:text-gray-300"
+                className="w-full px-3 py-2 bg-gray-50 rounded-xl text-base font-normal border border-gray-200 focus:ring-1 focus:ring-red-200 placeholder:text-gray-400"
               />
             </motion.div>
           )}
@@ -295,13 +310,14 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
         <div className="mt-3">
           <button
             onClick={() => setNoteOpen(!isNoteOpen)}
-            className="flex items-center gap-1 text-[10px] font-black text-gray-400 hover:text-primary-500 transition-colors"
+            aria-expanded={isNoteOpen}
+            className="flex items-center gap-1.5 min-h-11 text-xs font-medium text-gray-500 hover:text-primary-700"
           >
-            <MessageSquare size={10} />
+            <MessageSquare size={14} />
             특이사항 {data.note ? '(입력됨)' : '작성하기'}
             {isNoteOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
           </button>
-          
+
           <AnimatePresence>
             {isNoteOpen && (
               <motion.div
@@ -311,10 +327,11 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
                 className="mt-2"
               >
                 <textarea
+                  aria-label={student.name + ' 특이사항'}
                   placeholder="아이의 오늘 기분이나 나눌 내용이 있다면 적어주세요."
                   value={data.note}
                   onChange={(e) => onChange({ note: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-50 rounded-xl text-xs font-medium border-none focus:ring-1 focus:ring-primary-100 placeholder:text-gray-300 min-h-[60px]"
+                  className="w-full px-3 py-2 bg-gray-50 rounded-xl text-base font-normal border border-gray-200 focus:ring-1 focus:ring-primary-100 placeholder:text-gray-400 min-h-[60px]"
                 />
               </motion.div>
             )}
@@ -336,7 +353,7 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="출석 완료" showBack />
       <div className="px-4 py-3 glass-effect border-b border-gray-100">{weekNav}</div>
-      
+
       <div className="px-6 pt-10 pb-6 flex flex-col items-center gap-6">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -348,34 +365,34 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
         </motion.div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-black text-gray-900">{classGroup?.name}</h2>
-          <p className="text-emerald-500 font-bold mt-1">출석 제출이 완료되었습니다!</p>
+          <h2 className="text-2xl font-bold text-gray-900">{classGroup?.name}</h2>
+          <p className="text-emerald-500 font-bold mt-1">우리 반 출석 제출이 완료됐어요</p>
           <p className="text-gray-400 text-xs mt-3">{formatDate(date)}</p>
-          {lastUpdated && <p className="text-gray-300 text-[11px] mt-1">마지막 수정 {formatUpdatedAt(lastUpdated)}</p>}
+          {lastUpdated && <p className="text-gray-300 text-xs mt-1">마지막 수정 {formatUpdatedAt(lastUpdated)}</p>}
         </div>
 
         <div className="w-full grid grid-cols-2 gap-3 mt-4">
           <div className="bg-emerald-50 p-4 rounded-3xl text-center">
-            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">출석</p>
-            <p className="text-2xl font-black text-emerald-600">{counts.PRESENT}명</p>
+            <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1">출석</p>
+            <p className="text-2xl font-bold text-emerald-600">{counts.PRESENT}명</p>
           </div>
           <div className="bg-red-50 p-4 rounded-3xl text-center">
-            <p className="text-[10px] font-black text-red-300 uppercase tracking-widest mb-1">불참</p>
-            <p className="text-2xl font-black text-red-400">{counts.ABSENT}명</p>
+            <p className="text-xs font-bold text-red-300 uppercase tracking-widest mb-1">불참</p>
+            <p className="text-2xl font-bold text-red-400">{counts.ABSENT}명</p>
           </div>
         </div>
 
         <div className="w-full flex flex-col gap-3 mt-2">
-          <p className="text-xs font-black text-gray-400 ml-1">상세 현황</p>
+          <p className="text-xs font-bold text-gray-400 ml-1">상세 현황</p>
           {students.map(s => (
             <div key={s.id} className="flex items-center justify-between px-4 py-3 bg-white border border-gray-100 rounded-2xl">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-gray-700">{s.name}</span>
                 {formData[s.id]?.status === 'ABSENT' && formData[s.id]?.absentReason && (
-                  <span className="text-[10px] text-gray-400">({formData[s.id].absentReason})</span>
+                  <span className="text-xs text-gray-400">({formData[s.id].absentReason})</span>
                 )}
               </div>
-              <span className={`text-xs font-black ${formData[s.id]?.status === 'PRESENT' ? 'text-emerald-500' : 'text-red-400'}`}>
+              <span className={`text-xs font-bold ${formData[s.id]?.status === 'PRESENT' ? 'text-emerald-500' : 'text-red-400'}`}>
                 {formData[s.id]?.status === 'PRESENT' ? '출석' : '불참'}
               </span>
             </div>

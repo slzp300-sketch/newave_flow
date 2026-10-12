@@ -290,7 +290,7 @@ export default function CalendarPage() {
       <div className="bg-white border-b border-gray-100 px-4 pt-3 pb-0 flex gap-0">
         <button
           onClick={() => setViewMode('calendar')}
-          className={`flex-1 py-2.5 text-sm font-black border-b-2 transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 ${
             viewMode === 'calendar' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-400'
           }`}
         >
@@ -298,7 +298,7 @@ export default function CalendarPage() {
         </button>
         <button
           onClick={() => setViewMode('list')}
-          className={`flex-1 py-2.5 text-sm font-black border-b-2 transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all flex items-center justify-center gap-1.5 ${
             viewMode === 'list' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-400'
           }`}
         >
@@ -311,7 +311,7 @@ export default function CalendarPage() {
       <div className="bg-white px-2 pb-6 shadow-sm border-b border-gray-100">
         <div className="flex items-center justify-between px-2 py-4">
           <div className="flex items-center gap-1">
-            <h2 className="text-xl font-black text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900">
               {format(current, 'yyyy년 M월', { locale: ko })}
             </h2>
             {isAdmin && (
@@ -325,7 +325,7 @@ export default function CalendarPage() {
           </div>
           <div className="flex items-center bg-gray-100 rounded-xl p-1">
             <button onClick={() => setCurrent(subMonths(current, 1))} className="p-1.5 hover:bg-white rounded-lg transition-all"><ChevronLeft size={18} /></button>
-            <button onClick={() => setCurrent(new Date())} className="px-3 py-1 text-[10px] font-black uppercase tracking-widest hover:bg-white rounded-lg transition-all">Today</button>
+            <button onClick={() => setCurrent(new Date())} className="px-3 py-1 text-xs font-bold uppercase tracking-widest hover:bg-white rounded-lg transition-all">오늘</button>
             <button onClick={() => setCurrent(addMonths(current, 1))} className="p-1.5 hover:bg-white rounded-lg transition-all"><ChevronRight size={18} /></button>
           </div>
         </div>
@@ -333,7 +333,7 @@ export default function CalendarPage() {
         {/* 요일 */}
         <div className="grid grid-cols-7 mb-2">
           {WEEKDAYS.map((d, i) => (
-            <div key={d} className={`text-center text-[10px] font-black py-1 uppercase tracking-widest
+            <div key={d} className={`text-center text-xs font-bold py-1 uppercase tracking-widest
               ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
               {d}
             </div>
@@ -373,7 +373,7 @@ export default function CalendarPage() {
                   ${!isCurrMonth ? 'bg-gray-50/50' : ''}`}
               >
                 <div className="flex justify-between items-start mb-0.5">
-                  <span className={`text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-full
+                  <span className={`text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full
                     ${isToday(day) ? 'bg-primary-600 text-white shadow-md' : 
                       isSelected ? 'text-primary-600' :
                       !isCurrMonth ? 'text-gray-300' :
@@ -397,7 +397,7 @@ export default function CalendarPage() {
                     return (
                       <div 
                         key={e.id} 
-                        className={`h-3.5 px-1 text-[8px] font-black truncate transition-all flex items-center shrink-0
+                        className={`h-3.5 px-1 text-[8px] font-bold truncate transition-all flex items-center shrink-0
                           ${getEventBg(e.color)}
                           ${(isStartOfEvent || isStartOfWeek) ? 'rounded-l-sm border-l-2' : 'rounded-l-none border-l-0'}
                           ${(isEndOfEvent || isEndOfWeek) ? 'rounded-r-sm' : 'rounded-r-none'}
@@ -410,7 +410,7 @@ export default function CalendarPage() {
                     )
                   })}
                   {dayEvents.length > 3 && (
-                    <div className="absolute -top-4 right-0 text-[7px] font-black text-gray-400 bg-white/80 px-1 rounded-full">
+                    <div className="absolute -top-4 right-0 text-[7px] font-bold text-gray-400 bg-white/80 px-1 rounded-full">
                       +{dayEvents.filter(ev => eventLanes[ev.id] >= 3).length}
                     </div>
                   )}
@@ -426,8 +426,8 @@ export default function CalendarPage() {
       <div className="px-4 py-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <p className="text-[10px] font-black text-primary-500 uppercase tracking-[0.2em] mb-0.5">Selected Day</p>
-            <h3 className="text-lg font-black text-gray-900">{format(selected, 'M월 d일 (EEEE)', { locale: ko })}</h3>
+            <p className="text-xs font-bold text-primary-500 uppercase tracking-[0.2em] mb-0.5">선택한 날짜</p>
+            <h3 className="text-lg font-bold text-gray-900">{format(selected, 'M월 d일 (EEEE)', { locale: ko })}</h3>
           </div>
           {isAdmin && (
             <Button size="sm" onClick={() => setShowChoice(true)}>
@@ -453,16 +453,16 @@ export default function CalendarPage() {
                     <div className="flex items-center gap-1">
                       {(e.startTime || e.endTime || (e.endDate && e.endDate !== e.eventDate)) && (
                         <div className="flex flex-col items-end gap-0.5 mr-2">
-                          <div className="flex items-center gap-1 text-[9px] font-black text-primary-500">
+                          <div className="flex items-center gap-1 text-[0.6875rem] font-bold text-primary-500">
                             {format(new Date(e.eventDate), 'M/d')} 
                             {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M/d')}`}
                           </div>
                           {!e.startTime ? (
-                            <div className="flex items-center gap-1 text-[10px] font-black text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
+                            <div className="flex items-center gap-1 text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
                               하루종일
                             </div>
                           ) : (e.startTime || e.endTime) && (
-                            <div className="flex items-center gap-1 text-[10px] font-black text-gray-400">
+                            <div className="flex items-center gap-1 text-xs font-bold text-gray-400">
                               <Clock size={12} /> {e.startTime} {e.endTime && `~ ${e.endTime}`}
                             </div>
                           )}
@@ -476,15 +476,15 @@ export default function CalendarPage() {
                       )}
                     </div>
                   </div>
-                  <h4 className="font-black text-gray-900 text-base mb-1">{e.title}</h4>
+                  <h4 className="font-bold text-gray-900 text-base mb-1">{e.title}</h4>
                   {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
                   {e.attendanceRequired && (isAdmin || !e.attendanceDeadline || e.attendanceDeadline >= today) && (
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
                         ✓ 출석체크 활성
                       </span>
                       {e.attendanceDeadline && (
-                        <span className="flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
+                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
                           마감 {format(new Date(e.attendanceDeadline), 'M월 d일', { locale: ko })}
                         </span>
                       )}
@@ -505,7 +505,7 @@ export default function CalendarPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowChoice(true)}
-                className="flex items-center gap-1.5 text-sm font-black text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+                className="flex items-center gap-1.5 text-sm font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full active:scale-95 transition-all"
               >
                 <Plus size={14} /> 일정 추가
               </button>
@@ -525,14 +525,14 @@ export default function CalendarPage() {
               <div key={key} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-                  <p className="text-xs font-black text-gray-500">{label}</p>
+                  <p className="text-xs font-bold text-gray-500">{label}</p>
                   <span className="text-xs text-gray-400">{list.length}</span>
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
                 {list.map(e => (
                   <Card key={e.id} className={`p-4 border-l-4 ${getEventBorderColor(e.color)}`}>
                     <div className="flex justify-between items-start mb-1">
-                      <p className="text-[10px] font-black text-gray-400">
+                      <p className="text-xs font-bold text-gray-400">
                         {format(new Date(e.eventDate), 'M월 d일 (EEE)', { locale: ko })}
                         {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M월 d일', { locale: ko })}`}
                       </p>
@@ -543,18 +543,18 @@ export default function CalendarPage() {
                         </div>
                       )}
                     </div>
-                    <h4 className="font-black text-gray-900 text-sm mb-1">{e.title}</h4>
+                    <h4 className="font-bold text-gray-900 text-sm mb-1">{e.title}</h4>
                     {e.description && <p className="text-xs text-gray-500 leading-relaxed">{e.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {!e.startTime ? (
-                        <span className="text-[10px] font-black text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
+                        <span className="text-xs font-bold text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
                       ) : e.startTime && (
-                        <span className="flex items-center gap-1 text-[10px] font-black text-gray-400">
+                        <span className="flex items-center gap-1 text-xs font-bold text-gray-400">
                           <Clock size={10} /> {e.startTime}{e.endTime && ` ~ ${e.endTime}`}
                         </span>
                       )}
                       {e.attendanceRequired && (isAdmin || !e.attendanceDeadline || e.attendanceDeadline >= today) && (
-                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">✓ 출석체크</span>
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">✓ 출석체크</span>
                       )}
                     </div>
                   </Card>
@@ -571,17 +571,17 @@ export default function CalendarPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black text-gray-900">{editingId ? '일정 수정' : '새 일정 등록'}</h3>
+                <h3 className="text-xl font-bold text-gray-900">{editingId ? '일정 수정' : '새 일정 등록'}</h3>
                 <button onClick={() => setShowForm(false)} className="p-2 bg-gray-50 rounded-full text-gray-400"><X size={20} /></button>
               </div>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">제목</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">제목</label>
                   <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">날짜 <span className="normal-case tracking-normal font-medium">(하루 또는 기간)</span></label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">날짜 <span className="normal-case tracking-normal font-medium">(하루 또는 기간)</span></label>
                   <DateRangeField
                     start={formData.eventDate}
                     end={formData.endDate}
@@ -590,7 +590,7 @@ export default function CalendarPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">구분</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">구분</label>
                   <select value={formData.eventType} onChange={e => setFormData({...formData, eventType: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none">
                     {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
@@ -604,8 +604,8 @@ export default function CalendarPage() {
                   }`}
                 >
                   <div>
-                    <p className={`text-sm font-black ${formData.allDay ? 'text-primary-700' : 'text-gray-500'}`}>하루종일</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
+                    <p className={`text-sm font-bold ${formData.allDay ? 'text-primary-700' : 'text-gray-500'}`}>하루종일</p>
+                    <p className="text-xs text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-primary-500' : 'bg-gray-200'}`}>
                     <motion.div
@@ -628,7 +628,7 @@ export default function CalendarPage() {
                     >
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">시작 시간</label>
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">시작 시간</label>
                           <input
                             type="time"
                             value={formData.startTime}
@@ -646,7 +646,7 @@ export default function CalendarPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">종료 시간</label>
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">종료 시간</label>
                           <input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
                         </div>
                       </div>
@@ -654,7 +654,7 @@ export default function CalendarPage() {
                   )}
                 </AnimatePresence>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">색상</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">색상</label>
                   <div className="flex gap-2">
                     {COLORS.map(c => (
                       <button key={c.value} type="button" onClick={() => setFormData({...formData, color: c.value})} className={`w-7 h-7 rounded-full ${c.class} ${formData.color === c.value ? 'ring-2 ring-offset-2 ring-gray-900' : 'opacity-40'}`} />
@@ -662,7 +662,7 @@ export default function CalendarPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">설명</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">설명</label>
                   <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium resize-none outline-none" />
                 </div>
                 {/* 출석 체크 활성화 토글 */}
@@ -675,10 +675,10 @@ export default function CalendarPage() {
                   }`}
                 >
                   <div>
-                    <p className={`text-sm font-black ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
+                    <p className={`text-sm font-bold ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
                       출석 체크 활성화
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
+                    <p className="text-xs text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
                     formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'
@@ -693,7 +693,7 @@ export default function CalendarPage() {
                 {formData.attendanceRequired && (
                   <div className="flex flex-col gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
                     <div>
-                      <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1.5 block">출석 대상</label>
+                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1.5 block">출석 대상</label>
                       <div className="flex gap-2">
                         {[
                           { value: 'STUDENT_ONLY', label: '학생만' },
@@ -704,7 +704,7 @@ export default function CalendarPage() {
                             key={opt.value}
                             type="button"
                             onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
-                            className={`flex-1 py-2.5 rounded-xl text-xs font-black border-2 transition-all ${
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
                               formData.attendanceTarget === opt.value
                                 ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
                                 : 'border-gray-100 bg-white text-gray-400'
@@ -717,7 +717,7 @@ export default function CalendarPage() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1.5 block">
+                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1.5 block">
                         출석 제출 마감일 <span className="text-gray-400 font-medium normal-case">(선택)</span>
                       </label>
                       <input
@@ -728,11 +728,11 @@ export default function CalendarPage() {
                         className="w-full px-4 py-3 rounded-xl border border-emerald-100 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300"
                       />
                       {formData.attendanceDeadline ? (
-                        <p className="text-[11px] text-emerald-600 mt-1.5 font-medium">
+                        <p className="text-xs text-emerald-600 mt-1.5 font-medium">
                           ✓ {format(new Date(formData.attendanceDeadline), 'M월 d일', { locale: ko })} 까지 출석 제출 가능합니다
                         </p>
                       ) : (
-                        <p className="text-[11px] text-gray-400 mt-1.5">
+                        <p className="text-xs text-gray-400 mt-1.5">
                           비워두면 저장할 때 마감일이 일정 마지막 날({format(new Date(formData.endDate), 'M월 d일', { locale: ko })})로 자동 설정됩니다.
                         </p>
                       )}

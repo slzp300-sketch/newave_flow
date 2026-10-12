@@ -201,8 +201,8 @@ export default function EventAttendancePage() {
               <Calendar size={18} className="text-emerald-600" />
             </div>
             <div>
-              <p className="font-black text-gray-900 text-sm">{event.title}</p>
-              <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+              <p className="font-bold text-gray-900 text-sm">{event.title}</p>
+              <p className="text-xs text-gray-400 font-medium mt-0.5">
                 {format(new Date(event.eventDate), 'yyyy년 M월 d일 (EEE)', { locale: ko })}
                 {event.endDate && event.endDate !== event.eventDate &&
                   ` ~ ${format(new Date(event.endDate), 'M월 d일 (EEE)', { locale: ko })}`}
@@ -219,9 +219,9 @@ export default function EventAttendancePage() {
         {needsTeacherCheck && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between px-1">
-              <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">내 출석 체크</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">내 출석 체크</p>
               {event?.attendanceDeadline && (
-                <p className={`text-[10px] font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
+                <p className={`text-xs font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
                   {isPastDeadline ? '제출 마감됨' : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
                 </p>
               )}
@@ -239,7 +239,7 @@ export default function EventAttendancePage() {
                       {pendingTeacherStatus === 'PRESENT' && <CheckCircle2 size={16} className="text-emerald-600" />}
                       {pendingTeacherStatus === 'PARTIAL' && <Clock size={16} className="text-amber-500" />}
                       {pendingTeacherStatus === 'ABSENT'  && <XCircle size={16} className="text-red-500" />}
-                      <span className={`text-xs font-black ${
+                      <span className={`text-xs font-bold ${
                         pendingTeacherStatus === 'PRESENT' ? 'text-emerald-700' :
                         pendingTeacherStatus === 'PARTIAL' ? 'text-amber-700' : 'text-red-600'
                       }`}>
@@ -247,24 +247,24 @@ export default function EventAttendancePage() {
                       </span>
                     </div>
                     {pendingTeacherStatus === 'PARTIAL' && (partialFromDate || partialNote) && (
-                      <p className="text-[10px] text-gray-500 font-medium pl-6">
+                      <p className="text-xs text-gray-500 font-medium pl-6">
                         {partialFromDate && `${partialFromDate}부터`}{partialNote && ` · ${partialNote}`}
                       </p>
                     )}
                     {pendingTeacherStatus === 'ABSENT' && teacherAbsenceReason && (
-                      <p className="text-[10px] text-gray-500 font-medium pl-6">
+                      <p className="text-xs text-gray-500 font-medium pl-6">
                         사유: {teacherAbsenceReason}
                       </p>
                     )}
                   </div>
                   {!isPastDeadline && (
-                    <button onClick={() => setTeacherEditing(true)} className="text-[11px] text-gray-500 font-black flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => setTeacherEditing(true)} className="text-xs text-gray-500 font-bold flex items-center gap-1 flex-shrink-0">
                       <PenLine size={12} /> 수정
                     </button>
                   )}
                 </div>
                 {isPastDeadline && (
-                  <p className="text-[10px] font-bold text-red-500 text-right px-1">제출 기간이 마감되어 수정할 수 없습니다.</p>
+                  <p className="text-xs font-bold text-red-500 text-right px-1">제출 기간이 마감되어 수정할 수 없습니다.</p>
                 )}
               </div>
             )}
@@ -274,14 +274,14 @@ export default function EventAttendancePage() {
                 {isPastDeadline ? (
                   <Card className="bg-red-50 border-red-100 py-4 flex flex-col items-center gap-1">
                     <XCircle size={20} className="text-red-400" />
-                    <p className="text-xs font-black text-red-600">제출 기간이 마감되었습니다</p>
+                    <p className="text-xs font-bold text-red-600">제출 기간이 마감되었습니다</p>
                   </Card>
                 ) : (
                   <>
                     <div className={`grid gap-2 ${isMultiDay ? 'grid-cols-3' : 'grid-cols-2'}`}>
                       {(isMultiDay ? ['PRESENT','PARTIAL','ABSENT'] : ['PRESENT','ABSENT']).map(key => (
                         <button key={key} onClick={() => setPendingTeacherStatus(key)}
-                          className={`py-3 rounded-2xl border-2 text-xs font-black flex flex-col items-center gap-1 active:scale-[0.98] transition-all ${
+                          className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center gap-1 active:scale-[0.98] transition-all ${
                             pendingTeacherStatus === key
                               ? key === 'PRESENT' ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
                               : key === 'PARTIAL' ? 'border-amber-400 bg-amber-50 text-amber-700'
@@ -299,13 +299,13 @@ export default function EventAttendancePage() {
                     {pendingTeacherStatus === 'PARTIAL' && (
                       <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
                         <div>
-                          <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
+                          <label className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
                           <input type="date" value={partialFromDate} min={event?.eventDate} max={event?.endDate}
                             onChange={e => setPartialFromDate(e.target.value)}
                             className="w-full px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-300" />
                         </div>
                         <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
                           <input type="text" value={partialNote} onChange={e => setPartialNote(e.target.value)}
                             placeholder="예: 오후 2시부터 참석 가능합니다"
                             className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200" />
@@ -316,7 +316,7 @@ export default function EventAttendancePage() {
                     {pendingTeacherStatus === 'ABSENT' && (
                       <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
                         <div>
-                          <label className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
+                          <label className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
                           <input type="text" value={teacherAbsenceReason} onChange={e => setTeacherAbsenceReason(e.target.value)}
                             placeholder="불참 사유를 입력해 주세요"
                             className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-sm font-medium outline-none focus:ring-2 focus:ring-red-300" />
@@ -343,22 +343,22 @@ export default function EventAttendancePage() {
         {students.length > 0 && (
           <div className={`grid gap-3 ${isMultiDay ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <Card className="text-center py-3">
-              <p className="text-xl font-black text-gray-900">{students.length}</p>
-              <p className="text-[10px] font-black text-gray-400 mt-0.5">전체</p>
+              <p className="text-xl font-bold text-gray-900">{students.length}</p>
+              <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
             </Card>
             <Card className="text-center py-3">
-              <p className="text-xl font-black text-emerald-500">{presentCount}</p>
-              <p className="text-[10px] font-black text-gray-400 mt-0.5">출석</p>
+              <p className="text-xl font-bold text-emerald-500">{presentCount}</p>
+              <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
             </Card>
             {isMultiDay && (
               <Card className="text-center py-3">
-                <p className="text-xl font-black text-amber-500">{partialCount}</p>
-                <p className="text-[10px] font-black text-gray-400 mt-0.5">부분참석</p>
+                <p className="text-xl font-bold text-amber-500">{partialCount}</p>
+                <p className="text-xs font-bold text-gray-400 mt-0.5">부분참석</p>
               </Card>
             )}
             <Card className="text-center py-3">
-              <p className="text-xl font-black text-red-400">{absentCount}</p>
-              <p className="text-[10px] font-black text-gray-400 mt-0.5">결석</p>
+              <p className="text-xl font-bold text-red-400">{absentCount}</p>
+              <p className="text-xs font-bold text-gray-400 mt-0.5">결석</p>
             </Card>
           </div>
         )}
@@ -369,16 +369,16 @@ export default function EventAttendancePage() {
             <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-200">
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-emerald-600" />
-                <span className="text-xs font-black text-emerald-700">출석 체크 제출 완료</span>
+                <span className="text-xs font-bold text-emerald-700">출석 체크 제출 완료</span>
               </div>
               {!isPastDeadline && (
-                <button onClick={() => setEditing(true)} className="text-[11px] text-emerald-600 font-black flex items-center gap-1">
+                <button onClick={() => setEditing(true)} className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                   <PenLine size={12} /> 수정
                 </button>
               )}
             </div>
             {isPastDeadline && (
-              <p className="text-[10px] font-bold text-red-500 text-right px-1">제출 기간이 마감되어 수정할 수 없습니다.</p>
+              <p className="text-xs font-bold text-red-500 text-right px-1">제출 기간이 마감되어 수정할 수 없습니다.</p>
             )}
           </div>
         )}
@@ -386,9 +386,9 @@ export default function EventAttendancePage() {
         {/* 학생 목록 */}
         <div>
           <div className="flex items-center justify-between px-1 mb-3">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">학생 출석 현황</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">학생 출석 현황</p>
             {event?.attendanceDeadline && (
-              <p className={`text-[10px] font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
+              <p className={`text-xs font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
                 {isPastDeadline ? '제출 마감됨' : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
               </p>
             )}
@@ -399,7 +399,7 @@ export default function EventAttendancePage() {
           ) : students.length === 0 ? (
             <Card className="py-10 text-center flex flex-col items-center gap-2">
               <Users size={28} className="text-gray-200" />
-              <p className="text-sm font-black text-gray-400">배정된 학생이 없습니다</p>
+              <p className="text-sm font-bold text-gray-400">배정된 학생이 없습니다</p>
             </Card>
           ) : (
             <div className="flex flex-col gap-3">
@@ -421,7 +421,7 @@ export default function EventAttendancePage() {
                     }`}>
                       {/* 학생 정보 */}
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
                           status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
                           status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                                                  'bg-red-200 text-red-700'
@@ -429,8 +429,8 @@ export default function EventAttendancePage() {
                           {student.studentName[0]}
                         </div>
                         <div>
-                          <p className="font-black text-gray-900 text-sm">{student.studentName}</p>
-                          <p className="text-[10px] text-gray-400 font-medium">{student.grade}</p>
+                          <p className="font-bold text-gray-900 text-sm">{student.studentName}</p>
+                          <p className="text-xs text-gray-400 font-medium">{student.grade}</p>
                         </div>
                       </div>
 
@@ -439,7 +439,7 @@ export default function EventAttendancePage() {
                         <div className={`flex gap-1.5 ${isMultiDay ? '' : ''}`}>
                           <button
                             onClick={() => setStudentStatus(student.studentId, 'PRESENT')}
-                            className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black border transition-all ${
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                               status === 'PRESENT'
                                 ? 'border-emerald-400 bg-emerald-500 text-white'
                                 : 'border-gray-100 bg-white text-gray-400'
@@ -450,7 +450,7 @@ export default function EventAttendancePage() {
                           {isMultiDay && (
                             <button
                               onClick={() => setStudentStatus(student.studentId, 'PARTIAL')}
-                              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black border transition-all ${
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                                 status === 'PARTIAL'
                                   ? 'border-amber-400 bg-amber-500 text-white'
                                   : 'border-gray-100 bg-white text-gray-400'
@@ -461,7 +461,7 @@ export default function EventAttendancePage() {
                           )}
                           <button
                             onClick={() => setStudentStatus(student.studentId, 'ABSENT')}
-                            className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black border transition-all ${
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                               status === 'ABSENT'
                                 ? 'border-red-400 bg-red-500 text-white'
                                 : 'border-gray-100 bg-white text-gray-400'
@@ -474,7 +474,7 @@ export default function EventAttendancePage() {
 
                       {/* 보기 전용 상태 */}
                       {!isEditable && (
-                        <div className={`flex items-center gap-1.5 text-xs font-black ${
+                        <div className={`flex items-center gap-1.5 text-xs font-bold ${
                           status === 'PRESENT' ? 'text-emerald-600' :
                           status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
                         }`}>
@@ -501,7 +501,7 @@ export default function EventAttendancePage() {
                             onChange={e => setReasonMap(prev => ({ ...prev, [student.studentId]: e.target.value }))}
                             placeholder="결석 사유를 입력해 주세요 (필수)"
                             disabled={!isEditable}
-                            className={`w-full px-4 py-3 rounded-xl text-[11px] font-medium border transition-all ${
+                            className={`w-full px-4 py-3 rounded-xl text-xs font-medium border transition-all ${
                               isEditable
                                 ? 'bg-white border-red-100 focus:border-red-300 focus:ring-4 focus:ring-red-50 outline-none'
                                 : 'bg-gray-50 border-gray-100 text-gray-400'
@@ -522,7 +522,7 @@ export default function EventAttendancePage() {
                           className="px-1 flex flex-col gap-2 overflow-hidden"
                         >
                           <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest">
+                            <label className="text-xs font-bold text-amber-600 uppercase tracking-widest">
                               참석 시작일 (필수)
                             </label>
                             <input
@@ -540,7 +540,7 @@ export default function EventAttendancePage() {
                             />
                           </div>
                           <div className="flex flex-col gap-1.5">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                               메모 (선택)
                             </label>
                             <input
@@ -549,7 +549,7 @@ export default function EventAttendancePage() {
                               onChange={e => setPartialNoteMap(prev => ({ ...prev, [student.studentId]: e.target.value }))}
                               placeholder="예: 오후 2시부터 참석"
                               disabled={!isEditable}
-                              className={`w-full px-4 py-2.5 rounded-xl text-[11px] font-medium border transition-all ${
+                              className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
                                 isEditable
                                   ? 'bg-white border-amber-100 focus:border-amber-300 focus:ring-2 focus:ring-amber-100 outline-none'
                                   : 'bg-gray-50 border-gray-100 text-gray-400'
@@ -573,12 +573,12 @@ export default function EventAttendancePage() {
             {isPastDeadline ? (
               <Card className="bg-red-50 border-red-100 py-4 flex flex-col items-center gap-1">
                 <XCircle size={20} className="text-red-400" />
-                <p className="text-xs font-black text-red-600">제출 기간이 마감되었습니다</p>
+                <p className="text-xs font-bold text-red-600">제출 기간이 마감되었습니다</p>
               </Card>
             ) : (
               <>
                 {!canSubmit && students.length > 0 && (
-                  <p className="text-[10px] font-black text-red-400 text-center">
+                  <p className="text-xs font-bold text-red-400 text-center">
                     {missingReasons.length > 0 && `결석 사유를 입력해 주세요 (${missingReasons.length}명)`}
                     {missingReasons.length > 0 && missingPartials.length > 0 && ' · '}
                     {missingPartials.length > 0 && `부분참석 시작일을 입력해 주세요 (${missingPartials.length}명)`}

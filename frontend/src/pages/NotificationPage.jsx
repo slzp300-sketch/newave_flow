@@ -87,10 +87,10 @@ export default function NotificationPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className={`text-sm font-black truncate ${!noti.read ? 'text-gray-900' : 'text-gray-600'}`}>
+                    <h3 className={`text-sm font-bold truncate ${!noti.read ? 'text-gray-900' : 'text-gray-600'}`}>
                       {noti.title}
                     </h3>
-                    <span className="text-[10px] font-bold text-gray-400 shrink-0 whitespace-nowrap pt-0.5">
+                    <span className="text-xs font-bold text-gray-400 shrink-0 whitespace-nowrap pt-0.5">
                       {formatDistanceToNow(new Date(noti.createdAt), { addSuffix: true, locale: ko })}
                     </span>
                   </div>

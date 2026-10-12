@@ -72,7 +72,7 @@ export default function MeetingMinutesPage() {
             <div key={month} className="flex flex-col gap-3">
               <div className="flex items-center gap-2 px-1">
                 <span className="w-1 h-4 bg-primary-500 rounded-full" />
-                <h3 className="text-sm font-black text-gray-900">{month}</h3>
+                <h3 className="text-sm font-bold text-gray-900">{month}</h3>
               </div>
               <div className="flex flex-col gap-3">
                 {items.map(m => (
@@ -110,12 +110,12 @@ export default function MeetingMinutesPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-violet-50 text-violet-600 text-[10px] font-black px-2 py-0.5 rounded-lg border border-violet-100">
+                    <span className="bg-violet-50 text-violet-600 text-xs font-bold px-2 py-0.5 rounded-lg border border-violet-100">
                       회의록
                     </span>
                     <span className="text-xs text-gray-400 font-bold">{formatDate(selected.meetingDate)}</span>
                   </div>
-                  <h3 className="text-xl font-black text-gray-900 leading-tight">{selected.title}</h3>
+                  <h3 className="text-xl font-bold text-gray-900 leading-tight">{selected.title}</h3>
                 </div>
                 <button onClick={() => setSelected(null)} className="p-2 bg-gray-50 rounded-full text-gray-400">
                   <ChevronRight className="rotate-90" size={20} />
@@ -128,7 +128,7 @@ export default function MeetingMinutesPage() {
 
               {selected.videoLink && (
                 <div className="mb-8">
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                     <Play size={14} className="text-red-500" /> 녹화 영상
                   </p>
                   <a 
@@ -141,7 +141,7 @@ export default function MeetingMinutesPage() {
                       <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white shadow-sm">
                         <Play fill="currentColor" size={20} />
                       </div>
-                      <span className="text-sm font-black text-red-700">영상 시청하기</span>
+                      <span className="text-sm font-bold text-red-700">영상 시청하기</span>
                     </div>
                     <ExternalLink size={16} className="text-red-300 group-hover:text-red-500 transition-colors" />
                   </a>
@@ -150,11 +150,11 @@ export default function MeetingMinutesPage() {
 
               <div className="flex flex-col gap-3">
                 {selected.attendanceStatus === 'ATTEND' ? (
-                  <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 font-black text-sm">
+                  <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 font-bold text-sm">
                     <CheckCircle2 size={18} /> 회의 참석 완료 (체크 불필요)
                   </div>
                 ) : selected.confirmed ? (
-                  <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 font-black text-sm">
+                  <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 font-bold text-sm">
                     <CheckCircle2 size={18} /> 확인 완료됨
                   </div>
                 ) : (
@@ -186,21 +186,21 @@ function MinuteCard({ minute, onClick }) {
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-black text-violet-500 uppercase tracking-widest">
+            <span className="text-xs font-bold text-violet-500 uppercase tracking-widest">
               {formatDate(minute.meetingDate)}
             </span>
             {minute.attendanceStatus === 'ATTEND' ? (
-              <span className="flex items-center gap-0.5 text-[10px] font-black text-emerald-500">
+              <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500">
                 <CheckCircle2 size={10} /> 참석 완료
               </span>
             ) : minute.confirmed && (
-              <span className="flex items-center gap-0.5 text-[10px] font-black text-emerald-500">
+              <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500">
                 <CheckCircle2 size={10} /> 확인됨
               </span>
             )}
           </div>
-          <h4 className="font-black text-gray-900 leading-tight mb-2">{minute.title}</h4>
-          <div className="flex items-center gap-3 text-[11px] text-gray-400 font-bold">
+          <h4 className="font-bold text-gray-900 leading-tight mb-2">{minute.title}</h4>
+          <div className="flex items-center gap-3 text-xs text-gray-400 font-bold">
             <span className="flex items-center gap-1"><Clock size={12} /> {formatDate(minute.createdAt)} 등록</span>
             {minute.videoLink && <span className="flex items-center gap-1 text-red-400"><Play size={12} /> 영상 있음</span>}
           </div>

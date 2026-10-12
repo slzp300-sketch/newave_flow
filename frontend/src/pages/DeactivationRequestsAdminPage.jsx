@@ -36,14 +36,14 @@ export default function DeactivationRequestsAdminPage() {
           <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center">
             <CheckCircle2 size={28} className="text-emerald-500" />
           </div>
-          <p className="font-black text-gray-700">대기 중인 제적 신청이 없습니다</p>
+          <p className="font-bold text-gray-700">대기 중인 제적 신청이 없습니다</p>
           <p className="text-xs text-gray-400">새로운 제적 신청이 들어오면 여기에 표시됩니다</p>
         </div>
       ) : (
         <div className="px-4 py-4 flex flex-col gap-3">
           <div className="flex items-center gap-2 px-1">
             <Clock size={14} className="text-amber-500" />
-            <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest">
+            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest">
               승인 대기 {requests.length}건
             </p>
           </div>
@@ -63,12 +63,12 @@ export default function DeactivationRequestsAdminPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-black text-gray-900 text-sm">{req.studentName}</p>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-black">
+                      <p className="font-bold text-gray-900 text-sm">{req.studentName}</p>
+                      <span className="text-[0.6875rem] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-bold">
                         {req.studentGrade} {req.classGroupName}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-400 mt-0.5">
                       담임: {req.teacherName} · {req.requestedAt}
                     </p>
                   </div>
@@ -76,7 +76,7 @@ export default function DeactivationRequestsAdminPage() {
 
                 {/* 제적 사유 */}
                 <div className="bg-gray-50 rounded-2xl px-4 py-3">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">제적 사유</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">제적 사유</p>
                   <p className="text-sm text-gray-700 leading-relaxed">{req.reason}</p>
                 </div>
 
@@ -85,14 +85,14 @@ export default function DeactivationRequestsAdminPage() {
                   <button
                     onClick={() => rejectMutation.mutate(req.id)}
                     disabled={rejectMutation.isPending || approveMutation.isPending}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gray-100 text-gray-600 font-black text-sm active:scale-95 transition-all disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gray-100 text-gray-600 font-bold text-sm active:scale-95 transition-all disabled:opacity-50"
                   >
                     <XCircle size={15} />반려
                   </button>
                   <button
                     onClick={() => approveMutation.mutate(req.id)}
                     disabled={approveMutation.isPending || rejectMutation.isPending}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-red-500 text-white font-black text-sm active:scale-95 transition-all disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-red-500 text-white font-bold text-sm active:scale-95 transition-all disabled:opacity-50"
                   >
                     <CheckCircle2 size={15} />승인
                   </button>

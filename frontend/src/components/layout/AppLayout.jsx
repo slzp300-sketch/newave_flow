@@ -17,13 +17,18 @@ export default function AppLayout() {
     root.style.fontSize = largeFontMode ? '120%' : ''
     root.style.transition = 'font-size 0.3s ease'
     root.classList.toggle('large-font', largeFontMode)
+    return () => {
+      root.style.fontSize = ''
+      root.style.transition = ''
+      root.classList.remove('large-font')
+    }
   }, [largeFontMode])
 
   // 당긴 거리 비율 (0 ~ 1)
   const pullProgress = Math.min(pullDistance / 70, 1)
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
+    <div className="min-h-screen bg-surface flex flex-col overflow-x-clip">
       <ScrollRestoration />
       
       {/* Pull to Refresh Animated Indicator */}
@@ -53,7 +58,7 @@ export default function AppLayout() {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute top-12 text-[10px] font-black text-primary-600 tracking-widest uppercase"
+            className="absolute top-12 text-xs font-bold text-primary-600 tracking-widest uppercase"
           >
             Updating
           </motion.div>
@@ -61,7 +66,7 @@ export default function AppLayout() {
       </div>
 
       <main
-        className="flex-1 pb-20 max-w-mobile mx-auto w-full transition-transform duration-150"
+        className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom))] max-w-mobile mx-auto w-full transition-transform duration-150"
         style={pullDistance > 0 ? { transform: `translateY(${pullDistance * 0.4}px)` } : undefined}
       >
         <Outlet />

@@ -35,7 +35,7 @@ export default function AdminPendingUsersPage() {
       <Header title="가입 승인 대기" showBack />
       
       <div className="px-5 pt-6 pb-4">
-        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <Clock className="text-amber-500" size={24} />
           대기 목록 <span className="text-amber-500">{pendingUsers.length}</span>명
         </h2>
@@ -52,12 +52,12 @@ export default function AdminPendingUsersPage() {
           ) : (
             pendingUsers.map(user => (
               <Card key={user.id} className="p-5 flex flex-col gap-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-3 bg-amber-50 text-amber-600 rounded-bl-2xl text-[10px] font-black tracking-widest">
+                <div className="absolute top-0 right-0 p-3 bg-amber-50 text-amber-600 rounded-bl-2xl text-xs font-bold tracking-widest">
                   PENDING
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-black text-gray-900">{user.name}</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{user.name}</h3>
                   <p className="text-xs font-bold text-gray-400 mt-0.5">{user.email}</p>
                 </div>
                 

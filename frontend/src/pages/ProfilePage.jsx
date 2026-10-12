@@ -148,16 +148,16 @@ export default function ProfilePage() {
       <Header title="내 정보" />
 
       {/* 프로필 헤더 */}
-      <div className="bg-gradient-to-br from-primary-600 to-primary-800 px-6 pt-8 pb-14">
+      <div className="bg-primary-900 px-6 pt-8 pb-14">
         <div className="flex flex-col items-center gap-3">
           <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur flex items-center justify-center border-2 border-white/40 overflow-hidden">
             {profileImage
               ? <img src={profileImage} alt={user?.name} className="w-full h-full object-cover" />
-              : <span className="text-white text-3xl font-black">{user?.name?.[0] ?? '?'}</span>
+              : <span className="text-white text-3xl font-bold">{user?.name?.[0] ?? '?'}</span>
             }
           </div>
           <div className="text-center">
-            <h2 className="text-white text-xl font-black">{user?.name}</h2>
+            <h2 className="text-white text-xl font-bold">{user?.name}</h2>
             <span className={`inline-block mt-1.5 text-xs font-bold px-3 py-1 rounded-full ${roleCfg.bg}`}>
               {roleCfg.label}
             </span>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
               </div>
               <div className="text-left">
                 <span className="text-sm font-bold text-gray-800">프로필 정보 수정</span>
-                <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+                <p className="text-xs text-gray-400 font-medium mt-0.5">
                   교사 교적부에 표시되는 정보를 입력해 주세요
                 </p>
               </div>
@@ -240,7 +240,7 @@ export default function ProfilePage() {
                         </button>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-400">JPG, PNG 파일 지원</p>
+                    <p className="text-xs text-gray-400">JPG, PNG 파일 지원</p>
                   </div>
 
                   {/* 이름 */}
@@ -288,7 +288,7 @@ export default function ProfilePage() {
                       className="w-full px-3.5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary-300"
                     />
                     {form.birthDate && (
-                      <p className="text-[11px] text-primary-500 font-medium px-1">
+                      <p className="text-xs text-primary-500 font-medium px-1">
                         만 {calcAge(form.birthDate)}세
                       </p>
                     )}
@@ -308,7 +308,7 @@ export default function ProfilePage() {
                         <option key={p} value={p}>{p || '선택 안 함'}</option>
                       ))}
                     </select>
-                    <p className="text-[10px] text-gray-400 px-1">교사 교적부 상세 정보에 표시됩니다</p>
+                    <p className="text-xs text-gray-400 px-1">교사 교적부 상세 정보에 표시됩니다</p>
                   </div>
 
                   {profileResult && (
@@ -401,23 +401,28 @@ export default function ProfilePage() {
           <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">화면 설정</p>
           <div className="flex items-center justify-between px-4 py-3.5 border-t border-gray-50">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                <Type size={15} className="text-indigo-500" />
+              <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+                <Type size={15} className="text-primary-500" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800">큰 글씨 모드</p>
-                <p className="text-[11px] text-gray-400 font-medium mt-0.5">글자 크기를 키워드립니다</p>
+                <p className="text-xs text-gray-400 font-medium mt-0.5">글자 크기를 키워드립니다</p>
               </div>
             </div>
             <button
               onClick={handleToggleLargeFont}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-300 flex-shrink-0 ${largeFontMode ? 'bg-indigo-500' : 'bg-gray-200'}`}
+              role="switch"
+              aria-label="큰 글씨 모드"
+              aria-checked={largeFontMode}
+              className="w-12 min-h-11 flex items-center shrink-0"
             >
+              <span className={`relative block w-12 h-6 rounded-full transition-colors ${largeFontMode ? 'bg-primary-600' : 'bg-gray-200'}`}>
               <motion.div
                 animate={{ x: largeFontMode ? 24 : 2 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
               />
+              </span>
             </button>
           </div>
         </Card>

@@ -56,9 +56,9 @@ export default function ViewModeToggle({ mode, onChange }) {
 export function DetailTable({ columns, rows, rowKey = r => r.id, onRowClick, rowClassName }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
-      <table className="w-full text-[11px] whitespace-nowrap">
+      <table className="w-full text-xs whitespace-nowrap">
         <thead>
-          <tr className="bg-gray-50 text-gray-400 font-black text-left">
+          <tr className="bg-gray-50 text-gray-400 font-bold text-left">
             {columns.map((c, i) => (
               <th key={c.label} className={`px-3 py-2 ${i === 0 ? 'sticky left-0 bg-gray-50' : ''}`}>{c.label}</th>
             ))}
@@ -72,7 +72,7 @@ export function DetailTable({ columns, rows, rowKey = r => r.id, onRowClick, row
               className={`${onRowClick ? 'cursor-pointer active:bg-gray-50' : ''} ${rowClassName?.(row) || ''}`}
             >
               {columns.map((c, i) => (
-                <td key={c.label} className={`px-3 py-2.5 text-gray-600 font-medium ${i === 0 ? 'sticky left-0 bg-white font-black text-gray-900' : ''} ${c.className || ''}`}>
+                <td key={c.label} className={`px-3 py-2.5 text-gray-600 font-medium ${i === 0 ? 'sticky left-0 bg-white font-bold text-gray-900' : ''} ${c.className || ''}`}>
                   {c.render(row) ?? '-'}
                 </td>
               ))}

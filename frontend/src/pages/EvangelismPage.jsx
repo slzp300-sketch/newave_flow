@@ -54,7 +54,7 @@ export default function EvangelismPage() {
         {/* 전체 전도 일정 */}
         <div className="flex items-center gap-2 px-1">
           <Calendar size={12} className="text-gray-400" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">전도 일정</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">전도 일정</p>
         </div>
 
         {upcoming.length === 0 ? (
@@ -69,7 +69,7 @@ export default function EvangelismPage() {
 
         {past.length > 0 && (
           <>
-            <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] px-1 mt-1">지난 일정</p>
+            <p className="text-xs font-bold text-gray-300 uppercase tracking-[0.2em] px-1 mt-1">지난 일정</p>
             {past.map((s, i) => (
               <ScheduleCard key={s.id} schedule={s} index={i} myGroupId={myGroupId} allGroups={allGroups} past />
             ))}
@@ -89,7 +89,7 @@ function NextScheduleBanner({ nextSchedule, myGroupId, allGroups }) {
           <AlertCircle size={22} className="text-gray-400" />
         </div>
         <div>
-          <p className="font-black text-gray-900 text-sm">조 배정 없음</p>
+          <p className="font-bold text-gray-900 text-sm">조 배정 없음</p>
           <p className="text-xs text-gray-400 mt-0.5">아직 전도 조에 배정되지 않았습니다</p>
         </div>
       </Card>
@@ -103,7 +103,7 @@ function NextScheduleBanner({ nextSchedule, myGroupId, allGroups }) {
           <AlertCircle size={22} className="text-gray-400" />
         </div>
         <div>
-          <p className="font-black text-gray-900 text-sm">예정된 전도 없음</p>
+          <p className="font-bold text-gray-900 text-sm">예정된 전도 없음</p>
           <p className="text-xs text-gray-400 mt-0.5">현재 배정된 전도 일정이 없습니다</p>
         </div>
       </Card>
@@ -122,12 +122,12 @@ function NextScheduleBanner({ nextSchedule, myGroupId, allGroups }) {
           <Calendar size={22} className={isActive ? 'text-red-500' : c.text} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`font-black text-sm ${isActive ? 'text-red-600' : 'text-gray-900'}`}>
+          <p className={`font-bold text-sm ${isActive ? 'text-red-600' : 'text-gray-900'}`}>
             {isActive ? '이번 주 전도 당번입니다' : '다음 전도 일정'}
           </p>
           <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
         </div>
-        <Badge variant={isActive ? 'danger' : 'warning'} className="text-[10px] flex-shrink-0">
+        <Badge variant={isActive ? 'danger' : 'warning'} className="text-xs flex-shrink-0">
           {isActive ? '당번' : 'D-' + daysUntil(nextSchedule.scheduledDate)}
         </Badge>
       </Card>
@@ -156,11 +156,11 @@ function ScheduleCard({ schedule, index, myGroupId, allGroups, past = false }) {
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-gray-900 text-sm">{dateStr}</p>
             {isMyGroup && !past && (
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${c.bg} ${c.text}`}>내 조</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${c.bg} ${c.text}`}>내 조</span>
             )}
           </div>
           {groupName ? (
-            <span className={`inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-lg ${groupIdx >= 0 ? c.bg + ' ' + c.text : 'bg-gray-100 text-gray-500'}`}>
+            <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-lg ${groupIdx >= 0 ? c.bg + ' ' + c.text : 'bg-gray-100 text-gray-500'}`}>
               {groupName}
             </span>
           ) : (
@@ -189,9 +189,9 @@ function AllGroupsSection({ allGroups, myGroupId }) {
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Users size={12} className="text-gray-400" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">전체 조 편성표</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">전체 조 편성표</p>
         </div>
-        <p className="text-[10px] text-gray-400 font-bold">총 {allGroups.reduce((s, g) => s + (g.members?.length ?? 0), 0)}명</p>
+        <p className="text-xs text-gray-400 font-bold">총 {allGroups.reduce((s, g) => s + (g.members?.length ?? 0), 0)}명</p>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -208,10 +208,10 @@ function AllGroupsSection({ allGroups, myGroupId }) {
               }`}
             >
               <div className="flex items-center gap-1.5">
-                <span className={`text-xs font-black whitespace-nowrap ${isSelected ? c.text : 'text-gray-500'}`}>{g.name}</span>
-                {isMine && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-primary-600 text-white">내 조</span>}
+                <span className={`text-xs font-bold whitespace-nowrap ${isSelected ? c.text : 'text-gray-500'}`}>{g.name}</span>
+                {isMine && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-primary-600 text-white">내 조</span>}
               </div>
-              <span className={`text-[10px] font-bold ${isSelected ? c.text : 'text-gray-300'}`}>{g.members?.length ?? 0}명</span>
+              <span className={`text-xs font-bold ${isSelected ? c.text : 'text-gray-300'}`}>{g.members?.length ?? 0}명</span>
             </button>
           )
         })}
@@ -227,10 +227,10 @@ function AllGroupsSection({ allGroups, myGroupId }) {
           <div className={`${color.light} px-5 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
               <div className={`w-2.5 h-2.5 rounded-full ${color.dot}`} />
-              <p className={`font-black text-sm ${color.text}`}>{selectedGroup.name}</p>
-              {isMyGroup && <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-primary-600 text-white">내 조</span>}
+              <p className={`font-bold text-sm ${color.text}`}>{selectedGroup.name}</p>
+              {isMyGroup && <span className="text-[0.6875rem] font-bold px-2 py-0.5 rounded-lg bg-primary-600 text-white">내 조</span>}
             </div>
-            <p className={`text-[11px] font-bold ${color.text}`}>{selectedGroup.members?.length ?? 0}명</p>
+            <p className={`text-xs font-bold ${color.text}`}>{selectedGroup.members?.length ?? 0}명</p>
           </div>
           <div className="bg-white px-4 py-3">
             {selectedGroup.members?.length === 0 ? (
@@ -239,7 +239,7 @@ function AllGroupsSection({ allGroups, myGroupId }) {
               <div className="grid grid-cols-3 gap-2">
                 {selectedGroup.members.map(m => (
                   <div key={m.id} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${color.bg}`}>
-                    <div className={`w-7 h-7 rounded-lg ${color.bg} ${color.text} flex items-center justify-center text-[11px] font-black flex-shrink-0`}>
+                    <div className={`w-7 h-7 rounded-lg ${color.bg} ${color.text} flex items-center justify-center text-xs font-bold flex-shrink-0`}>
                       {m.teacherName[0]}
                     </div>
                     <span className="text-xs font-bold text-gray-700 truncate">{m.teacherName}</span>
@@ -255,10 +255,10 @@ function AllGroupsSection({ allGroups, myGroupId }) {
 }
 
 function StatusBadge({ status }) {
-  if (status === 'ACTIVE')    return <Badge variant="danger"  className="text-[9px]">당번</Badge>
-  if (status === 'UPCOMING')  return <Badge variant="warning" className="text-[9px]">예정</Badge>
-  if (status === 'CANCELED')  return <Badge className="text-[9px] bg-gray-100 text-gray-400 border-none">취소</Badge>
-  return                             <Badge variant="success" className="text-[9px]">완료</Badge>
+  if (status === 'ACTIVE')    return <Badge variant="danger"  className="text-[0.6875rem]">당번</Badge>
+  if (status === 'UPCOMING')  return <Badge variant="warning" className="text-[0.6875rem]">예정</Badge>
+  if (status === 'CANCELED')  return <Badge className="text-[0.6875rem] bg-gray-100 text-gray-400 border-none">취소</Badge>
+  return                             <Badge variant="success" className="text-[0.6875rem]">완료</Badge>
 }
 
 function statusDot(status) {

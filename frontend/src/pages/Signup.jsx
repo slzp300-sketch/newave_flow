@@ -112,7 +112,7 @@ export default function Signup() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
         <div className="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">✅</div>
-        <h2 className="text-2xl font-black text-gray-900 mb-2">가입 신청 완료</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">가입 신청 완료</h2>
         <p className="text-gray-500 text-center text-sm mb-8">
           관리자의 승인 후 정상적인 이용이 가능합니다.<br/>잠시만 기다려주세요!
         </p>
@@ -128,7 +128,7 @@ export default function Signup() {
       <Header title="회원가입" showBack />
       
       <div className="px-6 pt-6 pb-10">
-        <h2 className="text-2xl font-black text-gray-900 mb-2">환영합니다!</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">환영합니다!</h2>
         <p className="text-gray-500 text-sm mb-8">새로운 웨이브에 합류하세요</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">

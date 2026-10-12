@@ -52,7 +52,7 @@ export default function EvangelismAdminPage() {
           <button
             key={t}
             onClick={() => setTab(i)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
               tab === i ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
             }`}
           >
@@ -170,7 +170,7 @@ function GroupManagementTab({ teachers }) {
         {/* ── 헤더 ── */}
         <div className="px-4 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">조 편성 관리</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">조 편성 관리</p>
             <p className="text-xs text-gray-500 font-bold mt-0.5">
               총 {teachers.length}명 · {assignedIds.size}명 배정 · {pool.length}명 대기
             </p>
@@ -178,12 +178,12 @@ function GroupManagementTab({ teachers }) {
           <div className="flex items-center gap-2">
             {pool.length > 0 && (
               <button onClick={autoBalance} disabled={moving}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50 text-primary-700 text-[11px] font-black border border-primary-100 active:scale-95 disabled:opacity-50">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50 text-primary-700 text-xs font-bold border border-primary-100 active:scale-95 disabled:opacity-50">
                 <Shuffle size={12} /> 자동 배분
               </button>
             )}
             <button onClick={() => setShowAddGroup(true)}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-primary-600 text-white text-[11px] font-black active:scale-95">
+              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold active:scale-95">
               <Plus size={13} /> 조 추가
             </button>
           </div>
@@ -203,7 +203,7 @@ function GroupManagementTab({ teachers }) {
                 />
                 <button disabled={!newGroupName || createGroup.isPending}
                   onClick={() => createGroup.mutate({ name: newGroupName })}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-black disabled:opacity-50">추가</button>
+                  className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">추가</button>
                 <button onClick={() => { setShowAddGroup(false); setNewGroupName('') }} className="p-2 text-gray-400"><X size={16} /></button>
               </Card>
             </motion.div>
@@ -222,16 +222,16 @@ function GroupManagementTab({ teachers }) {
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
                     {editingId === g.id ? (
                       <input autoFocus
-                        className="text-xs font-black bg-transparent border-b border-current focus:outline-none w-14"
+                        className="text-xs font-bold bg-transparent border-b border-current focus:outline-none w-14"
                         value={editingName}
                         onChange={e => setEditingName(e.target.value)}
                         onBlur={() => updateGroupMeta.mutate({ id: g.id, data: { name: editingName } })}
                         onKeyDown={e => { if (e.key === 'Enter') updateGroupMeta.mutate({ id: g.id, data: { name: editingName } }) }}
                       />
                     ) : (
-                      <span className={`text-xs font-black truncate ${c.text}`}>{g.name}</span>
+                      <span className={`text-xs font-bold truncate ${c.text}`}>{g.name}</span>
                     )}
-                    <span className={`text-[10px] font-bold ${c.text} opacity-60 flex-shrink-0`}>{g.members?.length ?? 0}</span>
+                    <span className={`text-xs font-bold ${c.text} opacity-60 flex-shrink-0`}>{g.members?.length ?? 0}</span>
                   </div>
                   <div className="flex items-center gap-0.5 flex-shrink-0">
                     <button onClick={() => { setEditingId(g.id); setEditingName(g.name) }}
@@ -244,7 +244,7 @@ function GroupManagementTab({ teachers }) {
                 {/* 멤버 칩 */}
                 <div className="bg-white px-2.5 py-2.5 flex flex-wrap gap-1.5 flex-1 min-h-[48px]">
                   {g.members?.length === 0 ? (
-                    <p className="w-full text-center text-[10px] text-gray-300 py-2">비어있음</p>
+                    <p className="w-full text-center text-xs text-gray-300 py-2">비어있음</p>
                   ) : (
                     g.members.map(m => (
                       <MemberChip
@@ -267,7 +267,7 @@ function GroupManagementTab({ teachers }) {
         {/* ── 배정 대기 풀 ── */}
         <div className="px-4">
           <div className="flex items-center justify-between mb-2 px-1">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">배정 대기 ({pool.length}명)</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">배정 대기 ({pool.length}명)</p>
           </div>
           {pool.length > 0 && (
             <div className="mb-2 relative">
@@ -284,7 +284,7 @@ function GroupManagementTab({ teachers }) {
           <PoolDropZone>
             {pool.length === 0 ? (
               <div className="flex items-center justify-center py-3 gap-2 text-emerald-500">
-                <Check size={15} /><p className="text-xs font-black">모든 교사가 배정되었습니다</p>
+                <Check size={15} /><p className="text-xs font-bold">모든 교사가 배정되었습니다</p>
               </div>
             ) : filteredPool.length === 0 ? (
               <p className="text-center text-xs text-gray-300 py-3">검색 결과 없음</p>
@@ -366,7 +366,7 @@ function MemberChip({ member, groupId, color, onTap, onRemove, disabled }) {
     <div
       ref={setNodeRef}
       style={{ opacity: isDragging ? 0.3 : 1 }}
-      className={`flex items-center gap-1 pl-2 pr-1 py-1 rounded-lg ${color.bg} ${color.text} text-[11px] font-bold`}
+      className={`flex items-center gap-1 pl-2 pr-1 py-1 rounded-lg ${color.bg} ${color.text} text-xs font-bold`}
     >
       {/* 드래그 핸들 + 이름 (탭 시 이동 시트) */}
       <button
@@ -432,12 +432,12 @@ function MoveSheet({ teacherName, fromGroupId, groups, moving, onMove, onUnassig
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-1" />
         <div>
-          <p className="font-black text-gray-900 text-base">{teacherName}</p>
+          <p className="font-bold text-gray-900 text-base">{teacherName}</p>
           <p className="text-xs text-gray-400 mt-0.5">
             {fromGroupId ? `현재: ${groups.find(g => g.id === fromGroupId)?.name}` : '현재: 배정 없음'}
           </p>
         </div>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">이동할 조 선택</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">이동할 조 선택</p>
         <div className="flex flex-col gap-2">
           {groups
             .filter(g => g.id !== fromGroupId)
@@ -453,8 +453,8 @@ function MoveSheet({ teacherName, fromGroupId, groups, moving, onMove, onUnassig
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
-                    <span className={`font-black text-sm ${c.text}`}>{g.name}</span>
-                    <span className={`text-[11px] font-bold ${c.text} opacity-60`}>{g.members?.length ?? 0}명</span>
+                    <span className={`font-bold text-sm ${c.text}`}>{g.name}</span>
+                    <span className={`text-xs font-bold ${c.text} opacity-60`}>{g.members?.length ?? 0}명</span>
                   </div>
                   <ChevronRight size={16} className={c.text} />
                 </button>
@@ -463,7 +463,7 @@ function MoveSheet({ teacherName, fromGroupId, groups, moving, onMove, onUnassig
         </div>
         {fromGroupId && (
           <button onClick={onUnassign} disabled={moving}
-            className="w-full py-3 rounded-2xl bg-gray-100 text-gray-500 font-black text-sm active:scale-[0.98] disabled:opacity-50">
+            className="w-full py-3 rounded-2xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-[0.98] disabled:opacity-50">
             {moving ? '처리 중...' : '조 배정 해제'}
           </button>
         )}
@@ -536,7 +536,7 @@ function ScheduleManagementTab({ teachers }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 flex flex-col gap-3 pb-4">
       <button
         onClick={openCreate}
-        className="flex items-center justify-center gap-2 py-3.5 px-5 bg-primary-600 text-white rounded-2xl font-black text-sm active:scale-[0.98] transition-transform"
+        className="flex items-center justify-center gap-2 py-3.5 px-5 bg-primary-600 text-white rounded-2xl font-bold text-sm active:scale-[0.98] transition-transform"
       >
         <Plus size={18} /> 새 전도 일정 등록
       </button>
@@ -546,15 +546,15 @@ function ScheduleManagementTab({ teachers }) {
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <Card className="p-6 flex flex-col gap-5 border-2 border-primary-100 shadow-xl shadow-primary-50">
               <div className="flex items-center justify-between">
-                <p className="font-black text-gray-900 text-sm">{editTarget ? '일정 수정' : '새 일정 등록'}</p>
+                <p className="font-bold text-gray-900 text-sm">{editTarget ? '일정 수정' : '새 일정 등록'}</p>
                 <button onClick={closeForm} className="text-gray-400"><X size={18} /></button>
               </div>
               <div>
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">전도 날짜 (토요일)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">전도 날짜 (토요일)</label>
                 <input type="date" className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold focus:ring-2 focus:ring-primary-400 outline-none" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">담당 조</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">담당 조</label>
                 <div className="flex flex-col gap-2">
                   {groups.map((g, idx) => (
                     <button
@@ -574,17 +574,17 @@ function ScheduleManagementTab({ teachers }) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={handleSubmit} disabled={!form.scheduledDate || !form.groupId || isPending} className="flex-1 py-3 bg-primary-600 text-white rounded-xl font-black text-sm disabled:opacity-50">
+                <button onClick={handleSubmit} disabled={!form.scheduledDate || !form.groupId || isPending} className="flex-1 py-3 bg-primary-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">
                   {isPending ? '저장 중...' : (editTarget ? '수정 완료' : '등록')}
                 </button>
-                <button onClick={closeForm} className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-black text-sm">취소</button>
+                <button onClick={closeForm} className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-sm">취소</button>
               </div>
             </Card>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-1 mt-1">예정 일정</p>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] px-1 mt-1">예정 일정</p>
       {upcoming.length === 0 && !showForm && (
         <Card className="py-8 flex items-center justify-center">
           <p className="text-sm text-gray-400">등록된 예정 일정이 없습니다</p>
@@ -600,7 +600,7 @@ function ScheduleManagementTab({ teachers }) {
 
       {past.length > 0 && (
         <>
-          <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] px-1 mt-2">지난 일정</p>
+          <p className="text-xs font-bold text-gray-300 uppercase tracking-[0.2em] px-1 mt-2">지난 일정</p>
           {past.map((s, i) => (
             <ScheduleAdminCard key={s.id} schedule={s} index={i} groups={groups} past
               onEdit={() => openEdit(s)} onDelete={() => setDeleteTarget(s)} onCancel={() => cancelMutation.mutate(s.id)}
@@ -638,11 +638,11 @@ function ScheduleAdminCard({ schedule, index, groups, past, onEdit, onDelete, on
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-gray-900 text-sm">{dateStr}</p>
-            {schedule.status === 'ACTIVE' && <Badge variant="danger" className="text-[9px]">당번</Badge>}
-            {schedule.status === 'CANCELED' && <Badge variant="gray" className="text-[9px] bg-gray-200 text-gray-500 border-none">취소됨</Badge>}
+            {schedule.status === 'ACTIVE' && <Badge variant="danger" className="text-[0.6875rem]">당번</Badge>}
+            {schedule.status === 'CANCELED' && <Badge variant="gray" className="text-[0.6875rem] bg-gray-200 text-gray-500 border-none">취소됨</Badge>}
           </div>
           {groupId ? (
-            <span className={`inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-lg ${color.bg} ${color.text}`}>
+            <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-lg ${color.bg} ${color.text}`}>
               {groupName} {memberCount != null ? `· ${memberCount}명` : ''}
             </span>
           ) : (
@@ -683,15 +683,15 @@ function DeleteConfirmModal({ schedule, isPending, onConfirm, onCancel }) {
             <AlertTriangle size={20} className="text-red-500" />
           </div>
           <div>
-            <p className="font-black text-gray-900">일정을 삭제할까요?</p>
+            <p className="font-bold text-gray-900">일정을 삭제할까요?</p>
             <p className="text-xs text-gray-400 mt-0.5">{fmtDate(schedule.scheduledDate)} 전도 일정</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={onConfirm} disabled={isPending} className="flex-1 py-3.5 bg-red-500 text-white rounded-2xl font-black text-sm disabled:opacity-50">
+          <button onClick={onConfirm} disabled={isPending} className="flex-1 py-3.5 bg-red-500 text-white rounded-2xl font-bold text-sm disabled:opacity-50">
             {isPending ? '삭제 중...' : '삭제'}
           </button>
-          <button onClick={onCancel} className="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-2xl font-black text-sm">취소</button>
+          <button onClick={onCancel} className="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm">취소</button>
         </div>
       </motion.div>
     </motion.div>

@@ -63,7 +63,7 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
             <button type="button" onClick={() => setMonth(m => subMonths(m, 1))} className="p-2 rounded-lg active:bg-gray-100" aria-label="이전 달">
               <ChevronLeft size={18} />
             </button>
-            <p className="text-base font-black text-gray-900">{format(month, 'yyyy년 M월', { locale: ko })}</p>
+            <p className="text-base font-bold text-gray-900">{format(month, 'yyyy년 M월', { locale: ko })}</p>
             <button type="button" onClick={() => setMonth(m => addMonths(m, 1))} className="p-2 rounded-lg active:bg-gray-100" aria-label="다음 달">
               <ChevronRight size={18} />
             </button>
@@ -71,7 +71,7 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
 
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS.map((w, i) => (
-              <div key={w} className={`text-center text-[11px] font-black py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>{w}</div>
+              <div key={w} className={`text-center text-xs font-bold py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>{w}</div>
             ))}
           </div>
 
@@ -104,17 +104,17 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
           </div>
 
           <div className="mt-4 px-3 py-2.5 rounded-xl bg-gray-50 text-center">
-            <p className="text-sm font-black text-gray-900">
+            <p className="text-sm font-bold text-gray-900">
               {formatRange(s, e)}{dayCount > 1 && <span className="text-primary-600"> · {dayCount}일</span>}
             </p>
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-400 mt-0.5">
               {pickingEnd ? '끝나는 날을 누르세요 (하루 일정이면 바로 확인)' : '시작하는 날을 누르세요'}
             </p>
           </div>
 
           <div className="flex gap-2 mt-4">
             <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-bold text-gray-500 bg-gray-100 active:bg-gray-200">취소</button>
-            <button type="button" onClick={() => onConfirm(s, e)} className="flex-[2] py-3 rounded-xl text-sm font-black text-white bg-primary-600 active:bg-primary-700">확인</button>
+            <button type="button" onClick={() => onConfirm(s, e)} className="flex-[2] py-3 rounded-xl text-sm font-bold text-white bg-primary-600 active:bg-primary-700">확인</button>
           </div>
         </div>
       </div>

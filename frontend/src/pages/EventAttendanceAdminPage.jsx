@@ -157,7 +157,7 @@ export default function EventAttendanceAdminPage() {
 
         {/* 행사 선택 */}
         <div>
-          <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1 mb-2">행사 선택</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">행사 선택</p>
           {queryReadState([eventsQuery]) !== 'ready' ? (
             <QueryNotice queries={[eventsQuery]} label="행사 목록" />
           ) : events.length === 0 ? (
@@ -177,10 +177,10 @@ export default function EventAttendanceAdminPage() {
                   <div className="flex items-center gap-3">
                     <Calendar size={16} className={selectedEventId === event.id ? 'text-emerald-600' : 'text-gray-400'} />
                     <div>
-                      <p className={`font-black text-sm ${selectedEventId === event.id ? 'text-emerald-800' : 'text-gray-900'}`}>
+                      <p className={`font-bold text-sm ${selectedEventId === event.id ? 'text-emerald-800' : 'text-gray-900'}`}>
                         {event.title}
                       </p>
-                      <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                      <p className="text-xs text-gray-400 font-medium mt-0.5">
                         {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
                       </p>
                     </div>
@@ -200,7 +200,7 @@ export default function EventAttendanceAdminPage() {
               <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
                 <button
                   onClick={() => { setActiveTab('student'); setSelectedGrade(null) }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'student' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                   }`}
                 >
@@ -208,7 +208,7 @@ export default function EventAttendanceAdminPage() {
                 </button>
                 <button
                   onClick={() => { setActiveTab('teacher'); setSelectedTeacherGrade(null) }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'teacher' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                   }`}
                 >
@@ -224,20 +224,20 @@ export default function EventAttendanceAdminPage() {
                 {/* 전체 통계 */}
                 <div className="grid grid-cols-4 gap-2">
                   <Card className="text-center py-3">
-                    <p className="text-xl font-black text-gray-900">{teacherSummary.length}</p>
-                    <p className="text-[9px] font-black text-gray-400 mt-0.5">전체</p>
+                    <p className="text-xl font-bold text-gray-900">{teacherSummary.length}</p>
+                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">전체</p>
                   </Card>
                   <Card className="text-center py-3">
-                    <p className="text-xl font-black text-emerald-500">{teacherSummary.filter(t => t.status === 'PRESENT').length}</p>
-                    <p className="text-[9px] font-black text-gray-400 mt-0.5">참석</p>
+                    <p className="text-xl font-bold text-emerald-500">{teacherSummary.filter(t => t.status === 'PRESENT').length}</p>
+                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">참석</p>
                   </Card>
                   <Card className="text-center py-3">
-                    <p className="text-xl font-black text-amber-500">{teacherSummary.filter(t => t.status === 'PARTIAL').length}</p>
-                    <p className="text-[9px] font-black text-gray-400 mt-0.5">부분참석</p>
+                    <p className="text-xl font-bold text-amber-500">{teacherSummary.filter(t => t.status === 'PARTIAL').length}</p>
+                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">부분참석</p>
                   </Card>
                   <Card className="text-center py-3">
-                    <p className="text-xl font-black text-red-400">{teacherSummary.filter(t => t.status === 'ABSENT').length}</p>
-                    <p className="text-[9px] font-black text-gray-400 mt-0.5">불참</p>
+                    <p className="text-xl font-bold text-red-400">{teacherSummary.filter(t => t.status === 'ABSENT').length}</p>
+                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">불참</p>
                   </Card>
                 </div>
 
@@ -246,12 +246,12 @@ export default function EventAttendanceAdminPage() {
                 ) : teacherSummary.length === 0 ? (
                   <Card className="py-10 text-center flex flex-col items-center gap-2">
                     <UserCheck size={28} className="text-gray-200" />
-                    <p className="text-sm font-black text-gray-400">아직 제출된 출석 데이터가 없습니다</p>
+                    <p className="text-sm font-bold text-gray-400">아직 제출된 출석 데이터가 없습니다</p>
                   </Card>
                 ) : !selectedTeacherGrade ? (
                   /* 학년 카드 뷰 */
                   <div className="flex flex-col gap-3">
-                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
                     <div className="grid grid-cols-2 gap-3">
                       {teacherGradeList.map((g, idx) => (
                         <motion.button
@@ -266,8 +266,8 @@ export default function EventAttendanceAdminPage() {
                             <UserCheck size={24} />
                           </div>
                           <div>
-                            <p className="font-black text-gray-900 text-lg leading-tight">{g.grade}</p>
-                            <p className="text-[10px] text-gray-400 font-bold mt-1">
+                            <p className="font-bold text-gray-900 text-lg leading-tight">{g.grade}</p>
+                            <p className="text-xs text-gray-400 font-bold mt-1">
                               {g.present} / {g.total} 참석
                             </p>
                           </div>
@@ -287,11 +287,11 @@ export default function EventAttendanceAdminPage() {
                     <div className="flex items-center justify-between px-1">
                       <button
                         onClick={() => setSelectedTeacherGrade(null)}
-                        className={`flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedTeacherGrade).btn}`}
+                        className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedTeacherGrade).btn}`}
                       >
                         ← {selectedTeacherGrade} 전체
                       </button>
-                      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">교사 현황</p>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">교사 현황</p>
                     </div>
 
                     <Card className="flex flex-col gap-1.5 p-3">
@@ -308,32 +308,32 @@ export default function EventAttendanceAdminPage() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <span className={`text-[10px] font-black w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            <span className={`text-xs font-bold w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                               teacher.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
                               teacher.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                               teacher.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
                               'bg-gray-200 text-gray-500'
                             }`}>{(teacher.teacherName || '?')[0]}</span>
                             <div>
-                              <p className="text-sm font-black text-gray-800">{teacher.teacherName}</p>
-                              {teacher.grade && <p className="text-[10px] text-gray-400 font-medium">{teacher.grade}</p>}
+                              <p className="text-sm font-bold text-gray-800">{teacher.teacherName}</p>
+                              {teacher.grade && <p className="text-xs text-gray-400 font-medium">{teacher.grade}</p>}
                               {teacher.status === 'PARTIAL' && (teacher.partialFromDate || teacher.partialNote) && (
-                                <p className="text-[10px] text-amber-600 font-medium mt-0.5">
+                                <p className="text-xs text-amber-600 font-medium mt-0.5">
                                   {teacher.partialFromDate && `${teacher.partialFromDate}부터`}
                                   {teacher.partialNote && ` · ${teacher.partialNote}`}
                                 </p>
                               )}
                               {teacher.status === 'ABSENT' && teacher.absenceReason && (
-                                <p className="text-[10px] text-red-400 font-medium mt-0.5">
+                                <p className="text-xs text-red-400 font-medium mt-0.5">
                                   사유: {teacher.absenceReason}
                                 </p>
                               )}
                             </div>
                           </div>
                           {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :
-                           teacher.status === 'PARTIAL' ? <span className="text-[10px] text-amber-600 font-black flex-shrink-0">부분참석</span> :
+                           teacher.status === 'PARTIAL' ? <span className="text-xs text-amber-600 font-bold flex-shrink-0">부분참석</span> :
                            teacher.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
-                           <span className="text-[10px] text-gray-400 font-bold flex-shrink-0">미제출</span>}
+                           <span className="text-xs text-gray-400 font-bold flex-shrink-0">미제출</span>}
                         </motion.div>
                       ))}
                     </Card>
@@ -347,20 +347,20 @@ export default function EventAttendanceAdminPage() {
             {/* 전체 통계 */}
             <div className="grid grid-cols-4 gap-2">
               <Card className="text-center py-4">
-                <p className="text-xl font-black text-gray-900">{totalStudents}</p>
-                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">전체</p>
+                <p className="text-xl font-bold text-gray-900">{totalStudents}</p>
+                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">전체</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-xl font-black text-emerald-500">{summary.reduce((acc, c) => acc + c.records.filter(r => r.status === 'PRESENT').length, 0)}</p>
-                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">출석</p>
+                <p className="text-xl font-bold text-emerald-500">{summary.reduce((acc, c) => acc + c.records.filter(r => r.status === 'PRESENT').length, 0)}</p>
+                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">출석</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-xl font-black text-red-400">{totalAbsent}</p>
-                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">결석</p>
+                <p className="text-xl font-bold text-red-400">{totalAbsent}</p>
+                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">결석</p>
               </Card>
               <Card className="text-center py-4">
-                <p className={`text-xl font-black ${totalUnsubmitted > 0 ? 'text-orange-400' : 'text-gray-300'}`}>{totalUnsubmitted}</p>
-                <p className="text-[9px] font-black text-gray-400 mt-1 uppercase tracking-wider">미제출</p>
+                <p className={`text-xl font-bold ${totalUnsubmitted > 0 ? 'text-orange-400' : 'text-gray-300'}`}>{totalUnsubmitted}</p>
+                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">미제출</p>
               </Card>
             </div>
 
@@ -370,12 +370,12 @@ export default function EventAttendanceAdminPage() {
             ) : summary.length === 0 ? (
               <Card className="py-10 text-center flex flex-col items-center gap-2">
                 <Users size={28} className="text-gray-200" />
-                <p className="text-sm font-black text-gray-400">아직 제출된 출석 데이터가 없습니다</p>
+                <p className="text-sm font-bold text-gray-400">아직 제출된 출석 데이터가 없습니다</p>
               </Card>
             ) : !selectedGrade ? (
               /* 학년 목록 뷰 */
               <div className="flex flex-col gap-3">
-                <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
                 <div className="grid grid-cols-2 gap-3">
                   {gradeList.map((g, idx) => (
                     <motion.button
@@ -390,8 +390,8 @@ export default function EventAttendanceAdminPage() {
                         <Users size={24} />
                       </div>
                       <div>
-                        <p className="font-black text-gray-900 text-lg leading-tight">{g.grade}</p>
-                        <p className="text-[10px] text-gray-400 font-bold mt-1">
+                        <p className="font-bold text-gray-900 text-lg leading-tight">{g.grade}</p>
+                        <p className="text-xs text-gray-400 font-bold mt-1">
                           {g.presentCount} / {g.totalCount} 출석
                         </p>
                       </div>
@@ -411,11 +411,11 @@ export default function EventAttendanceAdminPage() {
                 <div className="flex items-center justify-between px-1">
                   <button 
                     onClick={() => setSelectedGrade(null)}
-                    className={`flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedGrade).btn}`}
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedGrade).btn}`}
                   >
                     ← {selectedGrade} 전체
                   </button>
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">반별 현황</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">반별 현황</p>
                 </div>
 
                 {currentGradeData.classes.map((cls, idx) => (
@@ -436,8 +436,8 @@ export default function EventAttendanceAdminPage() {
                             <Users size={18} className="text-primary-600" />
                           </div>
                           <div>
-                            <p className="font-black text-gray-900 text-base">{cls.classGroupName}</p>
-                            <p className="text-[10px] text-gray-400 font-bold">
+                            <p className="font-bold text-gray-900 text-base">{cls.classGroupName}</p>
+                            <p className="text-xs text-gray-400 font-bold">
                               {cls.presentCount}명 출석
                               {cls.records.filter(r => r.status === 'PARTIAL').length > 0 &&
                                 ` · ${cls.records.filter(r => r.status === 'PARTIAL').length}명 부분참석`}
@@ -476,7 +476,7 @@ export default function EventAttendanceAdminPage() {
                               }`}
                             >
                               <div className="flex items-center gap-3">
-                                <span className={`text-[10px] font-black w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                <span className={`text-xs font-bold w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                   student.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
                                   student.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                                   student.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
@@ -485,12 +485,12 @@ export default function EventAttendanceAdminPage() {
                                 <div className="flex flex-col">
                                   <span className="text-xs font-bold text-gray-700">{student.studentName}</span>
                                   {student.status === 'ABSENT' && student.absenceReason && (
-                                    <p className="text-[10px] text-red-400 font-medium mt-0.5 leading-tight">
+                                    <p className="text-xs text-red-400 font-medium mt-0.5 leading-tight">
                                       사유: {student.absenceReason}
                                     </p>
                                   )}
                                   {student.status === 'PARTIAL' && (student.partialFromDate || student.partialNote) && (
-                                    <p className="text-[10px] text-amber-600 font-medium mt-0.5 leading-tight">
+                                    <p className="text-xs text-amber-600 font-medium mt-0.5 leading-tight">
                                       {student.partialFromDate && `${student.partialFromDate}부터`}
                                       {student.partialNote && ` · ${student.partialNote}`}
                                     </p>
@@ -500,7 +500,7 @@ export default function EventAttendanceAdminPage() {
                               {student.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :
                                student.status === 'PARTIAL' ? <Clock size={16} className="text-amber-500 flex-shrink-0" /> :
                                student.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
-                               <span className="text-[10px] text-orange-400 font-black flex-shrink-0">미제출</span>
+                               <span className="text-xs text-orange-400 font-bold flex-shrink-0">미제출</span>
                               }
                             </div>
                           ))}

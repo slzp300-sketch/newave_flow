@@ -11,7 +11,7 @@ const navItems = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile bg-white border-t border-gray-100 safe-bottom z-10">
+    <nav aria-label="주요 메뉴" className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile bg-white border-t border-gray-200 safe-bottom z-30 print:hidden">
       <ul className="flex">
         {navItems.map(({ to, icon: Icon, label }) => (
           <li key={to} className="flex-1">
@@ -19,13 +19,13 @@ export default function BottomNav() {
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center py-2.5 gap-0.5 text-xs font-medium transition-colors whitespace-nowrap overflow-hidden
-                ${isActive ? 'text-primary-600' : 'text-gray-400'}`
+                `flex min-h-[68px] flex-col justify-center items-center py-2 gap-1 text-xs font-medium transition-colors
+                ${isActive ? 'text-primary-600 bg-primary-50/40' : 'text-gray-500'}`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                  <Icon size={22} strokeWidth={isActive ? 2 : 1.7} />
                   {label}
                 </>
               )}

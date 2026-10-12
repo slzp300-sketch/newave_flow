@@ -146,7 +146,7 @@ export default function MeetingMinutesAdminPage() {
 
       <div className="px-4 py-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-black text-gray-900">
+          <h2 className="text-xl font-bold text-gray-900">
             {editingId ? '회의록 수정' : '회의록 및 영상 등록'}
           </h2>
           <Button size="sm" variant={showForm ? 'secondary' : 'primary'} onClick={() => showForm ? handleCloseForm() : setShowForm(true)}>
@@ -159,7 +159,7 @@ export default function MeetingMinutesAdminPage() {
             <Card className="p-6 border-2 border-primary-100 shadow-xl shadow-primary-50">
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">회의 제목</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">회의 제목</label>
                   <input 
                     type="text" 
                     value={formData.title}
@@ -172,7 +172,7 @@ export default function MeetingMinutesAdminPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">회의 날짜</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">회의 날짜</label>
                     <input 
                       type="date" 
                       value={formData.meetingDate}
@@ -182,7 +182,7 @@ export default function MeetingMinutesAdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">영상 링크 (선택)</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">영상 링크 (선택)</label>
                     <input 
                       type="url" 
                       value={formData.videoLink}
@@ -195,8 +195,8 @@ export default function MeetingMinutesAdminPage() {
 
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <div className="flex-1">
-                    <p className="text-sm font-black text-gray-900">교사 공개 여부</p>
-                    <p className="text-[11px] text-gray-400 font-medium">활성화 시 일반 교사들이 이 회의록을 볼 수 있습니다.</p>
+                    <p className="text-sm font-bold text-gray-900">교사 공개 여부</p>
+                    <p className="text-xs text-gray-400 font-medium">활성화 시 일반 교사들이 이 회의록을 볼 수 있습니다.</p>
                   </div>
                   <button 
                     type="button"
@@ -208,7 +208,7 @@ export default function MeetingMinutesAdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">회의 내용</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">회의 내용</label>
                   <textarea 
                     rows={6}
                     value={formData.content}
@@ -243,8 +243,8 @@ export default function MeetingMinutesAdminPage() {
               <div key={month} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 px-1">
                   <span className="w-1 h-4 bg-primary-500 rounded-full" />
-                  <h3 className="text-sm font-black text-gray-900">{month}</h3>
-                  <span className="text-[10px] font-bold text-gray-400 ml-1">{items.length}건</span>
+                  <h3 className="text-sm font-bold text-gray-900">{month}</h3>
+                  <span className="text-xs font-bold text-gray-400 ml-1">{items.length}건</span>
                 </div>
                 
                 <div className="grid grid-cols-1 gap-3">
@@ -253,10 +253,10 @@ export default function MeetingMinutesAdminPage() {
                       <div className="flex justify-between items-start">
                         <div className="flex-1" onClick={() => fetchStatus(m.id)}>
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest">{formatDate(m.meetingDate)}</p>
-                            {!m.isActive && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-gray-200 text-gray-500">비공개</span>}
+                            <p className="text-xs font-bold text-violet-500 uppercase tracking-widest">{formatDate(m.meetingDate)}</p>
+                            {!m.isActive && <span className="text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-md bg-gray-200 text-gray-500">비공개</span>}
                           </div>
-                          <h3 className="font-black text-gray-900 leading-tight group-hover:text-primary-600 transition-colors">{m.title}</h3>
+                          <h3 className="font-bold text-gray-900 leading-tight group-hover:text-primary-600 transition-colors">{m.title}</h3>
                         </div>
                         <div className="flex gap-1">
                           <button 
@@ -278,7 +278,7 @@ export default function MeetingMinutesAdminPage() {
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={() => fetchStatus(m.id)}
-                          className={`text-[11px] font-black flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${
+                          className={`text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${
                             selectedStatus?.id === m.id 
                             ? 'bg-primary-600 text-white shadow-md shadow-primary-100' 
                             : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
@@ -288,7 +288,7 @@ export default function MeetingMinutesAdminPage() {
                           {selectedStatus?.id === m.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                         </button>
                         {m.videoLink && (
-                          <span className="text-[10px] font-black text-red-500 flex items-center gap-1">
+                          <span className="text-xs font-bold text-red-500 flex items-center gap-1">
                             <Play size={10} fill="currentColor" /> 영상 있음
                           </span>
                         )}
@@ -323,37 +323,37 @@ export default function MeetingMinutesAdminPage() {
                                   <div key={grade} className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2">
                                       <span className="w-1 h-3 bg-violet-300 rounded-full" />
-                                      <h4 className="text-xs font-black text-gray-700">{grade}</h4>
+                                      <h4 className="text-xs font-bold text-gray-700">{grade}</h4>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       {grouped[grade].map(s => (
                                         <div key={s.teacherId} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white shadow-sm">
                                           <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-2">
-                                              <span className="font-black text-sm text-gray-900">{s.teacherName}</span>
+                                              <span className="font-bold text-sm text-gray-900">{s.teacherName}</span>
                                               {s.attendanceStatus === 'ATTEND' ? (
-                                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">참석</span>
+                                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">참석</span>
                                               ) : s.attendanceStatus === 'ABSENT' ? (
-                                                <span className="text-[10px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">불참</span>
+                                                <span className="text-xs font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">불참</span>
                                               ) : (
-                                                <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md">미제출</span>
+                                                <span className="text-xs font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md">미제출</span>
                                               )}
                                             </div>
                                             {s.attendanceStatus === 'ABSENT' && s.attendanceReason && (
-                                              <p className="text-[11px] text-gray-500 font-medium">사유: {s.attendanceReason}</p>
+                                              <p className="text-xs text-gray-500 font-medium">사유: {s.attendanceReason}</p>
                                             )}
                                           </div>
                                           <div className="flex flex-col items-end gap-1">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">회의록 확인</p>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">회의록 확인</p>
                                             {s.confirmed || s.attendanceStatus === 'ATTEND' ? (
                                               <div className="flex items-center gap-1 text-emerald-500">
                                                 <CheckCircle2 size={14} />
-                                                <span className="text-[11px] font-black">{s.attendanceStatus === 'ATTEND' ? '참석자(면제)' : '확인 완료'}</span>
+                                                <span className="text-xs font-bold">{s.attendanceStatus === 'ATTEND' ? '참석자(면제)' : '확인 완료'}</span>
                                               </div>
                                             ) : (
                                               <div className="flex items-center gap-1 text-red-400">
                                                 <XCircle size={14} />
-                                                <span className="text-[11px] font-black">미확인</span>
+                                                <span className="text-xs font-bold">미확인</span>
                                               </div>
                                             )}
                                           </div>

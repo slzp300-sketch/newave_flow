@@ -85,8 +85,8 @@ export default function AdminDashboard() {
                     <GroupIcon size={24} className={group.color} />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-gray-900">{group.title}</h3>
-                    <p className="text-[11px] font-medium text-gray-400 mt-0.5">{group.desc}</p>
+                    <h3 className="text-base font-bold text-gray-900">{group.title}</h3>
+                    <p className="text-xs font-medium text-gray-400 mt-0.5">{group.desc}</p>
                   </div>
                 </div>
                 <div className={`p-2 rounded-full transition-transform duration-300 ${isOpen ? 'rotate-180 bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
@@ -115,8 +115,8 @@ export default function AdminDashboard() {
                               <ItemIcon size={18} className={item.iconColor} />
                             </div>
                             <div className="flex-1">
-                              <p className="font-black text-gray-800 text-sm">{item.title}</p>
-                              <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.desc}</p>
+                              <p className="font-bold text-gray-800 text-sm">{item.title}</p>
+                              <p className="text-xs text-gray-500 font-medium mt-0.5">{item.desc}</p>
                             </div>
                             <span className="text-gray-300 text-lg group-hover:text-gray-500 transition-colors">›</span>
                           </Link>

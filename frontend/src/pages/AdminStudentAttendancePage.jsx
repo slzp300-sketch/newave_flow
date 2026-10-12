@@ -57,26 +57,26 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
       <div className="flex items-center justify-between px-1">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-black text-primary-600 bg-primary-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+          className="flex items-center gap-1.5 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
         >
           ← {className}
         </button>
-        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">학생 명단</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">학생 명단</p>
       </div>
 
       {/* 반 통계 */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="text-center py-3">
-          <p className="text-xl font-black text-gray-900">{students.length}</p>
-          <p className="text-[10px] font-black text-gray-400 mt-0.5">전체</p>
+          <p className="text-xl font-bold text-gray-900">{students.length}</p>
+          <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
         </Card>
         <Card className="text-center py-3">
-          <p className="text-xl font-black text-emerald-500">{present}</p>
-          <p className="text-[10px] font-black text-gray-400 mt-0.5">출석</p>
+          <p className="text-xl font-bold text-emerald-500">{present}</p>
+          <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
         </Card>
         <Card className="text-center py-3">
-          <p className="text-xl font-black text-red-400">{absent + late}</p>
-          <p className="text-[10px] font-black text-gray-400 mt-0.5">결석</p>
+          <p className="text-xl font-bold text-red-400">{absent + late}</p>
+          <p className="text-xs font-bold text-gray-400 mt-0.5">결석</p>
         </Card>
       </div>
 
@@ -85,7 +85,7 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
       ) : students.length === 0 ? (
         <Card className="py-10 text-center flex flex-col items-center gap-2">
           <Clock size={24} className="text-gray-200" />
-          <p className="text-sm font-black text-gray-400">아직 출석 데이터가 없습니다</p>
+          <p className="text-sm font-bold text-gray-400">아직 출석 데이터가 없습니다</p>
         </Card>
       ) : (
         <Card className="flex flex-col gap-1.5 p-3">
@@ -102,21 +102,21 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className={`text-[10px] font-black w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                <span className={`text-xs font-bold w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                   s.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
                   s.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
                   s.status === 'LATE'    ? 'bg-amber-200 text-amber-700' :
                   'bg-gray-200 text-gray-500'
                 }`}>{(s.studentName || '?')[0]}</span>
                 <div>
-                  <p className="text-sm font-black text-gray-800">{s.studentName}</p>
+                  <p className="text-sm font-bold text-gray-800">{s.studentName}</p>
                   {s.absentReason && (
-                    <p className="text-[10px] text-red-400 font-medium mt-0.5">
+                    <p className="text-xs text-red-400 font-medium mt-0.5">
                       사유: {s.absentReason}
                     </p>
                   )}
                   {s.note && (
-                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                    <p className="text-xs text-gray-400 font-medium mt-0.5">
                       메모: {s.note}
                     </p>
                   )}
@@ -126,7 +126,7 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
                 {s.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500" /> :
                  s.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400" /> :
                  s.status === 'LATE'    ? <Clock size={16} className="text-amber-500" /> :
-                 <span className="text-[10px] text-gray-400 font-bold">미기록</span>}
+                 <span className="text-xs text-gray-400 font-bold">미기록</span>}
               </div>
             </motion.div>
           ))}
@@ -144,11 +144,11 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass }) {
       <div className="flex items-center justify-between px-1">
         <button
           onClick={onBack}
-          className={`flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all ${color.back}`}
+          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${color.back}`}
         >
           ← {grade} 전체
         </button>
-        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">반별 현황</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">반별 현황</p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -170,15 +170,15 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass }) {
                       <Users size={18} className={color.text} />
                     </div>
                     <div>
-                      <p className="font-black text-gray-900 text-sm">{cls.classGroupName}</p>
-                      <p className="text-[10px] text-gray-400 font-bold mt-0.5">
+                      <p className="font-bold text-gray-900 text-sm">{cls.classGroupName}</p>
+                      <p className="text-xs text-gray-400 font-bold mt-0.5">
                         {cls.teacherName ? `담임 ${cls.teacherName} · ` : ''}{cls.presentCount}명 출석 · {cls.absentCount}명 결석
                         {!cls.submitted && <span className="text-amber-500 ml-1">· 미제출</span>}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`text-xs font-black ${color.text}`}>
+                    <span className={`text-xs font-bold ${color.text}`}>
                       {cls.presentCount}/{cls.totalStudents}
                     </span>
                     <ChevronRight size={16} className="text-gray-300" />
@@ -205,7 +205,7 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass }) {
 function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
       <div className="grid grid-cols-2 gap-3">
         {gradeList.map((g, idx) => {
           const color = getGradeColor(g.grade)
@@ -223,8 +223,8 @@ function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade }) {
                 <Users size={24} className={color.text} />
               </div>
               <div>
-                <p className={`font-black text-lg leading-tight ${color.text}`}>{g.grade}</p>
-                <p className="text-[10px] text-gray-400 font-bold mt-1">
+                <p className={`font-bold text-lg leading-tight ${color.text}`}>{g.grade}</p>
+                <p className="text-xs text-gray-400 font-bold mt-1">
                   {g.present} / {g.total} 출석
                 </p>
               </div>
@@ -252,15 +252,15 @@ function AbsentListPanel({ date }) {
   if (absentList.length === 0) return (
     <Card className="py-14 flex flex-col items-center gap-3">
       <CheckCircle2 size={32} className="text-emerald-200" />
-      <p className="text-sm font-black text-gray-400">이번 주 결석자가 없습니다</p>
+      <p className="text-sm font-bold text-gray-400">이번 주 결석자가 없습니다</p>
     </Card>
   )
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between px-1">
-        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">결석자 목록</p>
-        <span className="text-xs font-black text-red-500">{absentList.length}명</span>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">결석자 목록</p>
+        <span className="text-xs font-bold text-red-500">{absentList.length}명</span>
       </div>
       <Card className="flex flex-col gap-1.5 p-3">
         {absentList.map((s, idx) => {
@@ -274,25 +274,25 @@ function AbsentListPanel({ date }) {
               className="flex items-start gap-3 px-3 py-3 rounded-2xl bg-red-50/50"
             >
               {/* 학년 뱃지 */}
-              <div className={`px-2 py-1 rounded-lg text-[10px] font-black flex-shrink-0 ${gradeColor.accent} ${gradeColor.text}`}>
+              <div className={`px-2 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${gradeColor.accent} ${gradeColor.text}`}>
                 {s.ageGroup || '기타'}
               </div>
               {/* 반 + 이름 */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-gray-400 font-bold">{s.classGroupName}</span>
+                  <span className="text-xs text-gray-400 font-bold">{s.classGroupName}</span>
                   <span className="text-gray-200">·</span>
-                  <span className="text-sm font-black text-gray-800">{s.studentName}</span>
+                  <span className="text-sm font-bold text-gray-800">{s.studentName}</span>
                   {s.status === 'LATE' && (
-                    <span className="text-[9px] font-black bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md">지각</span>
+                    <span className="text-[0.6875rem] font-bold bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md">지각</span>
                   )}
                 </div>
                 {s.absentReason ? (
-                  <p className="text-[10px] text-red-400 font-medium mt-0.5 truncate">
+                  <p className="text-xs text-red-400 font-medium mt-0.5 truncate">
                     사유: {s.absentReason}
                   </p>
                 ) : (
-                  <p className="text-[10px] text-gray-300 font-medium mt-0.5">사유 미입력</p>
+                  <p className="text-xs text-gray-300 font-medium mt-0.5">사유 미입력</p>
                 )}
               </div>
               <XCircle size={15} className="text-red-300 flex-shrink-0 mt-0.5" />
@@ -367,11 +367,11 @@ export default function AdminStudentAttendancePage() {
 
         {/* 주차 선택 */}
         <section>
-          <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1 mb-2">주차 선택 (기준 주일)</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">주차 선택 (기준 주일)</p>
           <select
             value={selectedDate}
             onChange={e => handleDateChange(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-black text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-primary-200"
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-primary-200"
           >
             {sundays.map(s => (
               <option key={s} value={s}>
@@ -386,23 +386,23 @@ export default function AdminStudentAttendancePage() {
         ) : classSummaries.length === 0 ? (
           <Card className="py-16 flex flex-col items-center gap-3">
             <Users size={36} className="text-gray-200" />
-            <p className="text-sm font-black text-gray-400">해당 주차에 제출된 출석 데이터가 없습니다</p>
+            <p className="text-sm font-bold text-gray-400">해당 주차에 제출된 출석 데이터가 없습니다</p>
           </Card>
         ) : (
           <>
             {/* 전체 통계 */}
             <div className="grid grid-cols-3 gap-3">
               <Card className="text-center py-4">
-                <p className="text-2xl font-black text-gray-900">{totalStudents}</p>
-                <p className="text-[10px] font-black text-gray-400 mt-1">전체</p>
+                <p className="text-2xl font-bold text-gray-900">{totalStudents}</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">전체</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-2xl font-black text-emerald-500">{totalPresent}</p>
-                <p className="text-[10px] font-black text-gray-400 mt-1">출석</p>
+                <p className="text-2xl font-bold text-emerald-500">{totalPresent}</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">출석</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-2xl font-black text-red-400">{totalAbsent}</p>
-                <p className="text-[10px] font-black text-gray-400 mt-1">결석</p>
+                <p className="text-2xl font-bold text-red-400">{totalAbsent}</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">결석</p>
               </Card>
             </div>
 
@@ -411,7 +411,7 @@ export default function AdminStudentAttendancePage() {
               <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
                 <button
                   onClick={() => setActiveTab('grade')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'grade' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                   }`}
                 >
@@ -419,7 +419,7 @@ export default function AdminStudentAttendancePage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('absent')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'absent' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                   }`}
                 >

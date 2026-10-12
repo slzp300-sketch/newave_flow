@@ -45,7 +45,7 @@ export default function StudentDetailPage() {
             )}
           </div>
           <div className="text-center">
-            <h2 className="text-2xl font-black text-gray-900">{student?.name}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{student?.name}</h2>
             <p className="text-primary-600 font-bold text-sm">{[student?.grade, student?.school].filter(Boolean).join(' · ')}</p>
           </div>
         </motion.div>
@@ -73,7 +73,7 @@ export default function StudentDetailPage() {
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-end">
             <SectionLabel>출석 이력</SectionLabel>
-            <span className="text-[10px] font-bold text-gray-400 mb-1">최근 순</span>
+            <span className="text-xs font-bold text-gray-400 mb-1">최근 순</span>
           </div>
           
           {history.length === 0 ? (
@@ -110,5 +110,5 @@ export default function StudentDetailPage() {
 }
 
 function SectionLabel({ children }) {
-  return <p className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">{children}</p>
+  return <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">{children}</p>
 }

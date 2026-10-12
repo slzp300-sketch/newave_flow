@@ -166,16 +166,16 @@ export default function AdminMeetingAttendancePage() {
         {/* 날짜 선택 */}
         <section>
           <div className="flex items-center justify-between px-1 mb-2">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">회의 일자 (토요일 기준)</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">회의 일자 (토요일 기준)</p>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[10px] font-bold text-gray-400">실시간 반영 중</p>
+              <p className="text-xs font-bold text-gray-400">실시간 반영 중</p>
             </div>
           </div>
           <select
             value={selectedDate}
             onChange={e => { setSelectedDate(e.target.value); setActiveGrade('전체') }}
-            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-black text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-200"
           >
             {weeks.map(w => <option key={w} value={w}>{w}</option>)}
           </select>
@@ -184,16 +184,16 @@ export default function AdminMeetingAttendancePage() {
         {/* 통계 카드 */}
         <div className="grid grid-cols-3 gap-3">
           <Card className="text-center py-4 border-emerald-50 bg-emerald-50/30">
-            <p className="text-xl font-black text-emerald-500">{countAttend}</p>
-            <p className="text-[10px] font-black text-gray-400 uppercase mt-1">참석</p>
+            <p className="text-xl font-bold text-emerald-500">{countAttend}</p>
+            <p className="text-xs font-bold text-gray-400 uppercase mt-1">참석</p>
           </Card>
           <Card className="text-center py-4 border-red-50 bg-red-50/30">
-            <p className="text-xl font-black text-red-500">{countAbsent}</p>
-            <p className="text-[10px] font-black text-gray-400 uppercase mt-1">불참</p>
+            <p className="text-xl font-bold text-red-500">{countAbsent}</p>
+            <p className="text-xs font-bold text-gray-400 uppercase mt-1">불참</p>
           </Card>
           <Card className="text-center py-4 border-blue-50 bg-blue-50/30">
-            <p className="text-xl font-black text-blue-500">{countAbsentConfirmed}</p>
-            <p className="text-[10px] font-black text-gray-400 uppercase mt-1">영상확인</p>
+            <p className="text-xl font-bold text-blue-500">{countAbsentConfirmed}</p>
+            <p className="text-xs font-bold text-gray-400 uppercase mt-1">영상확인</p>
           </Card>
         </div>
 
@@ -205,7 +205,7 @@ export default function AdminMeetingAttendancePage() {
               <button
                 key={g}
                 onClick={() => setActiveGrade(g)}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-black transition-all ${
+                className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeGrade === g
                     ? 'bg-blue-500 text-white shadow-md'
                     : 'bg-white border border-gray-100 text-gray-400'
@@ -222,7 +222,7 @@ export default function AdminMeetingAttendancePage() {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all ${
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
                   statusFilter === s ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'
                 }`}
               >
@@ -235,8 +235,8 @@ export default function AdminMeetingAttendancePage() {
         {/* 교사 명단 */}
         <div>
           <div className="flex items-center justify-between px-1 mb-3">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">교사 명단</p>
-            <p className="text-[11px] font-black text-blue-500">{filteredList.length}명</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">교사 명단</p>
+            <p className="text-xs font-bold text-blue-500">{filteredList.length}명</p>
           </div>
 
           {(isAttLoading && attendanceList.length === 0) ? (
@@ -246,7 +246,7 @@ export default function AdminMeetingAttendancePage() {
           ) : filteredList.length === 0 ? (
             <Card className="py-16 text-center flex flex-col items-center gap-3">
               <Users size={32} className="text-gray-100" />
-              <p className="text-sm font-black text-gray-300">조건에 맞는 결과가 없습니다</p>
+              <p className="text-sm font-bold text-gray-300">조건에 맞는 결과가 없습니다</p>
             </Card>
           ) : (
             <div className="flex flex-col gap-6">
@@ -255,8 +255,8 @@ export default function AdminMeetingAttendancePage() {
                   {/* 학년 헤더 */}
                   <div className="flex items-center gap-2 px-1">
                     <span className="w-1 h-3 bg-blue-400 rounded-full" />
-                    <p className="text-xs font-black text-gray-900">{grade}</p>
-                    <span className="text-[10px] text-gray-400 font-bold">{grouped[grade].length}명</span>
+                    <p className="text-xs font-bold text-gray-900">{grade}</p>
+                    <span className="text-xs text-gray-400 font-bold">{grouped[grade].length}명</span>
                   </div>
 
                   {/* 교사 카드 */}
@@ -276,7 +276,7 @@ export default function AdminMeetingAttendancePage() {
                           <div className="flex items-center justify-between gap-3">
                             {/* 아바타 + 이름/학년 */}
                             <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-black text-sm ${
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm ${
                                 item.satStatus === 'ATTEND' ? 'bg-emerald-100 text-emerald-600' :
                                 item.satStatus === 'ABSENT' ? 'bg-red-100 text-red-600' :
                                                               'bg-gray-100 text-gray-400'
@@ -285,14 +285,14 @@ export default function AdminMeetingAttendancePage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">
+                                  <span className="text-xs font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">
                                     {item.displayGrade}
                                   </span>
-                                  <span className="font-black text-gray-900 text-sm truncate">{item.teacherName}</span>
+                                  <span className="font-bold text-gray-900 text-sm truncate">{item.teacherName}</span>
                                 </div>
 
                                 {/* 참석 상태 텍스트 */}
-                                <p className={`text-[10px] font-black ${
+                                <p className={`text-xs font-bold ${
                                   item.satStatus === 'ATTEND'     ? 'text-emerald-500' :
                                   item.satStatus === 'ABSENT'     ? 'text-red-400' :
                                                                     'text-gray-300'
@@ -304,14 +304,14 @@ export default function AdminMeetingAttendancePage() {
 
                                 {/* 불참 사유 */}
                                 {item.satReason && (
-                                  <p className="text-[10px] text-gray-400 font-medium line-clamp-1 mt-0.5">
+                                  <p className="text-xs text-gray-400 font-medium line-clamp-1 mt-0.5">
                                     사유: {item.satReason}
                                   </p>
                                 )}
 
                                 {/* 불참 시 영상 확인 상태 */}
                                 {item.satStatus === 'ABSENT' && (
-                                  <div className={`flex items-center gap-1 mt-1 text-[10px] font-black ${
+                                  <div className={`flex items-center gap-1 mt-1 text-xs font-bold ${
                                     item.minuteConfirmed ? 'text-emerald-500' : 'text-amber-500'
                                   }`}>
                                     {item.minuteConfirmed

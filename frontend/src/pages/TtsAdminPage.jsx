@@ -32,7 +32,7 @@ export default function TtsAdminPage() {
         <div className="flex p-1 bg-white rounded-2xl shadow-sm border border-gray-100">
           <button
             onClick={() => setActiveTab('summary')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'summary' ? 'bg-primary-500 text-white shadow-md' : 'text-gray-400'
             }`}
           >
@@ -40,7 +40,7 @@ export default function TtsAdminPage() {
           </button>
           <button
             onClick={() => setActiveTab('scores')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'scores' ? 'bg-primary-500 text-white shadow-md' : 'text-gray-400'
             }`}
           >
@@ -48,7 +48,7 @@ export default function TtsAdminPage() {
           </button>
           <button
             onClick={() => setActiveTab('questions')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'questions' ? 'bg-primary-500 text-white shadow-md' : 'text-gray-400'
             }`}
           >
@@ -108,7 +108,7 @@ function ScoresTab() {
           <button
             key={q}
             onClick={() => handleQuarterChange(q)}
-            className={`flex-1 py-2.5 rounded-2xl text-[11px] font-black transition-all border ${
+            className={`flex-1 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
               quarter === q
                 ? 'bg-primary-500 text-white border-primary-500 shadow-md'
                 : 'bg-white text-gray-400 border-gray-100'
@@ -118,13 +118,13 @@ function ScoresTab() {
           </button>
         ))}
       </div>
-      <p className="text-[11px] text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
+      <p className="text-xs text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
 
       {/* 기준 점수 설정 */}
       <Card className="p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-black text-gray-500">기준 점수 설정</p>
-          <span className="text-lg font-black text-primary-600">{threshold}점</span>
+          <p className="text-xs font-bold text-gray-500">기준 점수 설정</p>
+          <span className="text-lg font-bold text-primary-600">{threshold}점</span>
         </div>
         <input
           type="range" min={0} max={500} step={10} value={threshold}
@@ -134,7 +134,7 @@ function ScoresTab() {
         <div className="flex gap-2">
           {[50, 100, 150, 200, 300].map(v => (
             <button key={v} onClick={() => handleThresholdChange(v)}
-              className={`flex-1 py-1.5 rounded-xl text-[10px] font-black border transition-all ${
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                 threshold === v ? 'bg-primary-500 text-white border-primary-500' : 'bg-gray-50 text-gray-400 border-gray-100'
               }`}
             >{v}</button>
@@ -156,26 +156,26 @@ function ScoresTab() {
             belowCount > 0 ? 'bg-red-50 border border-red-100' : 'bg-emerald-50 border border-emerald-100'
           }`}>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-0.5 text-gray-500">기준 미달 현황</p>
+              <p className="text-xs font-bold uppercase tracking-widest mb-0.5 text-gray-500">기준 미달 현황</p>
               {belowCount > 0
-                ? <p className="font-black text-red-500 text-base">{belowCount}명 미달 <span className="text-sm text-gray-400 font-bold">/ 전체 {scores.length}명</span></p>
-                : <p className="font-black text-emerald-500 text-base">전원 기준 달성 🎉</p>
+                ? <p className="font-bold text-red-500 text-base">{belowCount}명 미달 <span className="text-sm text-gray-400 font-bold">/ 전체 {scores.length}명</span></p>
+                : <p className="font-bold text-emerald-500 text-base">전원 기준 달성 🎉</p>
               }
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-bold text-gray-400">기준 {threshold}점 이상</p>
-              <p className="text-sm font-black text-gray-600">{scores.length - belowCount}명 달성</p>
+              <p className="text-xs font-bold text-gray-400">기준 {threshold}점 이상</p>
+              <p className="text-sm font-bold text-gray-600">{scores.length - belowCount}명 달성</p>
             </div>
           </div>
 
           {/* 목록 헤더 */}
           <div className="flex items-center justify-between px-1">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
               전체 {sortedAll.length}명
             </p>
             <button
               onClick={handleSortToggle}
-              className="flex items-center gap-1.5 text-[11px] font-black text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full"
+              className="flex items-center gap-1.5 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full"
             >
               <ArrowUpDown size={12} />
               {sortAsc ? '점수 낮은순' : '점수 높은순'}
@@ -201,20 +201,20 @@ function ScoresTab() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
                           isBelow ? 'bg-red-100 text-red-400' : 'bg-emerald-50 text-emerald-500'
                         }`}>
                           {globalIdx}
                         </div>
                         <div>
-                          <p className="font-black text-gray-900 text-sm">{t.teacherName}</p>
-                          <p className="text-[10px] text-gray-400 font-bold">{t.grade} · {t.weekCount}주 제출</p>
+                          <p className="font-bold text-gray-900 text-sm">{t.teacherName}</p>
+                          <p className="text-xs text-gray-400 font-bold">{t.grade} · {t.weekCount}주 제출</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-right">
-                          <p className={`font-black text-base ${isBelow ? 'text-red-500' : 'text-emerald-600'}`}>{t.totalScore}점</p>
-                          {isBelow && <p className="text-[10px] font-black text-red-300">-{deficit}점 부족</p>}
+                          <p className={`font-bold text-base ${isBelow ? 'text-red-500' : 'text-emerald-600'}`}>{t.totalScore}점</p>
+                          {isBelow && <p className="text-xs font-bold text-red-300">-{deficit}점 부족</p>}
                         </div>
                         <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} className="text-gray-300">
                           <ChevronDown size={16} />
@@ -250,8 +250,8 @@ function ScoresTab() {
                 <ChevronLeft size={18} />
               </button>
               <div className="text-center">
-                <p className="text-xs font-black text-gray-700">{page + 1} / {totalPages} 페이지</p>
-                <p className="text-[10px] text-gray-400 font-bold">
+                <p className="text-xs font-bold text-gray-700">{page + 1} / {totalPages} 페이지</p>
+                <p className="text-xs text-gray-400 font-bold">
                   {page * PAGE_SIZE + 1}~{Math.min((page + 1) * PAGE_SIZE, sortedAll.length)}번 · 전체 {sortedAll.length}명
                 </p>
               </div>
@@ -273,20 +273,20 @@ function ScoresTab() {
 function WeeklyScoreDetail({ year, scores, total }) {
   return (
     <Card className="p-4 flex flex-col gap-2 bg-gray-50/50">
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">주차별 점수</p>
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">주차별 점수</p>
       {scores.length === 0 ? (
         <p className="text-xs text-gray-300 font-bold">기록 없음</p>
       ) : (
         scores.map(ws => (
           <div key={ws.weekNum} className="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-0">
             <span className="text-sm font-bold text-gray-600">{weekLabelsByNum(year, ws.weekNum).monthWeek}</span>
-            <span className="font-black text-gray-700 text-sm">{ws.score}점</span>
+            <span className="font-bold text-gray-700 text-sm">{ws.score}점</span>
           </div>
         ))
       )}
       <div className="flex justify-between items-center pt-2 mt-1 border-t border-gray-200">
-        <span className="text-[11px] font-black text-gray-500">누계 합계</span>
-        <span className="font-black text-gray-800">{total}점</span>
+        <span className="text-xs font-bold text-gray-500">누계 합계</span>
+        <span className="font-bold text-gray-800">{total}점</span>
       </div>
     </Card>
   )
@@ -344,8 +344,8 @@ function SummaryTab({ offset, onOffsetChange }) {
       </div>
 
       <div className="flex items-center justify-between px-1">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Submission by Grade</p>
-        <span className="text-[10px] font-black text-gray-400">총 {gradeNames.length}개 학년</span>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">학년별 참여 현황</p>
+        <span className="text-xs font-bold text-gray-400">총 {gradeNames.length}개 학년</span>
       </div>
 
       {queryReadState([summaryQuery]) !== 'ready' ? (
@@ -374,14 +374,14 @@ function SummaryTab({ offset, onOffsetChange }) {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shadow-sm ${
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm shadow-sm ${
                           isAllSubmitted ? 'bg-primary-500 text-white' : 'bg-gray-50 text-gray-400'
                         }`}>
                           {grade}
                         </div>
                         <div>
-                          <p className="font-black text-gray-900 text-base">{grade} 관리</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                          <p className="font-bold text-gray-900 text-base">{grade} 관리</p>
+                          <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
                             {submittedCount} / {teachers.length} 참여
                           </p>
                         </div>
@@ -415,18 +415,18 @@ function SummaryTab({ offset, onOffsetChange }) {
                         {teachers.map(t => (
                           <div key={t.key ?? `u${t.teacherId}`} className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100/50">
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
                                 t.isSubmitted ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-400'
                               }`}>
                                 {t.teacherName[0]}
                               </div>
                               <div>
                                 <p className="font-bold text-gray-700 text-sm">{t.teacherName}</p>
-                                {t.scoreSource === 'SHEET' && <p className="text-[10px] text-gray-400">시트 확정 점수</p>}
-                                {t.updatedAt && <p className="text-[10px] text-gray-400 font-bold">마지막 수정 {formatUpdatedAt(t.updatedAt)}</p>}
+                                {t.scoreSource === 'SHEET' && <p className="text-xs text-gray-400">시트 확정 점수</p>}
+                                {t.updatedAt && <p className="text-xs text-gray-400 font-bold">마지막 수정 {formatUpdatedAt(t.updatedAt)}</p>}
                               </div>
                             </div>
-                            <Badge variant={t.isSubmitted ? 'success' : 'gray'} className="text-[10px]">
+                            <Badge variant={t.isSubmitted ? 'success' : 'gray'} className="text-xs">
                               {t.isSubmitted ? `${t.score}점` : '미참여'}
                             </Badge>
                           </div>
@@ -502,8 +502,8 @@ function QuestionsTab() {
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="px-4 flex flex-col gap-4">
       <div className="flex items-center justify-between px-1">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">TTS Items Management</p>
-        <button onClick={addQuestion} className="flex items-center gap-1 text-[11px] font-black text-primary-600 bg-primary-50 px-3 py-1 rounded-full">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">TTS 체크 항목</p>
+        <button onClick={addQuestion} className="flex items-center gap-1 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1 rounded-full">
           <Plus size={14} /> 추가
         </button>
       </div>
@@ -532,18 +532,18 @@ function QuestionsTab() {
                   value={q.title}
                   onChange={(e) => updateQuestion(idx, 'title', e.target.value)}
                   placeholder="항목 제목"
-                  className="w-full text-sm font-black text-gray-900 border-none outline-none focus:bg-gray-50 rounded px-1"
+                  className="w-full text-sm font-bold text-gray-900 border-none outline-none focus:bg-gray-50 rounded px-1"
                 />
                 <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={q.type}
                     onChange={(e) => updateQuestion(idx, 'type', e.target.value)}
-                    className="text-[10px] font-black bg-gray-100 px-2 py-1 rounded-lg border-none outline-none"
+                    className="text-xs font-bold bg-gray-100 px-2 py-1 rounded-lg border-none outline-none"
                   >
                     <option value="DAYS">주간 체크 (DAYS)</option>
                     <option value="ATTEND">참석 여부 (ATTEND)</option>
                   </select>
-                  <label className="flex items-center gap-1 text-[10px] font-black text-gray-400">
+                  <label className="flex items-center gap-1 text-xs font-bold text-gray-400">
                     <input
                       type="number"
                       min={0}
@@ -560,14 +560,14 @@ function QuestionsTab() {
                       onChange={(e) => updateQuestion(idx, 'active', e.target.checked)}
                       className="w-3 h-3 rounded"
                     />
-                    <span className="text-[10px] font-black text-gray-400">활성</span>
+                    <span className="text-xs font-bold text-gray-400">활성</span>
                   </label>
                 </div>
                 {q.type === 'ATTEND' && (
                   <select
                     value={q.linkType || 'NONE'}
                     onChange={(e) => updateQuestion(idx, 'linkType', e.target.value)}
-                    className="text-[10px] font-black bg-violet-50 text-violet-700 px-2 py-1 rounded-lg border-none outline-none self-start"
+                    className="text-xs font-bold bg-violet-50 text-violet-700 px-2 py-1 rounded-lg border-none outline-none self-start"
                   >
                     <option value="NONE">직접 체크</option>
                     <option value="SAT_MEETING">교사회의 체크에서 자동 반영</option>

@@ -1,30 +1,44 @@
+/* NEWAVE: shared with the approved V3 reference. */
 :root {
-  /* Premium Color Palette */
-  --primary-deep: #4f46e5;
-  --primary-glow: #818cf8;
-  --accent-soft: #f472b6;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.3);
-  
-  /* Modern Shadows */
-  --shadow-premium: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.15);
+  --newave-ink: #122f40;
+  --newave-navy: #10364b;
+  --newave-blue: #007fae;
+  --newave-line: #e4ebef;
+  --newave-muted: #607381;
+  --newave-canvas: #f5f8fa;
 }
-
 @layer components {
-  .glass-card {
-    @apply bg-white/70 backdrop-blur-md border border-white/30 shadow-premium;
+  /* Keep existing component names while retiring the old glass treatment. */
+  .glass-card { @apply bg-white border border-gray-200; }
+  .glass-effect { @apply bg-white border-b border-gray-200; }
+  .premium-gradient { background: var(--newave-navy); }
+  .input-field, .field-input {
+    @apply w-full px-3 py-3 rounded-xl border border-gray-200 bg-white text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100;
   }
-  
-  .premium-gradient {
-    @apply bg-gradient-to-br from-indigo-600 via-primary-600 to-primary-700;
+  .icon-button { @apply min-w-11 min-h-11 inline-flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50; }
+  .newave-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--newave-ink); }
+  .newave-brand img { width: 99px; height: auto; }
+  .newave-brand > span { font-size: 10px; letter-spacing: 1.8px; font-weight: 500; }
+  .newave-brand-emblem { flex-direction: column; gap: 13px; }
+  .newave-brand-emblem img { width: 113px; }
+  .newave-brand-emblem > span { letter-spacing: 4px; padding-left: 4px; }
+  .newave-brand-light { color: white; }
+  .newave-brand-light img { filter: brightness(0) invert(1); }
+  .login-hero { background: linear-gradient(180deg, #10364b66, #10364bc4), url('/brand/wave.jpg') center 49% / cover; }
+  .tts-days { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+  .tts-day { min-width: 0; min-height: 44px; border-radius: 9px; }
+  .attendance-person { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .attendance-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .attendance-actions button { min-width: 52px; min-height: 44px; border-radius: 10px; font-size: .8125rem; font-weight: 600; }
+  .attendance-submit { @apply fixed left-1/2 -translate-x-1/2 w-full max-w-mobile bg-white border-t border-gray-200 px-4 py-3 z-30; bottom: calc(68px + env(safe-area-inset-bottom)); }
+  @media (max-width: 350px) {
+    .tts-days { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .attendance-person { flex-wrap: wrap; }
+    .attendance-actions { width: 100%; }
+    .attendance-actions button { flex: 1; }
   }
-
-  .text-glow {
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-  }
-
-  .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all;
-  }
+  html.large-font .attendance-person { flex-wrap: wrap; }
+  html.large-font .tts-days { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  html.large-font .attendance-actions { width: 100%; }
+  html.large-font .attendance-actions button { flex: 1; }
 }

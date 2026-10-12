@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, User, Lock, CheckCircle, Copy } from 'lucide-react'
 import { authApi } from '../api/auth'
+import Brand from '../components/common/Brand'
 import Button from '../components/common/Button'
 
 const TAB_ID = 'id'
@@ -20,15 +21,12 @@ export default function FindAccountPage() {
   const [tab, setTab] = useState(searchParams.get('tab') === 'pw' ? TAB_PW : TAB_ID)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 to-primary-900 flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen bg-primary-900 flex flex-col items-center justify-center px-5 py-8 max-w-mobile mx-auto">
       <div className="mb-8 text-center animate-[fadeIn_0.5s_ease]">
-        <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur">
-          <span className="text-2xl">⛪</span>
-        </div>
-        <h1 className="text-2xl font-black text-white tracking-tight">Newave Flow</h1>
+        <h1><Brand emblem light /></h1>
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-[slideUp_0.4s_ease]">
+      <div className="w-full max-w-sm bg-white rounded-3xl border border-gray-200 overflow-hidden animate-[slideUp_0.4s_ease]">
         {/* 탭 */}
         <div className="flex">
           <button

@@ -83,11 +83,11 @@ export default function PrayerAbsentAdminPage() {
 
         {/* 주차 선택 */}
         <section>
-          <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1 mb-2">조회 주차</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">조회 주차</p>
           <select
             value={selectedWeek}
             onChange={e => setSelectedWeek(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-black text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-violet-200"
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-violet-200"
           >
             {weeks.map(w => (
               <option key={w} value={w}>{weekLabels(new Date(w + 'T00:00:00')).monthWeek} ({weekLabels(new Date(w + 'T00:00:00')).yearWeek})</option>
@@ -103,7 +103,7 @@ export default function PrayerAbsentAdminPage() {
               <button
                 key={g}
                 onClick={() => setActiveGrade(g)}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-black transition-all ${
+                className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeGrade === g
                     ? 'bg-violet-500 text-white shadow-md'
                     : 'bg-white border border-gray-100 text-gray-400'
@@ -120,7 +120,7 @@ export default function PrayerAbsentAdminPage() {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all ${
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
                   statusFilter === s ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
                 }`}
               >
@@ -133,22 +133,22 @@ export default function PrayerAbsentAdminPage() {
         {/* 통계 */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="text-center py-4 border-red-50 bg-red-50/30">
-            <p className="text-2xl font-black text-red-500">{absentList.length}</p>
-            <p className="text-[10px] font-black text-gray-400 uppercase mt-1">총 불참 인원</p>
+            <p className="text-2xl font-bold text-red-500">{absentList.length}</p>
+            <p className="text-xs font-bold text-gray-400 uppercase mt-1">총 불참 인원</p>
           </Card>
           <Card className="text-center py-4 border-amber-50 bg-amber-50/30">
-            <p className="text-2xl font-black text-amber-500">
+            <p className="text-2xl font-bold text-amber-500">
               {absentList.filter(v => !v.scriptureCopySubmitted).length}
             </p>
-            <p className="text-[10px] font-black text-gray-400 uppercase mt-1">필사 미제출</p>
+            <p className="text-xs font-bold text-gray-400 uppercase mt-1">필사 미제출</p>
           </Card>
         </div>
 
         {/* 불참 목록 */}
         <div>
           <div className="flex items-center justify-between px-1 mb-3">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">불참 교사 명단</p>
-            <p className="text-[11px] font-black text-violet-500">{filteredList.length}명 검색됨</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">불참 교사 명단</p>
+            <p className="text-xs font-bold text-violet-500">{filteredList.length}명 검색됨</p>
           </div>
 
           {isLoading ? (
@@ -156,7 +156,7 @@ export default function PrayerAbsentAdminPage() {
           ) : filteredList.length === 0 ? (
             <Card className="py-16 text-center flex flex-col items-center gap-3">
               <Users size={32} className="text-gray-100" />
-              <p className="text-sm font-black text-gray-300">조건에 맞는 결과가 없습니다</p>
+              <p className="text-sm font-bold text-gray-300">조건에 맞는 결과가 없습니다</p>
             </Card>
           ) : (
             <div className="flex flex-col gap-6">
@@ -164,8 +164,8 @@ export default function PrayerAbsentAdminPage() {
                 <div key={grade} className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-2 px-1">
                     <span className="w-1 h-3 bg-violet-400 rounded-full" />
-                    <p className="text-xs font-black text-gray-900">{grade}</p>
-                    <span className="text-[10px] text-gray-400 font-bold">{grouped[grade].length}명</span>
+                    <p className="text-xs font-bold text-gray-900">{grade}</p>
+                    <span className="text-xs text-gray-400 font-bold">{grouped[grade].length}명</span>
                   </div>
                   <div className="flex flex-col gap-3">
                     {grouped[grade].map((vote, idx) => (
@@ -183,21 +183,21 @@ export default function PrayerAbsentAdminPage() {
                               <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${
                                 !vote.scriptureCopySubmitted ? 'bg-amber-100 text-amber-700' : 'bg-gray-50 text-gray-400'
                               }`}>
-                                <span className="font-black text-sm">{vote.teacherName?.[0]}</span>
+                                <span className="font-bold text-sm">{vote.teacherName?.[0]}</span>
                               </div>
                               <div>
                                   <div className="flex items-center gap-2">
-                                    <p className="font-black text-gray-900 text-sm">{vote.teacherName}</p>
-                                    <span className="text-[10px] text-gray-400 font-bold">({vote.teacherGrade})</span>
+                                    <p className="font-bold text-gray-900 text-sm">{vote.teacherName}</p>
+                                    <span className="text-xs text-gray-400 font-bold">({vote.teacherGrade})</span>
                                     {!vote.scriptureCopySubmitted && (
-                                      <span className="text-[9px] font-black bg-amber-500 text-white px-1.5 py-0.5 rounded-md animate-pulse">필사 대상</span>
+                                      <span className="text-[0.6875rem] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-md animate-pulse">필사 대상</span>
                                     )}
                                   </div>
                                 {vote.reason && (
-                                  <p className="text-[11px] text-gray-400 font-medium mt-0.5 line-clamp-1">사유: {vote.reason}</p>
+                                  <p className="text-xs text-gray-400 font-medium mt-0.5 line-clamp-1">사유: {vote.reason}</p>
                                 )}
                                 {vote.updatedAt && (
-                                  <p className="text-[10px] text-gray-300 font-bold mt-0.5">마지막 수정 {formatUpdatedAt(vote.updatedAt)}</p>
+                                  <p className="text-xs text-gray-300 font-bold mt-0.5">마지막 수정 {formatUpdatedAt(vote.updatedAt)}</p>
                                 )}
                               </div>
                             </div>
@@ -214,19 +214,19 @@ export default function PrayerAbsentAdminPage() {
                           >
                             <div className="flex items-center gap-2.5">
                               <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-emerald-500' : 'text-amber-500'} />
-                              <span className="text-xs font-black">필사 제출 확인</span>
+                              <span className="text-xs font-bold">필사 제출 확인</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               {vote.scriptureCopySubmitted ? (
-                                <><CheckCircle2 size={16} /><span className="text-xs font-black">제출 완료</span></>
+                                <><CheckCircle2 size={16} /><span className="text-xs font-bold">제출 완료</span></>
                               ) : (
-                                <><Clock size={16} /><span className="text-xs font-black">미제출</span></>
+                                <><Clock size={16} /><span className="text-xs font-bold">미제출</span></>
                               )}
                             </div>
                           </button>
 
                           {vote.scriptureCopySubmittedAt && (
-                            <p className="text-[9px] text-gray-300 font-bold text-right px-1">
+                            <p className="text-[0.6875rem] text-gray-300 font-bold text-right px-1">
                               체크 일시: {new Date(vote.scriptureCopySubmittedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           )}

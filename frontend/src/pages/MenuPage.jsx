@@ -60,22 +60,22 @@ export default function MenuPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: gi * 0.05 }}
           >
-            <p className={`text-[11px] font-black uppercase tracking-widest mb-2.5 px-1 ${group.admin ? 'text-primary-500' : 'text-gray-400'}`}>
+            <p className={`text-xs font-bold uppercase tracking-widest mb-2.5 px-1 ${group.admin ? 'text-primary-500' : 'text-gray-400'}`}>
               {group.title}
             </p>
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 gap-2.5">
               {group.items.map(item => {
                 const Icon = item.icon
                 return (
                   <button
                     key={item.to}
                     onClick={() => navigate(item.to)}
-                    className="flex flex-col items-center gap-2 bg-white rounded-2xl px-2 py-4 shadow-sm border border-gray-50 active:scale-95 transition-all"
+                    className="flex items-center gap-3 text-left bg-white rounded-2xl px-3 py-4 border border-gray-200 active:scale-95 transition-all"
                   >
-                    <div className={`w-11 h-11 ${item.iconBg} rounded-xl flex items-center justify-center`}>
-                      <Icon size={20} className={item.iconColor} />
+                    <div className={`w-11 h-11 bg-primary-50 rounded-xl flex items-center justify-center`}>
+                      <Icon size={20} className="text-primary-700" />
                     </div>
-                    <p className="text-[11px] font-black text-gray-700 text-center leading-tight break-keep">{item.title}</p>
+                    <p className="text-xs font-bold text-gray-700 text-left leading-relaxed break-keep">{item.title}</p>
                   </button>
                 )
               })}

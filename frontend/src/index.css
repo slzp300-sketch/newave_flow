@@ -1,58 +1,24 @@
 @import './styles/design-tokens.css';
-
+@font-face { font-family: Pretendard; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/Pretendard-Regular.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/Pretendard-Medium.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/Pretendard-SemiBold.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/Pretendard-Bold.woff2') format('woff2'); }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer base {
-  * {
-    -webkit-tap-highlight-color: transparent;
-    @apply transition-colors duration-200;
-  }
-
-  body {
-    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
-    @apply bg-gray-50 text-gray-900 antialiased selection:bg-primary-100 selection:text-primary-700;
-  }
-
-  /* 큰글씨 모드(font-size 120%)에서 버튼 텍스트가 줄바꿈되어 레이아웃이 무너지는 것을 방지 */
-  button {
-    white-space: nowrap;
-    overflow: hidden;
+  * { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-surface text-gray-900 antialiased selection:bg-primary-100 selection:text-primary-800; font-family: Pretendard, 'Apple SD Gothic Neo', sans-serif; }
+  button, a, input, select, textarea { touch-action: manipulation; }
+  button { white-space: normal; }
+  button:disabled { cursor: not-allowed; }
+  :focus-visible { outline: 2px solid #007fae; outline-offset: 3px; }
+  input, select, textarea { min-width: 0; }
+  input:not([type='checkbox']):not([type='radio']), select { min-height: 44px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   }
 }
-
 @layer utilities {
-  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
-
-  .glass-effect {
-    @apply backdrop-blur-lg bg-white/70 border border-white/40;
-  }
-
-  .field-input {
-    @apply w-full px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium text-gray-800 outline-none;
-  }
-
-  /* 큰글씨 모드: 버튼 텍스트 크기를 px 고정으로 유지 (rem 스케일 방지) */
-  html.large-font button {
-    font-size: 14px;
-  }
-  html.large-font button.text-xs,
-  html.large-font button[class*="text-[10"],
-  html.large-font button[class*="text-[11"] {
-    font-size: 12px;
-  }
-  html.large-font button.text-sm {
-    font-size: 14px;
-  }
-  html.large-font button.text-base {
-    font-size: 16px;
-  }
-  html.large-font button.text-lg {
-    font-size: 18px;
-  }
-  /* BottomNav NavLink (a 태그) 텍스트도 고정 */
-  html.large-font nav a {
-    font-size: 12px;
-  }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 }

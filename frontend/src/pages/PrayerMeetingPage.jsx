@@ -108,9 +108,9 @@ export default function PrayerMeetingPage() {
           range={`${tueDate}(화) · ${thuDate}(목) · 지난 주 기록도 수정할 수 있어요`}
         />
         {userGrade && (
-          <div className="self-end bg-violet-50 px-3 py-1 rounded-xl border border-violet-100 flex items-center gap-1.5">
-            <GraduationCap size={13} className="text-violet-600" />
-            <span className="text-[11px] font-black text-violet-700">{userGrade} 교사</span>
+          <div className="self-end bg-primary-50 px-3 py-1 rounded-xl border border-primary-100 flex items-center gap-1.5">
+            <GraduationCap size={13} className="text-primary-600" />
+            <span className="text-xs font-bold text-primary-700">{userGrade} 교사</span>
           </div>
         )}
       </div>
@@ -139,7 +139,7 @@ export default function PrayerMeetingPage() {
             thuDate={thuDate}
           />
         )}
-        <p className="text-[11px] text-gray-400 font-medium text-center mt-3">
+        <p className="text-xs text-gray-400 font-medium text-center mt-3">
           화·목 참석으로 투표하면 TTS의 '줌 기도모임' 점수에 자동으로 반영돼요.
         </p>
       </div>
@@ -151,18 +151,18 @@ export default function PrayerMeetingPage() {
 function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMicTurn, saving, tueDate, thuDate }) {
   return (
     <Card className="flex flex-col gap-5">
-      <div className="bg-violet-50 rounded-2xl px-4 py-3 border border-violet-100 flex items-center justify-between">
+      <div className="bg-primary-50 rounded-2xl px-4 py-3 border border-primary-100 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-black text-violet-400 uppercase tracking-widest">마이크 순서</p>
-          <p className="text-sm font-black text-violet-800 mt-0.5">🎤 {micLabel}</p>
+          <p className="text-xs font-bold text-primary-400 uppercase tracking-widest">마이크 순서</p>
+          <p className="text-sm font-bold text-primary-800 mt-0.5">🎤 {micLabel}</p>
         </div>
         {isMicTurn && (
-          <span className="bg-violet-600 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-sm animate-pulse">당번</span>
+          <span className="bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-sm animate-pulse">당번</span>
         )}
       </div>
 
       <div>
-        <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">기도모임 참석 투표</p>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">기도모임 참석 투표</p>
         <div className="grid grid-cols-3 gap-2">
           <VoteButton active={prayer.status === 'TUE'} onClick={() => update({ status: 'TUE', reason: '' })} label={`${tueDate}(화)`} sub="온라인" color="violet" />
           <VoteButton active={prayer.status === 'THU'} onClick={() => update({ status: 'THU', reason: '' })} label={`${thuDate}(목)`} sub="온라인" color="violet" />
@@ -174,14 +174,14 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMic
         {(prayer.status === 'TUE' || prayer.status === 'THU') && isMicTurn && (
           <motion.div key="mic-section" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-col gap-3 pt-2 border-t border-gray-50">
             <div className="flex items-center gap-2">
-              <Mic2 size={14} className="text-violet-500" />
-              <p className="text-xs font-black text-gray-500 uppercase tracking-widest">마이크 가능 여부</p>
+              <Mic2 size={14} className="text-primary-500" />
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">마이크 가능 여부</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => update({ micAvailable: true, micReason: '' })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-black transition-all active:scale-95 ${prayer.micAvailable === true ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
+              <button onClick={() => update({ micAvailable: true, micReason: '' })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95 ${prayer.micAvailable === true ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
                 <Mic2 size={16} /> 켤 수 있어요
               </button>
-              <button onClick={() => update({ micAvailable: false })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-black transition-all active:scale-95 ${prayer.micAvailable === false ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
+              <button onClick={() => update({ micAvailable: false })} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95 ${prayer.micAvailable === false ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>
                 <MicOff size={16} /> 어려워요
               </button>
             </div>
@@ -219,13 +219,13 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMic
 
 function VoteButton({ active, onClick, label, sub, color }) {
   const colors = {
-    violet: active ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-100 bg-gray-50/50 text-gray-400',
+    violet: active ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-gray-100 bg-gray-50/50 text-gray-400',
     red:    active ? 'border-red-400 bg-red-50 text-red-600'         : 'border-gray-100 bg-gray-50/50 text-gray-400',
   }
   return (
     <button onClick={onClick} className={`flex flex-col items-center justify-center gap-0.5 py-4 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
-      <span className="text-sm font-black">{label}</span>
-      <span className="text-[10px] font-bold opacity-60">{sub}</span>
+      <span className="text-sm font-bold">{label}</span>
+      <span className="text-xs font-bold opacity-60">{sub}</span>
       {active && <CheckCircle2 size={14} className="mt-1" />}
     </button>
   )
@@ -238,10 +238,10 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CheckCircle2 size={18} className="text-violet-500" />
-          <span className="font-black text-gray-900 text-sm">기도모임 투표 완료</span>
+          <CheckCircle2 size={18} className="text-primary-500" />
+          <span className="font-bold text-gray-900 text-sm">기도모임 투표 완료</span>
         </div>
-        <button onClick={onEdit} className="text-[11px] text-violet-600 font-black flex items-center gap-1">
+        <button onClick={onEdit} className="text-xs text-primary-600 font-bold flex items-center gap-1">
           <PenLine size={12} /> 수정
         </button>
       </div>
@@ -255,10 +255,10 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
         <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${vote.scriptureCopySubmitted ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
           <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-emerald-500 mt-0.5' : 'text-amber-500 mt-0.5'} />
           <div>
-            <p className={`text-xs font-black ${vote.scriptureCopySubmitted ? 'text-emerald-700' : 'text-amber-700'}`}>
+            <p className={`text-xs font-bold ${vote.scriptureCopySubmitted ? 'text-emerald-700' : 'text-amber-700'}`}>
               {vote.scriptureCopySubmitted ? '필사 제출 완료' : '필사 제출 필요'}
             </p>
-            <p className={`text-[11px] mt-0.5 font-medium ${vote.scriptureCopySubmitted ? 'text-emerald-500' : 'text-amber-500'}`}>
+            <p className={`text-xs mt-0.5 font-medium ${vote.scriptureCopySubmitted ? 'text-emerald-500' : 'text-amber-500'}`}>
               {vote.scriptureCopySubmitted
                 ? '관리자가 필사 제출을 확인했습니다'
                 : '둘 다 불참 시 그 주 필사를 제출해야 합니다'}
@@ -275,8 +275,8 @@ function ReasonInput({ value, onChange, placeholder, required }) {
     <div>
       <div className="flex items-center gap-1.5 mb-2">
         <MessageSquare size={13} className="text-red-400" />
-        <span className="text-xs font-black text-gray-500">사유 입력</span>
-        {required && <span className="text-[10px] text-red-400 font-bold">*필수</span>}
+        <span className="text-xs font-bold text-gray-500">사유 입력</span>
+        {required && <span className="text-xs text-red-400 font-bold">*필수</span>}
       </div>
       <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border border-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-200 text-gray-700 placeholder-gray-300 font-medium bg-gray-50" />
     </div>
@@ -286,8 +286,8 @@ function ReasonInput({ value, onChange, placeholder, required }) {
 function Row({ label, value, muted }) {
   return (
     <div className="flex justify-between items-start gap-3">
-      <span className={`text-[11px] font-bold ${muted ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
-      <span className={`text-[11px] font-black text-right max-w-[200px] ${muted ? 'text-gray-300' : 'text-gray-700'}`}>{value}</span>
+      <span className={`text-xs font-bold ${muted ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
+      <span className={`text-xs font-bold text-right max-w-[200px] ${muted ? 'text-gray-300' : 'text-gray-700'}`}>{value}</span>
     </div>
   )
 }

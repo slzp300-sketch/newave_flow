@@ -51,6 +51,10 @@ export default function EmailInput({ onChange, status = 'idle' }) {
       <div className="flex items-center gap-2">
         <input
           type="text"
+          aria-label="이메일 아이디"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           value={local}
           onChange={handleLocal}
           placeholder="아이디"
@@ -59,6 +63,7 @@ export default function EmailInput({ onChange, status = 'idle' }) {
         />
         <span className="text-gray-400 font-medium shrink-0 select-none">@</span>
         <select
+          aria-label="이메일 도메인"
           value={isCustom ? 'custom' : domain}
           onChange={handleDomain}
           className={`flex-1 min-w-0 cursor-pointer ${base}`}
@@ -72,6 +77,9 @@ export default function EmailInput({ onChange, status = 'idle' }) {
       {isCustom && (
         <input
           type="text"
+          aria-label="직접 입력할 이메일 도메인"
+          autoCapitalize="none"
+          spellCheck={false}
           value={custom}
           onChange={handleCustom}
           placeholder="도메인 주소 입력 (예: company.com)"

@@ -25,14 +25,9 @@ const isDaily = (q) => q.type === 'DAYS' && !isLinked(q)
 // '말씀 (3장 이상)' → ['말씀', '3장 이상'] : 좁은 칸에서는 괄호 안을 작은 글씨로 내린다
 const splitTitle = (t = '') => { const m = t.match(/^(.*?)\s*\((.+)\)\s*$/); return m ? [m[1], m[2]] : [t, ''] }
 
-// 항목별 색 (찬양팀 영성체크처럼 항목마다 색을 달리한다)
+// Actions share one brand color; check marks also communicate completion.
 const PALETTE = [
-  { dot: 'bg-emerald-500', fill: 'bg-emerald-600', soft: 'bg-emerald-50', text: 'text-emerald-600' },
-  { dot: 'bg-violet-500',  fill: 'bg-violet-500',  soft: 'bg-violet-50',  text: 'text-violet-600' },
-  { dot: 'bg-orange-500',  fill: 'bg-orange-500',  soft: 'bg-orange-50',  text: 'text-orange-600' },
-  { dot: 'bg-rose-500',    fill: 'bg-rose-500',    soft: 'bg-rose-50',    text: 'text-rose-600' },
-  { dot: 'bg-sky-500',     fill: 'bg-sky-500',     soft: 'bg-sky-50',     text: 'text-sky-600' },
-  { dot: 'bg-amber-500',   fill: 'bg-amber-500',   soft: 'bg-amber-50',   text: 'text-amber-600' },
+  { dot: 'bg-primary-600', fill: 'bg-primary-600', soft: 'bg-primary-50', text: 'text-primary-700' },
 ]
 
 export function parseAnswer(q, raw) {
@@ -56,11 +51,12 @@ export default function TTSPage() {
       <Header title="TTS" showBack />
       <div className="px-4 pt-3">
         <div className="grid grid-cols-2 bg-gray-100 p-1 rounded-xl">
-          {[['check', '내 체크'], ['stats', '통계']].map(([key, label]) => (
+          {[['check', '내 체크'], ['stats', '분기 현황']].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`py-2 rounded-lg text-sm font-black transition-all ${tab === key ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-400'}`}
+              aria-pressed={tab === key}
+              className={`min-h-11 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === key ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500'}`}
             >{label}</button>
           ))}
         </div>
@@ -180,7 +176,7 @@ export function CheckTab({ embedded = false }) {
           minOffset={firstTtsOffset()}
           title={`${labels.monthWeek} TTS`}
           sub={labels.yearWeek}
-          range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')} · ${week?.importedPeriod ? '시트 확정 기록' : '탭하면 바로 저장돼요'}`}
+          range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}${week?.importedPeriod ? ' · 시트 확정 기록' : ''}`}
         />
       </div>}
 
@@ -190,7 +186,7 @@ export function CheckTab({ embedded = false }) {
         <div className={embedded ? '' : 'px-4'}>
           <Card className="text-center py-6">
             <p className="text-xs font-bold text-gray-500">시트 확정 점수</p>
-            <p className="text-3xl font-black text-primary-600 mt-2">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
+            <p className="text-3xl font-bold text-primary-600 mt-2">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
             <p className="text-xs text-gray-500 mt-3">당시 주간 총점을 보존한 기록입니다.</p>
             <p className="text-xs text-gray-400 mt-1">수정이 필요하면 관리자에게 알려 주세요.</p>
           </Card>
@@ -199,6 +195,7 @@ export function CheckTab({ embedded = false }) {
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
           <ScoreCard
             compact={embedded}
+            saving={saving}
             range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
             score={score}
             maxScore={maxScore}
@@ -234,8 +231,8 @@ export function CheckTab({ embedded = false }) {
           {otherQuestions.length > 0 && (
             <Card>
               <div className="flex items-center justify-between mb-3">
-                <p className="font-black text-gray-900 text-sm">예배 · 모임</p>
-                <p className="text-[11px] font-bold text-gray-400">참석하면 체크</p>
+                <p className="font-bold text-gray-900 text-sm">예배 · 모임</p>
+                <p className="text-xs font-bold text-gray-400">참석하면 체크</p>
               </div>
               {embedded ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -276,11 +273,11 @@ export function CheckTab({ embedded = false }) {
           )}
 
           {embedded ? (
-            <button onClick={() => navigate('/tts')} className="text-[11px] text-primary-600 font-bold text-center mt-1">
+            <button onClick={() => navigate('/tts')} className="text-xs text-primary-600 font-bold text-center mt-1">
               지난 주 기록 수정 · 통계는 TTS 화면에서 →
             </button>
           ) : (
-            <p className="text-[11px] text-gray-400 font-medium text-center mt-1">
+            <p className="text-xs text-gray-400 font-medium text-center mt-1">
               지난 주 기록도 언제든 고칠 수 있어요. 아직 오지 않은 요일은 체크할 수 없어요.
             </p>
           )}
@@ -290,127 +287,63 @@ export function CheckTab({ embedded = false }) {
   )
 }
 
-function ScoreCard({ compact, range, score, maxScore, weekLabel, items, message }) {
-  const r = 36
-  const c = 2 * Math.PI * r
+function ScoreCard({ score, maxScore, weekLabel, items, message, saving }) {
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
-  const full  = maxScore > 0 && score >= maxScore
-  // 홈용: 점수 한 줄 + 진행 막대 + 남은 체크 한 줄 (항목별 점수는 아래 표·타일에서 보인다)
-  if (compact) return (
-    <Card>
-      <div className="flex items-end justify-between gap-2">
-        <p className="leading-none">
-          <span className="text-2xl font-black text-gray-900">{score}</span>
-          <span className="text-xs font-bold text-gray-400"> / {maxScore}점</span>
-        </p>
-        <p className="text-[11px] font-bold text-gray-400">
-          <span className="font-black text-primary-500">{weekLabel}</span> · {range}
-        </p>
-      </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mt-2.5">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${full ? 'bg-emerald-500' : 'bg-primary-500'}`}
-          style={{ width: `${ratio * 100}%` }}
-        />
-      </div>
-      {message && (
-        <p className={`mt-2.5 text-[11px] font-bold break-keep ${message.done ? 'text-primary-600' : 'text-amber-600'}`}>
-          {message.done ? '🎉 ' : '⏰ '}{message.text}
-        </p>
-      )}
-    </Card>
-  )
   return (
-    <Card>
-      <div className="flex items-center gap-4">
-        <div className="relative w-24 h-24 flex-shrink-0">
-          <svg viewBox="0 0 84 84" className="w-full h-full -rotate-90">
-            <circle cx="42" cy="42" r={r} fill="none" stroke="#f1f5f9" strokeWidth="8" />
-            <circle
-              cx="42" cy="42" r={r} fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round"
-              className={`${full ? 'text-emerald-600' : 'text-primary-500'} transition-all duration-500`}
-              strokeDasharray={c} strokeDashoffset={c * (1 - ratio)}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-2xl font-black text-gray-900 leading-none">{score}</p>
-            <p className="text-[10px] font-bold text-gray-400 mt-1">/ {maxScore}점</p>
-          </div>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-black text-primary-500">{weekLabel} 점수</p>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2">
-            {items.map(({ q, color, done, total }) => (
-              <div key={q.id} className="flex items-center gap-1.5 min-w-0">
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color.dot}`} />
-                <span className="text-[11px] font-bold text-gray-500 truncate flex-1">{splitTitle(q.title)[0]}</span>
-                <span className="text-[11px] font-black text-gray-900 flex-shrink-0">{done}/{total}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+    <section className="rounded-2xl border border-primary-100 bg-primary-50 p-5">
+      <div className="flex justify-between gap-3 items-center text-sm">
+        <h2 className="font-medium text-primary-800">{weekLabel} 점수</h2>
+        <span className="text-xs text-gray-500" role="status" aria-live="polite">{saving ? '저장 중…' : '자동 저장'}</span>
       </div>
-      {message && (
-        <div className={`mt-4 px-4 py-3 rounded-2xl text-xs font-bold break-keep ${
-          message.done ? 'bg-gradient-to-r from-primary-50 to-rose-50 text-primary-700' : 'bg-amber-50 text-amber-700'
-        }`}>
-          {message.done ? '🎉 ' : '⏰ '}{message.text}
-        </div>
-      )}
-    </Card>
+      <p className="mt-3"><strong className="text-4xl font-semibold tabular-nums">{score}</strong><span className="ml-2 text-sm text-gray-500">/ {maxScore}점</span></p>
+      <div className="h-1.5 rounded-full bg-primary-100 overflow-hidden mt-3">
+        <div className="h-full rounded-full bg-primary-600 transition-[width]" style={{ width: ratio * 100 + '%' }} />
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+        {items.map(({ q, done, total }) => <p key={q.id} className="text-xs text-gray-600">{splitTitle(q.title)[0]} <span className="font-semibold text-gray-900">{done}/{total}</span></p>)}
+      </div>
+      {message && <p className="mt-3 text-sm text-primary-800 break-keep">{message.text}</p>}
+      {items.length === 0 && <p className="mt-3 text-sm text-gray-500">등록된 체크 항목이 없습니다.</p>}
+    </section>
   )
 }
 
-// 매일 항목: 요일을 열로, 항목을 행으로 한 표. 체크하면 칸이 항목 색으로 채워진다
+// Labels above controls keep weekdays readable on narrow phones.
 function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle }) {
-  const pts = [...new Set(items.map(({ q }) => pointsOf(q)))]
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
-        <p className="font-black text-gray-900 text-sm">매일 체크</p>
-        <p className="text-[11px] font-bold text-gray-400">하루 각 {pts.join('·')}점</p>
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <h2 className="font-semibold text-base">매일의 말씀과 기도</h2>
+        <span className="text-xs text-gray-500">탭하면 저장돼요</span>
       </div>
-      <div className="grid grid-cols-[3.5rem_repeat(6,minmax(0,1fr))] gap-1.5 items-center">
-        <div />
-        {DAYS.map((day, i) => (
-          <div key={day} className="text-center leading-tight">
-            <p className={`text-[11px] font-black ${i === todayIdx ? 'text-primary-600' : day === '토' ? 'text-blue-400' : 'text-gray-500'}`}>{day}</p>
-            <p className="text-[9px] font-bold text-gray-300">{dayLabel(i)}</p>
+      <div className="flex flex-col gap-5">
+        {items.map(({ q }) => (
+          <div key={q.id}>
+            <div className="flex items-baseline justify-between mb-3 gap-2">
+              <p className="text-sm font-medium">{q.title}</p>
+              <span className="text-xs text-gray-500 shrink-0">하루 {pointsOf(q)}점</span>
+            </div>
+            <div className="tts-days">
+              {DAYS.map((day, i) => {
+                const done = !!answers[q.id]?.[day]
+                const future = isFuture(i)
+                return (
+                  <div key={day} className="min-w-0 text-center">
+                    <p className={'text-xs mb-1 ' + (i === todayIdx ? 'text-primary-700 font-semibold' : 'text-gray-500')}>{day}</p>
+                    <p className="text-xs text-gray-400 mb-2">{dayLabel(i)}</p>
+                    <button disabled={future} onClick={() => onToggle(q, day)}
+                      aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : '')} aria-pressed={done}
+                      className={'tts-day w-full flex items-center justify-center border transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-300') + (future ? ' opacity-40' : '') + (i === todayIdx && !done ? ' !border-primary-600' : '')}>
+                      {done ? <Check size={18} strokeWidth={2} /> : <span aria-hidden="true">—</span>}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        ))}
-        {items.map(({ q, color }) => (
-          <DayRow key={q.id} q={q} color={color} value={answers[q.id] || {}} isFuture={isFuture} todayIdx={todayIdx} onToggle={onToggle} />
         ))}
       </div>
     </Card>
-  )
-}
-
-function DayRow({ q, color, value, isFuture, todayIdx, onToggle }) {
-  return (
-    <>
-      <div className="min-w-0">
-        <p className="text-xs font-black text-gray-900 truncate">{splitTitle(q.title)[0]}</p>
-        {splitTitle(q.title)[1] && <p className="text-[9px] font-bold text-gray-400 truncate">{splitTitle(q.title)[1]}</p>}
-      </div>
-      {DAYS.map((day, i) => {
-        const done   = !!value[day]
-        const future = isFuture(i)
-        return (
-          <button
-            key={day}
-            disabled={future}
-            onClick={() => onToggle(q, day)}
-            aria-label={`${q.title} ${day}`}
-            className={`aspect-square rounded-xl flex items-center justify-center transition-all active:scale-90 ${
-              done ? color.fill : 'bg-gray-100'
-            } ${future ? 'opacity-30' : ''} ${i === todayIdx && !done ? 'ring-2 ring-amber-300' : ''}`}
-          >
-            {done && <Check size={16} strokeWidth={3} className="text-white" />}
-          </button>
-        )
-      })}
-    </>
   )
 }
 
@@ -419,15 +352,16 @@ function CheckRow({ q, color, checked, sub, onClick }) {
   return (
     <button
       onClick={onClick}
+      aria-pressed={isLinked(q) ? undefined : checked}
       className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all active:scale-[0.98] ${checked ? color.soft : 'bg-gray-50'}`}
     >
       <span className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-lg flex-shrink-0 shadow-sm">{q.emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-black text-gray-900 truncate">{q.title}</p>
-        <p className="text-[11px] font-medium text-gray-400 truncate">{sub}</p>
+        <p className="text-sm font-semibold text-gray-900">{q.title}</p>
+        <p className="text-xs font-normal text-gray-500">{sub}</p>
       </div>
-      <span className={`text-xs font-black flex-shrink-0 ${checked ? color.text : 'text-gray-300'}`}>+{pointsOf(q)}</span>
-      <span className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
+      <span className={`text-xs font-bold flex-shrink-0 ${checked ? color.text : 'text-gray-300'}`}>+{pointsOf(q)}</span>
+      <span className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
         {checked && <Check size={16} strokeWidth={3} className="text-white" />}
       </span>
     </button>
@@ -442,7 +376,7 @@ function CheckTile({ q, color, checked, onClick }) {
       className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all active:scale-[0.97] ${checked ? color.soft : 'bg-gray-50'}`}
     >
       <span className="text-base flex-shrink-0">{q.emoji}</span>
-      <span className="flex-1 min-w-0 text-xs font-black text-gray-900 truncate">{q.title}</span>
+      <span className="flex-1 min-w-0 text-xs font-bold text-gray-900 truncate">{q.title}</span>
       <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
         {checked && <Check size={12} strokeWidth={3} className="text-white" />}
       </span>
@@ -477,7 +411,7 @@ function StatsTab() {
           value={year}
           aria-label="통계 연도"
           onChange={e => { const next = Number(e.target.value); setYear(next); setQuarter(defaultQuarter(next)) }}
-          className="px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm font-black text-gray-700"
+          className="px-3 py-2 rounded-xl bg-white border border-gray-100 text-sm font-bold text-gray-700"
         >
           {ttsYears().map(y => <option key={y} value={y}>{y}년</option>)}
         </select>
@@ -490,7 +424,7 @@ function StatsTab() {
             <button
               key={key}
               onClick={() => setView(key)}
-              className={`py-1.5 rounded-lg text-[11px] font-black flex flex-col items-center gap-0.5 ${view === key ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-400'}`}
+              className={`py-1.5 rounded-lg text-xs font-bold flex flex-col items-center gap-0.5 ${view === key ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-400'}`}
             >
               <Icon size={13} />{label}
             </button>
@@ -505,7 +439,7 @@ function StatsTab() {
           </button>
         ))}
       </div>
-      <p className="text-[11px] text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
+      <p className="text-xs text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
 
       {queryReadState([statsQuery]) !== 'ready' ? (
         <QueryNotice queries={[statsQuery]} label="TTS 통계" />
@@ -526,12 +460,12 @@ function RankRow({ rank, p, isMe, right, sub }) {
   const medal = ['🥇', '🥈', '🥉'][rank - 1]
   return (
     <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${isMe ? 'bg-primary-50 border border-primary-100' : ''}`}>
-      <span className="w-7 text-center text-sm font-black text-gray-400">{medal || rank}</span>
+      <span className="w-7 text-center text-sm font-bold text-gray-400">{medal || rank}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-black text-gray-900 truncate">
-          {p.name}{isMe && <span className="text-[10px] text-primary-500 ml-1">나</span>}
+        <p className="text-sm font-semibold text-gray-900">
+          {p.name}{isMe && <span className="text-xs text-primary-500 ml-1">나</span>}
         </p>
-        {sub && <p className="text-[10px] text-gray-400 font-bold">{sub}</p>}
+        {sub && <p className="text-xs text-gray-400 font-bold">{sub}</p>}
       </div>
       <div className="text-right flex-shrink-0">{right}</div>
     </div>
@@ -555,7 +489,7 @@ function QuarterRank({ people, myId }) {
   return (
     <Card className="flex flex-col gap-1 px-2">
       <div className="flex items-center justify-between px-2 pb-1">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">분기 순위 · 평균 {Math.round(avg)}점</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">분기 순위 · 평균 {Math.round(avg)}점</p>
       </div>
       {list.length === 0 && <p className="text-center text-xs text-gray-400 py-6">이 분기 기록이 없어요</p>}
       {list.map(p => {
@@ -569,8 +503,8 @@ function QuarterRank({ people, myId }) {
             sub={`${p.weeks}주 참여 · 주 평균 ${Math.round(p.total / p.weeks)}점`}
             right={
               <>
-                <p className="text-sm font-black text-primary-600">{p.total}점</p>
-                <p className={`text-[10px] font-black ${diff >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>평균 {diff >= 0 ? '+' : ''}{diff}</p>
+                <p className="text-sm font-bold text-primary-600">{p.total}점</p>
+                <p className={`text-xs font-bold ${diff >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>평균 {diff >= 0 ? '+' : ''}{diff}</p>
               </>
             }
           />
@@ -596,16 +530,16 @@ function WeeklyTable({ year, people, firstWeek, lastWeek }) {
   }
   return (
     <Card className="flex flex-col px-3">
-      <div className="grid grid-cols-[64px_32px_36px_36px_1fr] gap-1 text-[10px] font-black text-gray-400 pb-2 border-b border-gray-50">
+      <div className="grid grid-cols-[64px_32px_36px_36px_1fr] gap-1 text-xs font-bold text-gray-400 pb-2 border-b border-gray-50">
         <span>주차</span><span className="text-right">인원</span><span className="text-right">평균</span><span className="text-right">최고</span><span className="pl-2">최고점</span>
       </div>
       {rows.length === 0 && <p className="text-center text-xs text-gray-400 py-6">기록이 없어요</p>}
       {rows.map(r => (
         <div key={r.w} className="grid grid-cols-[64px_32px_36px_36px_1fr] gap-1 py-2 text-xs border-b border-gray-50 last:border-0">
-          <span className="font-black text-gray-700">{weekLabelsByNum(year, r.w).monthWeek}</span>
+          <span className="font-bold text-gray-700">{weekLabelsByNum(year, r.w).monthWeek}</span>
           <span className="text-right font-bold text-gray-500">{r.count}</span>
           <span className="text-right font-bold text-gray-500">{r.avg}</span>
-          <span className="text-right font-black text-primary-600">{r.max}</span>
+          <span className="text-right font-bold text-primary-600">{r.max}</span>
           <span className="pl-2 font-bold text-gray-600 truncate">{r.top.join(', ')}</span>
         </div>
       ))}
@@ -620,18 +554,18 @@ function MyTrend({ year, me, firstWeek, lastWeek }) {
   return (
     <Card className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">내 주차별 점수</p>
-        <p className="text-xs font-black text-primary-600">분기 {me.total}점 · {me.weeks}주 참여</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">내 주차별 점수</p>
+        <p className="text-xs font-bold text-primary-600">분기 {me.total}점 · {me.weeks}주 참여</p>
       </div>
       {weeks.map(w => {
-        const s = me.weekly[w] || 0
+        const s = me.weekly[w]
         return (
           <div key={w} className="flex items-center gap-2">
-            <span className="w-16 flex-shrink-0 text-[11px] font-black text-gray-400">{weekLabelsByNum(year, w).monthWeek}</span>
+            <span className="w-16 flex-shrink-0 text-xs font-bold text-gray-400">{weekLabelsByNum(year, w).monthWeek}</span>
             <div className="flex-1 h-3 bg-gray-50 rounded-full overflow-hidden">
-              <div className="h-full bg-primary-400 rounded-full" style={{ width: `${(s / max) * 100}%` }} />
+              <div className="h-full bg-primary-400 rounded-full" style={{ width: `${((s ?? 0) / max) * 100}%` }} />
             </div>
-            <span className={`w-9 text-right text-[11px] font-black ${s ? 'text-gray-700' : 'text-gray-200'}`}>{s}</span>
+            <span className={`w-14 shrink-0 text-right text-xs ${s != null ? 'font-semibold text-gray-700' : 'text-gray-500'}`}>{s != null ? s : '기록 없음'}</span>
           </div>
         )
       })}
