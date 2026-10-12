@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useIsMutating } from '@tanstack/react-query'
 import { ChevronRight, ClipboardList, BookOpen, Users } from 'lucide-react'
 import { addDays, format, startOfWeek } from 'date-fns'
 import { weeklyStatusApi } from '../../api/weeklyStatus'
@@ -9,12 +9,14 @@ import client from '../../api/client'
 import useAuthStore from '../../store/authStore'
 import { getWeekStartByOffset, toApiDate } from '../../utils/date'
 import { queryReadState } from '../../utils/queryReadState'
+import { ttsReadState } from '../../utils/ttsQuery'
 import { parseAnswer, calcScore, maxOf } from '../../pages/TTSPage'
 import QueryNotice from '../common/QueryNotice'
 import { Reveal, AnimatedValue, ProgressFill, WaveAccent } from '../common/Motion'
 
 export default function HomeWeekly({ navigate }) {
   const { user } = useAuthStore()
+  const savingTts = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const sunday = getWeekStartByOffset(0, 0)
   const weekStart = toApiDate(sunday)
   const monday = toApiDate(startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -30,6 +32,7 @@ export default function HomeWeekly({ navigate }) {
   })
   const weekQuery = useQuery({
     queryKey: ['tts-week', weekStart],
+    enabled: !savingTts,
     queryFn: () => ttsApi.getWeek(weekStart).then(r => r.data),
     staleTime: 60 * 1000,
   })
@@ -45,6 +48,7 @@ export default function HomeWeekly({ navigate }) {
   })
   const questions = questionsQuery.data || []
   const week = weekQuery.data
+  const ttsState = ttsReadState([questionsQuery, weekQuery])
   const answers = useMemo(() => {
     const map = {}
     ;(week?.answers || []).forEach(a => {
@@ -63,7 +67,8 @@ export default function HomeWeekly({ navigate }) {
   ]
   return (
     <>
-      {queryReadState([questionsQuery, weekQuery]) !== 'ready' ? <QueryNotice queries={[questionsQuery, weekQuery]} label="이번 주 TTS 기록" /> : (
+      {ttsState.hasData && ttsState.error && <QueryNotice queries={[questionsQuery, weekQuery]} label="최신 TTS 기록" />}
+      {!ttsState.hasData ? <QueryNotice queries={[questionsQuery, weekQuery]} label="이번 주 TTS 기록" /> : (
         <Reveal className="relative isolate overflow-hidden rounded-2xl bg-primary-900 text-white p-5" delay={0.04}>
           <WaveAccent />
           <div className="relative flex justify-between gap-3 text-sm">
@@ -80,6 +85,7 @@ export default function HomeWeekly({ navigate }) {
           <button onClick={() => navigate('/tts')} className="motion-row motion-tap relative flex items-center justify-between w-full text-sm min-h-11 mt-2 text-primary-100 rounded-lg">
             {week?.importedPeriod ? '이번 주 기록 확인하기' : '오늘의 말씀·기도 기록하기'}<ChevronRight size={17} />
           </button>
+          {(savingTts || ttsState.refreshing || ttsState.paused) && <p role="status" className="relative text-xs text-primary-200">{ttsState.paused ? '연결 확인 필요' : savingTts ? 'TTS 저장 중…' : '최신 기록 확인 중…'}</p>}
         </Reveal>
       )}
       <Reveal delay={0.1}>
