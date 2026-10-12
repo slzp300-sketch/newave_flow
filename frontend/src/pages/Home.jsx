@@ -46,7 +46,6 @@ export default function Home() {
           <img src="/brand/newave-color-emblem.png" alt="" width="450" height="360" className="w-20 shrink-0 rounded-2xl" />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <p className="text-sm text-gray-500">함께 만들어 가는 새로운 한 주</p>
           <RoleBadge role={user?.role} />
         </div>
       </div>

@@ -35,9 +35,9 @@
   .newave-brand-emblem > span { letter-spacing: 4px; padding-left: 4px; }
   .newave-brand-light { color: white; }
   .newave-brand-light img { filter: brightness(0) invert(1); }
-  .login-hero { background: var(--newave-blue); }
-  .login-artwork { display: block; width: 100%; height: auto; }
-  .login-hero::after { content: ''; display: block; height: 4px; background: var(--newave-green); }
+  /* Keep the original ocean header; buttons still use the shared blue/green palette. */
+  .login-hero { background: linear-gradient(180deg, #10364b66, #10364bc4), url('/brand/wave.jpg') center 49% / cover; }
+  .login-hero .newave-brand > span { font-weight: 500; }
   .tts-days { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
   .tts-day { min-width: 0; min-height: 44px; border-radius: 9px; }
   .attendance-person { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
