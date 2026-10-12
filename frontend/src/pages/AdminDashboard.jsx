@@ -11,40 +11,40 @@ export const MENU_GROUPS = [
   {
     title: '회원 및 조직 관리',
     icon: UserCog,
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-50',
+    color: 'text-primary-600',
+    bg: 'bg-primary-50',
     desc: '신규가입, 권한, 반 배정, 제적 관리',
     items: [
-      { to: '/admin/pending-users', icon: UserPlus, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', title: '가입 승인 대기', desc: '신규 가입 교사 승인 및 반 배정' },
-      { to: '/admin/teachers', icon: UserCog, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
-      { to: '/admin/class-assignment', icon: UserCheck, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
-      { to: '/admin/students', icon: GraduationCap, iconBg: 'bg-teal-50', iconColor: 'text-teal-600', title: '아이 관리', desc: '전체 아이 명단 및 반 배정 관리' },
-      { to: '/admin/deactivation-requests', icon: UserMinus, iconBg: 'bg-rose-50', iconColor: 'text-rose-500', title: '제적 승인 관리', desc: '교사가 신청한 제적 요청 검토' },
+      { to: '/admin/pending-users', icon: UserPlus, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '가입 승인 대기', desc: '신규 가입 교사 승인 및 반 배정' },
+      { to: '/admin/teachers', icon: UserCog, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
+      { to: '/admin/class-assignment', icon: UserCheck, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
+      { to: '/admin/students', icon: GraduationCap, iconBg: 'bg-secondary-50', iconColor: 'text-secondary-600', title: '아이 관리', desc: '전체 아이 명단 및 반 배정 관리' },
+      { to: '/admin/deactivation-requests', icon: UserMinus, iconBg: 'bg-primary-50', iconColor: 'text-primary-500', title: '제적 승인 관리', desc: '교사가 신청한 제적 요청 검토' },
     ]
   },
   {
     title: '모임 및 회의 관리',
     icon: FileText,
-    color: 'text-violet-600',
-    bg: 'bg-violet-50',
+    color: 'text-primary-600',
+    bg: 'bg-primary-50',
     desc: '기도모임, 교사회의, 회의록, 일정',
     items: [
-      { to: '/admin/prayer', icon: BookOpen, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', title: '기도모임 관리', desc: '불참 명단 및 필사 제출 현황' },
-      { to: '/admin/meeting-attendance', icon: Users, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', title: '교사회의 관리', desc: '토요일 교사회의 참석 현황' },
-      { to: '/admin/minutes', icon: FileText, iconBg: 'bg-violet-50', iconColor: 'text-violet-600', title: '회의록 관리', desc: '교사 회의록 작성 및 공개 설정' },
-      { to: '/admin/calendar', icon: Calendar, iconBg: 'bg-rose-50', iconColor: 'text-rose-600', title: '일정 관리', desc: '월별 부서 일정 등록 및 수정' },
+      { to: '/admin/prayer', icon: BookOpen, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '기도모임 관리', desc: '불참 명단 및 필사 제출 현황' },
+      { to: '/admin/meeting-attendance', icon: Users, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '교사회의 관리', desc: '토요일 교사회의 참석 현황' },
+      { to: '/admin/minutes', icon: FileText, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '회의록 관리', desc: '교사 회의록 작성 및 공개 설정' },
+      { to: '/admin/calendar', icon: Calendar, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '일정 관리', desc: '월별 부서 일정 등록 및 수정' },
     ]
   },
   {
     title: '출석 및 활동 관리',
     icon: CheckSquare,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50',
+    color: 'text-secondary-600',
+    bg: 'bg-secondary-50',
     desc: '주간 출석, 행사 출석, TTS, 전도 관리',
     items: [
-      { to: '/admin/student-attendance', icon: ClipboardList, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', title: '출석 관리', desc: '주차별 학년/반/학생 출석 현황 확인' },
-      { to: '/admin/event-attendance', icon: ClipboardList, iconBg: 'bg-sky-50', iconColor: 'text-sky-600', title: '행사 출석 관리', desc: '행사별 반 학생 출석 현황 확인' },
-      { to: '/admin/tts', icon: CheckSquare, iconBg: 'bg-teal-50', iconColor: 'text-teal-600', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
+      { to: '/admin/student-attendance', icon: ClipboardList, iconBg: 'bg-secondary-50', iconColor: 'text-secondary-600', title: '출석 관리', desc: '주차별 학년/반/학생 출석 현황 확인' },
+      { to: '/admin/event-attendance', icon: ClipboardList, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '행사 출석 관리', desc: '행사별 반 학생 출석 현황 확인' },
+      { to: '/admin/tts', icon: CheckSquare, iconBg: 'bg-secondary-50', iconColor: 'text-secondary-600', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
       { to: '/admin/evangelism', icon: Users, iconBg: 'bg-primary-50', iconColor: 'text-primary-600', title: '전도 관리', desc: '전도 조 편성 및 일정 관리' },
     ]
   }

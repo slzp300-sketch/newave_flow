@@ -144,8 +144,8 @@ export default function EventAttendancePage() {
       {event && (
         <div className="px-4 py-4 glass-effect">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
-              <Calendar size={18} className="text-emerald-600" />
+            <div className="w-10 h-10 rounded-2xl bg-secondary-100 flex items-center justify-center flex-shrink-0">
+              <Calendar size={18} className="text-secondary-600" />
             </div>
             <div>
               <p className="font-bold text-gray-900 text-sm">{event.title}</p>
@@ -178,17 +178,17 @@ export default function EventAttendancePage() {
             {teacherSubmitted && !teacherEditing && pendingTeacherStatus && (
               <div className="flex flex-col gap-1.5">
                 <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${
-                  pendingTeacherStatus === 'PRESENT' ? 'bg-emerald-50 border-emerald-200' :
+                  pendingTeacherStatus === 'PRESENT' ? 'bg-secondary-50 border-secondary-200' :
                   pendingTeacherStatus === 'PARTIAL' ? 'bg-amber-50 border-amber-200' :
                   'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-2">
-                      {pendingTeacherStatus === 'PRESENT' && <CheckCircle2 size={16} className="text-emerald-600" />}
+                      {pendingTeacherStatus === 'PRESENT' && <CheckCircle2 size={16} className="text-secondary-600" />}
                       {pendingTeacherStatus === 'PARTIAL' && <Clock size={16} className="text-amber-500" />}
                       {pendingTeacherStatus === 'ABSENT'  && <XCircle size={16} className="text-red-500" />}
                       <span className={`text-xs font-bold ${
-                        pendingTeacherStatus === 'PRESENT' ? 'text-emerald-700' :
+                        pendingTeacherStatus === 'PRESENT' ? 'text-secondary-700' :
                         pendingTeacherStatus === 'PARTIAL' ? 'text-amber-700' : 'text-red-600'
                       }`}>
                         {{ PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }[pendingTeacherStatus]}으로 제출 완료
@@ -231,7 +231,7 @@ export default function EventAttendancePage() {
                         <button key={key} onClick={() => setPendingTeacherStatus(key)}
                           className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center gap-1 active:scale-[0.98] transition-all ${
                             pendingTeacherStatus === key
-                              ? key === 'PRESENT' ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                              ? key === 'PRESENT' ? 'border-secondary-400 bg-secondary-50 text-secondary-700'
                               : key === 'PARTIAL' ? 'border-amber-400 bg-amber-50 text-amber-700'
                               : 'border-red-300 bg-red-50 text-red-600'
                               : 'border-gray-100 bg-gray-50 text-gray-400'
@@ -295,7 +295,7 @@ export default function EventAttendancePage() {
               <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
             </Card>
             <Card className="text-center py-3">
-              <p className="text-xl font-bold text-emerald-500">{presentCount}</p>
+              <p className="text-xl font-bold text-secondary-700">{presentCount}</p>
               <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
             </Card>
             {isMultiDay && (
@@ -314,13 +314,13 @@ export default function EventAttendancePage() {
         {/* 제출 완료 배너 */}
         {submitted && !editing && (
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+            <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 rounded-2xl border border-secondary-200">
               <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-600" />
-                <span className="text-xs font-bold text-emerald-700">출석 체크 제출 완료</span>
+                <CheckCircle2 size={16} className="text-secondary-600" />
+                <span className="text-xs font-bold text-secondary-700">출석 체크 제출 완료</span>
               </div>
               {!isPastDeadline && (
-                <button aria-label="학생 행사 출석 수정" onClick={() => setEditing(true)} className="min-h-11 min-w-11 shrink-0 px-2 text-xs text-emerald-600 font-bold flex items-center justify-center gap-1">
+                <button aria-label="학생 행사 출석 수정" onClick={() => setEditing(true)} className="min-h-11 min-w-11 shrink-0 px-2 text-xs text-secondary-600 font-bold flex items-center justify-center gap-1">
                   <PenLine size={12} /> 수정
                 </button>
               )}
@@ -363,14 +363,14 @@ export default function EventAttendancePage() {
                   >
                     {/* 학생 카드 + 상태 버튼 */}
                     <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 transition-all ${
-                      status === 'PRESENT' ? 'border-emerald-200 bg-emerald-50' :
+                      status === 'PRESENT' ? 'border-secondary-200 bg-secondary-50' :
                       status === 'PARTIAL' ? 'border-amber-200 bg-amber-50' :
                                              'border-red-200 bg-red-50'
                     }`}>
                       {/* 학생 정보 */}
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
-                          status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                          status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
                           status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                                                  'bg-red-200 text-red-700'
                         }`}>
@@ -390,7 +390,7 @@ export default function EventAttendancePage() {
                             onClick={() => setStudentStatus(student.studentId, 'PRESENT')}
                             className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                               status === 'PRESENT'
-                                ? 'border-emerald-400 bg-emerald-500 text-white'
+                                ? 'border-secondary-600 bg-secondary-600 text-white'
                                 : 'border-gray-100 bg-white text-gray-400'
                             }`}
                           >
@@ -426,7 +426,7 @@ export default function EventAttendancePage() {
                       {/* 보기 전용 상태 */}
                       {!isEditable && (
                         <div className={`flex items-center gap-1.5 text-xs font-bold ${
-                          status === 'PRESENT' ? 'text-emerald-600' :
+                          status === 'PRESENT' ? 'text-secondary-600' :
                           status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
                         }`}>
                           {status === 'PRESENT' && <><CheckCircle2 size={16} /> 출석</>}

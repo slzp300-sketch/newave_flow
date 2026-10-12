@@ -20,9 +20,9 @@ const GRADE_STYLES = {
   '중1': { bg: 'bg-rose-50', text: 'text-rose-600', accent: 'bg-rose-100', progress: 'bg-rose-400', border: 'hover:border-rose-200', btn: 'text-rose-600 bg-rose-50' },
   '중2': { bg: 'bg-orange-50', text: 'text-orange-600', accent: 'bg-orange-100', progress: 'bg-orange-400', border: 'hover:border-orange-200', btn: 'text-orange-600 bg-orange-50' },
   '중3': { bg: 'bg-amber-50', text: 'text-amber-600', accent: 'bg-amber-100', progress: 'bg-amber-400', border: 'hover:border-amber-200', btn: 'text-amber-600 bg-amber-50' },
-  '고1': { bg: 'bg-emerald-50', text: 'text-emerald-600', accent: 'bg-emerald-100', progress: 'bg-emerald-400', border: 'hover:border-emerald-200', btn: 'text-emerald-600 bg-emerald-50' },
-  '고2': { bg: 'bg-blue-50', text: 'text-blue-600', accent: 'bg-blue-100', progress: 'bg-blue-400', border: 'hover:border-blue-200', btn: 'text-blue-600 bg-blue-50' },
-  '고3': { bg: 'bg-violet-50', text: 'text-violet-600', accent: 'bg-violet-100', progress: 'bg-violet-400', border: 'hover:border-violet-200', btn: 'text-violet-600 bg-violet-50' },
+  '고1': { bg: 'bg-secondary-50', text: 'text-secondary-600', accent: 'bg-secondary-100', progress: 'bg-secondary-400', border: 'hover:border-secondary-200', btn: 'text-secondary-600 bg-secondary-50' },
+  '고2': { bg: 'bg-primary-50', text: 'text-primary-600', accent: 'bg-primary-100', progress: 'bg-primary-400', border: 'hover:border-primary-200', btn: 'text-primary-600 bg-primary-50' },
+  '고3': { bg: 'bg-primary-50', text: 'text-primary-600', accent: 'bg-primary-100', progress: 'bg-primary-400', border: 'hover:border-primary-200', btn: 'text-primary-600 bg-primary-50' },
   '미배정': { bg: 'bg-gray-50', text: 'text-gray-600', accent: 'bg-gray-100', progress: 'bg-gray-400', border: 'hover:border-gray-200', btn: 'text-gray-600 bg-gray-50' },
   '기타': { bg: 'bg-gray-50', text: 'text-gray-600', accent: 'bg-gray-100', progress: 'bg-gray-400', border: 'hover:border-gray-200', btn: 'text-gray-600 bg-gray-50' },
 }
@@ -176,14 +176,14 @@ export default function EventAttendanceAdminPage() {
                   onClick={() => handleEventSelect(event.id)}
                   className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all text-left ${
                     selectedEventId === event.id
-                      ? 'border-emerald-300 bg-emerald-50'
+                      ? 'border-secondary-300 bg-secondary-50'
                       : 'border-gray-100 bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Calendar size={16} className={selectedEventId === event.id ? 'text-emerald-600' : 'text-gray-400'} />
+                    <Calendar size={16} className={selectedEventId === event.id ? 'text-secondary-600' : 'text-gray-400'} />
                     <div>
-                      <p className={`font-bold text-sm ${selectedEventId === event.id ? 'text-emerald-800' : 'text-gray-900'}`}>
+                      <p className={`font-bold text-sm ${selectedEventId === event.id ? 'text-secondary-800' : 'text-gray-900'}`}>
                         {event.title}
                       </p>
                       <p className="text-xs text-gray-400 font-medium mt-0.5">
@@ -191,7 +191,7 @@ export default function EventAttendanceAdminPage() {
                       </p>
                     </div>
                   </div>
-                  {selectedEventId === event.id && <CheckCircle2 size={16} className="text-emerald-500" />}
+                  {selectedEventId === event.id && <CheckCircle2 size={16} className="text-secondary-700" />}
                 </button>
               ))}
             </div>
@@ -278,14 +278,14 @@ export default function EventAttendanceAdminPage() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.04 }}
                           className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
-                            teacher.status === 'PRESENT' ? 'bg-emerald-50/60' :
+                            teacher.status === 'PRESENT' ? 'bg-secondary-50/60' :
                             teacher.status === 'PARTIAL' ? 'bg-amber-50/60' :
                             teacher.status === 'ABSENT'  ? 'bg-red-50/60' : 'bg-gray-50'
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             <span className={`text-xs font-bold w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                              teacher.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                              teacher.status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
                               teacher.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                               teacher.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
                               'bg-gray-200 text-gray-500'
@@ -306,7 +306,7 @@ export default function EventAttendanceAdminPage() {
                               )}
                             </div>
                           </div>
-                          {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :
+                          {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-secondary-700 flex-shrink-0" /> :
                            teacher.status === 'PARTIAL' ? <span className="text-xs text-amber-600 font-bold flex-shrink-0">부분참석</span> :
                            teacher.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
                            <span className="text-xs text-gray-400 font-bold flex-shrink-0">미제출</span>}
@@ -417,7 +417,7 @@ export default function EventAttendanceAdminPage() {
                           initial={{ width: 0 }}
                           animate={{ width: `${cls.totalCount > 0 ? (cls.presentCount / cls.totalCount) * 100 : 0}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className="h-full bg-emerald-400 rounded-full"
+                          className="h-full bg-secondary-400 rounded-full"
                         />
                       </div>
 
@@ -428,7 +428,7 @@ export default function EventAttendanceAdminPage() {
                             <div
                               key={student.studentId}
                               className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
-                                student.status === 'PRESENT' ? 'bg-emerald-50/50' :
+                                student.status === 'PRESENT' ? 'bg-secondary-50/50' :
                                 student.status === 'PARTIAL' ? 'bg-amber-50/50' :
                                 student.status === 'ABSENT'  ? 'bg-red-50/50' :
                                 'bg-gray-50/80'
@@ -436,7 +436,7 @@ export default function EventAttendanceAdminPage() {
                             >
                               <div className="flex items-center gap-3">
                                 <span className={`text-xs font-bold w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                  student.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                                  student.status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
                                   student.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                                   student.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
                                   'bg-gray-200 text-gray-500'
@@ -456,7 +456,7 @@ export default function EventAttendanceAdminPage() {
                                   )}
                                 </div>
                               </div>
-                              {student.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" /> :
+                              {student.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-secondary-700 flex-shrink-0" /> :
                                student.status === 'PARTIAL' ? <Clock size={16} className="text-amber-500 flex-shrink-0" /> :
                                student.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
                                <span className="text-xs text-orange-400 font-bold flex-shrink-0">미제출</span>

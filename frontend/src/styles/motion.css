@@ -15,10 +15,10 @@
 .motion-row > svg:last-child { transition: translate .22s var(--motion-ease); }
 .motion-card-interactive { transition: box-shadow .22s ease, border-color .22s ease; }
 @media (hover: hover) and (pointer: fine) {
-  .motion-card-interactive:hover, .motion-menu-tile:hover { border-color: #b7dce8; box-shadow: 0 8px 22px -15px #10364b80; }
-  .motion-row:hover { background-color: #eaf5f966; }
+  .motion-card-interactive:hover, .motion-menu-tile:hover { border-color: theme('colors.primary.200'); box-shadow: 0 8px 22px -15px rgb(6 49 144 / .2); }
+  .motion-row:hover { background-color: theme('colors.primary.50'); }
   .motion-row:hover > svg:last-child { translate: 3px 0; }
-  .motion-button:enabled:hover { box-shadow: 0 5px 15px -10px #007fae; }
+  .motion-button:enabled:hover { box-shadow: 0 5px 15px -10px var(--newave-blue); }
 }
 .motion-menu-tile { animation: section-arrive .45s var(--motion-ease) backwards; animation-delay: var(--motion-delay, 0ms); }
 .motion-login { position: relative; isolation: isolate; overflow: hidden; }
@@ -29,7 +29,7 @@
 .motion-login .newave-brand { animation: brand-arrive .85s var(--motion-ease) backwards; }
 .motion-login > p { animation: section-arrive .65s var(--motion-ease) .14s backwards; }
 .motion-wave { position: absolute; right: -24px; top: 5px; width: 205px; height: 115px; opacity: .17; pointer-events: none; }
-.motion-wave path { stroke: #b4e7f8; stroke-width: 1.2; stroke-dasharray: 420; animation: wave-arrive 1.5s var(--motion-ease) backwards; }
+.motion-wave path { stroke: theme('colors.secondary.200'); stroke-width: 1.2; stroke-dasharray: 420; animation: wave-arrive 1.5s var(--motion-ease) backwards; }
 .motion-wave path:nth-child(2) { animation-delay: .08s; }
 .motion-wave path:nth-child(3) { animation-delay: .16s; }
 @keyframes page-arrive { from { opacity: .65; } to { opacity: 1; } }

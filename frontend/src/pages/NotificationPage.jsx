@@ -7,10 +7,10 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 
 const ICON_MAP = {
-  EVENT: { icon: Calendar, color: 'text-sky-500', bg: 'bg-sky-50' },
-  MINUTE: { icon: FileText, color: 'text-violet-500', bg: 'bg-violet-50' },
+  EVENT: { icon: Calendar, color: 'text-primary-500', bg: 'bg-primary-50' },
+  MINUTE: { icon: FileText, color: 'text-primary-500', bg: 'bg-primary-50' },
   SYSTEM: { icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100' },
-  ATTENDANCE: { icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  ATTENDANCE: { icon: ClipboardList, color: 'text-secondary-700', bg: 'bg-secondary-50' },
 }
 
 export default function NotificationPage() {

@@ -25,12 +25,12 @@ import { evangelismApi, usersApi } from '../api/evangelism'
 const TABS = ['조 관리', '일정 관리']
 
 const GROUP_COLORS = [
-  { bg: 'bg-violet-100', text: 'text-violet-700', border: 'border-violet-200', dot: 'bg-violet-500', light: 'bg-violet-50' },
-  { bg: 'bg-blue-100',   text: 'text-blue-700',   border: 'border-blue-200',   dot: 'bg-blue-500',   light: 'bg-blue-50'   },
-  { bg: 'bg-emerald-100',text: 'text-emerald-700',border: 'border-emerald-200',dot: 'bg-emerald-500',light: 'bg-emerald-50'},
+  { bg: 'bg-primary-100', text: 'text-primary-700', border: 'border-primary-200', dot: 'bg-primary-500', light: 'bg-primary-50' },
+  { bg: 'bg-primary-100',   text: 'text-primary-700',   border: 'border-primary-200',   dot: 'bg-primary-500',   light: 'bg-primary-50'   },
+  { bg: 'bg-secondary-100',text: 'text-secondary-700',border: 'border-secondary-200',dot: 'bg-secondary-500',light: 'bg-secondary-50'},
   { bg: 'bg-amber-100',  text: 'text-amber-700',  border: 'border-amber-200',  dot: 'bg-amber-500',  light: 'bg-amber-50'  },
   { bg: 'bg-rose-100',   text: 'text-rose-700',   border: 'border-rose-200',   dot: 'bg-rose-500',   light: 'bg-rose-50'   },
-  { bg: 'bg-cyan-100',   text: 'text-cyan-700',   border: 'border-cyan-200',   dot: 'bg-cyan-500',   light: 'bg-cyan-50'   },
+  { bg: 'bg-primary-100',   text: 'text-primary-700',   border: 'border-primary-200',   dot: 'bg-primary-500',   light: 'bg-primary-50'   },
   { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', light: 'bg-orange-50' },
 ]
 export const getGroupColor = (idx) => GROUP_COLORS[idx % GROUP_COLORS.length]
@@ -281,7 +281,7 @@ function GroupManagementTab({ teachers }) {
 
           <PoolDropZone>
             {pool.length === 0 ? (
-              <div className="flex items-center justify-center py-3 gap-2 text-emerald-500">
+              <div className="flex items-center justify-center py-3 gap-2 text-secondary-700">
                 <Check size={15} /><p className="text-xs font-bold">모든 교사가 배정되었습니다</p>
               </div>
             ) : filteredPool.length === 0 ? (

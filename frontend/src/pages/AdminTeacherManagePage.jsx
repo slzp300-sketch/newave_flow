@@ -264,8 +264,8 @@ function RoleButton({ active, label, onClick, variant = 'default' }) {
       ? 'bg-amber-500 text-white shadow-lg shadow-amber-200'
       : 'bg-amber-50 text-amber-700 hover:bg-amber-100',
     admin: active
-      ? 'bg-purple-600 text-white shadow-lg shadow-purple-200'
-      : 'bg-purple-50 text-purple-700 hover:bg-purple-100',
+      ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
+      : 'bg-primary-50 text-primary-700 hover:bg-primary-100',
   }
 
   return (
@@ -281,10 +281,10 @@ function RoleButton({ active, label, onClick, variant = 'default' }) {
 
 function RoleBadge({ role }) {
   const map = {
-    TEACHER:   ['일반교사', 'bg-blue-50 text-blue-600'],
-    EXECUTIVE: ['임원교사', 'bg-emerald-50 text-emerald-600'],
+    TEACHER:   ['일반교사', 'bg-primary-50 text-primary-600'],
+    EXECUTIVE: ['임원교사', 'bg-secondary-50 text-secondary-600'],
     PASTOR:    ['목사님', 'bg-amber-50 text-amber-600'],
-    ADMIN:     ['최종관리자', 'bg-purple-50 text-purple-600'],
+    ADMIN:     ['최종관리자', 'bg-primary-50 text-primary-600'],
   }
   const [label, cls] = map[role] ?? ['사용자', 'bg-gray-50 text-gray-600']
   return <span className={`text-[0.6875rem] font-bold px-2 py-0.5 rounded-lg ${cls}`}>{label}</span>

@@ -71,7 +71,7 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
 
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS.map((w, i) => (
-              <div key={w} className={`text-center text-xs font-bold py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>{w}</div>
+              <div key={w} className={`text-center text-xs font-bold py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-primary-400' : 'text-gray-400'}`}>{w}</div>
             ))}
           </div>
 
@@ -95,7 +95,7 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
                   <span className={`relative mx-auto w-9 h-9 rounded-full flex items-center justify-center
                     ${isEdge ? 'bg-primary-600 text-white' :
                       !isSameMonth(day, month) ? 'text-gray-300' :
-                      dow === 0 ? 'text-red-400' : dow === 6 ? 'text-blue-400' : 'text-gray-800'}`}>
+                      dow === 0 ? 'text-red-400' : dow === 6 ? 'text-primary-400' : 'text-gray-800'}`}>
                     {format(day, 'd')}
                   </span>
                 </button>

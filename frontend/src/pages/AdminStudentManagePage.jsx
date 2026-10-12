@@ -266,7 +266,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
     onSuccess: onRefresh,
   })
 
-  const avatarColor = s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-blue-50 text-blue-500'
+  const avatarColor = s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-primary-50 text-primary-500'
   const avatarContent = s.profileImage
     ? <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
     : s.name[0]
@@ -306,7 +306,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
         <div className="flex flex-wrap justify-center gap-1">
           {s.grade && <span className="text-xs text-primary-500 font-bold bg-primary-50 px-1.5 py-0.5 rounded-md">{s.grade}</span>}
           {!s.isActive && <span className="text-[0.6875rem] font-bold bg-red-100 text-red-400 px-1.5 py-0.5 rounded-md">제적</span>}
-          {s.baptism && <span className="text-[0.6875rem] font-bold bg-emerald-50 text-emerald-500 px-1.5 py-0.5 rounded-md">세례</span>}
+          {s.baptism && <span className="text-[0.6875rem] font-bold bg-secondary-50 text-secondary-700 px-1.5 py-0.5 rounded-md">세례</span>}
         </div>
         <p className="text-xs text-gray-500 font-bold truncate w-full">{s.classGroupName || '반 미배정'}</p>
         {s.school && <p className="text-xs text-gray-300 font-bold truncate w-full -mt-1">{s.school}</p>}
@@ -329,7 +329,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
             <button
               onClick={() => activateMut.mutate()}
               aria-label={`${s.name} 재적 복구`} disabled={activateMut.isPending}
-              className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center disabled:opacity-50"
+              className="w-11 h-11 rounded-xl bg-secondary-50 text-secondary-700 flex items-center justify-center disabled:opacity-50"
             >
               {activateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
             </button>
@@ -350,7 +350,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
     >
       {/* 아바타 */}
       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden ${
-        s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-blue-50 text-blue-500'
+        s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-primary-50 text-primary-500'
       }`}>
         {s.profileImage ? (
           <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
@@ -369,7 +369,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
             <span className="text-[0.6875rem] font-bold bg-red-100 text-red-400 px-1.5 py-0.5 rounded-md">제적</span>
           )}
           {s.baptism && (
-            <span className="text-[0.6875rem] font-bold bg-emerald-50 text-emerald-500 px-1.5 py-0.5 rounded-md">세례</span>
+            <span className="text-[0.6875rem] font-bold bg-secondary-50 text-secondary-700 px-1.5 py-0.5 rounded-md">세례</span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
@@ -407,7 +407,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
           <button
             onClick={() => activateMut.mutate()}
             aria-label={`${s.name} 재적 복구`} disabled={activateMut.isPending}
-            className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-100 transition-colors disabled:opacity-50"
+            className="w-11 h-11 rounded-xl bg-secondary-50 text-secondary-700 flex items-center justify-center hover:bg-secondary-100 transition-colors disabled:opacity-50"
           >
             {activateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
           </button>
@@ -544,7 +544,7 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-xl text-xs font-bold text-gray-700 border border-gray-100 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   >
                   <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-xs font-bold overflow-hidden ${
-                    s.gender === '여' ? 'bg-pink-100 text-pink-500' : 'bg-blue-100 text-blue-500'
+                    s.gender === '여' ? 'bg-pink-100 text-pink-500' : 'bg-primary-100 text-primary-500'
                   }`}>
                     {s.profileImage ? (
                       <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
@@ -739,7 +739,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
             <section className="flex flex-col items-center gap-3 py-2">
               <div className="relative group">
                 <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg ${
-                  form.gender === '여' ? 'bg-pink-50 text-pink-200' : 'bg-blue-50 text-blue-200'
+                  form.gender === '여' ? 'bg-pink-50 text-pink-200' : 'bg-primary-50 text-primary-200'
                 }`}>
                   {form.profileImage ? (
                     <img src={form.profileImage} alt="preview" className="w-full h-full object-cover" />

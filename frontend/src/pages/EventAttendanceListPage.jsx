@@ -22,7 +22,7 @@ import { confirmAttendance } from '../utils/attendanceDraft'
 
 const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
 const STATUS_COLOR = {
-  PRESENT: { btn: 'border-emerald-400 bg-emerald-50 text-emerald-700', banner: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: <CheckCircle2 size={16} className="text-emerald-600" /> },
+  PRESENT: { btn: 'border-secondary-400 bg-secondary-50 text-secondary-700', banner: 'bg-secondary-50 border-secondary-200 text-secondary-700', icon: <CheckCircle2 size={16} className="text-secondary-600" /> },
   PARTIAL: { btn: 'border-amber-400 bg-amber-50 text-amber-700',   banner: 'bg-amber-50 border-amber-200 text-amber-700',   icon: <Clock size={16} className="text-amber-500" /> },
   ABSENT:  { btn: 'border-red-300 bg-red-50 text-red-600',         banner: 'bg-red-50 border-red-200 text-red-600',         icon: <XCircle size={16} className="text-red-500" /> },
 }
@@ -256,7 +256,7 @@ function StudentAttendanceCheck({ event, userId }) {
             <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
           </Card>
           <Card className="text-center py-3">
-            <p className="text-lg font-bold text-emerald-500">{presentCount}</p>
+            <p className="text-lg font-bold text-secondary-700">{presentCount}</p>
             <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
           </Card>
           <Card className="text-center py-3">
@@ -268,12 +268,12 @@ function StudentAttendanceCheck({ event, userId }) {
 
       {/* 제출 완료 배너 */}
       {submitted && !editing && (
-        <div className="flex items-center justify-between px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+        <div className="flex items-center justify-between px-4 py-3 bg-secondary-50 rounded-2xl border border-secondary-200">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-emerald-600" />
-            <span className="text-xs font-bold text-emerald-700">출석 체크 제출 완료</span>
+            <CheckCircle2 size={16} className="text-secondary-600" />
+            <span className="text-xs font-bold text-secondary-700">출석 체크 제출 완료</span>
           </div>
-          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-xs text-secondary-600 font-bold flex items-center gap-1">
             <PenLine size={12} /> 수정
           </button>}
         </div>
@@ -296,13 +296,13 @@ function StudentAttendanceCheck({ event, userId }) {
               >
                 {/* 학생 카드 */}
                 <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 ${
-                  status === 'PRESENT' ? 'border-emerald-200 bg-emerald-50' :
+                  status === 'PRESENT' ? 'border-secondary-200 bg-secondary-50' :
                   status === 'PARTIAL' ? 'border-amber-200 bg-amber-50' :
                   'border-red-200 bg-red-50'
                 }`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
-                      status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                      status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
                       status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                       'bg-red-200 text-red-700'
                     }`}>{student.studentName[0]}</div>
@@ -319,7 +319,7 @@ function StudentAttendanceCheck({ event, userId }) {
                         <button key={k} onClick={() => setStatus(sid, k)}
                           className={`text-[0.6875rem] font-bold px-2 py-1.5 rounded-lg transition-all ${
                             status === k
-                              ? k === 'PRESENT' ? 'bg-emerald-200 text-emerald-800'
+                              ? k === 'PRESENT' ? 'bg-secondary-200 text-secondary-800'
                               : k === 'PARTIAL' ? 'bg-amber-200 text-amber-800'
                               : 'bg-red-200 text-red-800'
                               : 'bg-white/70 text-gray-400'
@@ -331,7 +331,7 @@ function StudentAttendanceCheck({ event, userId }) {
                   ) : (
                     <button onClick={() => isEditable && toggleSimple(sid)} disabled={!isEditable}
                       className={`text-xs font-bold flex items-center gap-1 ${
-                        status === 'PRESENT' ? 'text-emerald-600' : status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
+                        status === 'PRESENT' ? 'text-secondary-600' : status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
                       } ${!isEditable ? 'cursor-default' : ''}`}>
                       {status === 'PRESENT' ? <><CheckCircle2 size={14} /> 출석</> :
                        status === 'PARTIAL' ? <><Clock size={14} /> 부분참석</> : <><XCircle size={14} /> 결석</>}
@@ -445,20 +445,20 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
     >
       <div className="flex items-center gap-3">
         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-          isSubmitted ? 'bg-emerald-100' : isOpen ? 'bg-emerald-50' : 'bg-gray-50'
+          isSubmitted ? 'bg-secondary-100' : isOpen ? 'bg-secondary-50' : 'bg-gray-50'
         }`}>
           {isSubmitted
-            ? <CheckCircle2 size={18} className="text-emerald-600" />
-            : <Calendar size={18} className={isOpen ? 'text-emerald-600' : 'text-gray-400'} />
+            ? <CheckCircle2 size={18} className="text-secondary-600" />
+            : <Calendar size={18} className={isOpen ? 'text-secondary-600' : 'text-gray-400'} />
           }
         </div>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className={`font-bold text-sm ${isSubmitted ? 'text-emerald-800' : isOpen ? 'text-emerald-800' : 'text-gray-900'}`}>
+            <p className={`font-bold text-sm ${isSubmitted ? 'text-secondary-800' : isOpen ? 'text-secondary-800' : 'text-gray-900'}`}>
               {event.title}
             </p>
             {isSubmitted && (
-              <span className="text-[0.6875rem] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+              <span className="text-[0.6875rem] font-bold text-secondary-600 bg-secondary-100 px-1.5 py-0.5 rounded-full">
                 제출 완료
               </span>
             )}

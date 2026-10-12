@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { primary, neutral } from './brand-theme.js'
 
 export default defineConfig({
   define: {
@@ -12,13 +13,13 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: false,
       workbox: { clientsClaim: true },
-      includeAssets: ['apple-touch-icon.png', 'brand/*.svg', 'brand/*.jpg', 'fonts/*.woff2'],
+      includeAssets: ['apple-touch-icon.png', 'brand/*.svg', 'brand/*.jpg', 'brand/*.png', 'fonts/*.woff2'],
       manifest: {
         name: 'Newave Flow',
         short_name: 'NewaveFlow',
         description: '뉴웨이브 청소년부 교사 공간',
-        theme_color: '#10364B',
-        background_color: '#F5F8FA',
+        theme_color: primary[600],
+        background_color: neutral[50],
         display: 'standalone',
         orientation: 'portrait',
         icons: [

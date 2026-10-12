@@ -110,7 +110,7 @@ export default function MeetingMinutesPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-violet-50 text-violet-600 text-xs font-bold px-2 py-0.5 rounded-lg border border-violet-100">
+                    <span className="bg-primary-50 text-primary-600 text-xs font-bold px-2 py-0.5 rounded-lg border border-primary-100">
                       회의록
                     </span>
                     <span className="text-xs text-gray-400 font-bold">{formatDate(selected.meetingDate)}</span>
@@ -150,11 +150,11 @@ export default function MeetingMinutesPage() {
 
               <div className="flex flex-col gap-3">
                 {selected.attendanceStatus === 'ATTEND' ? (
-                  <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 font-bold text-sm">
+                  <div className="flex items-center justify-center gap-2 py-4 bg-secondary-50 text-secondary-600 rounded-2xl border border-secondary-100 font-bold text-sm">
                     <CheckCircle2 size={18} /> 회의 참석 완료 (체크 불필요)
                   </div>
                 ) : selected.confirmed ? (
-                  <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 font-bold text-sm">
+                  <div className="flex items-center justify-center gap-2 py-4 bg-secondary-50 text-secondary-600 rounded-2xl border border-secondary-100 font-bold text-sm">
                     <CheckCircle2 size={18} /> 확인 완료됨
                   </div>
                 ) : (
@@ -180,21 +180,21 @@ export default function MeetingMinutesPage() {
 function MinuteCard({ minute, onClick }) {
   return (
     <Card 
-      className="p-4 active:scale-[0.98] transition-all cursor-pointer border-gray-100 hover:border-violet-200"
+      className="p-4 active:scale-[0.98] transition-all cursor-pointer border-gray-100 hover:border-primary-200"
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs font-bold text-violet-500 uppercase tracking-widest">
+            <span className="text-xs font-bold text-primary-500 uppercase tracking-widest">
               {formatDate(minute.meetingDate)}
             </span>
             {minute.attendanceStatus === 'ATTEND' ? (
-              <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500">
+              <span className="flex items-center gap-0.5 text-xs font-bold text-secondary-700">
                 <CheckCircle2 size={10} /> 참석 완료
               </span>
             ) : minute.confirmed && (
-              <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-500">
+              <span className="flex items-center gap-0.5 text-xs font-bold text-secondary-700">
                 <CheckCircle2 size={10} /> 확인됨
               </span>
             )}

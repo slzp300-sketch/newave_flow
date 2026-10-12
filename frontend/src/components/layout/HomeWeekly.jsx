@@ -69,7 +69,7 @@ export default function HomeWeekly({ navigate }) {
     <>
       {ttsState.hasData && ttsState.error && <QueryNotice queries={[questionsQuery, weekQuery]} label="최신 TTS 기록" />}
       {!ttsState.hasData ? <QueryNotice queries={[questionsQuery, weekQuery]} label="이번 주 TTS 기록" /> : (
-        <Reveal className="relative isolate overflow-hidden rounded-2xl bg-primary-900 text-white p-5" delay={0.04}>
+        <Reveal className="relative isolate overflow-hidden rounded-2xl bg-primary-600 text-white p-5 shadow-premium" delay={0.04}>
           <WaveAccent />
           <div className="relative flex justify-between gap-3 text-sm">
             <h3 className="font-medium">이번 주 TTS</h3>
@@ -80,7 +80,7 @@ export default function HomeWeekly({ navigate }) {
             {score != null && <span className="ml-2 text-sm text-primary-200">{week?.importedPeriod ? '점 · 시트 확정 기록' : '/ ' + maximum + '점'}</span>}
           </p>
           {!week?.importedPeriod && <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
-            <ProgressFill className="bg-primary-400" ratio={maximum ? score / maximum : 0} />
+            <ProgressFill className="bg-secondary-300" ratio={maximum ? score / maximum : 0} />
           </div>}
           <button onClick={() => navigate('/tts')} className="motion-row motion-tap relative flex items-center justify-between w-full text-sm min-h-11 mt-2 text-primary-100 rounded-lg">
             {week?.importedPeriod ? '이번 주 기록 확인하기' : '오늘의 말씀·기도 기록하기'}<ChevronRight size={17} />

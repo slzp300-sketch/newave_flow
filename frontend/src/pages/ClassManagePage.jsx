@@ -82,7 +82,7 @@ export default function ClassManagePage() {
               <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
             </Card>
             <Card className="text-center py-3">
-              <p className="text-xl font-bold text-emerald-500">{activeStudents.length}</p>
+              <p className="text-xl font-bold text-secondary-700">{activeStudents.length}</p>
               <p className="text-xs font-bold text-gray-400 mt-0.5">재적</p>
             </Card>
             <Card className="text-center py-3">
@@ -208,7 +208,7 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
     >
       <Card className={`flex items-center gap-3 p-4 ${isInactive ? 'opacity-60' : ''}`}>
         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden ${
-          student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
+          student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
         }`}>
           {student.profileImage ? (
             <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
@@ -221,7 +221,7 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="font-bold text-gray-900 text-sm">{student.name}</p>
             {student.baptism && (
-              <span className="text-[0.6875rem] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-bold">세례</span>
+              <span className="text-[0.6875rem] px-1.5 py-0.5 rounded-full bg-secondary-100 text-secondary-600 font-bold">세례</span>
             )}
             {isPendingApproval && (
               <span className="text-[0.6875rem] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-bold flex items-center gap-0.5">
@@ -248,7 +248,7 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
             <button
               onClick={onActivate}
               disabled={isPending || !onActivate}
-              className="p-2 rounded-xl bg-emerald-100 text-emerald-600 active:scale-90 transition-all"
+              className="p-2 rounded-xl bg-secondary-100 text-secondary-600 active:scale-90 transition-all"
               title={onActivate ? '복적' : '복적은 관리자에게 요청해주세요'}
             >
               <UserCheck size={14} />
@@ -289,7 +289,7 @@ function MemoTab({ students, onEditMemo }) {
           <motion.div key={student.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}>
             <Card onClick={() => onEditMemo(student)} className="flex items-start gap-3 p-4 group">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden ${
-                student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
+                student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
               }`}>
                 {student.profileImage ? (
                   <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
@@ -302,13 +302,13 @@ function MemoTab({ students, onEditMemo }) {
                 <div className="flex flex-col gap-1 mt-1.5">
                   {student.prayerRequest ? (
                     <div className="flex items-start gap-1.5">
-                      <span className="text-[0.6875rem] font-bold text-emerald-500 bg-emerald-50 px-1 rounded flex-shrink-0 mt-0.5">기도</span>
+                      <span className="text-[0.6875rem] font-bold text-secondary-700 bg-secondary-50 px-1 rounded flex-shrink-0 mt-0.5">기도</span>
                       <p className="text-xs text-gray-500 leading-relaxed line-clamp-1">{student.prayerRequest}</p>
                     </div>
                   ) : null}
                   {student.sketch ? (
                     <div className="flex items-start gap-1.5">
-                      <span className="text-[0.6875rem] font-bold text-blue-500 bg-blue-50 px-1 rounded flex-shrink-0 mt-0.5">스케치</span>
+                      <span className="text-[0.6875rem] font-bold text-primary-500 bg-primary-50 px-1 rounded flex-shrink-0 mt-0.5">스케치</span>
                       <p className="text-xs text-gray-500 leading-relaxed line-clamp-1">{student.sketch}</p>
                     </div>
                   ) : null}
@@ -359,27 +359,27 @@ function MemoSheet({ student, onClose, onSaved }) {
           <div className="flex-1 px-5 py-5 overflow-y-auto flex flex-col gap-6">
             <section>
               <div className="flex items-center gap-2 mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary-500" />
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">기도제목</p>
               </div>
               <textarea
                 value={prayerRequest}
                 onChange={e => setPrayerRequest(e.target.value)}
                 placeholder="기도제목을 입력해 주세요"
-                className="w-full min-h-[120px] p-4 bg-gray-50 rounded-2xl text-sm text-gray-800 placeholder:text-gray-300 outline-none resize-none leading-relaxed focus:bg-emerald-50/50 focus:ring-2 focus:ring-emerald-100 transition-all"
+                className="w-full min-h-[120px] p-4 bg-gray-50 rounded-2xl text-sm text-gray-800 placeholder:text-gray-300 outline-none resize-none leading-relaxed focus:bg-secondary-50/50 focus:ring-2 focus:ring-secondary-100 transition-all"
               />
             </section>
 
             <section>
               <div className="flex items-center gap-2 mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">스케치 (인계 사항)</p>
               </div>
               <textarea
                 value={sketch}
                 onChange={e => setSketch(e.target.value)}
                 placeholder="다음 해 담당 교사가 참고할 내용을 입력해 주세요"
-                className="w-full min-h-[120px] p-4 bg-gray-50 rounded-2xl text-sm text-gray-800 placeholder:text-gray-300 outline-none resize-none leading-relaxed focus:bg-blue-50/50 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="w-full min-h-[120px] p-4 bg-gray-50 rounded-2xl text-sm text-gray-800 placeholder:text-gray-300 outline-none resize-none leading-relaxed focus:bg-primary-50/50 focus:ring-2 focus:ring-primary-100 transition-all"
               />
             </section>
           </div>
@@ -507,7 +507,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
             <div className="flex flex-col items-center gap-3 mb-2">
               <div className="relative">
                 <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center overflow-hidden border-4 border-white shadow-lg ${
-                  form.gender === '여' ? 'bg-pink-50 text-pink-200' : 'bg-blue-50 text-blue-200'
+                  form.gender === '여' ? 'bg-pink-50 text-pink-200' : 'bg-primary-50 text-primary-200'
                 }`}>
                   {form.profileImage ? (
                     <img src={form.profileImage} alt="preview" className="w-full h-full object-cover" />

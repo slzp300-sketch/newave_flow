@@ -58,7 +58,7 @@ export default function StudentDetailPage() {
             { label: '모', name: student?.motherName, phone: student?.motherPhone },
           ].filter(p => p.name || p.phone).map(p => (
             <Card key={p.label} className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
                 <Phone size={18} />
               </div>
               <div className="flex-1">
@@ -89,7 +89,7 @@ export default function StudentDetailPage() {
                 >
                   <Card className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                      <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-secondary-500' : 'bg-red-400'}`} />
                       <span className="text-sm font-semibold text-gray-700">{formatDate(record.attendanceDate)}</span>
                     </div>
                     <div className="flex items-center gap-3">

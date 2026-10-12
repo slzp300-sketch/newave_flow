@@ -3,7 +3,7 @@ import { useState } from 'react'
 const DOMAINS = ['naver.com', 'gmail.com', 'kakao.com', 'hanmail.net', 'daum.net', 'nate.com']
 
 const statusBorder = {
-  available: 'border-emerald-300 focus:ring-emerald-500',
+  available: 'border-secondary-300 focus:ring-secondary-500',
   duplicate: 'border-red-300 focus:ring-red-500',
 }
 

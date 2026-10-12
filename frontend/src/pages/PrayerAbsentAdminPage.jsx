@@ -98,7 +98,7 @@ export default function PrayerAbsentAdminPage() {
             disabled={toggleMutation.isPending}
             value={selectedWeek}
             onChange={e => setSelectedWeek(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-violet-200"
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-primary-200"
           >
             {weeks.map(w => (
               <option key={w} value={w}>{weekLabels(new Date(w + 'T00:00:00')).monthWeek} ({weekLabels(new Date(w + 'T00:00:00')).yearWeek})</option>
@@ -118,7 +118,7 @@ export default function PrayerAbsentAdminPage() {
                 onClick={() => setActiveGrade(g)}
                 className={`flex-shrink-0 min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeGrade === g
-                    ? 'bg-violet-500 text-white shadow-md'
+                    ? 'bg-primary-500 text-white shadow-md'
                     : 'bg-white border border-gray-100 text-gray-400'
                 }`}
               >
@@ -127,7 +127,7 @@ export default function PrayerAbsentAdminPage() {
             ))}
           </div>
 
-          <SegmentedControl label="필사 제출 상태" value={statusFilter} onChange={setStatusFilter} selectedClassName="text-violet-600"
+          <SegmentedControl label="필사 제출 상태" value={statusFilter} onChange={setStatusFilter} selectedClassName="text-primary-600"
             options={['전체', '미제출', '제출완료'].map(value => ({ value, label: value }))} />
           <SearchField label="기도모임 불참 교사 검색" value={search} onChange={setSearch} placeholder="교사 이름 또는 학년 검색" />
           <FilterResults count={filteredList.length} total={absentList.length} filtered={!!search.trim() || activeGrade !== '전체' || statusFilter !== '전체'} onReset={() => { setSearch(''); setActiveGrade('전체'); setStatusFilter('전체') }} />
@@ -151,11 +151,11 @@ export default function PrayerAbsentAdminPage() {
         <div>
           <div className="flex items-center justify-between px-1 mb-3">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">불참 교사 명단</p>
-            <p className="text-xs font-bold text-violet-500">{filteredList.length}명 검색됨</p>
+            <p className="text-xs font-bold text-primary-500">{filteredList.length}명 검색됨</p>
           </div>
 
           {isLoading ? (
-            <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-violet-300" /></div>
+            <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary-300" /></div>
           ) : filteredList.length === 0 ? (
             <Card className="py-16 text-center flex flex-col items-center gap-3">
               <Users size={32} className="text-gray-100" />
@@ -166,7 +166,7 @@ export default function PrayerAbsentAdminPage() {
               {sortedGrades.map(grade => (
                 <div key={grade} className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-2 px-1">
-                    <span className="w-1 h-3 bg-violet-400 rounded-full" />
+                    <span className="w-1 h-3 bg-primary-400 rounded-full" />
                     <p className="text-xs font-bold text-gray-900">{grade}</p>
                     <span className="text-xs text-gray-400 font-bold">{grouped[grade].length}명</span>
                   </div>
@@ -211,12 +211,12 @@ export default function PrayerAbsentAdminPage() {
                             disabled={toggleMutation.isPending || queryReadState([absentQuery]) !== 'ready'}
                             className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-95 ${
                               vote.scriptureCopySubmitted
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                ? 'border-secondary-200 bg-secondary-50 text-secondary-700'
                                 : 'border-amber-300 bg-amber-50 text-amber-700'
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
-                              <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-emerald-500' : 'text-amber-500'} />
+                              <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-secondary-700' : 'text-amber-500'} />
                               <span className="text-xs font-bold">필사 제출 확인</span>
                             </div>
                             <div className="flex items-center gap-1.5">

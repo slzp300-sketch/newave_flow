@@ -51,8 +51,8 @@ export default function DeactivationRequestsAdminPage() {
         </div>
       ) : requests.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 mt-20 px-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center">
-            <CheckCircle2 size={28} className="text-emerald-500" />
+          <div className="w-16 h-16 rounded-2xl bg-secondary-50 flex items-center justify-center">
+            <CheckCircle2 size={28} className="text-secondary-700" />
           </div>
           <p className="font-bold text-gray-700">대기 중인 제적 신청이 없습니다</p>
           <p className="text-xs text-gray-400">새로운 제적 신청이 들어오면 여기에 표시됩니다</p>

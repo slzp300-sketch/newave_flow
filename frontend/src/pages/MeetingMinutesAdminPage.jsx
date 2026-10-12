@@ -155,7 +155,7 @@ export default function MeetingMinutesAdminPage() {
           <AdminIntro title={editingId ? '회의록 수정' : '회의 기록과 영상을 한곳에'} description="회의록의 공개 여부와 교사별 확인 상태를 관리하세요."
             action={<Button size="sm" variant={showForm ? 'secondary' : 'primary'} onClick={() => showForm ? handleCloseForm() : setShowForm(true)}>{showForm ? '닫기' : <><Plus size={16} /> 등록하기</>}</Button>} />
           <SearchField label="관리할 회의록 검색" value={search} onChange={setSearch} placeholder="회의 제목 또는 날짜 검색" />
-          <SegmentedControl label="회의록 공개 상태" value={visibility} onChange={setVisibility} selectedClassName="text-violet-600"
+          <SegmentedControl label="회의록 공개 상태" value={visibility} onChange={setVisibility} selectedClassName="text-primary-600"
             options={[{value: 'all', label: '전체'}, {value: 'public', label: '공개'}, {value: 'private', label: '비공개'}]} />
           {!loading && !loadError && <FilterResults count={filteredMinutes.length} total={minutes.length} unit="건" filtered={!!search.trim() || visibility !== 'all'} onReset={() => { setSearch(''); setVisibility('all') }} />}
         </div>
@@ -259,7 +259,7 @@ export default function MeetingMinutesAdminPage() {
                       <div className="flex flex-wrap justify-between items-start gap-3">
                         <button type="button" aria-expanded={selectedStatus?.id === m.id} className="min-w-0 flex-1 basis-40 text-left" onClick={() => fetchStatus(m.id)}>
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="text-xs font-bold text-violet-500 uppercase tracking-widest">{formatDate(m.meetingDate)}</p>
+                            <p className="text-xs font-bold text-primary-500 uppercase tracking-widest">{formatDate(m.meetingDate)}</p>
                             {!m.isActive && <span className="text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-md bg-gray-200 text-gray-500">비공개</span>}
                           </div>
                           <h3 className="font-bold text-gray-900 leading-tight group-hover:text-primary-600 transition-colors">{m.title}</h3>
@@ -328,7 +328,7 @@ export default function MeetingMinutesAdminPage() {
                                 return sortedGrades.map(grade => (
                                   <div key={grade} className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2">
-                                      <span className="w-1 h-3 bg-violet-300 rounded-full" />
+                                      <span className="w-1 h-3 bg-primary-300 rounded-full" />
                                       <h4 className="text-xs font-bold text-gray-700">{grade}</h4>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -338,7 +338,7 @@ export default function MeetingMinutesAdminPage() {
                                             <div className="flex items-center gap-2">
                                               <span className="font-bold text-sm text-gray-900">{s.teacherName}</span>
                                               {s.attendanceStatus === 'ATTEND' ? (
-                                                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">참석</span>
+                                                <span className="text-xs font-bold text-secondary-600 bg-secondary-50 px-1.5 py-0.5 rounded-md">참석</span>
                                               ) : s.attendanceStatus === 'ABSENT' ? (
                                                 <span className="text-xs font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">불참</span>
                                               ) : (
@@ -352,7 +352,7 @@ export default function MeetingMinutesAdminPage() {
                                           <div className="flex flex-col items-end gap-1">
                                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">회의록 확인</p>
                                             {s.confirmed || s.attendanceStatus === 'ATTEND' ? (
-                                              <div className="flex items-center gap-1 text-emerald-500">
+                                              <div className="flex items-center gap-1 text-secondary-700">
                                                 <CheckCircle2 size={14} />
                                                 <span className="text-xs font-bold">{s.attendanceStatus === 'ATTEND' ? '참석자(면제)' : '확인 완료'}</span>
                                               </div>

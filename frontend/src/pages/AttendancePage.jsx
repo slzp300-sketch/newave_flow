@@ -386,15 +386,15 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
 
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900">{classGroup?.name}</h2>
-          <p className="text-emerald-500 font-bold mt-1">우리 반 출석 제출이 완료됐어요</p>
+          <p className="text-secondary-700 font-bold mt-1">우리 반 출석 제출이 완료됐어요</p>
           <p className="text-gray-400 text-xs mt-3">{formatDate(date)}</p>
           {lastUpdated && <p className="text-gray-300 text-xs mt-1">마지막 수정 {formatUpdatedAt(lastUpdated)}</p>}
         </div>
 
         <div className="w-full grid grid-cols-2 gap-3 mt-4">
-          <div className="bg-emerald-50 p-4 rounded-3xl text-center">
-            <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1">출석</p>
-            <p className="text-2xl font-bold text-emerald-600">{counts.PRESENT}명</p>
+          <div className="bg-secondary-50 p-4 rounded-3xl text-center">
+            <p className="text-xs font-bold text-secondary-700 uppercase tracking-widest mb-1">출석</p>
+            <p className="text-2xl font-bold text-secondary-600">{counts.PRESENT}명</p>
           </div>
           <div className="bg-red-50 p-4 rounded-3xl text-center">
             <p className="text-xs font-bold text-red-300 uppercase tracking-widest mb-1">불참</p>
@@ -412,7 +412,7 @@ function SubmittedAttendanceView({ classGroup, date, students, formData, onEdit,
                   <span className="text-xs text-gray-400">({formData[s.id].absentReason})</span>
                 )}
               </div>
-              <span className={`text-xs font-bold ${formData[s.id]?.status === 'PRESENT' ? 'text-emerald-500' : 'text-red-400'}`}>
+              <span className={`text-xs font-bold ${formData[s.id]?.status === 'PRESENT' ? 'text-secondary-700' : 'text-red-400'}`}>
                 {formData[s.id]?.status === 'PRESENT' ? '출석' : '불참'}
               </span>
             </div>

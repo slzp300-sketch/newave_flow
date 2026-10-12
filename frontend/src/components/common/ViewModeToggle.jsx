@@ -40,7 +40,7 @@ export default function ViewModeToggle({ mode, onChange }) {
           aria-label={`${label} 보기`}
           aria-pressed={mode === id}
           className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
-            mode === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
+            mode === id ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-500'
           }`}
         >
           <Icon size={15} />

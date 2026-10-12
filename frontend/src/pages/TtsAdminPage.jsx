@@ -131,13 +131,13 @@ function ScoresTab() {
         <div className="flex flex-col gap-4">
           {/* 요약 배너 */}
           <div className={`rounded-3xl p-4 flex items-center justify-between ${
-            belowCount > 0 ? 'bg-red-50 border border-red-100' : 'bg-emerald-50 border border-emerald-100'
+            belowCount > 0 ? 'bg-red-50 border border-red-100' : 'bg-secondary-50 border border-secondary-100'
           }`}>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-0.5 text-gray-500">기준 미달 현황 · 전체 기준</p>
               {belowCount > 0
                 ? <p className="font-bold text-red-500 text-base">{belowCount}명 미달 <span className="text-sm text-gray-400 font-bold">/ 전체 {scores.length}명</span></p>
-                : <p className="font-bold text-emerald-500 text-base">전원 기준 달성 🎉</p>
+                : <p className="font-bold text-secondary-700 text-base">전원 기준 달성 🎉</p>
               }
             </div>
             <div className="text-right">
@@ -181,7 +181,7 @@ function ScoresTab() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
-                          isBelow ? 'bg-red-100 text-red-400' : 'bg-emerald-50 text-emerald-500'
+                          isBelow ? 'bg-red-100 text-red-400' : 'bg-secondary-50 text-secondary-700'
                         }`}>
                           {globalIdx}
                         </div>
@@ -192,7 +192,7 @@ function ScoresTab() {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-right">
-                          <p className={`font-bold text-base ${isBelow ? 'text-red-500' : 'text-emerald-600'}`}>{t.totalScore}점</p>
+                          <p className={`font-bold text-base ${isBelow ? 'text-red-500' : 'text-secondary-600'}`}>{t.totalScore}점</p>
                           {isBelow && <p className="text-xs font-bold text-red-300">-{deficit}점 부족</p>}
                         </div>
                         <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} className="text-gray-300">
@@ -550,7 +550,7 @@ function QuestionsTab() {
                   <select
                     value={q.linkType || 'NONE'}
                     onChange={(e) => updateQuestion(idx, 'linkType', e.target.value)}
-                    className="text-xs font-bold bg-violet-50 text-violet-700 px-2 py-1 rounded-lg border-none outline-none self-start"
+                    className="text-xs font-bold bg-primary-50 text-primary-700 px-2 py-1 rounded-lg border-none outline-none self-start"
                   >
                     <option value="NONE">직접 체크</option>
                     <option value="SAT_MEETING">교사회의 체크에서 자동 반영</option>

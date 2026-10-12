@@ -14,9 +14,9 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 
 const ROLE_MAP = {
-  PASTOR:    { label: '목사님',  bg: 'bg-blue-100    text-blue-700' },
+  PASTOR:    { label: '목사님',  bg: 'bg-primary-100    text-primary-700' },
   EXECUTIVE: { label: '임원',    bg: 'bg-amber-100   text-amber-700' },
-  TEACHER:   { label: '교사',    bg: 'bg-emerald-100 text-emerald-700' },
+  TEACHER:   { label: '교사',    bg: 'bg-secondary-100 text-secondary-700' },
   ADMIN:     { label: '관리자',  bg: 'bg-rose-100    text-rose-700' },
 }
 
@@ -181,8 +181,8 @@ export default function ProfilePage() {
             className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                <PenLine size={15} className="text-emerald-500" />
+              <div className="w-8 h-8 rounded-lg bg-secondary-50 flex items-center justify-center flex-shrink-0">
+                <PenLine size={15} className="text-secondary-700" />
               </div>
               <div className="text-left">
                 <span className="text-sm font-bold text-gray-800">프로필 정보 수정</span>
@@ -313,7 +313,7 @@ export default function ProfilePage() {
 
                   {profileResult && (
                     <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold ${
-                      profileResult.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                      profileResult.ok ? 'bg-secondary-50 text-secondary-700' : 'bg-red-50 text-red-600'
                     }`}>
                       {profileResult.ok && <CheckCircle2 size={14} />}
                       {profileResult.msg}
@@ -376,7 +376,7 @@ export default function ProfilePage() {
                   <PwInput label="새 비밀번호 확인" value={confirmPw} onChange={setConfirmPw}
                     show={showConfirm} onToggle={() => setShowConfirm(v => !v)} id="confirm-pw" autoComplete="new-password" />
                   {pwResult && (
-                    <p className={`text-xs font-bold px-1 ${pwResult.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+                    <p className={`text-xs font-bold px-1 ${pwResult.ok ? 'text-secondary-600' : 'text-red-500'}`}>
                       {pwResult.msg}
                     </p>
                   )}

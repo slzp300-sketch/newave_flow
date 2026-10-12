@@ -5,7 +5,6 @@ import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
 import Button from '../components/common/Button'
-import Brand from '../components/common/Brand'
 import EmailInput from '../components/common/EmailInput'
 
 export default function Login() {
@@ -41,9 +40,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-white max-w-mobile mx-auto">
-      <div className="login-hero motion-login h-[254px] flex flex-col items-center justify-center text-white">
-        <Brand emblem light />
-        <p className="text-sm font-medium tracking-[.12em] mt-6">시대를 바꿀 새로운 파도</p>
+      <div className="login-hero motion-login text-white">
+        <img src="/brand/newave-blue-artwork.png" alt="NEWAVE" width="566" height="317" className="login-artwork" fetchPriority="high" />
+        <p className="flex items-center justify-center gap-2 px-4 py-4 text-xs font-medium tracking-[.12em]">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-secondary-300" />시대를 바꿀 새로운 파도
+        </p>
       </div>
       <div className="motion-enter px-6 pt-7 pb-8" style={{ animationDelay: '100ms' }}>
         <h1 className="text-2xl leading-snug font-semibold tracking-tight">새로운 한 주를<br />함께 시작해요</h1>

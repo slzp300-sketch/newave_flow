@@ -285,12 +285,12 @@ function ScoreCard({ score, maxScore, weekLabel, items, message, saveStatus }) {
       </div>
       <p className="mt-3"><strong className="text-4xl font-semibold tabular-nums"><AnimatedValue value={score} /></strong><span className="ml-2 text-sm text-gray-500">/ {maxScore}점</span></p>
       <div className="h-1.5 rounded-full bg-primary-100 overflow-hidden mt-3">
-        <ProgressFill className="bg-primary-600" ratio={ratio} />
+        <ProgressFill className="bg-secondary-600" ratio={ratio} />
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
         {items.map(({ q, done, total }) => <p key={q.id} className="text-xs text-gray-600">{splitTitle(q.title)[0]} <span className="font-semibold text-gray-900">{done}/{total}</span></p>)}
       </div>
-      {message && <p className="mt-3 text-sm text-primary-800 break-keep">{message.text}</p>}
+      {message && <p className={`mt-3 text-sm break-keep ${message.done ? 'text-secondary-700' : 'text-primary-800'}`}>{message.text}</p>}
       {items.length === 0 && <p className="mt-3 text-sm text-gray-500">등록된 체크 항목이 없습니다.</p>}
     </Reveal>
   )

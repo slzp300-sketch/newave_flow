@@ -7,7 +7,7 @@ export default function EventStatusSummary({ records, total }) {
     <p className="px-1 text-xs font-semibold text-gray-500">전체 {counts.total}명 · 상태별 인원</p>
     <div className="grid grid-cols-4 gap-2">
       {[
-        ['참석', counts.present, 'text-emerald-500'],
+        ['참석', counts.present, 'text-secondary-700'],
         ['부분참석', counts.partial, 'text-amber-500'],
         ['불참', counts.absent, 'text-red-400'],
         ['미제출', counts.unsubmitted, 'text-gray-500'],

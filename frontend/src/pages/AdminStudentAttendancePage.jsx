@@ -30,9 +30,9 @@ const GRADE_COLORS = {
   '중1': { bg: 'bg-rose-50',    text: 'text-rose-600',    accent: 'bg-rose-100',    bar: 'bg-rose-400',    back: 'text-rose-600 bg-rose-50' },
   '중2': { bg: 'bg-orange-50',  text: 'text-orange-600',  accent: 'bg-orange-100',  bar: 'bg-orange-400',  back: 'text-orange-600 bg-orange-50' },
   '중3': { bg: 'bg-amber-50',   text: 'text-amber-600',   accent: 'bg-amber-100',   bar: 'bg-amber-400',   back: 'text-amber-600 bg-amber-50' },
-  '고1': { bg: 'bg-emerald-50', text: 'text-emerald-600', accent: 'bg-emerald-100', bar: 'bg-emerald-400', back: 'text-emerald-600 bg-emerald-50' },
-  '고2': { bg: 'bg-blue-50',    text: 'text-blue-600',    accent: 'bg-blue-100',    bar: 'bg-blue-400',    back: 'text-blue-600 bg-blue-50' },
-  '고3': { bg: 'bg-violet-50',  text: 'text-violet-600',  accent: 'bg-violet-100',  bar: 'bg-violet-400',  back: 'text-violet-600 bg-violet-50' },
+  '고1': { bg: 'bg-secondary-50', text: 'text-secondary-600', accent: 'bg-secondary-100', bar: 'bg-secondary-400', back: 'text-secondary-600 bg-secondary-50' },
+  '고2': { bg: 'bg-primary-50',    text: 'text-primary-600',    accent: 'bg-primary-100',    bar: 'bg-primary-400',    back: 'text-primary-600 bg-primary-50' },
+  '고3': { bg: 'bg-primary-50',  text: 'text-primary-600',  accent: 'bg-primary-100',  bar: 'bg-primary-400',  back: 'text-primary-600 bg-primary-50' },
   '기타': { bg: 'bg-gray-50',   text: 'text-gray-500',    accent: 'bg-gray-100',    bar: 'bg-gray-400',    back: 'text-gray-600 bg-gray-50' },
 }
 
@@ -79,7 +79,7 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
           <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
         </Card>
         <Card className="text-center py-3">
-          <p className="text-xl font-bold text-emerald-500">{present}</p>
+          <p className="text-xl font-bold text-secondary-700">{present}</p>
           <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
         </Card>
         <Card className="text-center py-3">
@@ -104,14 +104,14 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.03 }}
               className={`flex items-start justify-between px-3 py-2.5 rounded-2xl ${
-                s.status === 'PRESENT' ? 'bg-emerald-50/60' :
+                s.status === 'PRESENT' ? 'bg-secondary-50/60' :
                 s.status === 'ABSENT'  ? 'bg-red-50/60' :
                 s.status === 'LATE'    ? 'bg-amber-50/60' : 'bg-gray-50'
               }`}
             >
               <div className="flex items-center gap-3">
                 <span className={`text-xs font-bold w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  s.status === 'PRESENT' ? 'bg-emerald-200 text-emerald-700' :
+                  s.status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
                   s.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
                   s.status === 'LATE'    ? 'bg-amber-200 text-amber-700' :
                   'bg-gray-200 text-gray-500'
@@ -131,7 +131,7 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
                 </div>
               </div>
               <div className="flex-shrink-0 mt-0.5">
-                {s.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-emerald-500" /> :
+                {s.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-secondary-700" /> :
                  s.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400" /> :
                  s.status === 'LATE'    ? <Clock size={16} className="text-amber-500" /> :
                  <span className="text-xs text-gray-400 font-bold">미기록</span>}
@@ -261,7 +261,7 @@ function AbsentListPanel({ date }) {
 
   if (absentList.length === 0) return (
     <Card className="py-14 flex flex-col items-center gap-3">
-      <CheckCircle2 size={32} className="text-emerald-200" />
+      <CheckCircle2 size={32} className="text-secondary-200" />
       <p className="text-sm font-bold text-gray-400">이번 주 결석자가 없습니다</p>
     </Card>
   )
@@ -410,7 +410,7 @@ export default function AdminStudentAttendancePage() {
                 <p className="text-xs font-bold text-gray-400 mt-1">전체</p>
               </Card>
               <Card className="text-center py-4">
-                <p className="text-2xl font-bold text-emerald-500">{totalPresent}</p>
+                <p className="text-2xl font-bold text-secondary-700">{totalPresent}</p>
                 <p className="text-xs font-bold text-gray-400 mt-1">출석</p>
               </Card>
               <Card className="text-center py-4">

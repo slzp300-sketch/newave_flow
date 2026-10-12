@@ -2,7 +2,7 @@ import { RotateCcw, SearchX } from 'lucide-react'
 
 export function AdminIntro({ title, description, action }) {
   return <div className="flex flex-wrap items-start justify-between gap-3">
-    <div className="min-w-0 flex-1 basis-44">
+    <div className="ui-admin-intro min-w-0 flex-1 basis-44">
       <h2 className="text-xl font-bold tracking-tight text-gray-900">{title}</h2>
       <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{description}</p>
     </div>

@@ -38,19 +38,24 @@ export default function Home() {
         <button onClick={() => navigate('/admin')} className="icon-button" aria-label="관리자 모드"><ShieldCheck size={20} /></button>
       )} />
       <div className="motion-enter px-5 pt-6 pb-5">
-        <p className="text-xs text-gray-500">{format(new Date(), 'yyyy년 M월 d일 EEEE', { locale: ko })}</p>
-        <div className="flex items-center gap-2 mt-2">
-          <h2 className="text-xl font-semibold tracking-tight">{user?.name}님, 안녕하세요</h2>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500">{format(new Date(), 'yyyy년 M월 d일 EEEE', { locale: ko })}</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight break-keep">{user?.name}님,<br />안녕하세요</h2>
+          </div>
+          <img src="/brand/newave-color-emblem.png" alt="" width="450" height="360" className="w-20 shrink-0 rounded-2xl" />
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <p className="text-sm text-gray-500">함께 만들어 가는 새로운 한 주</p>
           <RoleBadge role={user?.role} />
         </div>
-        <p className="text-sm text-gray-500 mt-1">함께 만들어 가는 새로운 한 주</p>
       </div>
       <div className="px-4 flex flex-col gap-5">
         {(isTeacher || isExecutive) && <nav aria-label="자주 쓰는 기능" className="grid grid-cols-4 gap-2">
           {[
             ['/attendance', ClipboardList, '출석'], ['/event-attendance', Calendar, '행사 출석'],
             ['/tts', CheckSquare, 'TTS'], ['/roster', BookOpen, '교적부'],
-          ].map(([to, Icon, label]) => <Link key={to} to={to} className="motion-tap flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-1 py-3 text-primary-800">
+          ].map(([to, Icon, label]) => <Link key={to} to={to} className={`motion-tap flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-1 py-3 ${to === '/tts' ? 'border-secondary-200 bg-secondary-50 text-secondary-700' : 'border-gray-200 bg-white text-primary-700'}`}>
             <Icon size={22} strokeWidth={1.7} /><span className="text-xs font-semibold">{label}</span>
           </Link>)}
         </nav>}
@@ -68,8 +73,8 @@ export default function Home() {
 function RoleBadge({ role }) {
   const map = {
     TEACHER:   ['교사', 'bg-primary-50 text-primary-600'],
-    EXECUTIVE: ['임원', 'bg-emerald-50 text-emerald-600'],
-    PASTOR:    ['목사님', 'bg-violet-50 text-violet-600'],
+    EXECUTIVE: ['임원', 'bg-secondary-50 text-secondary-600'],
+    PASTOR:    ['목사님', 'bg-primary-50 text-primary-600'],
     ADMIN:     ['관리자', 'bg-gray-900 text-white shadow-sm']
   }
   const [label, cls] = map[role] ?? ['사용자', 'bg-gray-100 text-gray-500']
@@ -127,17 +132,17 @@ function TeacherView({ navigate }) {
 }
 
 const ALL_QUICK_LINKS = [
-  { to: '/admin/student-attendance', icon: ClipboardList, label: '출석 현황', bg: 'bg-emerald-50', color: 'text-emerald-600' },
-  { to: '/admin/event-attendance',   icon: CheckSquare,   label: '행사 출석', bg: 'bg-sky-50',     color: 'text-sky-600'    },
+  { to: '/admin/student-attendance', icon: ClipboardList, label: '출석 현황', bg: 'bg-secondary-50', color: 'text-secondary-600' },
+  { to: '/admin/event-attendance',   icon: CheckSquare,   label: '행사 출석', bg: 'bg-primary-50',     color: 'text-primary-600'    },
   { to: '/admin/calendar',      icon: Calendar,     label: '일정 관리',  bg: 'bg-rose-50',    color: 'text-rose-500'    },
-  { to: '/admin/meeting-attendance', icon: Users,   label: '교사회의',   bg: 'bg-blue-50',    color: 'text-blue-600'    },
+  { to: '/admin/meeting-attendance', icon: Users,   label: '교사회의',   bg: 'bg-primary-50',    color: 'text-primary-600'    },
   { to: '/admin/prayer',        icon: BookOpen,     label: '기도모임',   bg: 'bg-amber-50',   color: 'text-amber-600'   },
-  { to: '/admin/minutes',       icon: FileText,     label: '회의록',     bg: 'bg-violet-50',  color: 'text-violet-600'  },
-  { to: '/admin/tts',           icon: CheckSquare,  label: 'TTS 점검',   bg: 'bg-teal-50',    color: 'text-teal-600'    },
+  { to: '/admin/minutes',       icon: FileText,     label: '회의록',     bg: 'bg-primary-50',  color: 'text-primary-600'  },
+  { to: '/admin/tts',           icon: CheckSquare,  label: 'TTS 점검',   bg: 'bg-secondary-50',    color: 'text-secondary-600'    },
   { to: '/admin/pending-users', icon: UserPlus,     label: '가입 승인',  bg: 'bg-amber-50',   color: 'text-amber-600',   badge: true },
-  { to: '/admin/teachers',      icon: UserCog,      label: '교사 관리',  bg: 'bg-indigo-50',  color: 'text-indigo-600'  },
-  { to: '/admin/students',      icon: GraduationCap,label: '아이 관리',  bg: 'bg-teal-50',    color: 'text-teal-600'    },
-  { to: '/admin/class-assignment',icon: UserCheck,  label: '반 배정',    bg: 'bg-blue-50',    color: 'text-blue-600'    },
+  { to: '/admin/teachers',      icon: UserCog,      label: '교사 관리',  bg: 'bg-primary-50',  color: 'text-primary-600'  },
+  { to: '/admin/students',      icon: GraduationCap,label: '아이 관리',  bg: 'bg-secondary-50',    color: 'text-secondary-600'    },
+  { to: '/admin/class-assignment',icon: UserCheck,  label: '반 배정',    bg: 'bg-primary-50',    color: 'text-primary-600'    },
   { to: '/admin/deactivation-requests', icon: UserMinus, label: '제적 승인', bg: 'bg-rose-50', color: 'text-rose-500'   },
 ]
 
@@ -212,9 +217,9 @@ function AdminView({ navigate, today }) {
 
   const STATS = [
     { label: '승인 대기',    value: pendingUsers.length, bg: 'bg-amber-50',   color: 'text-amber-600',   icon: Bell       },
-    { label: '전체 교사',    value: teachers.length,     bg: 'bg-indigo-50',  color: 'text-indigo-600',  icon: Users      },
+    { label: '전체 교사',    value: teachers.length,     bg: 'bg-primary-50',  color: 'text-primary-600',  icon: Users      },
     { label: '이번 달 일정', value: monthEvents.length,  bg: 'bg-rose-50',    color: 'text-rose-500',    icon: Calendar   },
-    { label: '예정 일정',    value: upcomingEvents.length, bg: 'bg-emerald-50', color: 'text-emerald-600', icon: Megaphone },
+    { label: '예정 일정',    value: upcomingEvents.length, bg: 'bg-secondary-50', color: 'text-secondary-600', icon: Megaphone },
   ]
 
   return (
@@ -377,7 +382,7 @@ function AdminView({ navigate, today }) {
                   </p>
                 </div>
                 {event.attendanceRequired && (
-                  <span className="text-[0.6875rem] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg flex-shrink-0">
+                  <span className="text-[0.6875rem] font-bold text-secondary-600 bg-secondary-50 px-2 py-1 rounded-lg flex-shrink-0">
                     출석
                   </span>
                 )}

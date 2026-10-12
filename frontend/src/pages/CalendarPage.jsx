@@ -431,7 +431,7 @@ export default function CalendarPage() {
           ) : (
             selectedEvents.map((e, idx) => (
               <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                <Card className="p-4 border-l-4 overflow-hidden relative" style={{ borderLeftColor: e.color || '#6366f1' }}>
+                <Card className={`p-4 border-l-4 overflow-hidden relative ${getEventBorderColor(e.color)}`}>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant={e.eventType === 'SPECIAL' ? 'info' : e.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
                       {EVENT_TYPES.find(t => t.value === e.eventType)?.label || '정기'}

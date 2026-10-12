@@ -141,10 +141,10 @@ function SatSubmittedCard({ sat, updatedAt, onEdit }) {
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CheckCircle2 size={18} className="text-blue-500" />
+          <CheckCircle2 size={18} className="text-primary-500" />
           <span className="font-bold text-gray-900 text-sm">교사 회의 체크 완료</span>
         </div>
-        <button onClick={onEdit} className="text-xs text-blue-600 font-bold flex items-center gap-1">
+        <button onClick={onEdit} className="text-xs text-primary-600 font-bold flex items-center gap-1">
           <PenLine size={12} /> 수정
         </button>
       </div>
@@ -158,8 +158,8 @@ function SatSubmittedCard({ sat, updatedAt, onEdit }) {
 }
 
 function AttendButton({ active, onClick, color, label }) {
-  const colors    = { blue: active ? 'border-blue-400 bg-blue-50' : 'border-gray-100 bg-gray-50/50', red: active ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-gray-50/50' }
-  const textColors = { blue: active ? 'text-blue-700' : 'text-gray-400', red: active ? 'text-red-600' : 'text-gray-400' }
+  const colors    = { blue: active ? 'border-primary-400 bg-primary-50' : 'border-gray-100 bg-gray-50/50', red: active ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-gray-50/50' }
+  const textColors = { blue: active ? 'text-primary-700' : 'text-gray-400', red: active ? 'text-red-600' : 'text-gray-400' }
   return (
     <button onClick={onClick} className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
       {active ? <CheckCircle2 size={22} className={textColors[color]} /> : <div className="w-[22px] h-[22px] rounded-full border-2 border-gray-200" />}

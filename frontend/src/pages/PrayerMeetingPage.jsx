@@ -252,13 +252,13 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
         {vote?.updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(vote.updatedAt)} muted />}
       </div>
       {isAbsent && (
-        <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${vote.scriptureCopySubmitted ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
-          <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-emerald-500 mt-0.5' : 'text-amber-500 mt-0.5'} />
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${vote.scriptureCopySubmitted ? 'bg-secondary-50 border-secondary-200' : 'bg-amber-50 border-amber-200'}`}>
+          <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-secondary-700 mt-0.5' : 'text-amber-500 mt-0.5'} />
           <div>
-            <p className={`text-xs font-bold ${vote.scriptureCopySubmitted ? 'text-emerald-700' : 'text-amber-700'}`}>
+            <p className={`text-xs font-bold ${vote.scriptureCopySubmitted ? 'text-secondary-700' : 'text-amber-700'}`}>
               {vote.scriptureCopySubmitted ? '필사 제출 완료' : '필사 제출 필요'}
             </p>
-            <p className={`text-xs mt-0.5 font-medium ${vote.scriptureCopySubmitted ? 'text-emerald-500' : 'text-amber-500'}`}>
+            <p className={`text-xs mt-0.5 font-medium ${vote.scriptureCopySubmitted ? 'text-secondary-700' : 'text-amber-500'}`}>
               {vote.scriptureCopySubmitted
                 ? '관리자가 필사 제출을 확인했습니다'
                 : '둘 다 불참 시 그 주 필사를 제출해야 합니다'}

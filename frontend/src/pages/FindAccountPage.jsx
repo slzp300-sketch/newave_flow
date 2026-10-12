@@ -96,7 +96,7 @@ function FindIdTab() {
   if (result) {
     return (
       <div className="flex flex-col items-center gap-4 py-2 text-center">
-        <CheckCircle className="text-green-500" size={44} />
+        <CheckCircle className="text-secondary-700" size={44} />
         <div>
           <p className="text-gray-500 text-sm mb-1">가입된 아이디(이메일)</p>
           <p className="text-lg font-bold text-gray-900 tracking-wide">{result}</p>

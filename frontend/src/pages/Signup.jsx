@@ -111,7 +111,7 @@ export default function Signup() {
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
-        <div className="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">✅</div>
+        <div className="w-20 h-20 bg-secondary-100 text-secondary-700 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">✅</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">가입 신청 완료</h2>
         <p className="text-gray-500 text-center text-sm mb-8">
           관리자의 승인 후 정상적인 이용이 가능합니다.<br/>잠시만 기다려주세요!
@@ -142,11 +142,11 @@ export default function Signup() {
               required
               className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 text-sm font-medium transition ${
                 nameStatus === 'duplicate' ? 'border-red-300 focus:ring-red-500' : 
-                nameStatus === 'available' ? 'border-emerald-300 focus:ring-emerald-500' : 'border-gray-200 focus:ring-primary-500'
+                nameStatus === 'available' ? 'border-secondary-300 focus:ring-secondary-500' : 'border-gray-200 focus:ring-primary-500'
               }`}
             />
             {nameStatus === 'duplicate' && <p className="text-red-500 text-xs font-bold mt-1.5 px-1">이미 가입된 이름입니다.</p>}
-            {nameStatus === 'available' && <p className="text-emerald-500 text-xs font-bold mt-1.5 px-1">사용 가능한 이름입니다.</p>}
+            {nameStatus === 'available' && <p className="text-secondary-700 text-xs font-bold mt-1.5 px-1">사용 가능한 이름입니다.</p>}
             {nameStatus === 'loading' && <p className="text-gray-400 text-xs font-bold mt-1.5 px-1">확인 중...</p>}
           </div>
 
@@ -157,7 +157,7 @@ export default function Signup() {
               status={emailStatus}
             />
             {emailStatus === 'duplicate' && <p className="text-red-500 text-xs font-bold mt-1.5 px-1">이미 사용 중인 이메일입니다.</p>}
-            {emailStatus === 'available' && <p className="text-emerald-500 text-xs font-bold mt-1.5 px-1">사용 가능한 이메일입니다.</p>}
+            {emailStatus === 'available' && <p className="text-secondary-700 text-xs font-bold mt-1.5 px-1">사용 가능한 이메일입니다.</p>}
             {emailStatus === 'loading' && <p className="text-gray-400 text-xs font-bold mt-1.5 px-1">확인 중...</p>}
           </div>
 
@@ -193,7 +193,7 @@ export default function Signup() {
                 required
                 className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 text-sm font-medium pr-12 transition ${
                   pwMatch === false ? 'border-red-300 focus:ring-red-400' :
-                  pwMatch === true  ? 'border-emerald-300 focus:ring-emerald-400' :
+                  pwMatch === true  ? 'border-secondary-300 focus:ring-secondary-400' :
                                       'border-gray-200 focus:ring-primary-500'
                 }`}
               />
@@ -211,7 +211,7 @@ export default function Signup() {
               </p>
             )}
             {pwMatch === true && (
-              <p className="flex items-center gap-1 text-emerald-500 text-xs font-bold mt-1.5 px-1">
+              <p className="flex items-center gap-1 text-secondary-700 text-xs font-bold mt-1.5 px-1">
                 <CheckCircle2 size={12} /> 비밀번호가 일치합니다.
               </p>
             )}

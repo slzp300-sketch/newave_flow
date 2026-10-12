@@ -97,9 +97,9 @@ export default function WeeklyCheckPage() {
               <span className="ui-list-icon"><task.icon size={20} /></span>
               <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-gray-900">{task.title}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${task.state === 'done' ? 'bg-emerald-50 text-emerald-700' : task.state === 'unknown' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{STATE_LABEL[task.state]}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${task.state === 'done' ? 'bg-secondary-50 text-secondary-700' : task.state === 'unknown' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>{STATE_LABEL[task.state]}</span>
               </span><span className="mt-1.5 block text-xs leading-relaxed text-gray-500">{task.desc}</span></span>
-              {task.state === 'done' ? <CheckCircle2 size={18} className="shrink-0 text-emerald-600" /> : <ChevronRight size={17} className="shrink-0 text-gray-400" />}
+              {task.state === 'done' ? <CheckCircle2 size={18} className="shrink-0 text-secondary-600" /> : <ChevronRight size={17} className="shrink-0 text-gray-400" />}
             </Link>)}
             {!visibleTasks.length && <p role="status" className="p-6 text-center text-sm text-gray-500">{filter === 'done' ? '아직 완료된 항목이 없어요.' : '남은 제출 항목이 없어요.'}</p>}
           </div>
