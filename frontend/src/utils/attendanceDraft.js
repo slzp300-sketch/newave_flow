@@ -2,10 +2,10 @@ export function scopedDraft(draft, key, saved) {
   return draft?.key === key ? draft.values : saved
 }
 
-export function studentEventForm(students, draft) {
+export function studentEventForm(students, draft, defaultStatus = 'PRESENT') {
   const form = { statusMap: {}, reasonMap: {}, partialFromDateMap: {}, partialNoteMap: {}, editing: draft?.editing || false }
   for (const s of students) {
-    form.statusMap[s.studentId] = draft?.statusMap[s.studentId] ?? s.status ?? 'PRESENT'
+    form.statusMap[s.studentId] = draft?.statusMap[s.studentId] ?? s.status ?? defaultStatus
     form.reasonMap[s.studentId] = draft?.reasonMap[s.studentId] ?? s.absenceReason ?? ''
     form.partialFromDateMap[s.studentId] = draft?.partialFromDateMap[s.studentId] ?? s.partialFromDate ?? ''
     form.partialNoteMap[s.studentId] = draft?.partialNoteMap[s.studentId] ?? s.partialNote ?? ''

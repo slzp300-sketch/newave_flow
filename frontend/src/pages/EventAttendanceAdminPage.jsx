@@ -1,5 +1,8 @@
 import EventStatusSummary from '../components/common/EventStatusSummary'
 import SearchField from '../components/common/SearchField'
+import useToday from '../hooks/useToday'
+import { eventToday, isEventAttendanceInactive } from '../utils/eventAttendance'
+import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { AdminIntro, FilterResults } from '../components/common/AdminTools'
 import { matchesAdminSearch } from '../utils/adminSearch'
@@ -34,6 +37,7 @@ const getGradeStyle = (grade) => {
 }
 
 export default function EventAttendanceAdminPage() {
+  const today = useToday(eventToday)
   const [search, setSearch] = useState('')
   const [selectedEventId, setSelectedEventId] = usePersistedState('selectedEventId', null)
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', null)
@@ -69,6 +73,7 @@ export default function EventAttendanceAdminPage() {
     || selectedEvent?.attendanceTarget === 'BOTH'
     || teacherSummary.some(t => t.status !== null)   // 실제 제출 데이터가 있으면 탭 표시
   const showStudentTab = !selectedEvent || selectedEvent?.attendanceTarget === 'STUDENT_ONLY' || selectedEvent?.attendanceTarget === 'BOTH'
+    || summary.some(group => group.records.some(record => record.status != null))
 
   const totalStudents     = summary.reduce((acc, c) => acc + Number(c.totalCount), 0)
 
@@ -174,7 +179,7 @@ export default function EventAttendanceAdminPage() {
                   key={event.id}
                   aria-pressed={selectedEventId === event.id}
                   onClick={() => handleEventSelect(event.id)}
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all text-left ${
+                  className={`${isEventAttendanceInactive(event, today) ? 'event-inactive' : ''} flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all text-left ${
                     selectedEventId === event.id
                       ? 'border-secondary-300 bg-secondary-50'
                       : 'border-gray-100 bg-white'
@@ -189,6 +194,7 @@ export default function EventAttendanceAdminPage() {
                       <p className="text-xs text-gray-400 font-medium mt-0.5">
                         {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
                       </p>
+                      <EventAttendanceStatus event={event} today={today} />
                     </div>
                   </div>
                   {selectedEventId === event.id && <CheckCircle2 size={16} className="text-secondary-700" />}

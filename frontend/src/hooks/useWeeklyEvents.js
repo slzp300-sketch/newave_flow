@@ -6,9 +6,10 @@ import { toApiDate } from '../utils/date'
 import { eventApi } from '../api/event'
 import { eventRangeKey } from '../api/queryPolicy'
 import { knownRead } from '../utils/attention'
+import { eventToday } from '../utils/eventAttendance'
 
 export default function useWeeklyEvents() {
-  const today = useToday()
+  const today = useToday(eventToday)
   const date = new Date(today + 'T12:00:00')
   const from = toApiDate(startOfWeek(date, { weekStartsOn: 0 }))
   const to = toApiDate(endOfWeek(date, { weekStartsOn: 0 }))

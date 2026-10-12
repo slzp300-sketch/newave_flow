@@ -50,6 +50,8 @@ public class Event {
     @Column
     private LocalDate attendanceDeadline;
 
+    private LocalDate attendanceStartDate;
+
     private java.time.LocalDateTime rosterCapturedAt;
 
     @Enumerated(EnumType.STRING)

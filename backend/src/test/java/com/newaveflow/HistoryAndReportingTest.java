@@ -65,7 +65,7 @@ class HistoryAndReportingTest {
         var teacher=account("teacher"); var original=group("등록 당시 반"); var moved=group("이동한 반"); var s=student(original);
         assign(teacher,original,true);
         LocalDate day=LocalDate.of(2026,1,4);
-        var event=events.createEvent(new EventDto.EventCreateRequest("검증 행사",null,day,day.plusDays(2),null,null,null,"SPECIAL",true,null,"BOTH"));
+        var event=events.createEvent(new EventDto.EventCreateRequest("검증 행사",null,day,day.plusDays(2),null,null,null,"SPECIAL",true,LocalDate.now().plusDays(1),"BOTH",LocalDate.now()));
         events.saveStudentAttendanceBatch(event.id(),teacher.getId(),List.of(new EventDto.StudentAttendanceItem(s.getId(),"PRESENT",null,null,null)));
         s.assignClass(moved); s.deactivate(); student(original); em.flush(); em.clear();
         var rows=events.getStudentAttendanceSummary(event.id());

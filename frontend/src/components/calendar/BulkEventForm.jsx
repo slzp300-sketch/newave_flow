@@ -1,3 +1,5 @@
+import EventAttendanceFields from './EventAttendanceFields'
+import { eventToday, validateAttendanceWindow } from '../../utils/eventAttendance'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -6,7 +8,7 @@ import { X, Plus, Trash2, CalendarPlus, CalendarRange } from 'lucide-react'
 import { addDays, parseISO, differenceInCalendarDays } from 'date-fns'
 import { eventApi } from '../../api/event'
 import { toApiDate } from '../../utils/date'
-import { DateRangeField, formatRange } from './DateRangePicker'
+import { DateRangeField } from './DateRangePicker'
 
 const MAX_ROWS = 30
 
@@ -25,12 +27,6 @@ const EVENT_TYPES = [
   { label: '특별', value: 'SPECIAL' },
   { label: '회의', value: 'MEETING' },
   { label: '전체', value: 'CHURCH_WIDE' },
-]
-
-const TARGETS = [
-  { value: 'STUDENT_ONLY', label: '학생만' },
-  { value: 'TEACHER_ONLY', label: '교사만' },
-  { value: 'BOTH',         label: '학생 + 교사' },
 ]
 
 function Switch({ on, color = 'bg-primary-500' }) {
@@ -81,6 +77,8 @@ const newRow = (eventDate, endDate = eventDate) => ({
   title: '',
   attendanceRequired: false,
   attendanceTarget: 'STUDENT_ONLY',
+  attendanceStartDate: eventToday() > endDate ? endDate : eventToday(),
+  attendanceDeadline: endDate,
 })
 
 /** 여러 일정 한번에 등록 */
@@ -120,6 +118,8 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
 
   const handleSubmit = async () => {
     if (filled.length === 0) return
+    const invalid = filled.find(r => validateAttendanceWindow(r))
+    if (invalid) { alert(`${invalid.title}: ${validateAttendanceWindow(invalid)}`); return }
     try {
       setSubmitting(true)
       await eventApi.createEvents(filled.map(r => ({
@@ -132,7 +132,8 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
         color: common.color,
         eventType: common.eventType,
         attendanceRequired: r.attendanceRequired,
-        attendanceDeadline: r.attendanceRequired ? r.endDate : null, // 마감 = 일정 마지막 날
+        attendanceDeadline: r.attendanceRequired ? r.attendanceDeadline : null,
+        attendanceStartDate: r.attendanceRequired ? r.attendanceStartDate : null,
         attendanceTarget: r.attendanceTarget,
       })))
       qc.invalidateQueries({ queryKey: ['events-all'] })
@@ -229,15 +230,7 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
                   <AnimatePresence initial={false}>
                     {r.attendanceRequired && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                        <div className="flex gap-1.5 pt-0.5">
-                          {TARGETS.map(t => (
-                            <button aria-pressed={r.attendanceTarget === t.value} key={t.value} type="button" onClick={() => updateRow(r.key, { attendanceTarget: t.value })}
-                              className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 transition-all ${r.attendanceTarget === t.value ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-gray-100 bg-white text-gray-400'}`}>
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
-                        <p className="text-xs text-gray-400 px-1 pt-1.5">출석 마감: {formatRange(r.endDate)}까지</p>
+                        <EventAttendanceFields value={r} onChange={patch => updateRow(r.key, patch)} />
                       </motion.div>
                     )}
                   </AnimatePresence>

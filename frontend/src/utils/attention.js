@@ -27,8 +27,10 @@ export function knownRead(query) {
 
 // Only a small fingerprint is persisted; no names or descriptions in the read ledger.
 export function eventFingerprint(event) {
-  const text = JSON.stringify(['title', 'description', 'eventDate', 'endDate', 'startTime', 'endTime',
-    'eventType', 'color', 'attendanceRequired', 'attendanceDeadline', 'attendanceTarget'].map(k => event[k] ?? null))
+  const fields = ['title', 'description', 'eventDate', 'endDate', 'startTime', 'endTime',
+    'eventType', 'color', 'attendanceRequired', 'attendanceDeadline', 'attendanceTarget'].map(k => event[k] ?? null)
+  if (event.attendanceStartDate) fields.push(event.attendanceStartDate)
+  const text = JSON.stringify(fields)
   let hash = 2166136261
   for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 16777619)
   return (hash >>> 0).toString(36)

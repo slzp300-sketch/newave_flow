@@ -61,3 +61,12 @@ SELECT version, applied_at FROM schema_migrations;
 `backend`: Java 17 이상에서 `./gradlew build --no-daemon` (Windows `gradlew.bat`). 검사는 H2와 가상 데이터만 사용합니다.
 
 `.github/workflows/check.yml`에 같은 검사와 빌드, PostgreSQL 전환 검사를 추가했습니다. 코드 커밋 `4e8922a`는 [GitHub Actions의 3개 작업](https://github.com/slzp300-sketch/newave_flow/actions/runs/38047484045)을 모두 통과했습니다. 이후 변경은 해당 커밋의 검사 상태를 별도로 확인합니다. 로컬·CI 검사 성공이 운영 복원본 검사나 운영 SQL·배포까지 완료됐다는 뜻은 아닙니다.
+
+## 행사 출석 접수 기간 (V003, 2026-10-12)
+
+- 일정 등록/일괄 등록/수정에서 교사만·학생만·교사+학생과 접수 시작일/마감일을 설정합니다. 한국 시간 시작일 00:00~마감일 당일 23:59까지 제출 가능합니다.
+- 기존 시작일 없는 행사는 기존 마감일까지 열립니다. 마감일도 없으면 행사 종료일(없으면 행사일)을 마감으로 사용합니다. 과거 기록과 명단은 보존합니다.
+- 일정 종료와 출석 접수 종료는 독립적입니다. 접수 전/종료/비활성 상태는 UI와 서버 모두 쓰기를 막습니다. 관리자는 기간 설정을 수정할 수 있습니다.
+- 최신 암호화 백업을 별도 PostgreSQL에 복원해 전체 public 테이블 행 수/해시를 비교하고 EventWindowMigrationTest로 V003 롤백/정상 적용/재적용 차단/데이터 보존/운영 스키마를 검사합니다. 테스트는 localhost:55440의 전용 DB만 허용합니다.
+- V001/V002 적용 뒤 backend/db/migrations/V003__event_attendance_window.sql을 적용하고 새 백엔드를 배포합니다. V003은 nullable 시작일과 제약만 추가해 구버전과 호환되므로 이번 추가 변경은 기존 서버 중지 없이 적용 가능합니다. 실패는 트랜잭션으로 롤백합니다.
+- 코드 롤백 시 추가 열/제약을 남길 수 있으나 이전 앱에는 접수 시작일 검사가 없습니다. 새 운영 기록을 과거 백업으로 덮어쓰지 않습니다.

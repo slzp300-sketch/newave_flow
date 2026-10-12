@@ -1,3 +1,5 @@
+import useToday from '../hooks/useToday'
+import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import { useId } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -6,7 +8,7 @@ import { CheckCircle2, XCircle, Users, PenLine, CalendarCheck, UserCheck, Clock 
 import FeatureIcon from '../components/common/FeatureIcon'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { isEventAttendanceClosed, assertEventAttendanceOpen } from '../utils/eventAttendance'
+import { isEventAttendanceInactive, assertEventAttendanceOpen, eventAttendanceState, eventAttendanceMessage, eventAttendanceLabels, eventToday } from '../utils/eventAttendance'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
@@ -16,9 +18,10 @@ import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState, hasQueryData } from '../utils/queryReadState'
 import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
 import { useStudentAttendanceDraft, useTeacherAttendanceDraft } from '../hooks/useAttendanceDraft'
-import { confirmAttendance } from '../utils/attendanceDraft'
+import { confirmAttendance, studentEventForm, teacherEventForm } from '../utils/attendanceDraft'
 
 export default function EventAttendancePage() {
+  const today = useToday(eventToday)
   const fieldId = useId()
   const { id } = useParams()
   const eventId = Number(id)
@@ -30,6 +33,7 @@ export default function EventAttendancePage() {
     queryFn: () => eventApi.getEvent(eventId).then(r => r.data),
   })
   const event = eventQuery.data
+  const isUnavailable = isEventAttendanceInactive(event)
 
   const needsStudentCheck = !event || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
   const needsTeacherCheck = event?.attendanceTarget === 'TEACHER_ONLY' || event?.attendanceTarget === 'BOTH'
@@ -55,7 +59,7 @@ export default function EventAttendancePage() {
 
   const studentDraft = useStudentAttendanceDraft(`${eventId}:${user?.id}:students`, students)
   const { statusMap, setStatusMap, reasonMap, setReasonMap, partialFromDateMap, setPartialFromDateMap,
-    partialNoteMap, setPartialNoteMap, submitted, editing, setEditing } = studentDraft
+    partialNoteMap, setPartialNoteMap, submitted, editing, setEditing } = isUnavailable ? { ...studentDraft, ...studentEventForm(students, undefined, null) } : studentDraft
 
   const saveMutation = useMutation({
     mutationFn: async (records) => {
@@ -77,7 +81,7 @@ export default function EventAttendancePage() {
   const teacherDraft = useTeacherAttendanceDraft(`${eventId}:${user?.id}:teacher`, myTeacherAttendance)
   const { pending: pendingTeacherStatus, setPending: setPendingTeacherStatus, partialFromDate, setPartialFromDate,
     partialNote, setPartialNote, absenceReason: teacherAbsenceReason, setAbsenceReason: setTeacherAbsenceReason,
-    submitted: teacherSubmitted, editing: teacherEditing, setEditing: setTeacherEditing } = teacherDraft
+    submitted: teacherSubmitted, editing: teacherEditing, setEditing: setTeacherEditing } = isUnavailable ? { ...teacherDraft, ...teacherEventForm(myTeacherAttendance) } : teacherDraft
 
   const teacherAttendanceMutation = useMutation({
     mutationFn: async () => {
@@ -123,9 +127,8 @@ export default function EventAttendancePage() {
   const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT').length
   const partialCount = Object.values(statusMap).filter(s => s === 'PARTIAL').length
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
-  const isPastDeadline = isEventAttendanceClosed(event)
 
-  const isEditable   = (!submitted || editing) && !isPastDeadline
+  const isEditable   = (!submitted || editing) && !isUnavailable
 
   const missingReasons  = Object.entries(statusMap).filter(([id, s]) => s === 'ABSENT'  && !reasonMap[id]?.trim())
   const missingPartials = Object.entries(statusMap).filter(([id, s]) => s === 'PARTIAL' && !partialFromDateMap[id])
@@ -137,11 +140,11 @@ export default function EventAttendancePage() {
   </div>
 
   return (
-    <div className="flex flex-col min-h-screen pb-10">
+    <div className={`flex flex-col min-h-screen pb-10 ${isUnavailable ? 'event-inactive-page' : ''}`}>
       <Header title="행사 출석 체크" showBack />
 
       {/* 행사 정보 */}
-      {event && !event.attendanceDeadline && <p className="px-4 pt-3 text-xs text-gray-500">제출 기한 제한 없음</p>}
+      <div className="px-4 pt-3"><EventAttendanceStatus event={event} today={today} />{isUnavailable && <p role="status" className="mt-2 text-sm text-gray-600">{eventAttendanceMessage(event, today)}</p>}</div>
       {event && (
         <div className="px-4 py-4 glass-effect">
           <div className="flex items-center gap-3">
@@ -162,7 +165,7 @@ export default function EventAttendancePage() {
       )}
 
       <div className="px-4 pt-3"><QueryRefreshNotice queries={reads} label="행사 출석 기록" /></div>
-      <fieldset disabled={!ready || saveMutation.isPending || teacherAttendanceMutation.isPending} className="min-w-0 px-4 py-5 flex flex-col gap-4">
+      <fieldset disabled={!ready || isUnavailable || saveMutation.isPending || teacherAttendanceMutation.isPending} className="min-w-0 px-4 py-5 flex flex-col gap-4">
 
         {/* 교사 본인 출석 체크 */}
         {needsTeacherCheck && (
@@ -170,8 +173,8 @@ export default function EventAttendancePage() {
             <div className="flex items-center justify-between px-1">
               <p className="ui-section-title">내 출석 체크</p>
               {event?.attendanceDeadline && (
-                <p className={`text-xs font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
-                  {isPastDeadline ? '제출 마감됨' : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
+                <p className={`text-xs font-bold ${isUnavailable ? 'text-red-500' : 'text-amber-500'}`}>
+                  {isUnavailable ? eventAttendanceLabels[eventAttendanceState(event)] : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
                 </p>
               )}
             </div>
@@ -206,24 +209,24 @@ export default function EventAttendancePage() {
                       </p>
                     )}
                   </div>
-                  {!isPastDeadline && (
+                  {!isUnavailable && (
                     <button aria-label="내 행사 출석 수정" onClick={() => setTeacherEditing(true)} className="min-h-11 min-w-11 px-2 text-xs text-gray-500 font-bold flex items-center justify-center gap-1 flex-shrink-0">
                       <PenLine size={12} /> 수정
                     </button>
                   )}
                 </div>
-                {isPastDeadline && (
-                  <p className="text-xs font-bold text-red-500 text-right px-1">제출 기간이 마감되어 수정할 수 없습니다.</p>
+                {isUnavailable && (
+                  <p className="text-xs font-bold text-red-500 text-right px-1">{eventAttendanceMessage(event)}</p>
                 )}
               </div>
             )}
 
             {(!teacherSubmitted || teacherEditing) && (
               <div className="flex flex-col gap-3">
-                {isPastDeadline ? (
+                {isUnavailable ? (
                   <Card className="bg-red-50 border-red-100 py-4 flex flex-col items-center gap-1">
                     <XCircle size={20} className="text-red-400" />
-                    <p className="text-xs font-bold text-red-600">제출 기간이 마감되었습니다</p>
+                    <p className="text-xs font-bold text-red-600">{eventAttendanceMessage(event)}</p>
                   </Card>
                 ) : (
                   <>
@@ -320,14 +323,14 @@ export default function EventAttendancePage() {
                 <CheckCircle2 size={16} className="text-secondary-600" />
                 <span className="text-xs font-bold text-secondary-700">출석 체크 제출 완료</span>
               </div>
-              {!isPastDeadline && (
+              {!isUnavailable && (
                 <button aria-label="학생 행사 출석 수정" onClick={() => setEditing(true)} className="min-h-11 min-w-11 shrink-0 px-2 text-xs text-secondary-600 font-bold flex items-center justify-center gap-1">
                   <PenLine size={12} /> 수정
                 </button>
               )}
             </div>
-            {isPastDeadline && (
-              <p className="text-xs font-bold text-red-500 text-right px-1">제출 기간이 마감되어 수정할 수 없습니다.</p>
+            {isUnavailable && (
+              <p className="text-xs font-bold text-red-500 text-right px-1">{eventAttendanceMessage(event)}</p>
             )}
           </div>
         )}
@@ -337,8 +340,8 @@ export default function EventAttendancePage() {
           <div className="flex items-center justify-between px-1 mb-3">
             <p className="ui-section-title">우리 반 학생 출석</p>
             {event?.attendanceDeadline && (
-              <p className={`text-xs font-bold ${isPastDeadline ? 'text-red-500' : 'text-amber-500'}`}>
-                {isPastDeadline ? '제출 마감됨' : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
+              <p className={`text-xs font-bold ${isUnavailable ? 'text-red-500' : 'text-amber-500'}`}>
+                {isUnavailable ? eventAttendanceLabels[eventAttendanceState(event)] : `마감: ${format(new Date(event.attendanceDeadline), 'M/d')}`}
               </p>
             )}
           </div>
@@ -353,7 +356,7 @@ export default function EventAttendancePage() {
           ) : (
             <div className="flex flex-col gap-3">
               {students.map((student, idx) => {
-                const status = statusMap[student.studentId] ?? 'PRESENT'
+                const status = statusMap[student.studentId]
                 return (
                   <motion.div
                     key={student.studentId}
@@ -433,6 +436,7 @@ export default function EventAttendancePage() {
                           {status === 'PRESENT' && <><CheckCircle2 size={16} /> 출석</>}
                           {status === 'PARTIAL' && <><Clock size={16} /> 부분참석</>}
                           {status === 'ABSENT'  && <><XCircle size={16} /> 결석</>}
+                          {!status && <span className="text-gray-500">미제출</span>}
                         </div>
                       )}
                     </div>
@@ -527,10 +531,10 @@ export default function EventAttendancePage() {
         {/* 제출 버튼 */}
         {isEditable && students.length > 0 && (
           <div className="flex flex-col gap-3 mt-2">
-            {isPastDeadline ? (
+            {isUnavailable ? (
               <Card className="bg-red-50 border-red-100 py-4 flex flex-col items-center gap-1">
                 <XCircle size={20} className="text-red-400" />
-                <p className="text-xs font-bold text-red-600">제출 기간이 마감되었습니다</p>
+                <p className="text-xs font-bold text-red-600">{eventAttendanceMessage(event)}</p>
               </Card>
             ) : (
               <>

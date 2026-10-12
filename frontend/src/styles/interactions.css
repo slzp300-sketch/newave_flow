@@ -75,4 +75,20 @@
     outline: 2px solid theme('colors.secondary.700');
     outline-offset: 3px;
   }
+
+  /* Closed records remain readable; only current reception gets brand emphasis. */
+  :root .event-inactive,
+  :root .event-inactive :is(button, .brand-action, .brand-card, .glass-card),
+  :root .event-inactive-page :is(button, .brand-action, .brand-card, .glass-card) {
+    --surface-bg: theme('colors.gray.100');
+    --surface-border: theme('colors.gray.300');
+    --surface-ink: theme('colors.gray.600');
+    --surface-hover-bg: theme('colors.gray.200');
+    --surface-hover-border: theme('colors.gray.400');
+    --surface-hover-ink: theme('colors.gray.700');
+    background-color: var(--surface-bg);
+    border-color: var(--surface-border);
+    color: var(--surface-ink);
+  }
+  :root .event-inactive, :root .event-inactive-page { filter: grayscale(1); }
 }

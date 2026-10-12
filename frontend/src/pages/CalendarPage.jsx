@@ -1,3 +1,6 @@
+import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
+import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
+import { eventToday, isEventEnded, validateAttendanceWindow } from '../utils/eventAttendance'
 import { eventRangeKey } from '../api/queryPolicy'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
@@ -52,7 +55,7 @@ const EVENT_TYPES = [
 
 export default function CalendarPage() {
   const { user } = useAuthStore()
-  const today = useToday()
+  const today = useToday(eventToday)
   const qc = useQueryClient()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'PASTOR' || user?.role === 'EXECUTIVE'
 
@@ -85,6 +88,7 @@ export default function CalendarPage() {
     eventType: 'REGULAR',
     attendanceRequired: false,
     attendanceDeadline: '',
+    attendanceStartDate: '',
     attendanceTarget: 'STUDENT_ONLY',
   })
   
@@ -207,6 +211,7 @@ export default function CalendarPage() {
       eventType: 'REGULAR',
       attendanceRequired: false,
       attendanceDeadline: '',
+    attendanceStartDate: '',
       attendanceTarget: 'STUDENT_ONLY',
     })
     setShowForm(true)
@@ -225,7 +230,8 @@ export default function CalendarPage() {
       color: e.color || '',
       eventType: e.eventType,
       attendanceRequired: e.attendanceRequired ?? false,
-      attendanceDeadline: e.attendanceDeadline || '',
+      attendanceDeadline: e.attendanceDeadline || e.endDate || e.eventDate,
+      attendanceStartDate: e.attendanceStartDate || (eventToday() > (e.attendanceDeadline || e.endDate || e.eventDate) ? (e.attendanceDeadline || e.endDate || e.eventDate) : eventToday()),
       attendanceTarget: e.attendanceTarget || 'STUDENT_ONLY',
     })
     setShowForm(true)
@@ -247,6 +253,8 @@ export default function CalendarPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const windowError = validateAttendanceWindow(formData)
+    if (windowError) { alert(windowError); return }
     try {
       setSubmitting(true)
       const { allDay, ...rest } = formData
@@ -255,7 +263,8 @@ export default function CalendarPage() {
         startTime: allDay ? null : rest.startTime || null,
         endTime:   allDay ? null : rest.endTime   || null,
         // 마감일을 비워두면 일정 마지막 날까지
-        attendanceDeadline: rest.attendanceRequired ? (rest.attendanceDeadline || rest.endDate) : null,
+        attendanceDeadline: rest.attendanceRequired ? rest.attendanceDeadline : null,
+        attendanceStartDate: rest.attendanceRequired ? rest.attendanceStartDate : null,
       }
       if (editingId) {
         await client.put(`/events/${editingId}`, submitData)
@@ -398,7 +407,7 @@ export default function CalendarPage() {
                       <div 
                         key={e.id} 
                         className={`h-3.5 px-1 text-[8px] font-bold truncate transition-all flex items-center shrink-0
-                          ${getEventBg(e.color)}
+                          ${isEventEnded(e, today) ? 'bg-gray-200 text-gray-600 border-gray-300' : getEventBg(e.color)}
                           ${(isStartOfEvent || isStartOfWeek) ? 'rounded-l-sm border-l-2' : 'rounded-l-none border-l-0'}
                           ${(isEndOfEvent || isEndOfWeek) ? 'rounded-r-sm' : 'rounded-r-none'}
                           ${!isStartOfEvent && !isStartOfWeek ? '-ml-1.5' : ''}
@@ -445,7 +454,7 @@ export default function CalendarPage() {
           ) : (
             selectedEvents.map((e, idx) => (
               <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                <Card className={`brand-custom-color p-4 border-l-4 overflow-hidden relative ${getEventBorderColor(e.color)}`}>
+                <Card className={`brand-custom-color p-4 border-l-4 overflow-hidden relative ${isEventEnded(e, today) ? 'event-inactive' : getEventBorderColor(e.color)}`}>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant={e.eventType === 'SPECIAL' ? 'info' : e.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
                       {EVENT_TYPES.find(t => t.value === e.eventType)?.label || '정기'}
@@ -477,20 +486,9 @@ export default function CalendarPage() {
                     </div>
                   </div>
                   <h4 className="font-bold text-gray-900 text-base mb-1">{e.title}</h4>
-                  {acknowledge(e)}
+                  {isEventEnded(e, today) ? <p className="mb-2 text-xs font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
                   {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
-                  {e.attendanceRequired && (isAdmin || !e.attendanceDeadline || e.attendanceDeadline >= today) && (
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                        ✓ 출석체크 활성
-                      </span>
-                      {e.attendanceDeadline && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
-                          마감 {format(new Date(e.attendanceDeadline), 'M월 d일', { locale: ko })}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <EventAttendanceStatus event={e} today={today} />
                 </Card>
               </motion.div>
             ))
@@ -521,7 +519,7 @@ export default function CalendarPage() {
             [
               { key: 'ongoing', label: '진행중인 일정', dot: 'bg-emerald-500', list: categorizedEvents.ongoing },
               { key: 'upcoming', label: '다가올 일정', dot: 'bg-blue-500', list: categorizedEvents.upcoming },
-              { key: 'past', label: '지난 일정', dot: 'bg-gray-400', list: categorizedEvents.past },
+              { key: 'past', label: '종료된 일정', dot: 'bg-gray-400', list: categorizedEvents.past },
             ].map(({ key, label, dot, list }) => list.length > 0 && (
               <div key={key} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
@@ -531,7 +529,7 @@ export default function CalendarPage() {
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
                 {list.map(e => (
-                  <Card key={e.id} className={`brand-custom-color p-4 border-l-4 ${getEventBorderColor(e.color)}`}>
+                  <Card key={e.id} className={`brand-custom-color p-4 border-l-4 ${isEventEnded(e, today) ? 'event-inactive' : getEventBorderColor(e.color)}`}>
                     <div className="flex justify-between items-start mb-1">
                       <p className="text-xs font-bold text-gray-400">
                         {format(new Date(e.eventDate), 'M월 d일 (EEE)', { locale: ko })}
@@ -545,7 +543,7 @@ export default function CalendarPage() {
                       )}
                     </div>
                     <h4 className="font-bold text-gray-900 text-sm mb-1">{e.title}</h4>
-                    {acknowledge(e)}
+                    {isEventEnded(e, today) ? <p className="mb-2 text-xs font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
                     {e.description && <p className="text-xs text-gray-500 leading-relaxed">{e.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {!e.startTime ? (
@@ -555,9 +553,7 @@ export default function CalendarPage() {
                           <Clock size={10} /> {e.startTime}{e.endTime && ` ~ ${e.endTime}`}
                         </span>
                       )}
-                      {e.attendanceRequired && (isAdmin || !e.attendanceDeadline || e.attendanceDeadline >= today) && (
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">✓ 출석체크</span>
-                      )}
+                      <EventAttendanceStatus event={e} today={today} />
                     </div>
                   </Card>
                 ))}
@@ -668,9 +664,11 @@ export default function CalendarPage() {
                   <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium resize-none outline-none" />
                 </div>
                 {/* 출석 체크 활성화 토글 */}
-                <div
-                  onClick={() => setFormData(d => ({ ...d, attendanceRequired: !d.attendanceRequired }))}
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                <button type="button" role="switch" aria-checked={formData.attendanceRequired} aria-label="출석 체크 활성화"
+                  onClick={() => setFormData(d => ({ ...d, attendanceRequired: !d.attendanceRequired,
+                    attendanceStartDate: d.attendanceStartDate || (eventToday() > d.endDate ? d.endDate : eventToday()),
+                    attendanceDeadline: d.attendanceDeadline || d.endDate }))}
+                  className={`w-full text-left flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
                     formData.attendanceRequired
                       ? 'border-emerald-300 bg-emerald-50'
                       : 'border-gray-100 bg-gray-50'
@@ -689,58 +687,9 @@ export default function CalendarPage() {
                       formData.attendanceRequired ? 'left-5' : 'left-0.5'
                     }`} />
                   </div>
-                </div>
+                </button>
 
-                {/* 출석 대상 선택 + 마감일 (출석 체크 활성화 시에만 표시) */}
-                {formData.attendanceRequired && (
-                  <div className="brand-card flex flex-col gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
-                    <div>
-                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1.5 block">출석 대상</label>
-                      <div className="flex gap-2">
-                        {[
-                          { value: 'STUDENT_ONLY', label: '학생만' },
-                          { value: 'TEACHER_ONLY', label: '교사만' },
-                          { value: 'BOTH',         label: '학생 + 교사' },
-                        ].map(opt => (
-                          <button aria-pressed={formData.attendanceTarget === opt.value}
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
-                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
-                              formData.attendanceTarget === opt.value
-                                ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
-                                : 'border-gray-100 bg-white text-gray-400'
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1.5 block">
-                        출석 제출 마감일 <span className="text-gray-400 font-medium normal-case">(선택)</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.attendanceDeadline}
-                        onChange={e => setFormData(d => ({ ...d, attendanceDeadline: e.target.value }))}
-                        min={toApiDate(new Date())}
-                        className="w-full px-4 py-3 rounded-xl border border-emerald-100 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300"
-                      />
-                      {formData.attendanceDeadline ? (
-                        <p className="text-xs text-emerald-600 mt-1.5 font-medium">
-                          ✓ {format(new Date(formData.attendanceDeadline), 'M월 d일', { locale: ko })} 까지 출석 제출 가능합니다
-                        </p>
-                      ) : (
-                        <p className="text-xs text-gray-400 mt-1.5">
-                          비워두면 저장할 때 마감일이 일정 마지막 날({format(new Date(formData.endDate), 'M월 d일', { locale: ko })})로 자동 설정됩니다.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {formData.attendanceRequired && <EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} />}
 
                 <div className="flex gap-2 mt-2">
                   <Button type="submit" loading={submitting} className="flex-1">저장하기</Button>

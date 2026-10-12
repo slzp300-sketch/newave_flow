@@ -86,6 +86,16 @@ class PostgresMigrationTest {
         assertEquals(2,count("SELECT count(*) FROM schema_migrations"));
         assertEquals(0,count("SELECT count(*) FROM event_reads"));
 
+        String window=Files.readString(Path.of("db/migrations/V003__event_attendance_window.sql"));
+        String originalEvents=checksum("events"), originalAttendance=checksum("event_student_attendances");
+        assertThrows(SQLException.class,()->execute(window.replace("INSERT INTO schema_migrations(version)","SELECT 1/0;\nINSERT INTO schema_migrations(version)")));
+        assertEquals(originalEvents,checksum("events"));
+        execute(window);
+        assertThrows(SQLException.class,()->execute(window));
+        assertEquals(3,count("SELECT count(*) FROM schema_migrations"));
+        assertEquals(0,count("SELECT count(*) FROM events WHERE attendance_start_date IS NOT NULL"));
+        assertEquals(originalAttendance,checksum("event_student_attendances"));
+
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,
                 "--spring.datasource.username="+user,"--spring.datasource.password="+password,

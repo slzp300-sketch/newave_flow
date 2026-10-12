@@ -72,7 +72,8 @@ class EventReadTest {
                 e->e.setEventDate(LocalDate.of(2026,10,18)),e->e.setEndDate(LocalDate.of(2026,10,19)),
                 e->e.setStartTime("10:00"),e->e.setEndTime("11:00"),e->e.setColor("blue"),
                 e->e.setEventType(Event.EventType.MEETING),e->e.setAttendanceRequired(true),
-                e->e.setAttendanceDeadline(LocalDate.of(2026,10,16)),e->e.setAttendanceTarget(Event.AttendanceTarget.BOTH));
+                e->e.setAttendanceDeadline(LocalDate.of(2026,10,16)),e->e.setAttendanceTarget(Event.AttendanceTarget.BOTH),
+                e->e.setAttendanceStartDate(LocalDate.of(2026,10,12)));
         for(var change:changes) {
             var event=event(); var version=EventReadVersion.of(event); change.accept(event);
             assertNotEquals(version,EventReadVersion.of(event));

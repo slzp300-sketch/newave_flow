@@ -83,6 +83,9 @@ public class EventService {
 
     private Event buildEvent(EventDto.EventCreateRequest request) {
         InputRules.eventDates(request.title(), request.eventDate(), request.endDate());
+        LocalDate deadline = attendanceDeadline(request);
+        LocalDate start = deadline == null ? null : EventAttendanceWindow.start(request.attendanceStartDate(), deadline);
+        if (start != null) EventAttendanceWindow.validate(start, deadline);
         if (request.title().isBlank()) {
             throw AppException.badRequest("일정 제목을 입력해주세요.");
         }
@@ -99,7 +102,8 @@ public class EventService {
                 .color(request.color())
                 .eventType(Event.EventType.valueOf(request.eventType()))
                 .attendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()))
-                .attendanceDeadline(Boolean.TRUE.equals(request.attendanceRequired()) ? request.attendanceDeadline() : null)
+                .attendanceDeadline(deadline)
+                .attendanceStartDate(start)
                 .attendanceTarget(parseAttendanceTarget(request.attendanceTarget()))
                 .build();
     }
@@ -107,8 +111,12 @@ public class EventService {
     @Transactional
     public EventDto.EventResponse updateEvent(Long id, EventDto.EventCreateRequest request) {
         InputRules.eventDates(request.title(), request.eventDate(), request.endDate());
-        Event event = eventRepository.findById(id)
+        Event event = eventRepository.lockById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        LocalDate deadline = attendanceDeadline(request);
+        LocalDate start = deadline == null ? null : EventAttendanceWindow.start(
+                request.attendanceStartDate() != null ? request.attendanceStartDate() : event.getAttendanceStartDate(), deadline);
+        if (start != null) EventAttendanceWindow.validate(start, deadline);
         event.setTitle(request.title());
         event.setDescription(request.description());
         event.setEventDate(request.eventDate());
@@ -118,7 +126,8 @@ public class EventService {
         event.setColor(request.color());
         event.setEventType(Event.EventType.valueOf(request.eventType()));
         event.setAttendanceRequired(Boolean.TRUE.equals(request.attendanceRequired()));
-        event.setAttendanceDeadline(Boolean.TRUE.equals(request.attendanceRequired()) ? request.attendanceDeadline() : null);
+        event.setAttendanceDeadline(deadline);
+        event.setAttendanceStartDate(start);
         event.setAttendanceTarget(parseAttendanceTarget(request.attendanceTarget()));
         roster.capture(event);
         return EventDto.EventResponse.from(eventRepository.save(event));
@@ -142,11 +151,9 @@ public class EventService {
     // ── 학생 출석 배치 저장 (교사) ──
     @Transactional
     public void saveStudentAttendanceBatch(Long eventId, Long teacherId, List<EventDto.StudentAttendanceItem> items) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.lockById(eventId)
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
-        if (event.getAttendanceDeadline() != null && java.time.LocalDate.now().isAfter(event.getAttendanceDeadline())) {
-            throw AppException.badRequest("출석 제출 기한이 마감되었습니다.");
-        }
+        EventAttendanceWindow.assertOpen(event, EventAttendanceWindow.today());
         if (!event.isAttendanceRequired() || event.getAttendanceTarget() == Event.AttendanceTarget.TEACHER_ONLY) {
             throw AppException.badRequest("학생 출석 체크 대상 행사가 아닙니다.");
         }
@@ -201,11 +208,9 @@ public class EventService {
     @Transactional
     public void saveTeacherAttendance(Long eventId, Long teacherId,
                                       String status, java.time.LocalDate partialFromDate, String partialNote, String absenceReason) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.lockById(eventId)
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
-        if (event.getAttendanceDeadline() != null && java.time.LocalDate.now().isAfter(event.getAttendanceDeadline())) {
-            throw AppException.badRequest("출석 제출 기한이 마감되었습니다.");
-        }
+        EventAttendanceWindow.assertOpen(event, EventAttendanceWindow.today());
         if (!event.isAttendanceRequired() || (event.getAttendanceTarget() != Event.AttendanceTarget.TEACHER_ONLY && event.getAttendanceTarget() != Event.AttendanceTarget.BOTH)) {
             throw AppException.badRequest("교사 출석 체크 대상 행사가 아닙니다.");
         }
@@ -240,7 +245,13 @@ public class EventService {
     private Event.AttendanceTarget parseAttendanceTarget(String value) {
         if (value == null) return Event.AttendanceTarget.STUDENT_ONLY;
         try { return Event.AttendanceTarget.valueOf(value); }
-        catch (IllegalArgumentException e) { return Event.AttendanceTarget.STUDENT_ONLY; }
+        catch (IllegalArgumentException e) { throw AppException.badRequest("출석 대상이 올바르지 않습니다."); }
+    }
+
+    private LocalDate attendanceDeadline(EventDto.EventCreateRequest request) {
+        if (!Boolean.TRUE.equals(request.attendanceRequired())) return null;
+        return request.attendanceDeadline() != null ? request.attendanceDeadline()
+                : request.endDate() != null ? request.endDate() : request.eventDate();
     }
 
     // ── 학생 출석 전체 요약 (관리자) ──

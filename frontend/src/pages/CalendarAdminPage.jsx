@@ -1,3 +1,7 @@
+import useToday from '../hooks/useToday'
+import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
+import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
+import { eventToday, isEventEnded, validateAttendanceWindow } from '../utils/eventAttendance'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
@@ -71,6 +75,7 @@ export default function CalendarAdminPage() {
     eventType: 'REGULAR',
     attendanceRequired: false,
     attendanceDeadline: '',
+    attendanceStartDate: '',
     attendanceTarget: 'STUDENT_ONLY',
   })
 
@@ -82,6 +87,8 @@ export default function CalendarAdminPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const windowError = validateAttendanceWindow(formData)
+    if (windowError) { alert(windowError); return }
     if (!formData.title || !formData.eventDate) return
 
     try {
@@ -92,7 +99,8 @@ export default function CalendarAdminPage() {
         startTime: allDay ? null : rest.startTime || null,
         endTime:   allDay ? null : rest.endTime   || null,
         // 마감일을 비워두면 일정 마지막 날까지
-        attendanceDeadline: rest.attendanceRequired ? (rest.attendanceDeadline || rest.endDate) : null,
+        attendanceDeadline: rest.attendanceRequired ? rest.attendanceDeadline : null,
+        attendanceStartDate: rest.attendanceRequired ? rest.attendanceStartDate : null,
       }
       if (editingId) {
         await client.put(`/events/${editingId}`, submitData)
@@ -126,7 +134,8 @@ export default function CalendarAdminPage() {
       color: event.color || '',
       eventType: event.eventType,
       attendanceRequired: event.attendanceRequired ?? false,
-      attendanceDeadline: event.attendanceDeadline || '',
+      attendanceDeadline: event.attendanceDeadline || event.endDate || event.eventDate,
+      attendanceStartDate: event.attendanceStartDate || (eventToday() > (event.attendanceDeadline || event.endDate || event.eventDate) ? (event.attendanceDeadline || event.endDate || event.eventDate) : eventToday()),
       attendanceTarget: event.attendanceTarget || 'STUDENT_ONLY',
     })
     setShowForm(true)
@@ -162,12 +171,13 @@ export default function CalendarAdminPage() {
       eventType: 'REGULAR',
       attendanceRequired: false,
       attendanceDeadline: '',
+    attendanceStartDate: '',
       attendanceTarget: 'STUDENT_ONLY',
     })
   }
 
   // 다가올 / 진행중 / 지난 일정 분류
-  const today = toApiDate()
+  const today = useToday(eventToday)
   const categorizedEvents = useMemo(() => {
     const upcoming = [], ongoing = [], past = []
     events.filter(e => matchesAdminSearch(search, e.title, e.description, e.eventDate)).forEach(e => {
@@ -193,7 +203,7 @@ export default function CalendarAdminPage() {
             action={<Button size="sm" onClick={() => setShowChoice(true)}><Plus size={16} /> 일정 추가</Button>} />
           <SearchField label="관리할 일정 검색" value={search} onChange={setSearch} placeholder="일정 이름, 설명 또는 날짜 검색" />
           <SegmentedControl label="일정 기간" value={period} onChange={setPeriod}
-            options={[{value: 'all', label: '전체'}, {value: 'upcoming', label: '진행·예정'}, {value: 'past', label: '지난 일정'}]} />
+            options={[{value: 'all', label: '전체'}, {value: 'upcoming', label: '진행·예정'}, {value: 'past', label: '종료된 일정'}]} />
         </div>
 
         {showForm && (
@@ -324,9 +334,11 @@ export default function CalendarAdminPage() {
                 </div>
 
                 {/* 출석 체크 활성화 토글 */}
-                <div
-                  onClick={() => setFormData(d => ({ ...d, attendanceRequired: !d.attendanceRequired }))}
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                <button type="button" role="switch" aria-checked={formData.attendanceRequired} aria-label="출석 체크 활성화"
+                  onClick={() => setFormData(d => ({ ...d, attendanceRequired: !d.attendanceRequired,
+                    attendanceStartDate: d.attendanceStartDate || (eventToday() > d.endDate ? d.endDate : eventToday()),
+                    attendanceDeadline: d.attendanceDeadline || d.endDate }))}
+                  className={`w-full text-left flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
                     formData.attendanceRequired
                       ? 'border-emerald-300 bg-emerald-50'
                       : 'border-gray-100 bg-gray-50'
@@ -345,64 +357,15 @@ export default function CalendarAdminPage() {
                       formData.attendanceRequired ? 'left-5' : 'left-0.5'
                     }`} />
                   </div>
-                </div>
+                </button>
 
-                {/* 출석 대상 선택 + 마감일 (출석 체크 활성화 시에만 표시) */}
-                {formData.attendanceRequired && (
-                  <div className="brand-card flex flex-col gap-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
-                    <div>
-                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">출석 대상</label>
-                      <div className="flex gap-2">
-                        {[
-                          { value: 'STUDENT_ONLY', label: '학생만' },
-                          { value: 'TEACHER_ONLY', label: '교사만' },
-                          { value: 'BOTH',         label: '학생 + 교사' },
-                        ].map(opt => (
-                          <button aria-pressed={formData.attendanceTarget === opt.value}
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormData(d => ({ ...d, attendanceTarget: opt.value }))}
-                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
-                              formData.attendanceTarget === opt.value
-                                ? 'border-emerald-400 bg-emerald-100 text-emerald-700'
-                                : 'border-gray-100 bg-white text-gray-400'
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">
-                        출석 제출 마감일 <span className="text-gray-400 font-medium normal-case">(선택)</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.attendanceDeadline}
-                        onChange={e => setFormData(d => ({ ...d, attendanceDeadline: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl border border-emerald-100 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300"
-                      />
-                      {formData.attendanceDeadline && (
-                        <p className="text-xs text-emerald-600 mt-1.5 font-medium">
-                          ✓ {formData.attendanceDeadline} 까지 출석 제출 가능합니다
-                        </p>
-                      )}
-                      {!formData.attendanceDeadline && (
-                        <p className="text-xs text-gray-400 mt-1.5">
-                          비워두면 저장할 때 마감일이 일정 마지막 날({formData.endDate})로 자동 설정됩니다.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {formData.attendanceRequired && <EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} />}
 
                 <div className="flex gap-3">
                   <Button type="submit" size="lg" loading={submitting}>
                     {editingId ? '수정 완료' : '등록 완료'}
                   </Button>
-                  <Button variant="ghost" onClick={handleCloseForm}>취소</Button>
+                  <Button variant="ghost" className="shrink-0 whitespace-nowrap" onClick={handleCloseForm}>취소</Button>
                 </div>
               </form>
             </Card>
@@ -422,7 +385,7 @@ export default function CalendarAdminPage() {
             {[
               { key: 'ongoing', label: '진행중인 일정', dot: 'bg-emerald-500', list: categorizedEvents.ongoing },
               { key: 'upcoming', label: '다가올 일정', dot: 'bg-blue-500', list: categorizedEvents.upcoming },
-              { key: 'past', label: '지난 일정', dot: 'bg-gray-400', list: categorizedEvents.past },
+              { key: 'past', label: '종료된 일정', dot: 'bg-gray-400', list: categorizedEvents.past },
             ].map(({ key, label, dot, list }) => list.length > 0 && (
               <div key={key} className="flex flex-col gap-4">
                 <div className="flex items-center gap-3 px-1">
@@ -435,9 +398,9 @@ export default function CalendarAdminPage() {
                 </div>
                 <div className="flex flex-col gap-4">
                   {list.map(event => {
-                    const colors = getEventColors(event.color)
+                    const colors = isEventEnded(event, today) ? 'border-gray-300 bg-gray-100 text-gray-600' : getEventColors(event.color)
                     return (
-                      <Card key={event.id} className={`brand-custom-color p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
+                      <Card key={event.id} className={`${isEventEnded(event, today) ? 'event-inactive' : ''} brand-custom-color p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
                         <div className={`p-4 ${colors.split(' ')[1]}`}>
                           <div className="flex flex-wrap justify-between items-start gap-3">
                             <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -455,6 +418,7 @@ export default function CalendarAdminPage() {
                                   </span>
                                 </div>
                                 <h3 className="font-bold text-gray-900 text-base mb-1">{event.title}</h3>
+                                {isEventEnded(event, today) && <p className="mb-2 text-xs text-gray-600">종료된 일정 · 내용 조회</p>}
                                 {event.description && (
                                   <p className="text-gray-500 text-xs font-medium leading-relaxed mb-3">{event.description}</p>
                                 )}
@@ -466,11 +430,7 @@ export default function CalendarAdminPage() {
                                       <Clock size={12} /> {event.startTime} {event.endTime && `~ ${event.endTime}`}
                                     </span>
                                   )}
-                                  {event.attendanceRequired && (
-                                    <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
-                                      <CheckCircle2 size={10} /> 출석체크 활성
-                                    </span>
-                                  )}
+                                  <EventAttendanceStatus event={event} today={today} />
                                   {event.attendanceRequired && event.attendanceDeadline && (
                                     <span className="flex items-center gap-1 text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">
                                       마감 {format(new Date(event.attendanceDeadline), 'M/d', { locale: ko })}

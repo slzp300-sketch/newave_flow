@@ -10,12 +10,14 @@ import client from '../api/client'
 import { toApiDate } from '../utils/date'
 import { eventCheckState, summarizeChecks } from '../utils/checkProgress'
 import { knownRead, attendanceTaskState } from '../utils/attention'
+import { eventAttendanceState, eventToday } from '../utils/eventAttendance'
 
 const checkState = (query, done) => knownRead(query) ? (done ? 'done' : 'pending') : 'unknown'
 
 export default function useWeeklyTasks() {
   const { user } = useAuthStore()
   const today = useToday()
+  const eventDate = useToday(eventToday)
   const date = new Date(today + 'T12:00:00')
   const sunday = toApiDate(startOfWeek(date, { weekStartsOn: 0 }))
   const monday = startOfWeek(date, { weekStartsOn: 1 })
@@ -32,7 +34,7 @@ export default function useWeeklyTasks() {
     queryFn: () => classesApi.getMyClasses().then(r => r.data) })
   const eventQuery = useQuery({ ...fresh, queryKey: ['attendance-required-events'],
     queryFn: () => eventApi.getAttendanceRequired().then(r => r.data) })
-  const events = (eventQuery.data || []).filter(e => !e.attendanceDeadline || e.attendanceDeadline >= today)
+  const events = (eventQuery.data || []).filter(e => eventAttendanceState(e, eventDate) === 'open')
   const teacherEvents = events.filter(e => ['BOTH', 'TEACHER_ONLY'].includes(e.attendanceTarget))
   const studentEvents = events.filter(e => !e.attendanceTarget || ['BOTH', 'STUDENT_ONLY'].includes(e.attendanceTarget))
   const teacherQueries = useQueries({ queries: teacherEvents.map(e => ({ ...fresh,

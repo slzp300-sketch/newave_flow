@@ -4,6 +4,15 @@ import { QueryClient, QueryObserver } from '@tanstack/react-query'
 import { hasQueryData, queryReadState } from '../src/utils/queryReadState.js'
 import { scopedDraft, studentEventForm, teacherEventForm, confirmAttendance } from '../src/utils/attendanceDraft.js'
 
+test('inactive event views preserve missing records without presenting draft defaults as attendance', () => {
+  const students = [{ studentId: 1, status: null }, { studentId: 2, status: 'ABSENT', absenceReason: 'saved reason' }]
+  const saved = studentEventForm(students, undefined, null)
+  assert.deepEqual(saved.statusMap, { 1: null, 2: 'ABSENT' })
+  assert.equal(saved.reasonMap[2], 'saved reason')
+  assert.equal(saved.editing, false)
+  assert.equal(studentEventForm(students).statusMap[1], 'PRESENT')
+})
+
 test('cached empty/null attendance stays visible during refresh, error and offline; writes stay blocked', () => {
   for (const data of [null, [], { status: 'SUBMITTED' }]) {
     for (const state of [{ isFetching: true }, { isError: true }, { fetchStatus: 'paused' }]) {

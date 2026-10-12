@@ -69,13 +69,13 @@ export default function Login() {
           {error && <div role="alert" className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>}
           <Button type="submit" size="lg" loading={loading} className="mt-1">로그인</Button>
         </form>
-        <div className="flex items-center justify-center gap-4 text-sm text-gray-500 mt-3">
-          <button onClick={() => navigate('/find-account?tab=id')} className="min-h-11">아이디 찾기</button>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500 mt-4">
+          <button onClick={() => navigate('/find-account?tab=id')} className="min-h-11 rounded-xl px-4 py-3">아이디 찾기</button>
           <span aria-hidden="true" className="text-gray-300">·</span>
-          <button onClick={() => navigate('/find-account?tab=pw')} className="min-h-11">비밀번호 찾기</button>
+          <button onClick={() => navigate('/find-account?tab=pw')} className="min-h-11 rounded-xl px-4 py-3">비밀번호 찾기</button>
         </div>
-        <div className="mt-4 pt-4 border-t border-gray-200 text-center text-sm text-gray-500">
-          처음 오셨나요? <button onClick={() => navigate('/signup')} className="min-h-11 ml-2 font-semibold text-primary-700">회원가입</button>
+        <div className="mt-5 pt-5 border-t border-gray-200 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-500">
+          <span>처음 오셨나요?</span> <button onClick={() => navigate('/signup')} className="min-h-11 rounded-xl px-5 py-3 font-semibold text-primary-700">회원가입</button>
         </div>
         <p className="text-center mt-5 text-xs tracking-[.2em] text-gray-400">NEWAVE YOUTH MINISTRY</p>
       </div>

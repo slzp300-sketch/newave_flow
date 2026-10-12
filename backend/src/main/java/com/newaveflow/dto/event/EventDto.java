@@ -26,6 +26,7 @@ public class EventDto {
             boolean attendanceRequired,
             LocalDate attendanceDeadline,
             String attendanceTarget,
+            LocalDate attendanceStartDate,
             String readVersion
     ) {
         public static EventResponse from(Event event) {
@@ -44,6 +45,7 @@ public class EventDto {
                     event.getAttendanceTarget() != null
                             ? event.getAttendanceTarget().name()
                             : Event.AttendanceTarget.STUDENT_ONLY.name(),
+                    event.getAttendanceStartDate(),
                     com.newaveflow.service.EventReadVersion.of(event)
             );
         }
@@ -60,7 +62,8 @@ public class EventDto {
             @NotNull @Pattern(regexp = "SPECIAL|MEETING|REGULAR|CHURCH_WIDE") String eventType,
             Boolean attendanceRequired,
             LocalDate attendanceDeadline,
-            @Pattern(regexp = "STUDENT_ONLY|TEACHER_ONLY|BOTH") String attendanceTarget
+            @Pattern(regexp = "STUDENT_ONLY|TEACHER_ONLY|BOTH") String attendanceTarget,
+            LocalDate attendanceStartDate
     ) {}
 
     // 여러 일정 한번에 등록 (최대 30개)

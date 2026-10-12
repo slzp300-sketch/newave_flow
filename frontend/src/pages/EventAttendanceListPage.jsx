@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react'
+import useToday from '../hooks/useToday'
+import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -13,13 +15,12 @@ import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
-import { toApiDate } from '../utils/date'
-import { isEventAttendanceClosed, assertEventAttendanceOpen } from '../utils/eventAttendance'
+import { isEventAttendanceInactive, assertEventAttendanceOpen, eventAttendanceState, eventAttendanceMessage, eventToday } from '../utils/eventAttendance'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState, hasQueryData } from '../utils/queryReadState'
 import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
 import { useStudentAttendanceDraft, useTeacherAttendanceDraft } from '../hooks/useAttendanceDraft'
-import { confirmAttendance } from '../utils/attendanceDraft'
+import { confirmAttendance, studentEventForm, teacherEventForm } from '../utils/attendanceDraft'
 
 const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
 const STATUS_COLOR = {
@@ -31,7 +32,7 @@ const STATUS_COLOR = {
 // ── 교사 본인 출석 체크 섹션 ──────────────────────────────
 function TeacherSelfCheck({ event, userId }) {
   const eventId = event.id
-  const isPastDeadline = isEventAttendanceClosed(event)
+  const isUnavailable = isEventAttendanceInactive(event)
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
 
@@ -45,7 +46,7 @@ function TeacherSelfCheck({ event, userId }) {
 
   const draft = useTeacherAttendanceDraft(`${eventId}:${userId}:teacher`, myAtt)
   const { pending, setPending, partialFromDate, setPartialFromDate, partialNote, setPartialNote,
-    absenceReason, setAbsenceReason, submitted, editing, setEditing } = draft
+    absenceReason, setAbsenceReason, submitted, editing, setEditing } = isUnavailable ? { ...draft, ...teacherEventForm(myAtt) } : draft
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -65,10 +66,10 @@ function TeacherSelfCheck({ event, userId }) {
     onError: (err) => alert(err.response?.data?.message || err.message || '출석을 저장하지 못했어요. 다시 시도해 주세요.'),
   })
 
-  const canSubmit = !isPastDeadline && pending &&
+  const canSubmit = !isUnavailable && pending &&
     (pending !== 'PARTIAL' || partialFromDate) &&
     (pending !== 'ABSENT'  || absenceReason.trim() !== '')
-  const isEditable = (!submitted || editing) && !isPastDeadline
+  const isEditable = (!submitted || editing) && !isUnavailable
   const statusKeys = isMultiDay ? ['PRESENT', 'PARTIAL', 'ABSENT'] : ['PRESENT', 'ABSENT']
 
   if (!hasQueryData([attendanceQuery])) return <QueryNotice queries={[attendanceQuery]} label="교사 출석 기록" />
@@ -96,7 +97,7 @@ function TeacherSelfCheck({ event, userId }) {
               <p className="text-xs text-gray-500 font-medium pl-6">사유: {absenceReason}</p>
             )}
           </div>
-          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-xs text-gray-500 font-bold flex items-center gap-1 flex-shrink-0">
+          {!isUnavailable && <button onClick={() => setEditing(true)} className="text-xs text-gray-500 font-bold flex items-center gap-1 flex-shrink-0">
             <PenLine size={12} /> 수정
           </button>}
         </div>
@@ -187,7 +188,7 @@ function TeacherSelfCheck({ event, userId }) {
 // ── 학생 출석 체크 섹션 ─────────────────────────────────────
 function StudentAttendanceCheck({ event, userId }) {
   const eventId  = event.id
-  const isPastDeadline = isEventAttendanceClosed(event)
+  const isUnavailable = isEventAttendanceInactive(event)
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
   const qc = useQueryClient()
 
@@ -201,7 +202,7 @@ function StudentAttendanceCheck({ event, userId }) {
 
   const draft = useStudentAttendanceDraft(`${eventId}:${userId}:students`, students)
   const { statusMap, setStatusMap, reasonMap, setReasonMap, partialFromDateMap, setPartialFromDateMap,
-    partialNoteMap, setPartialNoteMap, submitted, editing, setEditing } = draft
+    partialNoteMap, setPartialNoteMap, submitted, editing, setEditing } = isUnavailable ? { ...draft, ...studentEventForm(students, undefined, null) } : draft
 
   const saveMutation = useMutation({
     mutationFn: async (records) => {
@@ -233,7 +234,7 @@ function StudentAttendanceCheck({ event, userId }) {
 
   const presentCount = Object.values(statusMap).filter(s => s === 'PRESENT' || s === 'PARTIAL').length
   const absentCount  = Object.values(statusMap).filter(s => s === 'ABSENT').length
-  const isEditable   = (!submitted || editing) && !isPastDeadline
+  const isEditable   = (!submitted || editing) && !isUnavailable
 
   const missingReasons  = students.filter(s => statusMap[s.studentId] === 'ABSENT' && !reasonMap[s.studentId]?.trim())
   const missingPartials = isMultiDay
@@ -274,7 +275,7 @@ function StudentAttendanceCheck({ event, userId }) {
             <CheckCircle2 size={16} className="text-secondary-600" />
             <span className="text-xs font-bold text-secondary-700">출석 체크 제출 완료</span>
           </div>
-          {!isPastDeadline && <button onClick={() => setEditing(true)} className="text-xs text-secondary-600 font-bold flex items-center gap-1">
+          {!isUnavailable && <button onClick={() => setEditing(true)} className="text-xs text-secondary-600 font-bold flex items-center gap-1">
             <PenLine size={12} /> 수정
           </button>}
         </div>
@@ -290,7 +291,7 @@ function StudentAttendanceCheck({ event, userId }) {
         <div className="flex flex-col gap-2">
           {students.map((student, idx) => {
             const sid    = student.studentId
-            const status = statusMap[sid] ?? 'PRESENT'
+            const status = statusMap[sid]
             return (
               <motion.div key={sid} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} transition={{ delay: idx * 0.03 }}
                 className="flex flex-col gap-1.5"
@@ -335,7 +336,7 @@ function StudentAttendanceCheck({ event, userId }) {
                         status === 'PRESENT' ? 'text-secondary-600' : status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
                       } ${!isEditable ? 'cursor-default' : ''}`}>
                       {status === 'PRESENT' ? <><CheckCircle2 size={14} /> 출석</> :
-                       status === 'PARTIAL' ? <><Clock size={14} /> 부분참석</> : <><XCircle size={14} /> 결석</>}
+                       status === 'PARTIAL' ? <><Clock size={14} /> 부분참석</> : status === 'ABSENT' ? <><XCircle size={14} /> 결석</> : '미제출'}
                     </button>
                   )}
                 </div>
@@ -393,15 +394,15 @@ function StudentAttendanceCheck({ event, userId }) {
 
 // ── 행사별 출석 패널 ─────────────────────────────────────
 function EventPanel({ event, user }) {
-  const isPastDeadline = isEventAttendanceClosed(event)
+  const isUnavailable = isEventAttendanceInactive(event)
   const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
   const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
 
   return (
     <div className="flex flex-col gap-5 px-4 pb-4 pt-2">
-      {isPastDeadline && (
-        <p role="status" className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          출석 제출 기간이 마감되었습니다. 기존 기록만 확인할 수 있어요.
+      {isUnavailable && (
+        <p role="status" className="rounded-xl bg-gray-100 px-4 py-3 text-sm text-gray-600">
+          {eventAttendanceMessage(event)}
         </p>
       )}
       {needsTeacher && <TeacherSelfCheck event={event} userId={user?.id} />}
@@ -413,7 +414,7 @@ function EventPanel({ event, user }) {
 
 // ── 행사 카드 헤더 (제출 상태 포함) ──────────────────────
 function EventCardHeader({ event, userId, isOpen, onToggle }) {
-  const isPastDeadline = isEventAttendanceClosed(event)
+  const isUnavailable = isEventAttendanceInactive(event)
   const needsTeacher = event.attendanceTarget === 'TEACHER_ONLY' || event.attendanceTarget === 'BOTH'
   const needsStudent = !event.attendanceTarget || event.attendanceTarget === 'STUDENT_ONLY' || event.attendanceTarget === 'BOTH'
 
@@ -469,11 +470,7 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
             {event.attendanceTarget === 'TEACHER_ONLY' ? '교사 출석' :
              event.attendanceTarget === 'BOTH'         ? '학생 + 교사' : '학생 출석'}
           </p>
-          {event.attendanceDeadline ? (
-            <p className={`mt-1 text-xs font-semibold ${isPastDeadline ? 'text-gray-500' : 'text-primary-700'}`}>
-              {isPastDeadline ? '제출 마감됨' : `${format(new Date(event.attendanceDeadline), 'M월 d일')}까지 제출`}
-            </p>
-          ) : <p className="mt-1 text-xs text-gray-500">제출 기한 제한 없음</p>}
+          <EventAttendanceStatus event={event} />
         </div>
       </div>
       <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -485,6 +482,7 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
 
 // ── 메인 페이지 ─────────────────────────��────────────────
 export default function EventAttendanceListPage() {
+  const today = useToday(eventToday)
   const { user } = useAuthStore()
   const [selectedId, setSelectedId] = useState(null)
 
@@ -494,11 +492,12 @@ export default function EventAttendanceListPage() {
   })
   const rawEvents = eventsQuery.data || []
 
-  const today = toApiDate()
-  const events = useMemo(
-    () => rawEvents.filter(e => !isEventAttendanceClosed(e, today)),
-    [rawEvents, today]
-  )
+  const groups = [
+    { state: 'open', label: '접수 중인 행사' },
+    { state: 'upcoming', label: '접수 예정인 행사' },
+    { state: 'closed', label: '종료된 행사 · 기존 기록 조회' },
+  ]
+  const events = groups.flatMap(group => rawEvents.filter(e => eventAttendanceState(e, today) === group.state))
 
   const handleSelect = (id) => setSelectedId(prev => prev === id ? null : id)
 
@@ -528,8 +527,9 @@ export default function EventAttendanceListPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.06 }}
-                className="brand-card bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+                className={`brand-card rounded-3xl border shadow-sm overflow-hidden ${isEventAttendanceInactive(event, today) ? 'event-inactive' : 'bg-white border-gray-100'}`}
               >
+                {(idx === 0 || eventAttendanceState(events[idx - 1], today) !== eventAttendanceState(event, today)) && <p className="border-b border-gray-200 px-4 py-3 text-xs font-semibold">{groups.find(g => g.state === eventAttendanceState(event, today))?.label}</p>}
                 {/* 행사 헤더 (클릭으로 펼치기) */}
                 <EventCardHeader
                   event={event}
@@ -548,7 +548,7 @@ export default function EventAttendanceListPage() {
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                     >
                       <div className="border-t border-gray-50" />
-                      <fieldset disabled={queryReadState([eventsQuery]) !== 'ready'} className="min-w-0">
+                      <fieldset disabled={queryReadState([eventsQuery]) !== 'ready' || isEventAttendanceInactive(event, today)} className="min-w-0">
                         <EventPanel event={event} user={user} />
                       </fieldset>
                     </motion.div>

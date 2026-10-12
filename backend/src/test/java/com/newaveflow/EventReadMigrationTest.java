@@ -28,6 +28,8 @@ class EventReadMigrationTest {
             assertEquals(before,after,"Every existing table must retain all original rows");
             try { assertThrows(SQLException.class,()->s.execute(sql)); } finally { s.execute("ROLLBACK"); }
             assertEquals("1",scalar(c,"SELECT count(*) FROM schema_migrations WHERE version='V002__account_event_reads'"));
+            // The current application also expects later additive migrations.
+            s.execute(Files.readString(Path.of("db/migrations/V003__event_attendance_window.sql")));
         }
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,

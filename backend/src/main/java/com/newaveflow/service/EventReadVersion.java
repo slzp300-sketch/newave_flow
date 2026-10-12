@@ -15,11 +15,14 @@ public final class EventReadVersion {
 
     public static String of(Event event) {
         try {
-            String content = JSON.writeValueAsString(Arrays.asList(event.getTitle(), event.getDescription(),
+            var fields = new java.util.ArrayList<Object>(Arrays.asList(event.getTitle(), event.getDescription(),
                     date(event.getEventDate()), date(event.getEndDate()), event.getStartTime(), event.getEndTime(),
                     event.getEventType().name(), event.getColor(), event.isAttendanceRequired(),
                     date(event.getAttendanceDeadline()), event.getAttendanceTarget() == null
                             ? Event.AttendanceTarget.STUDENT_ONLY.name() : event.getAttendanceTarget().name()));
+            // Preserve V002 versions for unchanged legacy events with no start date.
+            if (event.getAttendanceStartDate() != null) fields.add(event.getAttendanceStartDate().toString());
+            String content = JSON.writeValueAsString(fields);
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
             throw new IllegalStateException("Unable to calculate event content version", e);
