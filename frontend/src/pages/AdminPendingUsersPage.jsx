@@ -1,20 +1,28 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, UserCheck, Clock } from 'lucide-react'
+import { UserCheck } from 'lucide-react'
 import { adminUsersApi } from '../api/adminUsers'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
+import SearchField from '../components/common/SearchField'
+import { AdminIntro, AdminEmpty, FilterResults } from '../components/common/AdminTools'
+import QueryNotice from '../components/common/QueryNotice'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import { hasQueryData, queryReadState } from '../utils/queryReadState'
+import { matchesAdminSearch } from '../utils/adminSearch'
+import { Link } from 'react-router-dom'
 
 export default function AdminPendingUsersPage() {
   const qc = useQueryClient()
+  const [search, setSearch] = useState('')
 
-  const { data: pendingUsers = [], isLoading: isUsersLoading } = useQuery({
+  const pendingQuery = useQuery({
     queryKey: ['pending-users'],
     queryFn: () => adminUsersApi.getPending().then(r => r.data)
   })
 
-  const { mutate: approve, isPending } = useMutation({
+  const { mutate: approve, isPending, variables } = useMutation({
     mutationFn: (userId) => adminUsersApi.approve(userId, null),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pending-users'] })
@@ -28,52 +36,31 @@ export default function AdminPendingUsersPage() {
     }
   })
 
-  if (isUsersLoading) return <div className="p-10 text-center">불러오는 중...</div>
-
-  return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="가입 승인 대기" showBack />
-      
-      <div className="px-5 pt-6 pb-4">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Clock className="text-amber-500" size={24} />
-          대기 목록 <span className="text-amber-500">{pendingUsers.length}</span>명
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          신규 가입한 교사를 확인하고 활동을 승인해주세요.<br/>
-          (반 배정은 '반 담임/부담임 배정' 메뉴에서 진행할 수 있습니다.)
-        </p>
-
-        <div className="mt-6 flex flex-col gap-4">
-          {pendingUsers.length === 0 ? (
-            <div className="py-10 text-center text-gray-400 font-bold bg-white rounded-3xl border border-gray-100">
-              승인 대기 중인 사용자가 없습니다.
-            </div>
-          ) : (
-            pendingUsers.map(user => (
-              <Card key={user.id} className="p-5 flex flex-col gap-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-3 bg-amber-50 text-amber-600 rounded-bl-2xl text-xs font-bold tracking-widest">
-                  PENDING
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{user.name}</h3>
-                  <p className="text-xs font-bold text-gray-400 mt-0.5">{user.email}</p>
-                </div>
-                
-                <Button 
-                  onClick={() => approve(user.id)}
-                  loading={isPending}
-                  className="w-full mt-2 flex items-center justify-center gap-2"
-                >
-                  <UserCheck size={18} />
-                  가입 승인 처리
-                </Button>
-              </Card>
-            ))
-          )}
-        </div>
-      </div>
+  const pendingUsers = pendingQuery.data || []
+  const filtered = pendingUsers.filter(user => matchesAdminSearch(search, user.name, user.email))
+  const ready = queryReadState([pendingQuery]) === 'ready'
+  return <div className="min-h-screen bg-gray-50 pb-20">
+    <Header title="가입 승인 대기" showBack />
+    <div className="flex flex-col gap-4 px-4 py-5">
+      <AdminIntro title="새로운 교사를 맞이해요" description="가입 정보를 확인해 승인한 뒤, 담당할 반을 배정해 주세요." />
+      <Link to="/admin/class-assignment" className="flex min-h-11 items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm font-semibold text-gray-600">
+        승인 후 반 배정하기 <span aria-hidden="true">›</span>
+      </Link>
+      <SearchField label="승인 대기 교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
+      {!hasQueryData([pendingQuery]) ? <QueryNotice queries={[pendingQuery]} label="승인 대기 목록" /> : <>
+        <QueryRefreshNotice queries={[pendingQuery]} label="승인 대기 목록" />
+        <FilterResults count={filtered.length} total={pendingUsers.length} filtered={!!search.trim()} onReset={() => setSearch('')} />
+        {!filtered.length && <AdminEmpty title={search.trim() ? undefined : '승인 대기 중인 교사가 없습니다'} description={search.trim() ? undefined : '신규 가입 신청이 들어오면 여기에 표시됩니다.'} />}
+        {filtered.map(user => <Card key={user.id} className="flex flex-col gap-4 p-5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0"><h3 className="font-bold text-gray-900">{user.name}</h3><p className="mt-1 break-all text-xs text-gray-500">{user.email}</p></div>
+            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-600">승인 대기</span>
+          </div>
+          <Button onClick={() => approve(user.id)} loading={isPending && variables === user.id} disabled={!ready || isPending} className="w-full">
+            <UserCheck size={17} /> {user.name} 승인
+          </Button>
+        </Card>)}
+      </>}
     </div>
-  )
+  </div>
 }

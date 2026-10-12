@@ -1,3 +1,6 @@
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro } from '../components/common/AdminTools'
+import AdminReadGuard from '../components/common/AdminReadGuard'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -36,38 +39,33 @@ export default function EvangelismAdminPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState(0)
 
-  const { data: teachers = [], isLoading: teachersLoading } = useQuery({
+  const teachersQuery = useQuery({
     queryKey: ['teachers'],
     queryFn: () => usersApi.getTeachers().then(r => r.data),
   })
+  const { data: teachers = [], isLoading: teachersLoading } = teachersQuery
 
-  if (teachersLoading) return <LoadingSpinner />
+
 
   return (
     <div className="flex flex-col min-h-screen pb-20">
       <Header title="전도 로테이션 관리" showBack />
 
-      <div className="flex mx-4 mt-4 bg-gray-100 rounded-2xl p-1 gap-1">
-        {TABS.map((t, i) => (
-          <button
-            key={t}
-            onClick={() => setTab(i)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
-              tab === i ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="flex flex-col gap-4 px-4 pt-5">
+        <AdminIntro title="전도 팀과 일정을 연결해요" description="교사를 조에 배정하고 조별 전도 순서를 관리하세요." />
+        <SegmentedControl label="전도 관리 화면" value={tab} onChange={setTab} selectedClassName="text-gray-900"
+          options={TABS.map((label, value) => ({ value, label }))} />
       </div>
 
       <div className="pt-4">
+        <AdminReadGuard queries={[teachersQuery]} label="전도 담당 교사 명단">
         <AnimatePresence mode="wait">
           {tab === 0
             ? <GroupManagementTab key="groups" teachers={teachers} />
             : <ScheduleManagementTab key="schedules" teachers={teachers} />
           }
         </AnimatePresence>
+        </AdminReadGuard>
       </div>
     </div>
   )

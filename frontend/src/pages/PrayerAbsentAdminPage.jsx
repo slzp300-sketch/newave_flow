@@ -1,3 +1,9 @@
+import SearchField from '../components/common/SearchField'
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro, FilterResults } from '../components/common/AdminTools'
+import { matchesAdminSearch } from '../utils/adminSearch'
+import AdminReadGuard from '../components/common/AdminReadGuard'
+import { queryReadState } from '../utils/queryReadState'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -6,7 +12,7 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { prayerVoteApi } from '../api/prayerVote'
 import { formatUpdatedAt, weekLabels } from '../utils/date'
-import { format, startOfWeek, addWeeks } from 'date-fns'
+import { format } from 'date-fns'
 
 function getThisWeekMonday() {
   const now = new Date()
@@ -33,21 +39,24 @@ function getPastMondays(count = 8) {
 }
 
 export default function PrayerAbsentAdminPage() {
+  const [search, setSearch] = useState('')
   const [selectedWeek, setSelectedWeek] = useState(getThisWeekMonday())
   const [activeGrade, setActiveGrade] = useState('전체')
   const [statusFilter, setStatusFilter] = useState('전체') // '전체' | '미제출' | '제출완료'
   const queryClient = useQueryClient()
   const weeks = getPastMondays()
 
-  const { data: absentList = [], isLoading } = useQuery({
+  const absentQuery = useQuery({
     queryKey: ['prayer-absent', selectedWeek],
     queryFn: () => prayerVoteApi.getAbsentList(selectedWeek).then(r => r.data),
     refetchOnWindowFocus: 'always', // 교사가 투표를 고치면 바로 반영
   })
+  const { data: absentList = [], isLoading } = absentQuery
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, submitted }) => prayerVoteApi.toggleScripture(id, submitted).then(r => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['prayer-absent', selectedWeek] }),
+    onError: err => alert(err.response?.data?.message || '필사 제출 상태를 변경하지 못했습니다. 다시 시도해 주세요.'),
   })
 
   const GRADE_ORDER = ['전체', '유치', '초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '미분류']
@@ -57,7 +66,7 @@ export default function PrayerAbsentAdminPage() {
     const statusMatch = statusFilter === '전체' || 
       (statusFilter === '미제출' && !v.scriptureCopySubmitted) ||
       (statusFilter === '제출완료' && v.scriptureCopySubmitted)
-    return gradeMatch && statusMatch
+    return gradeMatch && statusMatch && matchesAdminSearch(search, v.teacherName, v.teacherGrade)
   })
 
   const grouped = {}
@@ -81,10 +90,12 @@ export default function PrayerAbsentAdminPage() {
 
       <div className="px-4 py-5 flex flex-col gap-6">
 
+        <AdminIntro title="기도모임과 필사 제출" description="불참 사유를 확인하고 필사 제출 상태를 관리하세요." />
         {/* 주차 선택 */}
         <section>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">조회 주차</p>
-          <select
+          <select aria-label="기도모임 조회 주차"
+            disabled={toggleMutation.isPending}
             value={selectedWeek}
             onChange={e => setSelectedWeek(e.target.value)}
             className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-violet-200"
@@ -95,6 +106,7 @@ export default function PrayerAbsentAdminPage() {
           </select>
         </section>
 
+        <AdminReadGuard queries={[absentQuery]} label="기도모임 불참 명단">
         {/* 필터 섹션 */}
         <section className="flex flex-col gap-3">
           {/* 학년 필터 */}
@@ -102,8 +114,9 @@ export default function PrayerAbsentAdminPage() {
             {GRADE_ORDER.filter(g => g === '전체' || absentList.some(v => (v.teacherGrade || '미분류') === g)).map(g => (
               <button
                 key={g}
+                aria-pressed={activeGrade === g}
                 onClick={() => setActiveGrade(g)}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-shrink-0 min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeGrade === g
                     ? 'bg-violet-500 text-white shadow-md'
                     : 'bg-white border border-gray-100 text-gray-400'
@@ -114,20 +127,10 @@ export default function PrayerAbsentAdminPage() {
             ))}
           </div>
 
-          {/* 상태 필터 */}
-          <div className="flex bg-gray-100 p-1 rounded-xl">
-            {['전체', '미제출', '제출완료'].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                  statusFilter === s ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl label="필사 제출 상태" value={statusFilter} onChange={setStatusFilter} selectedClassName="text-violet-600"
+            options={['전체', '미제출', '제출완료'].map(value => ({ value, label: value }))} />
+          <SearchField label="기도모임 불참 교사 검색" value={search} onChange={setSearch} placeholder="교사 이름 또는 학년 검색" />
+          <FilterResults count={filteredList.length} total={absentList.length} filtered={!!search.trim() || activeGrade !== '전체' || statusFilter !== '전체'} onReset={() => { setSearch(''); setActiveGrade('전체'); setStatusFilter('전체') }} />
         </section>
 
         {/* 통계 */}
@@ -186,7 +189,7 @@ export default function PrayerAbsentAdminPage() {
                                 <span className="font-bold text-sm">{vote.teacherName?.[0]}</span>
                               </div>
                               <div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     <p className="font-bold text-gray-900 text-sm">{vote.teacherName}</p>
                                     <span className="text-xs text-gray-400 font-bold">({vote.teacherGrade})</span>
                                     {!vote.scriptureCopySubmitted && (
@@ -205,7 +208,7 @@ export default function PrayerAbsentAdminPage() {
 
                           <button
                             onClick={() => toggleMutation.mutate({ id: vote.id, submitted: !vote.scriptureCopySubmitted })}
-                            disabled={toggleMutation.isPending}
+                            disabled={toggleMutation.isPending || queryReadState([absentQuery]) !== 'ready'}
                             className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all active:scale-95 ${
                               vote.scriptureCopySubmitted
                                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -240,6 +243,7 @@ export default function PrayerAbsentAdminPage() {
           )}
         </div>
 
+        </AdminReadGuard>
       </div>
     </div>
   )

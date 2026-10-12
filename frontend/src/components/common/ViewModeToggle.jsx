@@ -30,15 +30,16 @@ export function useViewMode(key, defaultMode) {
 /** 큰 카드 / 작은 카드 / 목록 / 자세히 전환 버튼 */
 export default function ViewModeToggle({ mode, onChange }) {
   return (
-    <div className="flex items-center bg-gray-100 rounded-xl p-0.5 flex-shrink-0">
+    <div role="group" aria-label="명단 보기 방식" className="flex items-center bg-gray-100 rounded-2xl p-1 flex-shrink-0">
       {MODES.map(({ id, label, Icon }) => (
         <button
           key={id}
+          type="button"
           onClick={() => onChange(id)}
           title={label}
           aria-label={`${label} 보기`}
           aria-pressed={mode === id}
-          className={`w-8 h-7 rounded-[10px] flex items-center justify-center transition-all ${
+          className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
             mode === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'
           }`}
         >
@@ -73,7 +74,11 @@ export function DetailTable({ columns, rows, rowKey = r => r.id, onRowClick, row
             >
               {columns.map((c, i) => (
                 <td key={c.label} className={`px-3 py-2.5 text-gray-600 font-medium ${i === 0 ? 'sticky left-0 bg-white font-bold text-gray-900' : ''} ${c.className || ''}`}>
-                  {c.render(row) ?? '-'}
+                  {i === 0 && onRowClick ? <button type="button"
+                    className="min-h-11 min-w-11 text-left underline decoration-gray-200 underline-offset-4 hover:decoration-gray-600"
+                    onClick={event => { event.stopPropagation(); onRowClick(row) }}>
+                    {c.render(row) ?? '-'}<span className="sr-only"> 상세 보기</span>
+                  </button> : c.render(row) ?? '-'}
                 </td>
               ))}
             </tr>

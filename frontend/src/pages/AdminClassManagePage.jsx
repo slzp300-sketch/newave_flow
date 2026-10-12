@@ -1,32 +1,35 @@
+import SearchField from '../components/common/SearchField'
+import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
+import { matchesAdminSearch } from '../utils/adminSearch'
+import QueryNotice from '../components/common/QueryNotice'
 import { useState } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  Users, UserPlus, X, Loader2, UserMinus, 
-  CheckCircle2, Search, GraduationCap, ChevronRight 
-} from 'lucide-react'
+import { UserPlus, X, Loader2, UserMinus, CheckCircle2, Search, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
-import Badge from '../components/common/Badge'
 import { classesApi } from '../api/classes'
 import { usersApi } from '../api/users'
 
 export default function AdminClassManagePage() {
   const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
   const [selectedClassId, setSelectedClassId] = usePersistedState('selectedClassId', null)
   const [activeGrade, setActiveGrade] = usePersistedState('activeGrade', '전체')
 
-  const { data: roster = [], isLoading: isRosterLoading } = useQuery({
+  const rosterQuery = useQuery({
     queryKey: ['admin-roster-full'],
     queryFn: () => classesApi.getRoster().then(r => r.data),
   })
+  const { data: roster = [], isLoading: isRosterLoading } = rosterQuery
 
-  const { data: users = [], isLoading: isUsersLoading } = useQuery({
+  const usersQuery = useQuery({
     queryKey: ['all-users-pool'],
     queryFn: () => usersApi.getAll().then(r => r.data),
   })
+  const { data: users = [], isLoading: isUsersLoading } = usersQuery
 
   const activeClass = roster.find(c => c.id === selectedClassId)
 
@@ -52,9 +55,12 @@ export default function AdminClassManagePage() {
 
   const sortedGradeKeys = grades.filter(g => g !== '전체')
 
-  const displayedEntries = activeGrade === '전체'
+  const gradeEntries = activeGrade === '전체'
     ? sortedGradeKeys.map(g => [g, groupedClasses[g] || []])
     : [[activeGrade, groupedClasses[activeGrade] || []]]
+
+  const displayedEntries = gradeEntries.map(([grade, classes]) => [grade, classes.filter(cls => matchesAdminSearch(search, cls.name, cls.grade, cls.teachers?.map(t => t.name)))]).filter(([, classes]) => classes.length)
+  const resultCount = displayedEntries.reduce((sum, [, classes]) => sum + classes.length, 0)
 
   const assignedOtherClassUserIds = new Set(
     roster
@@ -66,13 +72,18 @@ export default function AdminClassManagePage() {
     <div className="flex flex-col min-h-screen pb-24 bg-gray-50/50">
       <Header title="반 담임/부담임 관리" showBack />
 
+      <div className="flex flex-col gap-4 px-4 py-5">
+        <AdminIntro title="반마다 담당 교사를 연결해요" description="반을 선택해 담임·부담임을 배정하거나 변경하세요." />
+        <SearchField label="반과 담당 교사 검색" value={search} onChange={setSearch} placeholder="학년, 반 또는 교사 이름 검색" />
+      </div>
       {!isLoading && (
-        <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 sticky top-14 z-10 shadow-sm">
+        <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 ">
           {grades.map(g => (
             <button
               key={g}
+              aria-pressed={activeGrade === g}
               onClick={() => setActiveGrade(g)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-shrink-0 min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeGrade === g 
                   ? 'bg-primary-500 text-white shadow-lg' 
                   : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
@@ -84,12 +95,14 @@ export default function AdminClassManagePage() {
         </div>
       )}
 
-      {isLoading ? (
+      {rosterQuery.isError || usersQuery.isError ? <QueryNotice queries={[rosterQuery, usersQuery]} label="반과 교사 명단" /> : isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
         </div>
       ) : (
         <div className="px-4 py-6 flex flex-col gap-8">
+          <FilterResults count={resultCount} total={roster.length} unit="반" filtered={!!search.trim() || activeGrade !== '전체'} onReset={() => { setSearch(''); setActiveGrade('전체') }} />
+          {!resultCount && <AdminEmpty />}
           {displayedEntries.map(([grade, classes], gIdx) => (
             <motion.div 
               key={grade}
@@ -253,13 +266,13 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
       >
-        <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pointer-events-auto">
+        <div role="dialog" aria-label={`${cls.name} 교사 배정`} className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pointer-events-auto">
           <div className="p-6 border-b border-gray-50 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">{cls.grade}</p>
               <h3 className="text-xl font-bold text-gray-900">{cls.name} 배정 현황</h3>
             </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+            <button aria-label="교사 배정 닫기" onClick={onClose} className="w-11 h-11 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
               <X size={20} />
             </button>
           </div>
@@ -345,24 +358,24 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                     <p className="text-center py-4 text-xs text-gray-300 font-bold">검색 결과가 없습니다</p>
                   ) : (
                     filteredUsers.map(u => (
-                      <div key={u.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-primary-200 transition-colors">
+                      <div key={u.id} className="flex flex-col gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-primary-200 transition-colors">
                         <div className="flex items-center gap-3">
                            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-400">{u.name[0]}</div>
                            <div>
                               <p className="text-sm font-bold text-gray-700">{u.name}</p>
-                              <p className="text-xs text-gray-400">{u.email}</p>
+                              <p className="break-all text-xs text-gray-400">{u.email}</p>
                            </div>
                         </div>
                         <div className="flex gap-1">
                           <button 
-                            onClick={() => handleAddTeacher(u, true)}
-                            className="px-3 py-1.5 bg-primary-500 text-white rounded-xl text-xs font-bold flex items-center gap-1"
+                            aria-label={`${u.name} 담임 추가`} onClick={() => handleAddTeacher(u, true)}
+                            className="flex-1 min-h-11 justify-center px-3 py-1.5 bg-primary-500 text-white rounded-xl text-xs font-bold flex items-center gap-1"
                           >
                             담임 추가
                           </button>
                           <button 
-                            onClick={() => handleAddTeacher(u, false)}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold flex items-center gap-1"
+                            aria-label={`${u.name} 부담임 추가`} onClick={() => handleAddTeacher(u, false)}
+                            className="flex-1 min-h-11 justify-center px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold flex items-center gap-1"
                           >
                             부담임
                           </button>

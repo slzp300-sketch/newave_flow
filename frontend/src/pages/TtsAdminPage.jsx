@@ -1,12 +1,12 @@
+import SearchField from '../components/common/SearchField'
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro, AdminEmpty } from '../components/common/AdminTools'
+import { matchesAdminSearch, paginateAdminRows } from '../utils/adminSearch'
 import LegacyImportCard from '../components/tts/LegacyImportCard'
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Plus, Trash2, Save, Settings,
-  ChevronLeft, ChevronRight, CheckCircle2,
-  MoveDown, LayoutList, ClipboardCheck, Trophy, ChevronDown, ChevronUp, ArrowUpDown
-} from 'lucide-react'
+import { Plus, Trash2, Save, ChevronLeft, ChevronRight, CheckCircle2, MoveDown, LayoutList, Trophy, ChevronDown, ArrowUpDown } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
@@ -27,34 +27,10 @@ export default function TtsAdminPage() {
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/30">
       <Header title="TTS 관리" showBack />
 
-      {/* 탭 네비게이션 */}
-      <div className="px-4 mt-2 mb-4">
-        <div className="flex p-1 bg-white rounded-2xl shadow-sm border border-gray-100">
-          <button
-            onClick={() => setActiveTab('summary')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'summary' ? 'bg-primary-500 text-white shadow-md' : 'text-gray-400'
-            }`}
-          >
-            <ClipboardCheck size={16} /> 주간 현황
-          </button>
-          <button
-            onClick={() => setActiveTab('scores')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'scores' ? 'bg-primary-500 text-white shadow-md' : 'text-gray-400'
-            }`}
-          >
-            <Trophy size={16} /> 점수 현황
-          </button>
-          <button
-            onClick={() => setActiveTab('questions')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'questions' ? 'bg-primary-500 text-white shadow-md' : 'text-gray-400'
-            }`}
-          >
-            <Settings size={16} /> 항목 관리
-          </button>
-        </div>
+      <div className="flex flex-col gap-4 px-4 py-5">
+        <AdminIntro title="TTS 기록을 살펴보세요" description="주간 참여와 분기 점수를 확인하고 체크 항목을 관리하세요." />
+        <SegmentedControl label="TTS 관리 화면" value={activeTab} onChange={setActiveTab}
+          options={[{ value: 'summary', label: '주간 현황' }, { value: 'scores', label: '점수 현황' }, { value: 'questions', label: '항목 관리' }]} />
       </div>
 
       <AnimatePresence mode="wait">
@@ -73,6 +49,7 @@ export default function TtsAdminPage() {
 const PAGE_SIZE = 10
 
 function ScoresTab() {
+  const [search, setSearch] = useState('')
   const [year, setYear] = useState(ttsYear)
   const [quarter, setQuarter] = useState(() => defaultQuarter(ttsYear()))
   const [threshold, setThreshold] = useState(80)
@@ -88,8 +65,8 @@ function ScoresTab() {
 
   const sortedAll = [...scores].sort((a, b) => sortAsc ? a.totalScore - b.totalScore : b.totalScore - a.totalScore)
   const belowCount = scores.filter(t => t.totalScore < threshold).length
-  const totalPages = Math.ceil(sortedAll.length / PAGE_SIZE)
-  const pageItems = sortedAll.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const filteredScores = sortedAll.filter(t => matchesAdminSearch(search, t.teacherName, t.grade))
+  const { currentPage, totalPages, items: pageItems } = paginateAdminRows(filteredScores, page, PAGE_SIZE)
 
   const handleQuarterChange = (q) => { setQuarter(q); setExpanded(null); setPage(0) }
   const handleThresholdChange = (v) => { setThreshold(v); setExpanded(null); setPage(0) }
@@ -120,6 +97,7 @@ function ScoresTab() {
       </div>
       <p className="text-xs text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
 
+      <SearchField label="TTS 점수 교사 검색" value={search} onChange={value => { setSearch(value); setPage(0); setExpanded(null) }} placeholder="교사 이름 또는 학년 검색" />
       {/* 기준 점수 설정 */}
       <Card className="p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -127,7 +105,7 @@ function ScoresTab() {
           <span className="text-lg font-bold text-primary-600">{threshold}점</span>
         </div>
         <input
-          type="range" min={0} max={500} step={10} value={threshold}
+          aria-label="분기 기준 점수" type="range" min={0} max={500} step={10} value={threshold}
           onChange={e => handleThresholdChange(Number(e.target.value))}
           className="w-full accent-primary-500"
         />
@@ -156,7 +134,7 @@ function ScoresTab() {
             belowCount > 0 ? 'bg-red-50 border border-red-100' : 'bg-emerald-50 border border-emerald-100'
           }`}>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-0.5 text-gray-500">기준 미달 현황</p>
+              <p className="text-xs font-bold uppercase tracking-widest mb-0.5 text-gray-500">기준 미달 현황 · 전체 기준</p>
               {belowCount > 0
                 ? <p className="font-bold text-red-500 text-base">{belowCount}명 미달 <span className="text-sm text-gray-400 font-bold">/ 전체 {scores.length}명</span></p>
                 : <p className="font-bold text-emerald-500 text-base">전원 기준 달성 🎉</p>
@@ -171,7 +149,7 @@ function ScoresTab() {
           {/* 목록 헤더 */}
           <div className="flex items-center justify-between px-1">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              전체 {sortedAll.length}명
+              표시 {filteredScores.length}명 / 전체 {scores.length}명
             </p>
             <button
               onClick={handleSortToggle}
@@ -182,13 +160,14 @@ function ScoresTab() {
             </button>
           </div>
 
+          {!filteredScores.length && <AdminEmpty />}
           {/* 목록 */}
           <div className="flex flex-col gap-2">
             {pageItems.map((t, idx) => {
               const isBelow = t.totalScore < threshold
               const rowKey = t.key ?? `u${t.teacherId}`
               const isExpanded = expanded === rowKey
-              const globalIdx = page * PAGE_SIZE + idx + 1
+              const globalIdx = currentPage * PAGE_SIZE + idx + 1
               const deficit = threshold - t.totalScore
               const pct = threshold > 0 ? Math.min((t.totalScore / threshold) * 100, 100) : 100
               return (
@@ -243,22 +222,24 @@ function ScoresTab() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
               <button
-                onClick={() => { setPage(p => p - 1); setExpanded(null) }}
-                disabled={page === 0}
-                className="p-2 rounded-xl hover:bg-gray-50 disabled:opacity-30 text-gray-400"
+                aria-label="이전 점수 목록"
+                onClick={() => { setPage(currentPage - 1); setExpanded(null) }}
+                disabled={currentPage === 0}
+                className="min-h-11 min-w-11 p-2 rounded-xl hover:bg-gray-50 disabled:opacity-30 text-gray-400"
               >
                 <ChevronLeft size={18} />
               </button>
               <div className="text-center">
-                <p className="text-xs font-bold text-gray-700">{page + 1} / {totalPages} 페이지</p>
+                <p className="text-xs font-bold text-gray-700">{currentPage + 1} / {totalPages} 페이지</p>
                 <p className="text-xs text-gray-400 font-bold">
-                  {page * PAGE_SIZE + 1}~{Math.min((page + 1) * PAGE_SIZE, sortedAll.length)}번 · 전체 {sortedAll.length}명
+                  {currentPage * PAGE_SIZE + 1}~{Math.min((currentPage + 1) * PAGE_SIZE, filteredScores.length)}번 · 표시 {filteredScores.length}명
                 </p>
               </div>
               <button
-                onClick={() => { setPage(p => p + 1); setExpanded(null) }}
-                disabled={page >= totalPages - 1}
-                className="p-2 rounded-xl hover:bg-gray-50 disabled:opacity-30 text-gray-400"
+                aria-label="다음 점수 목록"
+                onClick={() => { setPage(currentPage + 1); setExpanded(null) }}
+                disabled={currentPage >= totalPages - 1}
+                className="min-h-11 min-w-11 p-2 rounded-xl hover:bg-gray-50 disabled:opacity-30 text-gray-400"
               >
                 <ChevronRight size={18} />
               </button>
@@ -293,6 +274,7 @@ function WeeklyScoreDetail({ year, scores, total }) {
 }
 
 function SummaryTab({ offset, onOffsetChange }) {
+  const [search, setSearch] = useState('')
   // 서버와 같은 주차 규칙: 일~토, 1월 1일이 든 주가 1주차 (연도는 그 주 토요일 기준)
   const sunday = getWeekStartByOffset(offset, 0)
   const year = addDays(sunday, 6).getFullYear()
@@ -308,7 +290,7 @@ function SummaryTab({ offset, onOffsetChange }) {
   const summary = summaryQuery.data || []
 
   // 학년별로 그룹화
-  const groupedData = summary.reduce((acc, curr) => {
+  const groupedData = summary.filter(t => matchesAdminSearch(search, t.teacherName, t.grade)).reduce((acc, curr) => {
     const g = curr.grade || '기타'
     if (!acc[g]) acc[g] = []
     acc[g].push(curr)
@@ -343,8 +325,9 @@ function SummaryTab({ offset, onOffsetChange }) {
         />
       </div>
 
+      <SearchField label="주간 TTS 교사 검색" value={search} onChange={setSearch} placeholder="교사 이름 또는 학년 검색" />
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">학년별 참여 현황</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{search.trim() ? '검색된 교사 참여 현황' : '학년별 참여 현황'}</p>
         <span className="text-xs font-bold text-gray-400">총 {gradeNames.length}개 학년</span>
       </div>
 
@@ -354,7 +337,7 @@ function SummaryTab({ offset, onOffsetChange }) {
         <div className="flex flex-col gap-3">
           {gradeNames.length === 0 ? (
             <div className="py-20 text-center text-gray-300">
-               <p className="text-xs font-bold">등록된 교사 정보가 없습니다</p>
+               <p className="text-xs font-bold">{search.trim() ? '조건에 맞는 교사가 없습니다' : '등록된 교사 정보가 없습니다'}</p>
             </div>
           ) : (
             gradeNames.map(grade => {
@@ -362,7 +345,7 @@ function SummaryTab({ offset, onOffsetChange }) {
               const submittedCount = teachers.filter(t => t.isSubmitted).length
               const ratio = submittedCount / teachers.length
               const isAllSubmitted = ratio === 1
-              const isExpanded = expandedGrades.includes(grade)
+              const isExpanded = !!search.trim() || expandedGrades.includes(grade)
 
               return (
                 <div key={grade} className="flex flex-col gap-2">

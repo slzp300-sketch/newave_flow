@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { usePersistedState } from '../hooks/usePersistedState'
-import { motion, AnimatePresence } from 'framer-motion'
+import SearchField from '../components/common/SearchField'
+import { AdminIntro, AdminEmpty, FilterResults } from '../components/common/AdminTools'
+import { filterMenuGroups } from '../utils/navigation'
+import { Reveal } from '../components/common/Motion'
 import { Link } from 'react-router-dom'
-import { 
-  Users, FileText, Calendar, BookOpen, CheckSquare, 
-  UserCog, ClipboardList, UserMinus, GraduationCap, 
-  UserPlus, UserCheck, ChevronDown
-} from 'lucide-react'
+import { Users, FileText, Calendar, BookOpen, CheckSquare, UserCog, ClipboardList, UserMinus, GraduationCap, UserPlus, UserCheck } from 'lucide-react'
 import Header from '../components/layout/Header'
 
 export const MENU_GROUPS = [
@@ -53,83 +51,43 @@ export const MENU_GROUPS = [
 ]
 
 export default function AdminDashboard() {
-  const [openGroup, setOpenGroup] = usePersistedState('openGroup', null)
-
-  const toggleGroup = (title) => {
-    setOpenGroup(prev => prev === title ? null : title)
-  }
-
-  return (
-    <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
-      <Header title="관리자 메뉴" showBack />
-
-      <div className="px-4 py-5 flex flex-col gap-4">
-        {MENU_GROUPS.map((group, idx) => {
-          const isOpen = openGroup === group.title
-          const GroupIcon = group.icon
-          
-          return (
-            <motion.div
-              key={group.title}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
-            >
-              <button 
-                onClick={() => toggleGroup(group.title)}
-                className="w-full flex items-center justify-between p-5 active:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-4 text-left">
-                  <div className={`w-12 h-12 rounded-2xl ${group.bg} flex items-center justify-center flex-shrink-0`}>
-                    <GroupIcon size={24} className={group.color} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900">{group.title}</h3>
-                    <p className="text-xs font-medium text-gray-400 mt-0.5">{group.desc}</p>
-                  </div>
-                </div>
-                <div className={`p-2 rounded-full transition-transform duration-300 ${isOpen ? 'rotate-180 bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-400'}`}>
-                  <ChevronDown size={18} />
-                </div>
-              </button>
-
-              <AnimatePresence>
-                {isOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  >
-                    <div className="px-5 pb-5 pt-1 flex flex-col gap-2">
-                      {group.items.map((item) => {
-                        const ItemIcon = item.icon
-                        return (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            className="flex items-center gap-4 p-3.5 rounded-2xl border border-gray-50 bg-gray-50/50 hover:bg-gray-100/80 active:scale-[0.98] transition-all group"
-                          >
-                            <div className={`w-10 h-10 rounded-xl ${item.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                              <ItemIcon size={18} className={item.iconColor} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-bold text-gray-800 text-sm">{item.title}</p>
-                              <p className="text-xs text-gray-500 font-medium mt-0.5">{item.desc}</p>
-                            </div>
-                            <span className="text-gray-300 text-lg group-hover:text-gray-500 transition-colors">›</span>
-                          </Link>
-                        )
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )
-        })}
-      </div>
+  const [search, setSearch] = useState('')
+  const groups = filterMenuGroups(MENU_GROUPS, search)
+  const count = groups.reduce((sum, group) => sum + group.items.length, 0)
+  return <div className="flex min-h-screen flex-col bg-gray-50/50 pb-10">
+    <Header title="관리자 메뉴" showBack />
+    <div className="flex flex-col gap-5 px-4 py-5">
+      <AdminIntro title="관리할 업무를 찾아보세요" description="회원과 반 배정부터 출석·활동 기록까지 한곳에서 관리합니다." />
+      <SearchField label="관리자 메뉴 검색" value={search} onChange={setSearch} placeholder="교사, 출석, TTS 등 메뉴 검색" />
+      {search.trim() && <FilterResults count={count} total={13} unit="개" filtered onReset={() => setSearch('')} />}
+      {!count && <AdminEmpty />}
+      {groups.map((group, idx) => <Reveal key={group.title} delay={idx * 0.04}>
+        <section className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+          <div className="flex items-center gap-3 border-b border-gray-50 px-4 py-4">
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${group.bg}`}>
+              <group.icon size={19} className={group.color} aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold text-gray-900">{group.title}</h2>
+              <p className="mt-1 text-xs text-gray-500">{group.desc}</p>
+            </div>
+            <span className="text-xs text-gray-400">{group.items.length}</span>
+          </div>
+          <div className="divide-y divide-gray-50 px-2">
+            {group.items.map(item => <Link key={item.to} to={item.to}
+              className="motion-tap flex min-h-20 items-center gap-3 rounded-2xl px-3 py-3.5 hover:bg-gray-50">
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.iconBg}`}>
+                <item.icon size={18} className={item.iconColor} aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-900">{item.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-gray-500">{item.desc}</p>
+              </div>
+              <span aria-hidden="true" className="text-xl text-gray-300">›</span>
+            </Link>)}
+          </div>
+        </section>
+      </Reveal>)}
     </div>
-  )
+  </div>
 }

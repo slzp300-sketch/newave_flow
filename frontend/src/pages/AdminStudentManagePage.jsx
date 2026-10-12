@@ -1,12 +1,12 @@
+import SearchField from '../components/common/SearchField'
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro } from '../components/common/AdminTools'
+import QueryNotice from '../components/common/QueryNotice'
 import { useState, useMemo } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  Users, UserPlus, X, Loader2, Search,
-  ChevronRight, BookOpen, RefreshCw, Check,
-  UserMinus, UserCheck, Pencil, ArrowRight, Camera, Image as ImageIcon
-} from 'lucide-react'
+import { Users, UserPlus, X, Loader2, Search, ChevronRight, RefreshCw, Check, UserMinus, UserCheck, Pencil, ArrowRight, Camera, Image as ImageIcon } from 'lucide-react'
 import Header from '../components/layout/Header'
 import { adminStudentsApi } from '../api/students'
 import { classesApi } from '../api/classes'
@@ -35,15 +35,17 @@ export default function AdminStudentManagePage() {
   const [showAdvanceModal, setShowAdvanceModal] = useState(false)
   const [showDeactivated, setShowDeactivated] = usePersistedState('showDeactivated', false)
 
-  const { data: grouped = {}, isLoading } = useQuery({
+  const studentsQuery = useQuery({
     queryKey: ['admin-students'],
     queryFn: () => adminStudentsApi.getAll().then(r => r.data),
   })
+  const { data: grouped = {}, isLoading } = studentsQuery
 
-  const { data: roster = [] } = useQuery({
+  const rosterQuery = useQuery({
     queryKey: ['admin-roster-full'],
     queryFn: () => classesApi.getRoster().then(r => r.data),
   })
+  const { data: roster = [] } = rosterQuery
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin-students'] })
 
@@ -85,27 +87,15 @@ export default function AdminStudentManagePage() {
     <div className="flex flex-col min-h-screen pb-28 bg-gray-50/50">
       <Header title="아이 관리" showBack />
 
-      {/* 탭 */}
-      <div className="bg-white border-b border-gray-100 flex px-4 gap-1 sticky top-14 z-10 shadow-sm">
-        {[
-          { id: 'list', label: '학년별 명단' },
-          { id: 'assign', label: '반 배정 현황' },
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-5 py-3.5 text-xs font-bold border-b-2 transition-all ${
-              tab === t.id
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-400'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="flex flex-col gap-4 px-4 py-5">
+        <AdminIntro title="학생 명단과 반 배정" description="학생 정보를 확인하고 학년별 명단과 반 배정을 관리하세요." />
+        <SegmentedControl label="학생 관리 화면" value={tab} onChange={setTab}
+          options={[{ value: 'list', label: '학년별 명단' }, { value: 'assign', label: '반 배정 현황' }]} />
       </div>
 
-      {isLoading ? (
+      {studentsQuery.isError || rosterQuery.isError ? (
+        <QueryNotice queries={[studentsQuery, rosterQuery]} label="학생 및 반 명단" />
+      ) : isLoading || rosterQuery.isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
         </div>
@@ -136,15 +126,6 @@ export default function AdminStudentManagePage() {
         />
       )}
 
-      {/* 학생 추가 FAB */}
-      {tab === 'list' && (
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="fixed bottom-24 right-5 w-14 h-14 bg-primary-500 text-white rounded-full shadow-xl flex items-center justify-center z-30 active:scale-95 transition-all"
-        >
-          <UserPlus size={22} />
-        </button>
-      )}
 
       <AnimatePresence>
         {showAddModal && (
@@ -186,12 +167,13 @@ function StudentListTab({
   return (
     <>
       {/* 학년 필터 */}
-      <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 sticky top-[104px] z-10">
+      <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 ">
         {grades.map(g => (
           <button
             key={g}
+            aria-pressed={activeGrade === g}
             onClick={() => setActiveGrade(g)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-shrink-0 min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeGrade === g
                 ? 'bg-primary-500 text-white shadow'
                 : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
@@ -203,37 +185,23 @@ function StudentListTab({
       </div>
 
       <div className="px-4 pt-4 pb-2 flex flex-col gap-3">
-        {/* 검색 + 도구 */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="이름, 학교, 반 검색..."
-              className="w-full pl-9 pr-4 py-3 bg-white border border-gray-100 rounded-xl text-sm placeholder:text-gray-300 outline-none focus:border-primary-300 shadow-sm"
-            />
-          </div>
-          <button
-            onClick={onAdvance}
-            className="px-3 py-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 text-xs font-bold flex items-center gap-1 flex-shrink-0"
-            title="학년 진급"
-          >
-            <RefreshCw size={14} />
-            <span className="hidden sm:inline">학년진급</span>
-          </button>
+        <SearchField label="학생 검색" value={search} onChange={setSearch} placeholder="이름, 학교, 반 검색" />
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={onAdd} className="flex min-h-11 items-center gap-2 rounded-full bg-primary-500 px-4 text-sm font-semibold text-white"><UserPlus size={16} />학생 추가</button>
+          <button type="button" onClick={onAdvance} className="flex min-h-11 items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-4 text-sm font-semibold text-amber-600"><RefreshCw size={14} />학년 진급</button>
         </div>
 
         {/* 제적 포함 토글 */}
-        <div className="flex items-center justify-between px-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
           <p className="text-xs text-gray-400 font-bold">
-            총 <span className="text-gray-800 font-bold">{students.length}</span>명
+            표시 <span className="text-gray-800 font-bold">{students.length}</span>명
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ViewModeToggle mode={viewMode} onChange={setViewMode} />
             <button
+              aria-pressed={showDeactivated}
               onClick={() => setShowDeactivated(v => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 showDeactivated
                   ? 'bg-red-50 text-red-500 border border-red-100'
                   : 'bg-gray-50 text-gray-400 border border-gray-100'
@@ -311,7 +279,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
   // 작은 카드: 사진 + 이름만, 누르면 수정 창
   if (mode === 'small') {
     return (
-      <motion.button {...motionProps} onClick={onEdit}
+      <motion.button {...motionProps} aria-label={`${s.name} 정보 수정`} onClick={onEdit}
         className={`bg-white rounded-2xl border shadow-sm p-2 flex flex-col items-center gap-1 active:scale-95 transition-all ${
           !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
         }`}>
@@ -343,8 +311,8 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
         <p className="text-xs text-gray-500 font-bold truncate w-full">{s.classGroupName || '반 미배정'}</p>
         {s.school && <p className="text-xs text-gray-300 font-bold truncate w-full -mt-1">{s.school}</p>}
         <div className="flex gap-1 w-full mt-1">
-          <button onClick={onEdit}
-            className="flex-1 h-8 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center gap-1 text-xs font-bold">
+          <button aria-label={`${s.name} 정보 수정`} onClick={onEdit}
+            className="flex-1 min-h-11 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center gap-1 text-xs font-bold">
             <Pencil size={12} /> 수정
           </button>
           {s.isActive ? (
@@ -352,16 +320,16 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
               onClick={() => {
                 if (confirm(`${s.name} 학생을 제적 처리하시겠어요?`)) deactivateMut.mutate()
               }}
-              disabled={deactivateMut.isPending}
-              className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center disabled:opacity-50"
+              aria-label={`${s.name} 제적 처리`} disabled={deactivateMut.isPending}
+              className="w-11 h-11 rounded-xl bg-red-50 text-red-400 flex items-center justify-center disabled:opacity-50"
             >
               {deactivateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserMinus size={13} />}
             </button>
           ) : (
             <button
               onClick={() => activateMut.mutate()}
-              disabled={activateMut.isPending}
-              className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center disabled:opacity-50"
+              aria-label={`${s.name} 재적 복구`} disabled={activateMut.isPending}
+              className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center disabled:opacity-50"
             >
               {activateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
             </button>
@@ -404,15 +372,15 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
             <span className="text-[0.6875rem] font-bold bg-emerald-50 text-emerald-500 px-1.5 py-0.5 rounded-md">세례</span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
           {s.grade && (
-            <span className="text-xs text-primary-500 font-bold bg-primary-50 px-2 py-0.5 rounded-md">{s.grade}</span>
+            <span className="shrink-0 whitespace-nowrap text-xs text-primary-500 font-bold bg-primary-50 px-2 py-0.5 rounded-md">{s.grade}</span>
           )}
           {s.classGroupName && (
             <span className="text-xs text-gray-500 font-bold">{s.classGroupName}</span>
           )}
           {s.school && (
-            <span className="text-xs text-gray-300 font-bold truncate">{s.school}</span>
+            <span className="basis-full text-xs text-gray-400 font-medium truncate">{s.school}</span>
           )}
         </div>
       </div>
@@ -420,8 +388,8 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
       {/* 액션 */}
       <div className="flex items-center gap-1 flex-shrink-0">
         <button
-          onClick={onEdit}
-          className="w-8 h-8 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-primary-50 hover:text-primary-500 transition-colors"
+          aria-label={`${s.name} 정보 수정`} onClick={onEdit}
+          className="w-11 h-11 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-primary-50 hover:text-primary-500 transition-colors"
         >
           <Pencil size={13} />
         </button>
@@ -430,16 +398,16 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
             onClick={() => {
               if (confirm(`${s.name} 학생을 제적 처리하시겠어요?`)) deactivateMut.mutate()
             }}
-            disabled={deactivateMut.isPending}
-            className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-50"
+            aria-label={`${s.name} 제적 처리`} disabled={deactivateMut.isPending}
+            className="w-11 h-11 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-50"
           >
             {deactivateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserMinus size={13} />}
           </button>
         ) : (
           <button
             onClick={() => activateMut.mutate()}
-            disabled={activateMut.isPending}
-            className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-100 transition-colors disabled:opacity-50"
+            aria-label={`${s.name} 재적 복구`} disabled={activateMut.isPending}
+            className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-100 transition-colors disabled:opacity-50"
           >
             {activateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
           </button>
@@ -487,12 +455,12 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
   return (
     <>
       {/* 학년 필터 */}
-      <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 sticky top-[104px] z-10">
+      <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 ">
         {gradeFilter.map(g => (
           <button
             key={g}
             onClick={() => setActiveGradeFilter(g)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-shrink-0 min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeGradeFilter === g
                 ? 'bg-primary-500 text-white shadow'
                 : 'bg-gray-50 text-gray-400 hover:bg-gray-100'

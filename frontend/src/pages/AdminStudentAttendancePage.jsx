@@ -1,9 +1,14 @@
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro } from '../components/common/AdminTools'
+import AdminReadGuard from '../components/common/AdminReadGuard'
+import QueryNotice from '../components/common/QueryNotice'
+import { hasQueryData } from '../utils/queryReadState'
 import { useState } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { format, subWeeks, startOfWeek } from 'date-fns'
-import { Users, CheckCircle2, XCircle, Clock, ChevronRight, AlertCircle } from 'lucide-react'
+import { Users, CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import { attendanceApi } from '../api/attendance'
@@ -43,10 +48,13 @@ function getGradeColor(grade) {
 
 // ── 학생 목록 패널 ────────────────────────────────────────────
 function StudentDetailPanel({ classId, className, date, onBack }) {
-  const { data: students = [], isLoading } = useQuery({
+  const studentsQuery = useQuery({
     queryKey: ['admin-attendance-students', classId, date],
     queryFn: () => attendanceApi.getByClass(classId, date).then(r => r.data),
   })
+  const { data: students = [], isLoading } = studentsQuery
+
+  if (!hasQueryData([studentsQuery]) || studentsQuery.isError) return <QueryNotice queries={[studentsQuery]} label="학생 출석 명단" />
 
   const present = students.filter(s => s.status === 'PRESENT').length
   const absent  = students.filter(s => s.status === 'ABSENT').length
@@ -57,7 +65,7 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
       <div className="flex items-center justify-between px-1">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+          className="flex min-h-11 items-center gap-1.5 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
         >
           ← {className}
         </button>
@@ -241,12 +249,14 @@ function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade }) {
 
 // ── 결석자 목록 패널 ─────────────────────────────────────────
 function AbsentListPanel({ date }) {
-  const { data: absentList = [], isLoading } = useQuery({
+  const absentQuery = useQuery({
     queryKey: ['admin-absent-list', date],
     queryFn: () => attendanceApi.getAdminAbsent(date).then(r => r.data),
     staleTime: 30000,
   })
+  const { data: absentList = [], isLoading } = absentQuery
 
+  if (!hasQueryData([absentQuery]) || absentQuery.isError) return <QueryNotice queries={[absentQuery]} label="결석자 명단" />
   if (isLoading) return <Card className="py-10 text-center text-sm text-gray-400">불러오는 중...</Card>
 
   if (absentList.length === 0) return (
@@ -312,11 +322,12 @@ export default function AdminStudentAttendancePage() {
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', null)
   const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
 
-  const { data: classSummaries = [], isLoading } = useQuery({
+  const attendanceQuery = useQuery({
     queryKey: ['admin-weekly-attendance', selectedDate],
     queryFn: () => attendanceApi.getAdminWeekly(selectedDate).then(r => r.data),
     staleTime: 30000,
   })
+  const { data: classSummaries = [], isLoading } = attendanceQuery
 
   // 학년별 그룹화
   const gradeGroups = classSummaries.reduce((acc, cls) => {
@@ -365,10 +376,11 @@ export default function AdminStudentAttendancePage() {
 
       <div className="px-4 py-5 flex flex-col gap-5">
 
+        <AdminIntro title="주일 출석 현황" description="학년 → 반 → 학생 순서로 확인하거나 결석자만 모아 보세요." />
         {/* 주차 선택 */}
         <section>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">주차 선택 (기준 주일)</p>
-          <select
+          <select aria-label="출석 조회 주차"
             value={selectedDate}
             onChange={e => handleDateChange(e.target.value)}
             className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-primary-200"
@@ -381,6 +393,7 @@ export default function AdminStudentAttendancePage() {
           </select>
         </section>
 
+        <AdminReadGuard queries={[attendanceQuery]} label="주간 출석 현황">
         {isLoading ? (
           <Card className="py-16 text-center text-sm text-gray-400">불러오는 중...</Card>
         ) : classSummaries.length === 0 ? (
@@ -408,24 +421,8 @@ export default function AdminStudentAttendancePage() {
 
             {/* 탭 (학년별 / 결석자) */}
             {!selectedGrade && !selectedClass && (
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
-                <button
-                  onClick={() => setActiveTab('grade')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'grade' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                  }`}
-                >
-                  <Users size={13} /> 학년별 현황
-                </button>
-                <button
-                  onClick={() => setActiveTab('absent')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'absent' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                  }`}
-                >
-                  <AlertCircle size={13} /> 결석자 목록
-                </button>
-              </div>
+              <SegmentedControl label="출석 조회 방식" value={activeTab} onChange={setActiveTab} selectedClassName="text-gray-900"
+                options={[{ value: 'grade', label: '학년별 현황' }, { value: 'absent', label: '결석자 목록' }]} />
             )}
 
             {/* 뷰 전환 */}
@@ -455,6 +452,7 @@ export default function AdminStudentAttendancePage() {
             )}
           </>
         )}
+        </AdminReadGuard>
       </div>
     </div>
   )

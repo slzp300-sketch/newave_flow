@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+import SearchField from '../components/common/SearchField'
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
+import { matchesAdminSearch } from '../utils/adminSearch'
+import AdminReadGuard from '../components/common/AdminReadGuard'
+import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Plus, PenLine, Trash2,
-  Calendar as CalendarIcon, Clock,
-  CheckCircle2, ChevronDown, ChevronUp
-} from 'lucide-react'
+import { Plus, PenLine, Trash2, Calendar as CalendarIcon, Clock, CheckCircle2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
@@ -50,6 +51,8 @@ const getEventColors = (color) => {
 
 export default function CalendarAdminPage() {
   const qc = useQueryClient()
+  const [search, setSearch] = useState('')
+  const [period, setPeriod] = useState('all')
   const [showForm, setShowForm] = useState(false)
   const [showChoice, setShowChoice] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
@@ -71,10 +74,11 @@ export default function CalendarAdminPage() {
     attendanceTarget: 'STUDENT_ONLY',
   })
 
-  const { data: events = [] } = useQuery({
+  const eventsQuery = useQuery({
     queryKey: ['events-all'],
     queryFn:  () => eventApi.getAllEvents().then(r => r.data),
   })
+  const events = eventsQuery.data || []
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -166,8 +170,9 @@ export default function CalendarAdminPage() {
   const today = toApiDate()
   const categorizedEvents = useMemo(() => {
     const upcoming = [], ongoing = [], past = []
-    events.forEach(e => {
+    events.filter(e => matchesAdminSearch(search, e.title, e.description, e.eventDate)).forEach(e => {
       const end = e.endDate || e.eventDate
+      if (period === 'upcoming' && end < today || period === 'past' && end >= today) return
       if (end < today) past.push(e)
       else if (e.eventDate <= today) ongoing.push(e)
       else upcoming.push(e)
@@ -176,18 +181,19 @@ export default function CalendarAdminPage() {
     ongoing.sort((a, b) => a.eventDate.localeCompare(b.eventDate))
     past.sort((a, b) => b.eventDate.localeCompare(a.eventDate))
     return { upcoming, ongoing, past }
-  }, [events])
+  }, [events, search, period, today])
 
   return (
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
       <Header title="일정 관리" showBack />
 
       <div className="px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900">전체 일정</h2>
-          <Button size="sm" onClick={() => setShowChoice(true)}>
-            <Plus size={16} /> 일정 추가
-          </Button>
+        <div className="mb-5 flex flex-col gap-4">
+          <AdminIntro title="부서 일정을 관리하세요" description="다가오는 일정과 지난 행사를 찾아 수정하거나 새 일정을 등록하세요."
+            action={<Button size="sm" onClick={() => setShowChoice(true)}><Plus size={16} /> 일정 추가</Button>} />
+          <SearchField label="관리할 일정 검색" value={search} onChange={setSearch} placeholder="일정 이름, 설명 또는 날짜 검색" />
+          <SegmentedControl label="일정 기간" value={period} onChange={setPeriod}
+            options={[{value: 'all', label: '전체'}, {value: 'upcoming', label: '진행·예정'}, {value: 'past', label: '지난 일정'}]} />
         </div>
 
         {showForm && (
@@ -403,6 +409,9 @@ export default function CalendarAdminPage() {
           </motion.div>
         )}
 
+        <AdminReadGuard queries={[eventsQuery]} label="일정 목록">
+        <FilterResults count={Object.values(categorizedEvents).flat().length} total={events.length} unit="건" filtered={!!search.trim() || period !== 'all'} onReset={() => { setSearch(''); setPeriod('all') }} />
+        {events.length > 0 && Object.values(categorizedEvents).flat().length === 0 && <AdminEmpty />}
         {events.length === 0 ? (
           <div className="py-20 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
             <CalendarIcon size={48} className="mx-auto mb-3 opacity-20" />
@@ -430,8 +439,8 @@ export default function CalendarAdminPage() {
                     return (
                       <Card key={event.id} className={`p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
                         <div className={`p-4 ${colors.split(' ')[1]}`}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-start gap-4">
+                          <div className="flex flex-wrap justify-between items-start gap-3">
+                            <div className="flex min-w-0 flex-1 items-start gap-3">
                               <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm">
                                 <CalendarIcon size={22} className={colors.split(' ')[2]} />
                               </div>
@@ -471,10 +480,10 @@ export default function CalendarAdminPage() {
                               </div>
                             </div>
                             <div className="flex gap-1 ml-2">
-                              <button onClick={() => handleEdit(event)} className="p-2 text-gray-400 hover:text-primary-500 hover:bg-white rounded-lg transition-colors bg-white/50 shadow-sm">
+                              <button aria-label={`${event.title} 수정`} onClick={() => handleEdit(event)} className="min-h-11 min-w-11 p-2 text-gray-400 hover:text-primary-500 hover:bg-white rounded-lg transition-colors bg-white/50 shadow-sm">
                                 <PenLine size={16} />
                               </button>
-                              <button onClick={() => handleDelete(event.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors bg-white/50 shadow-sm">
+                              <button aria-label={`${event.title} 삭제`} onClick={() => handleDelete(event.id)} className="min-h-11 min-w-11 p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors bg-white/50 shadow-sm">
                                 <Trash2 size={16} />
                               </button>
                             </div>
@@ -488,6 +497,7 @@ export default function CalendarAdminPage() {
             ))}
           </div>
         )}
+        </AdminReadGuard>
       </div>
 
       <AddEventChoice open={showChoice} onClose={() => setShowChoice(false)} onSingle={() => setShowForm(true)} onBulk={() => setShowBulk(true)} />

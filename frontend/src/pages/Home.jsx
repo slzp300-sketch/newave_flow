@@ -228,6 +228,12 @@ function AdminView({ navigate, today }) {
         <PersonalDashboard navigate={navigate} />
       </div>
 
+      <button type="button" onClick={() => navigate('/admin')}
+        className="motion-tap flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-left">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><ShieldCheck size={21} /></span>
+        <span className="min-w-0 flex-1"><span className="block text-sm font-bold text-gray-900">관리자 메뉴</span><span className="mt-1 block text-xs text-gray-500">회원·반 배정·출석·활동 관리</span></span>
+        <ChevronRight size={18} className="shrink-0 text-gray-400" />
+      </button>
       <SectionLabel>관리 요약</SectionLabel>
 
       {/* 승인 대기 알림 (옵션) */}

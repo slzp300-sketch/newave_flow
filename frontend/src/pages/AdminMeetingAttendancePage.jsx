@@ -1,3 +1,8 @@
+import SearchField from '../components/common/SearchField'
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro, FilterResults } from '../components/common/AdminTools'
+import { matchesAdminSearch } from '../utils/adminSearch'
+import AdminReadGuard from '../components/common/AdminReadGuard'
 import { useState } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -36,42 +41,47 @@ const GRADE_ORDER = ['전체', '유치', '초1', '초2', '초3', '초4', '초5',
 
 export default function AdminMeetingAttendancePage() {
   const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
   const weeks = getPastSaturdays()
   const [selectedDate, setSelectedDate] = useState(weeks[0])
   const [statusFilter, setStatusFilter] = usePersistedState('statusFilter', '전체')
   const [activeGrade, setActiveGrade] = usePersistedState('activeGrade', '전체')
 
   // ── 토요 교사회의 참석 데이터
-  const { data: attendanceList = [], isLoading: isAttLoading, isRefetching: isAttRefetching } = useQuery({
+  const attendanceQuery = useQuery({
     queryKey: ['admin-meeting-attendance', selectedDate],
     queryFn: () => client.get(`/meetings/attendance/admin?date=${selectedDate}`).then(r => r.data),
     refetchInterval: 60000,
     refetchOnWindowFocus: 'always',
   })
+  const { data: attendanceList = [], isLoading: isAttLoading, isRefetching: isAttRefetching } = attendanceQuery
 
   // ── 전체 교사 명단
-  const { data: teachers = [] } = useQuery({
+  const teachersQuery = useQuery({
     queryKey: ['admin-teachers-active'],
     queryFn: () => client.get('/users/teachers').then(r => r.data),
   })
+  const { data: teachers = [] } = teachersQuery
 
   // ── 회의록 확인 상태
-  const { data: allMinutes = [] } = useQuery({
+  const minutesQuery = useQuery({
     queryKey: ['admin-minutes-all'],
     queryFn: () => client.get('/minutes').then(r => r.data),
     refetchInterval: 60000,
   })
+  const { data: allMinutes = [] } = minutesQuery
 
   // selectedDate는 토요일 → 해당 주(일~토) 범위 안의 활성 회의록을 찾음
   const weekStart = format(addDays(new Date(selectedDate + 'T00:00:00'), -6), 'yyyy-MM-dd')
   const targetMinute = allMinutes.find(m => m.isActive && m.meetingDate >= weekStart && m.meetingDate <= selectedDate)
 
-  const { data: minuteStatusList = [], isRefetching: isMinuteRefetching } = useQuery({
+  const minuteStatusQuery = useQuery({
     queryKey: ['admin-minute-status', targetMinute?.id],
     queryFn: () => client.get(`/minutes/${targetMinute.id}/status`).then(r => r.data),
     enabled: !!targetMinute,
     refetchInterval: 60000,
   })
+  const { data: minuteStatusList = [], isRefetching: isMinuteRefetching } = minuteStatusQuery
 
   const isRefetching = isAttRefetching || isMinuteRefetching
 
@@ -117,8 +127,9 @@ export default function AdminMeetingAttendancePage() {
     const statusMatch =
       statusFilter === '전체' ||
       (statusFilter === '참석' && item.satStatus === 'ATTEND') ||
-      (statusFilter === '불참' && item.satStatus === 'ABSENT')
-    return gradeMatch && statusMatch
+      (statusFilter === '불참' && item.satStatus === 'ABSENT') ||
+      (statusFilter === '미제출' && item.satStatus === 'UNSUBMITTED')
+    return gradeMatch && statusMatch && matchesAdminSearch(search, item.teacherName, item.displayGrade)
   })
 
   // ── 학년별 그룹핑 (필터 결과 기준)
@@ -148,6 +159,8 @@ export default function AdminMeetingAttendancePage() {
         showBack
         right={
           <button
+            aria-label="교사회의 현황 새로 확인"
+            disabled={isRefetching}
             onClick={handleRefetch}
             className={`p-2 rounded-full transition-all ${isRefetching ? 'text-blue-500' : 'text-gray-400 hover:bg-gray-100'}`}
           >
@@ -163,16 +176,17 @@ export default function AdminMeetingAttendancePage() {
 
       <div className="px-4 py-5 flex flex-col gap-6">
 
+        <AdminIntro title="교사회의 참석 현황" description="날짜를 고른 뒤 학년·참석 상태로 필요한 명단을 확인하세요." />
         {/* 날짜 선택 */}
         <section>
           <div className="flex items-center justify-between px-1 mb-2">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">회의 일자 (토요일 기준)</p>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-xs font-bold text-gray-400">실시간 반영 중</p>
+              <p className="text-xs font-bold text-gray-400">1분마다 확인</p>
             </div>
           </div>
-          <select
+          <select aria-label="교사회의 일자"
             value={selectedDate}
             onChange={e => { setSelectedDate(e.target.value); setActiveGrade('전체') }}
             className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-200"
@@ -181,6 +195,7 @@ export default function AdminMeetingAttendancePage() {
           </select>
         </section>
 
+        <AdminReadGuard queries={[attendanceQuery, teachersQuery, minutesQuery, ...(targetMinute ? [minuteStatusQuery] : [])]} label="교사회의 참석 현황">
         {/* 통계 카드 */}
         <div className="grid grid-cols-3 gap-3">
           <Card className="text-center py-4 border-emerald-50 bg-emerald-50/30">
@@ -204,8 +219,9 @@ export default function AdminMeetingAttendancePage() {
             {availableGrades.map(g => (
               <button
                 key={g}
+                aria-pressed={activeGrade === g}
                 onClick={() => setActiveGrade(g)}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-shrink-0 min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeGrade === g
                     ? 'bg-blue-500 text-white shadow-md'
                     : 'bg-white border border-gray-100 text-gray-400'
@@ -216,20 +232,10 @@ export default function AdminMeetingAttendancePage() {
             ))}
           </div>
 
-          {/* 참석 상태 필터 */}
-          <div className="flex bg-gray-100 p-1 rounded-xl">
-            {['전체', '참석', '불참'].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                  statusFilter === s ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl label="교사회의 참석 상태" value={statusFilter} onChange={setStatusFilter} selectedClassName="text-blue-600"
+            options={['전체', '참석', '불참', '미제출'].map(value => ({ value, label: value }))} />
+          <SearchField label="회의 참석 교사 검색" value={search} onChange={setSearch} placeholder="교사 이름 또는 학년 검색" />
+          <FilterResults count={filteredList.length} total={fullList.length} filtered={!!search.trim() || activeGrade !== '전체' || statusFilter !== '전체'} onReset={() => { setSearch(''); setActiveGrade('전체'); setStatusFilter('전체') }} />
         </section>
 
         {/* 교사 명단 */}
@@ -343,6 +349,7 @@ export default function AdminMeetingAttendancePage() {
             </div>
           )}
         </div>
+        </AdminReadGuard>
       </div>
     </div>
   )

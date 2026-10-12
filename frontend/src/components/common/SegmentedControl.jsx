@@ -3,7 +3,7 @@ import { LayoutGroup, motion } from 'framer-motion'
 import { useMotionPreference } from './Motion'
 
 /** Native buttons keep keyboard focus and selection available without custom tab-key handling. */
-export default function SegmentedControl({ label, value, onChange, options, disabled = false }) {
+export default function SegmentedControl({ label, value, onChange, options, disabled = false, selectedClassName = 'text-primary-800' }) {
   const id = useId()
   const reduced = useMotionPreference()
   return (
@@ -12,7 +12,7 @@ export default function SegmentedControl({ label, value, onChange, options, disa
         {options.map(option => (
           <button key={option.value} type="button" aria-pressed={value === option.value}
             disabled={disabled || option.disabled} onClick={() => onChange(option.value)}
-            className={`motion-tap relative isolate min-w-0 flex-1 min-h-11 rounded-xl px-2 py-2 text-sm font-semibold disabled:opacity-40 ${value === option.value ? 'text-primary-800' : 'text-gray-500'}`}>
+            className={`motion-tap relative isolate min-w-0 flex-1 min-h-11 rounded-xl px-2 py-2 text-sm font-semibold disabled:opacity-40 ${value === option.value ? selectedClassName : 'text-gray-500'}`}>
             {value === option.value && <motion.span aria-hidden="true" layoutId="selection" initial={false}
               transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 34 }}
               className="absolute inset-0 -z-10 rounded-xl bg-white shadow-sm" />}

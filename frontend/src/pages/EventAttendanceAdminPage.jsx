@@ -1,3 +1,8 @@
+import EventStatusSummary from '../components/common/EventStatusSummary'
+import SearchField from '../components/common/SearchField'
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro, FilterResults } from '../components/common/AdminTools'
+import { matchesAdminSearch } from '../utils/adminSearch'
 import { useState } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery } from '@tanstack/react-query'
@@ -9,7 +14,7 @@ import Card from '../components/common/Card'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState } from '../utils/queryReadState'
 import { eventApi } from '../api/event'
-import { Users, CheckCircle2, XCircle, Calendar, UserCheck, ChevronRight, Clock } from 'lucide-react'
+import { Users, CheckCircle2, XCircle, Calendar, UserCheck, Clock } from 'lucide-react'
 
 const GRADE_STYLES = {
   '중1': { bg: 'bg-rose-50', text: 'text-rose-600', accent: 'bg-rose-100', progress: 'bg-rose-400', border: 'hover:border-rose-200', btn: 'text-rose-600 bg-rose-50' },
@@ -29,6 +34,7 @@ const getGradeStyle = (grade) => {
 }
 
 export default function EventAttendanceAdminPage() {
+  const [search, setSearch] = useState('')
   const [selectedEventId, setSelectedEventId] = usePersistedState('selectedEventId', null)
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', null)
   const [selectedTeacherGrade, setSelectedTeacherGrade] = usePersistedState('selectedTeacherGrade', null)
@@ -65,9 +71,6 @@ export default function EventAttendanceAdminPage() {
   const showStudentTab = !selectedEvent || selectedEvent?.attendanceTarget === 'STUDENT_ONLY' || selectedEvent?.attendanceTarget === 'BOTH'
 
   const totalStudents     = summary.reduce((acc, c) => acc + Number(c.totalCount), 0)
-  const totalPresent      = summary.reduce((acc, c) => acc + Number(c.presentCount), 0)
-  const totalAbsent       = summary.reduce((acc, c) => acc + Number(c.absentCount), 0)
-  const totalUnsubmitted  = totalStudents - totalPresent - totalAbsent
 
   // 학년별 그룹화 데이터 가공
   const gradeSummary = summary.reduce((acc, cls) => {
@@ -155,6 +158,8 @@ export default function EventAttendanceAdminPage() {
 
       <div className="px-4 py-5 flex flex-col gap-5">
 
+        <AdminIntro title="행사별 참여를 살펴보세요" description="행사를 선택한 뒤 학년과 반을 눌러 상세 명단을 확인하세요." />
+        <SearchField label="출석 행사 검색" value={search} onChange={setSearch} placeholder="행사 이름 또는 날짜 검색" />
         {/* 행사 선택 */}
         <div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">행사 선택</p>
@@ -164,9 +169,10 @@ export default function EventAttendanceAdminPage() {
             <Card className="py-8 text-center text-sm text-gray-400">출석 체크 활성화된 행사가 없습니다</Card>
           ) : (
             <div className="flex flex-col gap-2">
-              {events.map(event => (
+              {events.filter(event => matchesAdminSearch(search, event.title, event.eventDate)).map(event => (
                 <button
                   key={event.id}
+                  aria-pressed={selectedEventId === event.id}
                   onClick={() => handleEventSelect(event.id)}
                   className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all text-left ${
                     selectedEventId === event.id
@@ -192,29 +198,16 @@ export default function EventAttendanceAdminPage() {
           )}
         </div>
 
+        {!!search.trim() && <FilterResults count={events.filter(event => matchesAdminSearch(search, event.title, event.eventDate)).length} total={events.length} unit="개" filtered onReset={() => setSearch('')} />}
+        {selectedEvent && <p className="text-sm font-semibold text-gray-700">조회 중: {selectedEvent.title}</p>}
         {/* 선택된 행사 결과 */}
         {selectedEvent && queryReadState([eventsQuery]) === 'ready' && (
           <>
             {/* 탭 (학생/교사) */}
             {showStudentTab && showTeacherTab && (
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
-                <button
-                  onClick={() => { setActiveTab('student'); setSelectedGrade(null) }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'student' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                  }`}
-                >
-                  <Users size={13} /> 학생 출석
-                </button>
-                <button
-                  onClick={() => { setActiveTab('teacher'); setSelectedTeacherGrade(null) }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'teacher' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                  }`}
-                >
-                  <UserCheck size={13} /> 교사 출석
-                </button>
-              </div>
+              <SegmentedControl label="행사 출석 대상" value={activeTab}
+                onChange={value => { setActiveTab(value); setSelectedGrade(null); setSelectedTeacherGrade(null) }} selectedClassName="text-gray-900"
+                options={[{ value: 'student', label: '학생 출석' }, { value: 'teacher', label: '교사 출석' }]} />
             )}
 
             {/* 교사 출석 탭 */}
@@ -222,24 +215,7 @@ export default function EventAttendanceAdminPage() {
             {queryReadState(detailReads) === 'ready' && activeTab === 'teacher' && showTeacherTab && (
               <>
                 {/* 전체 통계 */}
-                <div className="grid grid-cols-4 gap-2">
-                  <Card className="text-center py-3">
-                    <p className="text-xl font-bold text-gray-900">{teacherSummary.length}</p>
-                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">전체</p>
-                  </Card>
-                  <Card className="text-center py-3">
-                    <p className="text-xl font-bold text-emerald-500">{teacherSummary.filter(t => t.status === 'PRESENT').length}</p>
-                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">참석</p>
-                  </Card>
-                  <Card className="text-center py-3">
-                    <p className="text-xl font-bold text-amber-500">{teacherSummary.filter(t => t.status === 'PARTIAL').length}</p>
-                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">부분참석</p>
-                  </Card>
-                  <Card className="text-center py-3">
-                    <p className="text-xl font-bold text-red-400">{teacherSummary.filter(t => t.status === 'ABSENT').length}</p>
-                    <p className="text-[0.6875rem] font-bold text-gray-400 mt-0.5">불참</p>
-                  </Card>
-                </div>
+                <EventStatusSummary records={teacherSummary} total={teacherSummary.length} />
 
                 {teacherSummaryLoading ? (
                   <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
@@ -287,7 +263,7 @@ export default function EventAttendanceAdminPage() {
                     <div className="flex items-center justify-between px-1">
                       <button
                         onClick={() => setSelectedTeacherGrade(null)}
-                        className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedTeacherGrade).btn}`}
+                        className={`flex min-h-11 items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedTeacherGrade).btn}`}
                       >
                         ← {selectedTeacherGrade} 전체
                       </button>
@@ -345,24 +321,7 @@ export default function EventAttendanceAdminPage() {
             {/* 학생 출석 탭 */}
             {queryReadState(detailReads) === 'ready' && activeTab === 'student' && showStudentTab && (<>
             {/* 전체 통계 */}
-            <div className="grid grid-cols-4 gap-2">
-              <Card className="text-center py-4">
-                <p className="text-xl font-bold text-gray-900">{totalStudents}</p>
-                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">전체</p>
-              </Card>
-              <Card className="text-center py-4">
-                <p className="text-xl font-bold text-emerald-500">{summary.reduce((acc, c) => acc + c.records.filter(r => r.status === 'PRESENT').length, 0)}</p>
-                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">출석</p>
-              </Card>
-              <Card className="text-center py-4">
-                <p className="text-xl font-bold text-red-400">{totalAbsent}</p>
-                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">결석</p>
-              </Card>
-              <Card className="text-center py-4">
-                <p className={`text-xl font-bold ${totalUnsubmitted > 0 ? 'text-orange-400' : 'text-gray-300'}`}>{totalUnsubmitted}</p>
-                <p className="text-[0.6875rem] font-bold text-gray-400 mt-1 uppercase tracking-wider">미제출</p>
-              </Card>
-            </div>
+            <EventStatusSummary records={summary.flatMap(cls => cls.records)} total={totalStudents} />
 
             {/* 학년/반별 계층 결과 */}
             {summaryLoading ? (
@@ -392,7 +351,7 @@ export default function EventAttendanceAdminPage() {
                       <div>
                         <p className="font-bold text-gray-900 text-lg leading-tight">{g.grade}</p>
                         <p className="text-xs text-gray-400 font-bold mt-1">
-                          {g.presentCount} / {g.totalCount} 출석
+                          {g.presentCount} / {g.totalCount} 참석 (부분 포함)
                         </p>
                       </div>
                       <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
@@ -411,7 +370,7 @@ export default function EventAttendanceAdminPage() {
                 <div className="flex items-center justify-between px-1">
                   <button 
                     onClick={() => setSelectedGrade(null)}
-                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedGrade).btn}`}
+                    className={`flex min-h-11 items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedGrade).btn}`}
                   >
                     ← {selectedGrade} 전체
                   </button>
@@ -427,8 +386,8 @@ export default function EventAttendanceAdminPage() {
                   >
                     <Card className="flex flex-col gap-4">
                       {/* 반 헤더 */}
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
+                      <button type="button" aria-expanded={expandedClassId === cls.classGroupId}
+                        className="flex min-h-11 w-full items-center justify-between text-left"
                         onClick={() => setExpandedClassId(expandedClassId === cls.classGroupId ? null : cls.classGroupId)}
                       >
                         <div className="flex items-center gap-3">
@@ -438,7 +397,7 @@ export default function EventAttendanceAdminPage() {
                           <div>
                             <p className="font-bold text-gray-900 text-base">{cls.classGroupName}</p>
                             <p className="text-xs text-gray-400 font-bold">
-                              {cls.presentCount}명 출석
+                              {cls.presentCount}명 참석 (부분 포함)
                               {cls.records.filter(r => r.status === 'PARTIAL').length > 0 &&
                                 ` · ${cls.records.filter(r => r.status === 'PARTIAL').length}명 부분참석`}
                               {' · '}{cls.absentCount}명 결석
@@ -450,7 +409,7 @@ export default function EventAttendanceAdminPage() {
                         <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
                           {expandedClassId === cls.classGroupId ? '▲' : '▼'}
                         </div>
-                      </div>
+                      </button>
 
                       {/* 진행률 바 */}
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">

@@ -1,11 +1,11 @@
+import SearchField from '../components/common/SearchField'
+import SegmentedControl from '../components/common/SegmentedControl'
+import { AdminIntro, FilterResults } from '../components/common/AdminTools'
+import { matchesAdminSearch } from '../utils/adminSearch'
 import { useState, useEffect } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Plus, FileText, CheckCircle2, XCircle, Play, 
-  Calendar, Users, Eye, PenLine, Trash2, ArrowLeft,
-  ChevronDown, ChevronUp, AlertCircle, ToggleLeft, ToggleRight
-} from 'lucide-react'
+import { Plus, FileText, CheckCircle2, XCircle, Play, Users, PenLine, Trash2, ChevronDown, ChevronUp, ToggleLeft, ToggleRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
@@ -15,6 +15,9 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export default function MeetingMinutesAdminPage() {
+  const [search, setSearch] = useState('')
+  const [visibility, setVisibility] = useState('all')
+  const [loadError, setLoadError] = useState(false)
   const [minutes, setMinutes] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -35,12 +38,14 @@ export default function MeetingMinutesAdminPage() {
   }, [])
 
   const fetchMinutes = async () => {
+    setLoading(true)
+    setLoadError(false)
     try {
       const res = await client.get('/minutes')
       setMinutes(res.data)
     } catch (err) {
       console.error('회의록 조회 실패:', err)
-      alert('회의록을 불러오는 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message))
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -131,27 +136,28 @@ export default function MeetingMinutesAdminPage() {
   }
 
   // 월별 그룹화 로직
-  const groupedMinutes = minutes.reduce((acc, m) => {
+  const filteredMinutes = minutes.filter(m => matchesAdminSearch(search, m.title, m.meetingDate) && (visibility === 'all' || (visibility === 'public' ? m.isActive : !m.isActive)))
+  const groupedMinutes = filteredMinutes.reduce((acc, m) => {
     const month = format(new Date(m.meetingDate), 'yyyy년 M월', { locale: ko })
     if (!acc[month]) acc[month] = []
     acc[month].push(m)
     return acc
   }, {})
 
-  if (loading) return <div className="p-10 text-center text-gray-400">로딩 중...</div>
+
 
   return (
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
       <Header title="회의록 관리" showBack />
 
       <div className="px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900">
-            {editingId ? '회의록 수정' : '회의록 및 영상 등록'}
-          </h2>
-          <Button size="sm" variant={showForm ? 'secondary' : 'primary'} onClick={() => showForm ? handleCloseForm() : setShowForm(true)}>
-            {showForm ? '닫기' : <><Plus size={16} /> 등록하기</>}
-          </Button>
+        <div className="mb-5 flex flex-col gap-4">
+          <AdminIntro title={editingId ? '회의록 수정' : '회의 기록과 영상을 한곳에'} description="회의록의 공개 여부와 교사별 확인 상태를 관리하세요."
+            action={<Button size="sm" variant={showForm ? 'secondary' : 'primary'} onClick={() => showForm ? handleCloseForm() : setShowForm(true)}>{showForm ? '닫기' : <><Plus size={16} /> 등록하기</>}</Button>} />
+          <SearchField label="관리할 회의록 검색" value={search} onChange={setSearch} placeholder="회의 제목 또는 날짜 검색" />
+          <SegmentedControl label="회의록 공개 상태" value={visibility} onChange={setVisibility} selectedClassName="text-violet-600"
+            options={[{value: 'all', label: '전체'}, {value: 'public', label: '공개'}, {value: 'private', label: '비공개'}]} />
+          {!loading && !loadError && <FilterResults count={filteredMinutes.length} total={minutes.length} unit="건" filtered={!!search.trim() || visibility !== 'all'} onReset={() => { setSearch(''); setVisibility('all') }} />}
         </div>
 
         {showForm && (
@@ -233,10 +239,10 @@ export default function MeetingMinutesAdminPage() {
         )}
 
         <div className="flex flex-col gap-8">
-          {Object.keys(groupedMinutes).length === 0 ? (
+          {loading ? <p role="status" className="py-10 text-center text-sm text-gray-500">회의록을 불러오는 중…</p> : loadError ? <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">회의록을 불러오지 못했습니다.<Button variant="secondary" className="mt-3" onClick={fetchMinutes}>다시 불러오기</Button></div> : Object.keys(groupedMinutes).length === 0 ? (
             <div className="py-20 text-center text-gray-400">
               <FileText size={48} className="mx-auto mb-3 opacity-20" />
-              <p className="text-sm font-bold">등록된 회의록이 없습니다.</p>
+              <p className="text-sm font-bold">{search.trim() || visibility !== 'all' ? '조건에 맞는 회의록이 없습니다.' : '등록된 회의록이 없습니다.'}</p>
             </div>
           ) : (
             Object.entries(groupedMinutes).map(([month, items]) => (
@@ -250,35 +256,35 @@ export default function MeetingMinutesAdminPage() {
                 <div className="grid grid-cols-1 gap-3">
                   {items.map(m => (
                     <Card key={m.id} className={`p-4 flex flex-col gap-4 overflow-hidden group transition-all ${!m.isActive ? 'opacity-60 bg-gray-50' : 'hover:border-primary-200'}`}>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1" onClick={() => fetchStatus(m.id)}>
+                      <div className="flex flex-wrap justify-between items-start gap-3">
+                        <button type="button" aria-expanded={selectedStatus?.id === m.id} className="min-w-0 flex-1 basis-40 text-left" onClick={() => fetchStatus(m.id)}>
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-xs font-bold text-violet-500 uppercase tracking-widest">{formatDate(m.meetingDate)}</p>
                             {!m.isActive && <span className="text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-md bg-gray-200 text-gray-500">비공개</span>}
                           </div>
                           <h3 className="font-bold text-gray-900 leading-tight group-hover:text-primary-600 transition-colors">{m.title}</h3>
-                        </div>
+                        </button>
                         <div className="flex gap-1">
                           <button 
                             onClick={() => handleToggleActive(m)} 
                             title={m.isActive ? "비공개로 전환" : "공개로 전환"}
-                            className={`p-2 rounded-lg transition-colors ${m.isActive ? 'text-primary-500 hover:bg-primary-50' : 'text-gray-400 hover:bg-gray-200'}`}
+                            className={`min-h-11 min-w-11 p-2 rounded-lg transition-colors ${m.isActive ? 'text-primary-500 hover:bg-primary-50' : 'text-gray-400 hover:bg-gray-200'}`}
                           >
                             {m.isActive ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                           </button>
-                          <button onClick={() => handleEdit(m)} className="p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors">
+                          <button aria-label={`${m.title} 수정`} onClick={() => handleEdit(m)} className="min-h-11 min-w-11 p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors">
                             <PenLine size={16} />
                           </button>
-                          <button onClick={() => handleDelete(m.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                          <button aria-label={`${m.title} 삭제`} onClick={() => handleDelete(m.id)} className="min-h-11 min-w-11 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                             <Trash2 size={16} />
                           </button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <button 
                           onClick={() => fetchStatus(m.id)}
-                          className={`text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${
+                          className={`text-xs font-bold flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${
                             selectedStatus?.id === m.id 
                             ? 'bg-primary-600 text-white shadow-md shadow-primary-100' 
                             : 'bg-gray-50 text-gray-500 hover:bg-gray-100'

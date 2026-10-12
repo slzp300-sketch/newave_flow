@@ -1,7 +1,10 @@
+import SearchField from '../components/common/SearchField'
+import { AdminIntro } from '../components/common/AdminTools'
+import { matchesAdminSearch } from '../utils/adminSearch'
 import { useState, useMemo, forwardRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ShieldCheck, UserCog, User as UserIcon, Check, Loader2, ChevronRight, AlertCircle, Sparkles } from 'lucide-react'
+import { User as UserIcon, Check, Loader2, ChevronRight, AlertCircle } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import AdminPasswordReset from '../components/AdminPasswordReset'
@@ -27,6 +30,7 @@ export default function AdminTeacherManagePage() {
       queryClient.invalidateQueries({ queryKey: ['users-management'] })
       queryClient.invalidateQueries({ queryKey: ['teachers'] })
     },
+    onError: err => alert(err.response?.data?.message || '권한을 변경하지 못했습니다. 다시 시도해 주세요.'),
   })
 
   // 목사님이나 최고관리자는 수정 대상에서 제외 (처음부터 리스트에서 숨김)
@@ -37,8 +41,7 @@ export default function AdminTeacherManagePage() {
     return users.filter(u => {
       if (u.id === currentUser?.id) return false
       if (u.role === 'ADMIN') return false
-      const searchLower = search.toLowerCase()
-      return u.name.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower)
+      return matchesAdminSearch(search, u.name, u.email)
     })
   }, [users, search, currentUser])
 
@@ -46,6 +49,7 @@ export default function AdminTeacherManagePage() {
   const selectedUser = filteredUsers.find(u => u.id === selectedId)
 
   const handleRoleChange = (id, newRole) => {
+    if (mutation.isPending) return
     if (newRole === 'PASTOR') {
       const pastorOrAdminCount = users.filter(u => u.role === 'PASTOR' || u.role === 'ADMIN').length
       if (pastorOrAdminCount >= 2) {
@@ -64,15 +68,9 @@ export default function AdminTeacherManagePage() {
       <Header title="교사 권한 관리" showBack />
 
       <div className="px-4 py-6">
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="이름 또는 이메일로 검색"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-4 bg-white rounded-3xl border-none shadow-sm focus:ring-2 focus:ring-primary-500 font-medium text-gray-900 placeholder:text-gray-300 transition-all"
-          />
+        <div className="mb-5 flex flex-col gap-4">
+          <AdminIntro title="교사 권한을 한눈에" description="교사를 검색하고 이름을 눌러 권한과 계정 정보를 관리하세요." />
+          <SearchField label="교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
         </div>
 
         {isLoading ? (
@@ -88,12 +86,12 @@ export default function AdminTeacherManagePage() {
         ) : filteredUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-2 opacity-40">
             <UserIcon size={48} className="text-gray-400" />
-            <p className="text-sm font-bold text-gray-500">관리 대상 교사가 없습니다.</p>
+            <p className="text-sm font-bold text-gray-500">{search.trim() ? '검색 결과가 없습니다. 검색어를 바꿔 주세요.' : '관리 대상 교사가 없습니다.'}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-             <div className="px-1 mb-1 flex items-center justify-between">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">관리 대상 ({filteredUsers.length})</p>
+             <div className="px-1 mb-1 flex flex-wrap gap-2 items-center justify-between">
+                <p className="text-xs font-bold text-gray-400 ">관리 대상 ({filteredUsers.length})</p>
                 <ViewModeToggle mode={viewMode} onChange={setViewMode} />
              </div>
             {viewMode === 'large' ? (
