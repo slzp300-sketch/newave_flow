@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -17,6 +18,7 @@ import { useStudentAttendanceDraft, useTeacherAttendanceDraft } from '../hooks/u
 import { confirmAttendance } from '../utils/attendanceDraft'
 
 export default function EventAttendancePage() {
+  const fieldId = useId()
   const { id } = useParams()
   const eventId = Number(id)
   const { user } = useAuthStore()
@@ -204,7 +206,7 @@ export default function EventAttendancePage() {
                     )}
                   </div>
                   {!isPastDeadline && (
-                    <button onClick={() => setTeacherEditing(true)} className="text-xs text-gray-500 font-bold flex items-center gap-1 flex-shrink-0">
+                    <button aria-label="내 행사 출석 수정" onClick={() => setTeacherEditing(true)} className="min-h-11 min-w-11 px-2 text-xs text-gray-500 font-bold flex items-center justify-center gap-1 flex-shrink-0">
                       <PenLine size={12} /> 수정
                     </button>
                   )}
@@ -245,14 +247,14 @@ export default function EventAttendancePage() {
                     {pendingTeacherStatus === 'PARTIAL' && (
                       <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
                         <div>
-                          <label className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
-                          <input type="date" value={partialFromDate} min={event?.eventDate} max={event?.endDate}
+                          <label htmlFor={`${fieldId}-teacher-date`} className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1 block"><span className="sr-only">내 </span>참석 시작일 (필수)</label>
+                          <input id={`${fieldId}-teacher-date`} required type="date" value={partialFromDate} min={event?.eventDate} max={event?.endDate}
                             onChange={e => setPartialFromDate(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-300" />
+                            className="min-h-11 min-w-0 w-full px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-300" />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
-                          <input type="text" value={partialNote} onChange={e => setPartialNote(e.target.value)}
+                          <label htmlFor={`${fieldId}-teacher-note`} className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block"><span className="sr-only">내 </span>세부 시간 / 메모 (선택)</label>
+                          <input id={`${fieldId}-teacher-note`} type="text" value={partialNote} onChange={e => setPartialNote(e.target.value)}
                             placeholder="예: 오후 2시부터 참석 가능합니다"
                             className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200" />
                         </div>
@@ -262,8 +264,8 @@ export default function EventAttendancePage() {
                     {pendingTeacherStatus === 'ABSENT' && (
                       <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
                         <div>
-                          <label className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
-                          <input type="text" value={teacherAbsenceReason} onChange={e => setTeacherAbsenceReason(e.target.value)}
+                          <label htmlFor={`${fieldId}-teacher-reason`} className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1 block"><span className="sr-only">내 </span>불참 사유 (필수)</label>
+                          <input id={`${fieldId}-teacher-reason`} required type="text" value={teacherAbsenceReason} onChange={e => setTeacherAbsenceReason(e.target.value)}
                             placeholder="불참 사유를 입력해 주세요"
                             className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-sm font-medium outline-none focus:ring-2 focus:ring-red-300" />
                         </div>
@@ -318,7 +320,7 @@ export default function EventAttendancePage() {
                 <span className="text-xs font-bold text-emerald-700">출석 체크 제출 완료</span>
               </div>
               {!isPastDeadline && (
-                <button onClick={() => setEditing(true)} className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                <button aria-label="학생 행사 출석 수정" onClick={() => setEditing(true)} className="min-h-11 min-w-11 shrink-0 px-2 text-xs text-emerald-600 font-bold flex items-center justify-center gap-1">
                   <PenLine size={12} /> 수정
                 </button>
               )}
@@ -360,7 +362,7 @@ export default function EventAttendancePage() {
                     className="flex flex-col gap-2"
                   >
                     {/* 학생 카드 + 상태 버튼 */}
-                    <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
+                    <div className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 transition-all ${
                       status === 'PRESENT' ? 'border-emerald-200 bg-emerald-50' :
                       status === 'PARTIAL' ? 'border-amber-200 bg-amber-50' :
                                              'border-red-200 bg-red-50'
@@ -382,10 +384,11 @@ export default function EventAttendancePage() {
 
                       {/* 상태 버튼 */}
                       {isEditable && (
-                        <div className={`flex gap-1.5 ${isMultiDay ? '' : ''}`}>
+                        <div className="ml-auto flex flex-wrap gap-1.5">
                           <button
+                            aria-label={`${student.studentName} 행사 참석`} aria-pressed={status === 'PRESENT'}
                             onClick={() => setStudentStatus(student.studentId, 'PRESENT')}
-                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                            className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                               status === 'PRESENT'
                                 ? 'border-emerald-400 bg-emerald-500 text-white'
                                 : 'border-gray-100 bg-white text-gray-400'
@@ -395,8 +398,9 @@ export default function EventAttendancePage() {
                           </button>
                           {isMultiDay && (
                             <button
+                              aria-label={`${student.studentName} 행사 부분참석`} aria-pressed={status === 'PARTIAL'}
                               onClick={() => setStudentStatus(student.studentId, 'PARTIAL')}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                              className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                                 status === 'PARTIAL'
                                   ? 'border-amber-400 bg-amber-500 text-white'
                                   : 'border-gray-100 bg-white text-gray-400'
@@ -406,8 +410,9 @@ export default function EventAttendancePage() {
                             </button>
                           )}
                           <button
+                            aria-label={`${student.studentName} 행사 결석`} aria-pressed={status === 'ABSENT'}
                             onClick={() => setStudentStatus(student.studentId, 'ABSENT')}
-                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                            className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                               status === 'ABSENT'
                                 ? 'border-red-400 bg-red-500 text-white'
                                 : 'border-gray-100 bg-white text-gray-400'
@@ -443,6 +448,7 @@ export default function EventAttendancePage() {
                         >
                           <input
                             type="text"
+                            aria-label={`${student.studentName} 결석 사유 (필수)`} required
                             value={reasonMap[student.studentId] || ''}
                             onChange={e => setReasonMap(prev => ({ ...prev, [student.studentId]: e.target.value }))}
                             placeholder="결석 사유를 입력해 주세요 (필수)"
@@ -468,17 +474,19 @@ export default function EventAttendancePage() {
                           className="px-1 flex flex-col gap-2 overflow-hidden"
                         >
                           <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-bold text-amber-600 uppercase tracking-widest">
+                            <label htmlFor={`${fieldId}-student-${student.studentId}-date`} className="text-xs font-bold text-amber-600 uppercase tracking-widest">
+                              <span className="sr-only">{student.studentName} </span>
                               참석 시작일 (필수)
                             </label>
                             <input
+                              id={`${fieldId}-student-${student.studentId}-date`} required
                               type="date"
                               value={partialFromDateMap[student.studentId] || ''}
                               onChange={e => setPartialFromDateMap(prev => ({ ...prev, [student.studentId]: e.target.value }))}
                               min={event?.eventDate}
                               max={event?.endDate}
                               disabled={!isEditable}
-                              className={`w-full px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                              className={`min-h-11 min-w-0 w-full px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${
                                 isEditable
                                   ? 'bg-white border-amber-200 focus:ring-2 focus:ring-amber-300 outline-none'
                                   : 'bg-gray-50 border-gray-100 text-gray-400'
@@ -486,10 +494,12 @@ export default function EventAttendancePage() {
                             />
                           </div>
                           <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            <label htmlFor={`${fieldId}-student-${student.studentId}-note`} className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                              <span className="sr-only">{student.studentName} </span>
                               메모 (선택)
                             </label>
                             <input
+                              id={`${fieldId}-student-${student.studentId}-note`}
                               type="text"
                               value={partialNoteMap[student.studentId] || ''}
                               onChange={e => setPartialNoteMap(prev => ({ ...prev, [student.studentId]: e.target.value }))}

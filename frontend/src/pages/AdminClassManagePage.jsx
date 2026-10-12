@@ -2,7 +2,7 @@ import SearchField from '../components/common/SearchField'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
 import { matchesAdminSearch } from '../utils/adminSearch'
 import QueryNotice from '../components/common/QueryNotice'
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -193,9 +193,25 @@ function ClassAssignmentCard({ cls, onManage }) {
 }
 
 function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, onUpdated }) {
+  const dialogRef = useRef(null)
+  const closeButtonRef = useRef(null)
+  const addButtonRef = useRef(null)
   const [localTeachers, setLocalTeachers] = useState(cls.teachers || [])
   const [isAdding, setIsAdding] = useState(false)
   const [search, setSearch] = useState('')
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current
+    const previousOverflow = document.body.style.overflow
+    // Native modality keeps background content inert and restores the opener's focus.
+    dialog.showModal()
+    closeButtonRef.current?.focus({ preventScroll: true })
+    document.body.style.overflow = 'hidden'
+    return () => {
+      dialog.close()
+      document.body.style.overflow = previousOverflow
+    }
+  }, [])
 
   const updateMutation = useMutation({
     mutationFn: () => {
@@ -253,31 +269,60 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
     !assignedOtherClassUserIds.has(u.id)
   )
 
+  const requestClose = () => {
+    if (!updateMutation.isPending) onClose()
+  }
+
+  const keepTabInDialog = event => {
+    if (event.key !== 'Tab') return
+    const dialog = dialogRef.current
+    const controls = [...dialog.querySelectorAll('button, input, select, textarea, a[href], [tabindex]')]
+      .filter(element => element.tabIndex >= 0 && !element.matches(':disabled') && element.getClientRects().length)
+    const first = controls[0]
+    const last = controls.at(-1)
+    const active = document.activeElement
+    if (!first || !controls.includes(active) || (event.shiftKey ? active === first : active === last)) {
+      event.preventDefault()
+      ;(event.shiftKey ? last : first)?.focus({ preventScroll: true })
+      if (!first) dialog.focus({ preventScroll: true })
+    }
+  }
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current
+    if (updateMutation.isPending) dialog.focus({ preventScroll: true })
+    else if (document.activeElement === dialog || !dialog.contains(document.activeElement)) {
+      // Adding/removing/promoting a teacher may remove the focused button.
+      ;(addButtonRef.current || closeButtonRef.current)?.focus()
+    }
+  }, [updateMutation.isPending, localTeachers, isAdding])
+
   return (
-    <>
-      <motion.div 
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm" 
-      />
+    <dialog ref={dialogRef} tabIndex={-1} aria-label={`${cls.name} 교사 배정`} aria-modal="true"
+      onKeyDown={keepTabInDialog}
+      onTouchStart={event => event.stopPropagation()}
+      onMouseDown={event => event.stopPropagation()}
+      onCancel={event => { event.preventDefault(); requestClose() }}
+      onClick={event => { if (event.target === event.currentTarget) requestClose() }}
+      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-4 open:flex items-center justify-center backdrop:bg-black/40 backdrop:backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
+        className="w-full max-w-[430px]"
       >
-        <div role="dialog" aria-label={`${cls.name} 교사 배정`} className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pointer-events-auto">
-          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-            <div>
+        <div aria-busy={updateMutation.isPending || undefined} className="w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85dvh]">
+          <div className="p-5 border-b border-gray-50 flex items-start justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">{cls.grade}</p>
-              <h3 className="text-xl font-bold text-gray-900">{cls.name} 배정 현황</h3>
+              <h3 className="break-keep text-lg font-bold text-gray-900">{cls.name} 배정 현황</h3>
             </div>
-            <button aria-label="교사 배정 닫기" onClick={onClose} className="w-11 h-11 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+            <button ref={closeButtonRef} aria-label="교사 배정 닫기" disabled={updateMutation.isPending} onClick={requestClose} className="h-11 w-11 shrink-0 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 disabled:opacity-50">
               <X size={20} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <fieldset disabled={updateMutation.isPending} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-5 space-y-6">
             {/* 현재 배정 된 명단 */}
             <div className="space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">배정된 교사</p>
@@ -288,13 +333,13 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
               ) : (
                 <div className="flex flex-col gap-2">
                   {localTeachers.map(t => (
-                    <div key={t.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-xs font-bold text-gray-700 shadow-sm">
+                    <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="w-8 h-8 shrink-0 rounded-xl bg-white flex items-center justify-center text-xs font-bold text-gray-700 shadow-sm">
                           {t.name[0]}
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-700">{t.name}</p>
+                        <div className="min-w-0">
+                          <p className="break-words text-sm font-bold text-gray-700">{t.name}</p>
                           <span className={`text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-md ${
                             t.isPrimary ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-500'
                           }`}>
@@ -302,11 +347,12 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="ml-auto flex shrink-0 items-center gap-1">
                         {!t.isPrimary && (
                           <button 
                             onClick={() => handlePromote(t.id)}
-                            className="p-2 text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors"
+                            aria-label={`${t.name} 담임으로 승격`}
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors"
                             title="담임으로 승격"
                           >
                             <CheckCircle2 size={16} />
@@ -314,7 +360,8 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                         )}
                         <button 
                           onClick={() => handleRemoveTeacher(t.id)}
-                          className="p-2 text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
+                          aria-label={`${t.name} 배정 해제`}
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors"
                           title="배정 해제"
                         >
                           <UserMinus size={16} />
@@ -329,6 +376,7 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
             {/* 교사 추가 섹션 */}
             {!isAdding ? (
               <button 
+                ref={addButtonRef}
                 onClick={() => setIsAdding(true)}
                 className="w-full py-4 border-2 border-dashed border-primary-200 rounded-3xl text-primary-500 font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-50 transition-colors"
               >
@@ -340,14 +388,16 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                   <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input 
                     autoFocus
+                    aria-label="배정할 교사 이름 검색"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="교사 이름 검색..."
-                    className="w-full pl-12 pr-4 py-4 bg-gray-900 text-white rounded-2xl text-sm placeholder:text-gray-600 outline-none focus:ring-4 focus:ring-primary-500/20"
+                    className="w-full pl-12 pr-14 py-4 bg-gray-900 text-white rounded-2xl text-sm placeholder:text-gray-600 outline-none focus:ring-4 focus:ring-primary-500/20"
                   />
                   <button 
                     onClick={() => setIsAdding(false)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-500"
+                    aria-label="교사 추가 취소"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex min-h-11 min-w-11 items-center justify-center p-2 text-gray-400"
                   >
                     <X size={14} />
                   </button>
@@ -386,10 +436,10 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                 </div>
               </div>
             )}
-          </div>
+          </fieldset>
 
           <div className="p-6 bg-gray-50/50 flex gap-4">
-             <Button variant="ghost" onClick={onClose} className="flex-1" disabled={updateMutation.isPending}>취소</Button>
+             <Button variant="ghost" onClick={requestClose} className="flex-1" disabled={updateMutation.isPending}>취소</Button>
              <Button 
                 className="flex-[2]" 
                 onClick={() => updateMutation.mutate()}
@@ -400,6 +450,6 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
           </div>
         </div>
       </motion.div>
-    </>
+    </dialog>
   )
 }
