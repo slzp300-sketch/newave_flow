@@ -69,3 +69,10 @@ Capacitor 도입 시 발견한 실행용 axios/form-data의 높은 등급 경고
 - 현재 변경은 로컬 준비본이며 운영 배포·Play 업로드는 아직 하지 않았다. 운영 API의 native 출처 허용 배포가 끝나야 설치 앱의 서버 연결을 검수할 수 있다.
 
 빌드 성공, 실제 기기 성공, 내부 테스트 배포, 정식 스토어 출시는 각각 별도로 기록한다.
+
+## 후속 설치·운영 배포 (2026-10-12)
+
+- `5eb68fc` main 반영 후 Vercel·Railway 배포 성공. Android 출처 `https://localhost`의 운영 로그인 API 사전 요청 허용 확인.
+- Galaxy Note9(SM-N960N), Android 10에 Newave Flow 1.0.0(1) APK 설치 성공. 사용자 확인으로 로그인 화면 표시까지 통과했다. 로그인·재실행 유지 및 나머지 실기기 항목은 별도 확인한다.
+- 스토어 설명, 아이콘, 그래픽, 가상 자료 화면 4장, 개인정보 처리방침·데이터 보안 초안은 `android-store/README.md` 참고. 개인정보 처리방침 확정·공개, 안전한 심사 환경, 업로드 키 서명과 Play 제출은 아직 완료하지 않았다.
+- 첫 원격 Android 검사에서 SDK 관리 명령을 찾지 못한 문제를 확인해 `android-actions/setup-android`를 추가했다. 로컬 Android 빌드 성공과 원격 검사 성공을 구분한다.

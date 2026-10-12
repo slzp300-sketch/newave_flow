@@ -24,7 +24,13 @@
 
 사용자가 USB 연결을 허용하고 기기를 연결했다. 최초 `SM-N960N`과 Android 10을 확인했다. 이후 설치 시도에서 ADB 기기가 사라졌으며 Windows에는 Galaxy Note9 파일 전송 장치가 보이나 `SAMSUNG_Android` 드라이버 오류 28(미설치)이 확인됐다. 공식 Samsung USB Driver 페이지를 열어 사용자의 설치를 기다린다. 이 기록 시점에는 APK 설치 성공·실기기 로그인 검수를 주장하지 않는다.
 
-## 자료
+## 후속 설치·배포 확인 (2026-10-12)
+
+- USB 연결이 복구된 뒤 Galaxy Note9(SM-N960N, Android 10)에 `adb install -r`로 Newave Flow 1.0.0(1) 설치 성공. 사용자가 로그인 화면이 정상 표시됨을 확인했다. 로그인 완료·재실행 후 로그인 유지는 별도 확인 중이다.
+- 기능 커밋 `5eb68fc`를 main에 푸시했고 Vercel과 Railway의 운영 배포 성공을 확인했다. 운영 로그인 API의 `https://localhost` 사전 요청 허용을 확인해 Android 앱 연결 경로를 검증했다.
+- 첫 GitHub 자동 검사에서 프런트·백엔드·PostgreSQL 17/18 검사는 통과했으나 Android 작업은 `sdkmanager: command not found`로 실패했다. SDK 도구 설치 및 PATH 설정 단계를 명시적으로 추가했다. 수정 후 원격 검사 결과는 별도로 기록한다.
+
+## 자료 링크
 
 - 구현: `frontend/src/components/tts/HomeTtsSummary.jsx`, `frontend/src/pages/TTSPage.jsx`, `frontend/src/components/tts/TtsStats.jsx`
 - 스토어 자료: `docs/android-store/README.md`
