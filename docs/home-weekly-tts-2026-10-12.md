@@ -30,6 +30,13 @@
 - 기능 커밋 `5eb68fc`를 main에 푸시했고 Vercel과 Railway의 운영 배포 성공을 확인했다. 운영 로그인 API의 `https://localhost` 사전 요청 허용을 확인해 Android 앱 연결 경로를 검증했다.
 - 첫 GitHub 자동 검사에서 프런트·백엔드·PostgreSQL 17/18 검사는 통과했으나 Android 작업은 `sdkmanager: command not found`로 실패했다. SDK 도구 설치 및 PATH 설정 단계를 명시적으로 추가했다. 수정 후 원격 검사 결과는 별도로 기록한다.
 
+### 최종 확인
+
+- 수정 커밋 `a4ebe6a`의 [자동 검사](https://github.com/slzp300-sketch/newave_flow/actions/runs/38253987144) 5개 모두 성공: 프런트, 백엔드, PostgreSQL 17/18, Android APK/AAB 생성·lint 및 결과물 보관.
+- 운영 웹 홈의 새 주간 통계와 `/support`, `/account-deletion`을 실제 브라우저에서 조회했다. 이전 서비스워커 버전은 앱의 ‘새 버전으로 다시 열기’로 정상 갱신됐고 로그인은 유지됐다.
+- 사용자가 휴대폰에서 로그인·홈 통계·앱 재시작 후 로그인 유지, 내 상세 통계·일정·출석·행사 조회와 뒤로가기 복귀를 모두 정상으로 확인했다. 실제 기기 UI를 도구로 직접 조작한 결과와는 구분한다.
+- 스토어 제출은 아직 하지 않았다. 나머지 실기기 저장/오프라인/사진·격리 심사 환경·처리방침 확정·삭제 검증·서명 및 계정 인증 항목은 `android-store/README.md`와 `review-instructions.md`에 남겼다.
+
 ## 자료 링크
 
 - 구현: `frontend/src/components/tts/HomeTtsSummary.jsx`, `frontend/src/pages/TTSPage.jsx`, `frontend/src/components/tts/TtsStats.jsx`

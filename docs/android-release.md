@@ -76,3 +76,5 @@ Capacitor 도입 시 발견한 실행용 axios/form-data의 높은 등급 경고
 - Galaxy Note9(SM-N960N), Android 10에 Newave Flow 1.0.0(1) APK 설치 성공. 사용자 확인으로 로그인 화면 표시까지 통과했다. 로그인·재실행 유지 및 나머지 실기기 항목은 별도 확인한다.
 - 스토어 설명, 아이콘, 그래픽, 가상 자료 화면 4장, 개인정보 처리방침·데이터 보안 초안은 `android-store/README.md` 참고. 개인정보 처리방침 확정·공개, 안전한 심사 환경, 업로드 키 서명과 Play 제출은 아직 완료하지 않았다.
 - 첫 원격 Android 검사에서 SDK 관리 명령을 찾지 못한 문제를 확인해 `android-actions/setup-android`를 추가했다. 로컬 Android 빌드 성공과 원격 검사 성공을 구분한다.
+- 수정 커밋 `a4ebe6a`의 [원격 검사](https://github.com/slzp300-sketch/newave_flow/actions/runs/38253987144) 5개가 모두 통과했다. Android APK/AAB 생성·lint·결과물 업로드 성공을 확인했다.
+- 사용자 실기기 후속 확인: 로그인과 홈 통계 표시, 앱 완전 종료 후 로그인 유지, 내 상세 통계·일정·출석·행사 조회 및 휴대폰 뒤로가기 복귀가 모두 정상이다. 운영 기록을 시험 저장하지 않았다. 남은 실기기 시나리오는 `android-store/review-instructions.md`에 구분했다.
