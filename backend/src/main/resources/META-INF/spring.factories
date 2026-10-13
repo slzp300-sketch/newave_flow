@@ -1,0 +1,1 @@
+org.springframework.boot.env.EnvironmentPostProcessor=com.newaveflow.config.ReviewEnvironmentGuard

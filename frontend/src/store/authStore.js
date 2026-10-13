@@ -13,14 +13,15 @@ const useAuthStore = create(
       user:         null,
       accessToken:  null,
       refreshToken: null,
+      apiEnvironment: 'production',
 
       isHydrated: false,
 
-      setAuth: (user, accessToken, refreshToken) =>
-        set({ user, accessToken, refreshToken }),
+      setAuth: (user, accessToken, refreshToken, apiEnvironment = 'production') =>
+        set({ user, accessToken, refreshToken, apiEnvironment }),
 
       clearAuth: () =>
-        set({ user: null, accessToken: null, refreshToken: null }),
+        set({ user: null, accessToken: null, refreshToken: null, apiEnvironment: 'production' }),
 
       updateAccessToken: (accessToken) => set({ accessToken }),
 
@@ -39,6 +40,7 @@ const useAuthStore = create(
         user:         state.user,
         accessToken:  state.accessToken,
         refreshToken: state.refreshToken,
+        apiEnvironment: state.apiEnvironment,
       }),
       onRehydrateStorage: () => (state, error) => {
         hydrationError = error ?? null

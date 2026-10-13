@@ -24,6 +24,16 @@ export default function EmailInput({ onChange, status = 'idle' }) {
 
   const handleLocal = e => {
     const v = e.target.value
+    if (v.includes('@')) {
+      const [emailLocal, emailDomain] = v.trim().split('@')
+      const known = DOMAINS.includes(emailDomain)
+      setLocal(emailLocal)
+      setIsCustom(!known)
+      if (known) setDomain(emailDomain)
+      else setCustom(emailDomain ?? '')
+      emit(emailLocal, emailDomain, emailDomain ?? '', !known)
+      return
+    }
     setLocal(v)
     emit(v, domain, custom, isCustom)
   }

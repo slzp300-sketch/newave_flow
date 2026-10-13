@@ -10,6 +10,7 @@ import EmailInput from '../components/common/EmailInput'
 import KakaoButton from '../components/common/KakaoButton'
 import { beginKakao } from '../auth/kakao'
 import { flushAuthStorage } from '../native/platform'
+import { loginEnvironment } from '../auth/reviewEnvironment'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -40,11 +41,11 @@ export default function Login() {
     try {
       const { data } = await authApi.login(form.email, form.password)
       queryClient.clear()
-      setAuth(data.user, data.accessToken, data.refreshToken)
+      setAuth(data.user, data.accessToken, data.refreshToken, data.apiEnvironment)
       await flushAuthStorage()
       navigate('/', { replace: true })
     } catch (err) {
-      setError(err.response?.data?.message ?? '로그인 또는 기기 저장에 실패했습니다. 다시 시도해 주세요.')
+      setError(err.response?.data?.message ?? err.message ?? '로그인 또는 기기 저장에 실패했습니다. 다시 시도해 주세요.')
     } finally {
       setLoading(false)
     }
@@ -78,6 +79,7 @@ export default function Login() {
               </button>
             </div>
           </div>
+          {loginEnvironment(form.email) === 'review' && <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-800">가상 심사 환경으로 로그인합니다. 실제 회원·학생 기록과 분리되어 있습니다.</p>}
           {error && <div role="alert" className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>}
           <Button type="submit" size="lg" loading={loading} className="mt-1">로그인</Button>
         </form>

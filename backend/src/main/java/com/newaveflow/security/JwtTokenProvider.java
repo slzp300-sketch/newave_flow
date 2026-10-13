@@ -18,15 +18,26 @@ public class JwtTokenProvider {
     private final SecretKey key;
     private final long accessExpiration;
     private final long refreshExpiration;
+    private final String issuer;
+    private final boolean acceptLegacyIssuer;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration}") long accessExpiration,
-            @Value("${jwt.refresh-token-expiration}") long refreshExpiration) {
+            @Value("${jwt.refresh-token-expiration}") long refreshExpiration,
+            @Value("${jwt.issuer:newave-flow}") String issuer,
+            @Value("${jwt.accept-legacy-issuer:true}") boolean acceptLegacyIssuer) {
         this.key = Keys.hmacShaKeyFor(
                 Decoders.BASE64.decode(Base64.getEncoder().encodeToString(secret.getBytes())));
         this.accessExpiration  = accessExpiration;
         this.refreshExpiration = refreshExpiration;
+        this.issuer = issuer;
+        this.acceptLegacyIssuer = acceptLegacyIssuer;
+    }
+
+    public JwtTokenProvider(String secret, long accessExpiration, long refreshExpiration) {
+        this(secret, accessExpiration, refreshExpiration, "newave-flow", true);
     }
 
     public String createAccessToken(Long userId, String email, String role) {
@@ -63,6 +74,7 @@ public class JwtTokenProvider {
         Date now    = new Date();
         Date expiry = new Date(now.getTime() + expiration);
         return Jwts.builder()
+                .issuer(issuer)
                 .subject(String.valueOf(userId))
                 .claim("email", email)
                 .claim("role", role)
@@ -76,8 +88,12 @@ public class JwtTokenProvider {
     }
 
     public Claims getClaims(String token) {
-        return Jwts.parser().verifyWith(key).build()
+        Claims claims = Jwts.parser().verifyWith(key).build()
                 .parseSignedClaims(token).getPayload();
+        if (!issuer.equals(claims.getIssuer()) && !(acceptLegacyIssuer && claims.getIssuer() == null)) {
+            throw new JwtException("Invalid token issuer");
+        }
+        return claims;
     }
 
     public Long getUserId(String token) {

@@ -50,3 +50,13 @@ tasks.named('test') {
     inputs.dir('db/privacy')
     inputs.dir('db/migrations')
 }
+
+// The review runtime must never carry the actual roster resource.
+tasks.register('bootReviewJar', org.springframework.boot.gradle.tasks.bundling.BootJar) {
+    group = 'build'
+    archiveClassifier = 'review'
+    mainClass = 'com.newaveflow.NewaveFlowApplication'
+    targetJavaVersion = JavaVersion.VERSION_17
+    classpath = sourceSets.main.runtimeClasspath
+    exclude('**/roster_data.json')
+}

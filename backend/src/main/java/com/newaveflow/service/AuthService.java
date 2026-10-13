@@ -25,8 +25,13 @@ public class AuthService {
     private final UserRepository   userRepository;
     private final PasswordEncoder  passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    @org.springframework.beans.factory.annotation.Value("${app.review.mode:false}")
+    private boolean reviewMode;
 
     public LoginResponse login(LoginRequest request) {
+        if (!reviewMode && isReviewEmail(request.email())) {
+            throw AppException.unauthorized("심사 계정은 가상 심사 환경에서만 사용할 수 있습니다.");
+        }
         User user = userRepository.findByEmailIgnoreCase(request.email())
                 .orElseThrow(() -> AppException.unauthorized("이메일 또는 비밀번호가 올바르지 않습니다."));
 
@@ -79,6 +84,9 @@ public class AuthService {
     @Transactional
     public void register(com.newaveflow.dto.auth.RegisterRequest request) {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (!reviewMode && isReviewEmail(normalizedEmail)) {
+            throw AppException.badRequest("심사용 이메일은 일반 회원가입에 사용할 수 없습니다.");
+        }
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw AppException.badRequest("이미 가입된 이메일입니다.");
         }
@@ -97,6 +105,10 @@ public class AuthService {
 
     public boolean checkEmailDuplicate(String email) {
         return userRepository.existsByEmailIgnoreCase(email.trim().toLowerCase());
+    }
+
+    private static boolean isReviewEmail(String email) {
+        return email != null && email.trim().toLowerCase(java.util.Locale.ROOT).endsWith("@review.newaveflow.invalid");
     }
 
     public boolean checkNameDuplicate(String name) {

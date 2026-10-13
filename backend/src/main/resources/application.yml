@@ -7,6 +7,8 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
+  issuer: newave-flow
+  accept-legacy-issuer: true
   access-token-expiration: 3600000      # 1시간 (ms)
   refresh-token-expiration: 604800000   # 7일 (ms)
 
@@ -17,6 +19,11 @@ server:
       charset: UTF-8
       enabled: true
       force: true
+
+app:
+  review:
+    mode: false
+    api-url: ${REVIEW_API_URL:}
 
 kakao:
   enabled: ${KAKAO_LOGIN_ENABLED:false}
@@ -103,3 +110,53 @@ logging:
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql: OFF
     org.springframework.security: WARN
+
+---
+
+# Dedicated synthetic review service: no production database or OAuth credentials.
+spring:
+  config:
+    activate:
+      on-profile: review
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: jdbc:h2:file:${REVIEW_DATA_DIR}/newaveflow-review;MODE=PostgreSQL;DB_CLOSE_ON_EXIT=FALSE
+    username: review
+    password: ${REVIEW_DATABASE_PASSWORD}
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+jwt:
+  secret: ${REVIEW_JWT_SECRET}
+  issuer: newave-flow-review
+  accept-legacy-issuer: false
+
+app:
+  seed:
+    enabled: false
+  review:
+    mode: true
+    api-url: ""
+    teacher-password: ${REVIEW_TEACHER_PASSWORD}
+    admin-password: ${REVIEW_ADMIN_PASSWORD}
+
+kakao:
+  enabled: false
+  client-id: ""
+  client-secret: ""
+  admin-key: ""
+  app-id: ""

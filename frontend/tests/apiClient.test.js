@@ -76,8 +76,9 @@ test('network failure while refreshing preserves credentials for a later attempt
   await assert.rejects(api.refreshSession()); assert.equal(api.state.accessToken, 'old-access'); assert.equal(api.redirects(), 0)
 })
 test('late refresh cannot restore a logged-out session', async () => {
-  let finish; const api = setup(() => new Promise(resolve => { finish = resolve }))
-  const pending = api.refreshSession(); api.state.clearAuth()
+  let finish, notifyStarted; const started = new Promise(resolve => { notifyStarted = resolve })
+  const api = setup(() => new Promise(resolve => { finish = resolve; notifyStarted() }))
+  const pending = api.refreshSession(); await started; api.state.clearAuth()
   finish({ data: { user: { id: 1 }, accessToken: 'late', refreshToken: 'late' } })
   await assert.rejects(pending); assert.equal(api.state.user, null)
 })
