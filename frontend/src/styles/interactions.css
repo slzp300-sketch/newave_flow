@@ -1,14 +1,11 @@
-/* One interaction palette for native buttons, navigation actions and cards.
-   Only the pressed action changes color; hovering never colors a static parent card. */
+/* Blue identifies available actions; green identifies selected or enabled state.
+   Pointer presses and hover do not change an action's selection color. */
 @layer utilities {
   :root :is(button, .brand-action, summary):not(.brand-color-swatch),
   :root :is(.glass-card, .brand-card, .ui-list) {
     --surface-bg: theme('colors.primary.50');
     --surface-border: theme('colors.primary.200');
     --surface-ink: theme('colors.primary.700');
-    --surface-hover-bg: theme('colors.secondary.50');
-    --surface-hover-border: theme('colors.secondary.400');
-    --surface-hover-ink: theme('colors.secondary.800');
     background-color: var(--surface-bg);
     transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .2s ease, scale .18s var(--motion-ease);
   }
@@ -28,35 +25,30 @@
     --surface-bg: theme('colors.primary.600');
     --surface-border: theme('colors.primary.600');
     --surface-ink: white;
-    --surface-hover-bg: theme('colors.secondary.700');
-    --surface-hover-border: theme('colors.secondary.700');
-    --surface-hover-ink: white;
   }
 
-  /* Keep selection visible after pointer/touch feedback has ended. */
-  :root :is(button, .brand-action)[aria-pressed='true']:not(.text-white, .brand-color-swatch) {
-    --surface-bg: theme('colors.primary.100');
-    --surface-border: theme('colors.primary.600');
+  /* Use the actual UI state, which persists after mouse/touch release. */
+  :root :is(button, .brand-action, summary):is([aria-pressed='true'], [aria-checked='true'], [aria-selected='true'], [aria-current='page'], [aria-current='location'], [data-checked='true']):not(.brand-color-swatch),
+  :root details[open] > summary {
+    --surface-bg: theme('colors.secondary.50');
+    --surface-border: theme('colors.secondary.400');
+    --surface-ink: theme('colors.secondary.800');
     box-shadow: inset 0 0 0 1px var(--surface-border);
   }
+  :root :is(button, .brand-action).text-white:is([aria-pressed='true'], [aria-checked='true'], [aria-selected='true'], [aria-current='page'], [aria-current='location'], [data-checked='true']):not(.brand-color-swatch) {
+    --surface-bg: theme('colors.secondary.700');
+    --surface-border: theme('colors.secondary.700');
+    --surface-ink: white;
+  }
   :root .brand-selection { background-color: var(--surface-bg); }
-  :root .brand-nav-indicator { background-color: theme('colors.primary.100'); }
+  :root .brand-nav-indicator { background-color: theme('colors.secondary.100'); }
   :root :is(.brand-action-icon, .brand-action > .ui-list-icon) { background-color: inherit; color: inherit; }
 
-  /* Green only while pressing, on mouse and touch. Apply immediately so even short taps
-     are visible; release fades back to blue. Focus does not retain the pressed fill. */
-  :root :is(button, .brand-action, summary):not(.brand-color-swatch, :disabled, [aria-disabled='true'], [aria-busy='true']):active {
-    background-color: var(--surface-hover-bg);
-    border-color: var(--surface-hover-border);
-    color: var(--surface-hover-ink);
-    box-shadow: inset 0 0 0 2px var(--surface-hover-border);
-    transition-duration: 0s;
-  }
-  :root :is(button, .brand-action):not(:disabled, [aria-disabled='true'], [aria-busy='true']):active > :is(.brand-selection, .brand-nav-indicator) {
-    background-color: var(--surface-hover-bg);
+  :root input:is([type='checkbox'], [type='radio']):checked {
+    accent-color: theme('colors.secondary.700');
   }
   :root :is(button, .brand-action, summary):focus-visible {
-    outline: 2px solid theme('colors.secondary.700');
+    outline: 2px solid theme('colors.primary.600');
     outline-offset: 3px;
   }
 
@@ -64,12 +56,9 @@
   :root .event-inactive,
   :root .event-inactive :is(button, .brand-action, .brand-card, .glass-card),
   :root .event-inactive-page :is(button, .brand-action, .brand-card, .glass-card) {
-    --surface-bg: theme('colors.gray.100');
-    --surface-border: theme('colors.gray.300');
-    --surface-ink: theme('colors.gray.600');
-    --surface-hover-bg: theme('colors.gray.200');
-    --surface-hover-border: theme('colors.gray.400');
-    --surface-hover-ink: theme('colors.gray.700');
+    --surface-bg: theme('colors.gray.100') !important;
+    --surface-border: theme('colors.gray.300') !important;
+    --surface-ink: theme('colors.gray.600') !important;
     background-color: var(--surface-bg);
     border-color: var(--surface-border);
     color: var(--surface-ink);

@@ -789,6 +789,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
                         <button
                           key={tag.id}
                           onClick={() => toggleTag(tag.id)}
+                          aria-pressed={assigned}
                           disabled={pending}
                           className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
                             pending ? 'opacity-60' :
@@ -814,6 +815,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
                         <button
                           key={tag.id}
                           onClick={() => toggleTag(tag.id)}
+                          aria-pressed={assigned}
                           disabled={pending}
                           className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full border-2 transition-all active:scale-95 ${
                             pending ? 'opacity-60' :

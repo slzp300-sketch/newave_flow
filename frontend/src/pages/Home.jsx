@@ -231,6 +231,7 @@ function AdminView({ navigate, today }) {
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">바로가기</p>
           <button
             onClick={() => setIsEditingLinks(!isEditingLinks)}
+            aria-pressed={isEditingLinks}
             className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-colors ${
               isEditingLinks ? 'bg-primary-50 text-primary-600' : 'text-gray-400 hover:bg-gray-100'
             }`}

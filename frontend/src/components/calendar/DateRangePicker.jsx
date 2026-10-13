@@ -87,13 +87,14 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
                 <button
                   type="button"
                   key={d}
+                  aria-pressed={isEdge || inRange}
                   onClick={() => handlePick(day)}
-                  className={`relative h-10 text-sm font-bold ${inRange ? 'bg-primary-50' : ''}`}
+                  className={`relative h-10 text-sm font-bold ${inRange ? 'bg-secondary-50' : ''}`}
                 >
-                  {isStart && e > s && <span className="absolute inset-y-0 right-0 w-1/2 bg-primary-50" />}
-                  {isEnd && e > s && <span className="absolute inset-y-0 left-0 w-1/2 bg-primary-50" />}
+                  {isStart && e > s && <span className="absolute inset-y-0 right-0 w-1/2 bg-secondary-50" />}
+                  {isEnd && e > s && <span className="absolute inset-y-0 left-0 w-1/2 bg-secondary-50" />}
                   <span className={`relative mx-auto w-9 h-9 rounded-full flex items-center justify-center
-                    ${isEdge ? 'bg-primary-600 text-white' :
+                    ${isEdge ? 'bg-secondary-700 text-white' :
                       !isSameMonth(day, month) ? 'text-gray-300' :
                       dow === 0 ? 'text-red-400' : dow === 6 ? 'text-primary-400' : 'text-gray-800'}`}>
                     {format(day, 'd')}

@@ -416,7 +416,7 @@ export default function ProfilePage() {
               aria-checked={largeFontMode}
               className="w-12 min-h-11 flex items-center shrink-0"
             >
-              <span className={`relative block w-12 h-6 rounded-full transition-colors ${largeFontMode ? 'bg-primary-600' : 'bg-gray-200'}`}>
+              <span className={`relative block w-12 h-6 rounded-full transition-colors ${largeFontMode ? 'bg-secondary-700' : 'bg-gray-200'}`}>
               <motion.div
                 animate={{ x: largeFontMode ? 24 : 2 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}

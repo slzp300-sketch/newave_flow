@@ -33,7 +33,7 @@ const splitTitle = (t = '') => { const m = t.match(/^(.*?)\s*\((.+)\)\s*$/); ret
 
 // Actions share one brand color; check marks also communicate completion.
 const PALETTE = [
-  { dot: 'bg-primary-600', fill: 'bg-primary-600', soft: 'bg-primary-50', text: 'text-primary-700' },
+  { dot: 'bg-primary-600', fill: 'bg-secondary-700', soft: 'bg-secondary-50', text: 'text-secondary-700' },
 ]
 
 export function parseAnswer(q, raw) {
@@ -385,6 +385,7 @@ function CheckRow({ q, color, checked, sub, onClick, disabled }) {
       onClick={onClick}
       disabled={disabled}
       aria-pressed={isLinked(q) ? undefined : checked}
+      data-checked={checked}
       className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all active:scale-[0.98] ${checked ? color.soft : 'bg-gray-50'}`}
     >
       <span className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-lg flex-shrink-0 shadow-sm">{q.emoji}</span>

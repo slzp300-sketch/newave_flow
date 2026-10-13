@@ -41,7 +41,7 @@ export default function HomeTtsSummary({ score, maxScore, range, days, items, an
       </div>)}
     </div>
     {meetings.length > 0 && <ul aria-label="이번 주 예배와 모임 기록" className="mt-3 flex flex-wrap gap-1.5">
-      {meetings.map(({ q, done }) => <li key={q.id} className="rounded-lg border border-primary-200 px-2 py-1.5 text-xs text-primary-800">
+      {meetings.map(({ q, done }) => <li key={q.id} className={`rounded-lg border px-2 py-1.5 text-xs ${done ? 'border-secondary-200 bg-secondary-50 text-secondary-800' : 'border-primary-200 text-primary-800'}`}>
         {shortTitle(q.title)} <strong>{q.linkType && q.linkType !== 'NONE'
           ? done ? (q.linkType === 'PRAYER_MEETING' ? '참석 투표 반영' : '참석 체크 반영') : '참석 미반영'
           : done ? '✓ 체크됨' : '미체크'}</strong>

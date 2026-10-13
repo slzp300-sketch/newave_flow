@@ -377,14 +377,13 @@ export default function CalendarPage() {
               <div 
                 key={day.toISOString()}
                 onClick={() => setSelected(day)}
-                className={`min-h-[70px] bg-white p-1 flex flex-col gap-0.5 cursor-pointer relative transition-all
-                  ${isSelected ? 'ring-2 ring-primary-500 ring-inset z-10' : ''}
-                  ${!isCurrMonth ? 'bg-gray-50/50' : ''}`}
+                className={`min-h-[70px] p-1 flex flex-col gap-0.5 cursor-pointer relative transition-all
+                  ${isSelected ? 'bg-secondary-50 ring-2 ring-secondary-600 ring-inset z-10' : !isCurrMonth ? 'bg-gray-50/50' : 'bg-white'}`}
               >
                 <div className="flex justify-between items-start mb-0.5">
                   <span className={`text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full
-                    ${isToday(day) ? 'bg-primary-600 text-white shadow-md' : 
-                      isSelected ? 'text-primary-600' :
+                    ${isSelected ? 'bg-secondary-700 text-white' :
+                      isToday(day) ? 'bg-primary-600 text-white shadow-md' :
                       !isCurrMonth ? 'text-gray-300' :
                       dayOfWeek === 0 ? 'text-red-400' : 
                       dayOfWeek === 6 ? 'text-blue-400' : 'text-gray-900'}`}>
@@ -598,14 +597,14 @@ export default function CalendarPage() {
                 <div
                   onClick={() => setFormData(d => ({ ...d, allDay: !d.allDay }))}
                   className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
-                    formData.allDay ? 'border-primary-300 bg-primary-50' : 'border-gray-100 bg-gray-50'
+                    formData.allDay ? 'border-secondary-300 bg-secondary-50' : 'border-gray-100 bg-gray-50'
                   }`}
                 >
                   <div>
-                    <p className={`text-sm font-bold ${formData.allDay ? 'text-primary-700' : 'text-gray-500'}`}>하루종일</p>
+                    <p className={`text-sm font-bold ${formData.allDay ? 'text-secondary-700' : 'text-gray-500'}`}>하루종일</p>
                     <p className="text-xs text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
                   </div>
-                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-primary-500' : 'bg-gray-200'}`}>
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-secondary-700' : 'bg-gray-200'}`}>
                     <motion.div
                       animate={{ x: formData.allDay ? 20 : 2 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
