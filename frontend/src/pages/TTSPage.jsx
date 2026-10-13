@@ -288,7 +288,7 @@ export function CheckTab({ embedded = false }) {
             <Card>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="brand-section-title font-bold text-gray-900 text-sm">예배 · 모임</h2>
-                <p className="text-xs font-bold text-gray-400">참석하면 체크</p>
+                <p className="text-xs font-bold text-gray-400">참여를 마친 뒤 체크</p>
               </div>
               <div className="flex flex-col gap-2">
                 {otherQuestions.map(({ q, color }) => isLinked(q) ? (
@@ -307,7 +307,7 @@ export function CheckTab({ embedded = false }) {
                     color={color}
                     checked={answers[q.id] === true}
                     disabled={!ready || offline}
-                    sub="탭해서 체크"
+                    sub={answers[q.id] === true ? '참여 완료 · 탭해서 해제' : '참여 완료 후 탭해서 체크'}
                     onClick={() => toggleAttend(q)}
                   />
                 ))}

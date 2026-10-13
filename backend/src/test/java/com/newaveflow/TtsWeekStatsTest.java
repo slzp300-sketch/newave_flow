@@ -86,6 +86,32 @@ class TtsWeekStatsTest {
         assertThrows(AppException.class, () -> tts.getWeekStats(LocalDate.now().getYear()+1,1));
     }
 
+    @Test void manualMeetingCompletionIsIndependentOfAttendanceAndVote() {
+        var person = teacher("가상 참여완료");
+        var meeting = question("교사회의", TtsQuestion.TtsQuestionType.ATTEND, 10);
+        var prayer = question("온라인 줌 기도모임", TtsQuestion.TtsQuestionType.ATTEND, 10);
+        var sunday = TtsService.weekSunday(LocalDate.now());
+        var attendance = meetings.saveAndFlush(MeetingAttendance.builder().teacher(person)
+                .meetingDate(sunday.plusDays(6)).status("ATTEND").build());
+        var vote = prayers.saveAndFlush(PrayerVote.builder().teacher(person)
+                .weekStart(sunday.plusDays(1)).status(PrayerVote.Status.TUE).build());
+        assertEquals(0, tts.getWeek(person, sunday).getScore());
+        assertTrue(tts.getWeek(person, sunday).getLinked().isEmpty());
+        assertEquals(10, tts.saveAnswer(person, new com.newaveflow.dto.tts.TtsAnswerRequest(sunday, meeting.getId(), "true")).getScore());
+        assertEquals(20, tts.saveAnswer(person, new com.newaveflow.dto.tts.TtsAnswerRequest(sunday, prayer.getId(), "true")).getScore());
+        attendance.updateStatus("ABSENT", "가상 사유"); vote.update(PrayerVote.Status.ABSENT, "가상 사유");
+        meetings.saveAndFlush(attendance); prayers.saveAndFlush(vote);
+        assertEquals(20, tts.getWeek(person, sunday).getScore());
+        var detail = tts.getWeekStats(TtsService.weekYear(sunday), TtsService.weekNum(sunday)).people().stream()
+                .filter(p -> p.teacherId().equals(person.getId())).findFirst().orElseThrow();
+        assertEquals(20, detail.score()); assertTrue(detail.items().stream().allMatch(i -> !i.linked() && i.checked()));
+        assertEquals(10, tts.saveAnswer(person, new com.newaveflow.dto.tts.TtsAnswerRequest(sunday, meeting.getId(), "false")).getScore());
+        assertEquals(0, tts.saveAnswer(person, new com.newaveflow.dto.tts.TtsAnswerRequest(sunday, prayer.getId(), "false")).getScore());
+        assertEquals("ABSENT", meetings.findById(attendance.getId()).orElseThrow().getStatus());
+        assertEquals(PrayerVote.Status.ABSENT, prayers.findById(vote.getId()).orElseThrow().getStatus());
+        assertEquals(2, records.findByTeacherIdAndInfoYearAndWeekNum(person.getId(), TtsService.weekYear(sunday), TtsService.weekNum(sunday)).orElseThrow().getAnswers().size());
+    }
+
     @Test void linkedMeetingsIgnoreOldManualChecksOtherPeopleAndOtherWeeks() {
         var person=teacher("가상 연동");var other=teacher("가상 다른 교사");
         var meeting=questions.saveAndFlush(TtsQuestion.builder().title("교사회의").type(TtsQuestion.TtsQuestionType.ATTEND).points(10).linkType(TtsQuestion.TtsLinkType.SAT_MEETING).build());

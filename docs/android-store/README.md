@@ -48,3 +48,4 @@ Google 공식 요구 규격: 아이콘 512×512 32-bit PNG(1MB 이하), 그래�
 - 현재 계정 대시보드는 프로덕션 신청 전에 12명 이상이 연속 14일 이상 참여하는 비공개 테스트를 요구한다. 참여 인원 0명이며, 앱 설정과 테스트를 마쳐야 한다.
 - Android 시작 화면의 잘린 로고를 수정했다. 전체 파란 배경과 중앙 흰색 로고를 분리하고 Android 12 이상의 시스템 마스크 안에 전체 로고가 들어가도록 여백을 추가했다. 원본 SVG를 바꾸지 않고 `tools/android/create-splash.mjs`로 전용 벡터 두 개를 생성한다. Android assembleDebug/lintDebug 통과. 실기기 설치·화면 결과는 별도 확인한다.
 - Android 12 이상은 시스템 시작 화면이 적용된다. 배경색·아이콘 안전 영역 기준은 [Android 시작 화면 공식 문서](https://developer.android.com/develop/ui/views/launch/splash-screen)를 따랐다. Android 12 실기기에서 직접 확인한 것으로 보고하지 않는다.
+- 후속 UI `2c1d17a`는 Galaxy Note9 Android 10에 기존 서명으로 데이터 초기화 없이 업데이트했다. 실기기 시작 화면에서 파란 전체 배경과 중앙 로고가 잘리지 않음을 확인했다. 시작 화면 증빙: `frontend/.verification/ux-followup/android-splash-04.png`.

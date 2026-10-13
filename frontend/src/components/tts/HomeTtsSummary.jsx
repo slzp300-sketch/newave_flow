@@ -44,10 +44,11 @@ export default function HomeTtsSummary({ score, maxScore, range, days, items, an
       {meetings.map(({ q, done }) => <li key={q.id} className={`rounded-lg border px-2 py-1.5 text-xs ${done ? 'border-secondary-200 bg-secondary-50 text-secondary-800' : 'border-primary-200 text-primary-800'}`}>
         {shortTitle(q.title)} <strong>{q.linkType && q.linkType !== 'NONE'
           ? done ? (q.linkType === 'PRAYER_MEETING' ? '참석 투표 반영' : '참석 체크 반영') : '참석 미반영'
-          : done ? '✓ 체크됨' : '미체크'}</strong>
+          : done ? '✓ 참여 완료' : '미체크'}</strong>
       </li>)}
     </ul>}
     <p className="mt-2 text-[11px] leading-relaxed text-gray-500">{items.length ? `주간 전체 배점 기준${daily.length ? ' · 요일을 눌러 체크·해제 · 점선은 예정일' : ''}` : '등록된 체크 항목이 없습니다.'}</p>
     {meetings.some(({ q }) => q.linkType && q.linkType !== 'NONE') && <p className="mt-1 text-[11px] leading-relaxed text-gray-500">교사회의·기도모임은 해당 화면에 저장한 참석 응답을 반영해요.</p>}
+    {meetings.some(({ q }) => !q.linkType || q.linkType === 'NONE') && <p className="mt-1 text-[11px] leading-relaxed text-gray-500">예배·모임은 참여를 마친 뒤 이번 주 기록 수정에서 직접 체크해요.</p>}
   </section>
 }

@@ -102,3 +102,23 @@ V005는 정확히 일치하는 두 표준 질문만 이번 주(한국 시간 202
 - 프런트 67개 검사, 웹/PWA 빌드, 백엔드 전체 build, Android native 동기화·assembleDebug·lintDebug 통과. Android lint의 기존 경고가 없다는 뜻은 아니다.
 - localhost 가상 자료로 375px 홈 펼침·체크와 점수 동기화·미래 날짜 제한, 관리자 보기 전환·검색 유지·선택 복원·기록 보존, 교사 권한의 메뉴, 일정 색상·제목 이동, 로그인 링크와 하단 메뉴 배경을 검증했다. 확인한 화면에 가로 넘침과 콘솔 오류가 없었다. 운영 학생·교사의 업무 기록을 시험 수정하지 않았다.
 - 근거: `frontend/.verification/ux-followup/`의 빌드 로그, `admin-view-checks.json`, `home-expanded.png`. 운영 배포와 기존 서명 실기기 설치 결과는 완료 후 별도로 기록한다.
+
+### 운영 배포와 실기기 업데이트 완료
+
+- UI 소스와 관련 기록을 main [2c1d17a](https://github.com/slzp300-sketch/newave_flow/commit/2c1d17ad5c1cfea66245ba841872e797b92532fa)에 반영했다. Vercel·Railway 배포 SUCCESS, 공개 ProfilePage의 빌드 식별자와 Railway 활성 배포 커밋이 일치한다.
+- [CI 38358478480](https://github.com/slzp300-sketch/newave_flow/actions/runs/38358478480)의 frontend/backend/Android/PostgreSQL 17·18 다섯 작업 성공. 운영 health 정상, 카카오 enabled=true 유지.
+- 운영 로그인 화면에서 노란 카카오 버튼 아래 회원가입·계정 찾기, 배경 없는 11px 지원 링크, 44px 터치 영역과 375px 가로 넘침 없음·콘솔 오류 없음을 확인했다. 증빙: `frontend/.verification/ux-followup/production-login.png`.
+- 기존 서명으로 Galaxy Note9(SM-N960N, Android 10)에 `adb install -r` 성공. 최초 설치 시각 2026-10-12 21:59:20 유지, 갱신 시각 2026-10-13 15:48:40. 앱 삭제·데이터 초기화는 하지 않았다. 설치 APK SHA-256은 `51635c45ab475e2cae8249a4a5306368f5a509db43edb59c7b1546d92be5610a`로 준비 파일과 일치했다.
+- 실기기 시작 화면 1080×2220에서 파란 배경과 중앙 원본 로고 전체를 확인했다. 증빙: `frontend/.verification/ux-followup/android-splash-04.png`, 시작 후 MainActivity Resumed와 앱 프로세스 실행, AndroidRuntime 치명적 오류 없음을 확인했다. Android 12 이상 실기기 검수는 별도다.
+- Google Play 공개 출시는 진행하지 않았다. 앱 초안과 테스트·출시 준비는 별도 후속 작업이다.
+
+### 추가 요청: 모임 참여 완료 직접 체크
+
+2026-10-13 사용자는 TTS의 교사회의·온라인 줌 기도모임을 참석 응답 자동 반영 대신 실제 참여 완료 후 직접 탭하는 체크로 바꾸길 요청했다. 위 V005의 자동 연동 기준을 대체하는 요청이며 기존 주차 기록과 규칙을 보존하는 적용 방법을 확인한다.
+
+- 두 표준 항목의 현재 주부터 자동 연동을 해제하는 V007을 준비했다. 기존 질문 ID·배점·원본 응답·이전 주 규칙과 참석 응답/기도모임 투표는 유지한다. 기존 직접 체크 값이 있는 경우 보존된 값을 사용한다.
+- TTS 목록은 ‘참여 완료 후 탭해서 체크’, 체크 후 ‘참여 완료 · 탭해서 해제’로 안내한다. 홈 요약도 직접 체크된 예배·모임을 ‘참여 완료’로 표시한다. 새 개발 환경의 초기값도 직접 체크로 맞췄다.
+- 참석 응답과 TTS 체크가 독립적인 서비스 회귀 검사와 전체 백엔드 build, 프런트 67개 검사 통과. 운영 전환은 최신 백업 복원본 검수 후 진행한다.
+- 최신 운영 백업의 35개 테이블·2,177개 행을 별도 PostgreSQL 18.6에 복원해 전체 해시 일치를 확인했다. V007 강제 실패 롤백·정상 적용·재실행 차단·기존 값 보존과 prod/validate 기동을 검증한 후 운영에 적용했다. 적용 전후 32개 업무 테이블의 전체 행 해시와 기존 질문 ID·배점·순서·이전 주 규칙이 보존됐다.
+- 가상 교사의 교사회의 참석 응답이 있어도 TTS 모임 체크는 비어 있었다. 직접 체크 두 개 저장 후 점수 5→25, 새로고침 유지, 두 항목 해제·새로고침·홈 복귀 후 5점과 두 모임 미체크로 동기화되는 것을 확인했다. 375px 화면의 가로 넘침과 새 콘솔 오류 없음. 화면 근거: `frontend/.verification/ux-followup/tts-manual-checked.png`.
+- 백업·전환 근거는 `C:/Users/upup0/AppData/Local/NewaveFlow/Backups/2026-10-13-tts-manual`에 비공개로 보관한다. 운영 업무 기록을 시험 체크하거나 참석 응답을 바꾸지 않았다.
