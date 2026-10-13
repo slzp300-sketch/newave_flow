@@ -122,3 +122,7 @@ V005는 정확히 일치하는 두 표준 질문만 이번 주(한국 시간 202
 - 최신 운영 백업의 35개 테이블·2,177개 행을 별도 PostgreSQL 18.6에 복원해 전체 해시 일치를 확인했다. V007 강제 실패 롤백·정상 적용·재실행 차단·기존 값 보존과 prod/validate 기동을 검증한 후 운영에 적용했다. 적용 전후 32개 업무 테이블의 전체 행 해시와 기존 질문 ID·배점·순서·이전 주 규칙이 보존됐다.
 - 가상 교사의 교사회의 참석 응답이 있어도 TTS 모임 체크는 비어 있었다. 직접 체크 두 개 저장 후 점수 5→25, 새로고침 유지, 두 항목 해제·새로고침·홈 복귀 후 5점과 두 모임 미체크로 동기화되는 것을 확인했다. 375px 화면의 가로 넘침과 새 콘솔 오류 없음. 화면 근거: `frontend/.verification/ux-followup/tts-manual-checked.png`.
 - 백업·전환 근거는 `C:/Users/upup0/AppData/Local/NewaveFlow/Backups/2026-10-13-tts-manual`에 비공개로 보관한다. 운영 업무 기록을 시험 체크하거나 참석 응답을 바꾸지 않았다.
+- main [9e4e4b6](https://github.com/slzp300-sketch/newave_flow/commit/9e4e4b6661ade051aab16428d3a0d3f09172a497)의 Vercel·Railway 배포 SUCCESS. 운영 공개 빌드 식별자와 TTS 직접 체크 문구, Railway 활성 배포 커밋 일치·health 정상·카카오 enabled=true 유지 확인. PWA 탭은 새 버전 다시 열기로 갱신했다.
+- [CI 38361143244](https://github.com/slzp300-sketch/newave_flow/actions/runs/38361143244)의 frontend/backend/Android/PostgreSQL 17·18 다섯 작업 모두 성공했다. 두 PostgreSQL 작업에는 V007 전용 회귀 검사가 포함된다.
+- Galaxy Note9에 기존 서명으로 9e4e4b6 업데이트 설치 성공. 최초 설치 시각 유지, 갱신 시각 2026-10-13 16:15:41. 설치 APK SHA-256 `fd566eb1b49af48cb787cf70984b0e375438560ad0bf7aba15b7d50e3f15050f`가 준비 파일과 일치했다. 앱 삭제·데이터 초기화 없음, MainActivity Resumed·프로세스 실행·AndroidRuntime 치명적 오류 없음 확인. 사용자 실제 로그인 상태는 자동 검증한 것으로 보고하지 않는다.
+- 암호화 백업과 성공 검증 근거를 보존한 뒤 작업용 PostgreSQL을 중지하고 원문 복원본·임시 비밀번호·진단 파일을 정리했다. UI·설치 증빙은 `frontend/.verification/ux-followup/`에 보관한다.

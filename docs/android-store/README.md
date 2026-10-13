@@ -1,6 +1,6 @@
 # Android 스토어 준비 자료
 
-작성: 2026-10-12, 갱신: 2026-10-13. **자료와 Play Console 앱 초안을 준비했으며, 심사 제출·공개 출시 완료가 아니다.**
+작성: 2026-10-12, 갱신: 2026-10-13. **첫 내부 테스트 버전을 게시했다. 비공개 테스트·심사 제출·공개 출시 완료가 아니다.**
 
 | 파일 | 용도 | 상태 |
 | --- | --- | --- |
@@ -32,8 +32,8 @@ Google 공식 요구 규격: 아이콘 512×512 32-bit PNG(1MB 이하), 그래�
 2. 개인정보 처리방침·실제 삭제 절차·백업 보관 기한과 민감정보/미성년자 처리 확정.
 3. 운영 native 출처 허용과 새 화면 배포, 기기 로그인·주간 통계 표시·재실행 로그인 유지 확인 완료(2026-10-12, 실기기 결과는 사용자 확인).
 4. Android 실기기 전체 시나리오와 가상 심사 환경 검증.
-5. 업로드 서명 키·복구본·패키지 이름 확정, 앱 아이콘 lint/의존성 경고 검토.
-6. 내부 테스트 업로드, 계정에 적용되는 비공개 테스트 및 출시 신청.
+5. 업로드 키와 패키지 확정·첫 AAB 서명 완료. 키 복구 대비와 Android 12 이상 실기기 검수, 기존 lint/의존성 경고 검토는 별도다.
+6. 내부 테스트 첫 버전 게시 완료. 12명 모집, 연속 14일 비공개 테스트 및 프로덕션 신청이 남았다.
 
 규격 확인일 2026-10-12. [Google 미리보기 자료 기준](https://support.google.com/googleplay/android-developer/answer/9866151), [앱 등록 안내](https://support.google.com/googleplay/android-developer/answer/9859152).
 
@@ -44,8 +44,24 @@ Google 공식 요구 규격: 아이콘 512×512 32-bit PNG(1MB 이하), 그래�
 - 기본 언어: 한국어 `ko-KR`, 유형: 앱, 가격: 무료.
 - 사용자가 개발자 프로그램 정책 준수, Play 앱 서명 약관, 미국 수출법 준수·수출 승인 확인 선언에 별도로 동의한 뒤 초안을 생성했다.
 - 생성 완료 대시보드 확인과 증빙 저장 완료: `frontend/.verification/kakao-registration/play-app-created.png`.
-- AAB 업로드·테스트 배포·심사 제출은 아직 진행하지 않았다. 기존 검수폰에는 원래 서명의 c967789 업데이트 APK를 설치했다. 업로드 키와 Play 앱 서명은 출시 준비 단계에서 별도로 확정한다.
+- 앱 생성 당시에는 AAB 업로드·테스트 배포·심사 제출 전이었다. 이후 내부 테스트 결과는 아래에 기록한다.
 - 현재 계정 대시보드는 프로덕션 신청 전에 12명 이상이 연속 14일 이상 참여하는 비공개 테스트를 요구한다. 참여 인원 0명이며, 앱 설정과 테스트를 마쳐야 한다.
 - Android 시작 화면의 잘린 로고를 수정했다. 전체 파란 배경과 중앙 흰색 로고를 분리하고 Android 12 이상의 시스템 마스크 안에 전체 로고가 들어가도록 여백을 추가했다. 원본 SVG를 바꾸지 않고 `tools/android/create-splash.mjs`로 전용 벡터 두 개를 생성한다. Android assembleDebug/lintDebug 통과. 실기기 설치·화면 결과는 별도 확인한다.
 - Android 12 이상은 시스템 시작 화면이 적용된다. 배경색·아이콘 안전 영역 기준은 [Android 시작 화면 공식 문서](https://developer.android.com/develop/ui/views/launch/splash-screen)를 따랐다. Android 12 실기기에서 직접 확인한 것으로 보고하지 않는다.
 - 후속 UI `2c1d17a`는 Galaxy Note9 Android 10에 기존 서명으로 데이터 초기화 없이 업데이트했다. 실기기 시작 화면에서 파란 전체 배경과 중앙 로고가 잘리지 않음을 확인했다. 시작 화면 증빙: `frontend/.verification/ux-followup/android-splash-04.png`.
+
+## 첫 내부 테스트 게시 (2026-10-13)
+
+- [내부 테스트 트랙](https://play.google.com/console/u/0/developers/8210423266953776729/app/4976215546588082744/tracks/4701334803795475355?tab=releases), 버전 `1.0.0 (1) · 9e4e4b6`. 콘솔에서 10월 13일 오후 4:48 게시·내부 테스터 제공 상태를 확인했다. 공개 출시가 아니다.
+- 기반 소스: `9e4e4b6661ade051aab16428d3a0d3f09172a497`. 교사회의·온라인 줌 기도모임 참여 완료 직접 체크와 앞선 UI 개선을 포함한다.
+- `bundleRelease`·`lintRelease` 성공. JAR 서명 검증, 최종 웹 빌드 식별자·직접 체크 문구·실제 명단과 서명 키 미포함을 확인했다. AAB는 8,955,398바이트, SHA-256 `27c1157ecc70eae945c7e23633ec5473fc9beb814666aa3e46018c8a77d847c1`.
+- Google 처리 결과: 버전 코드 1, 최소 API 24, 대상 API 36, 설치 크기 8.55MB. 차단 오류 없음. 업로드 당시 테스터 미선택 경고와 난독화 매핑 미첨부 경고가 있었다. 이 빌드는 `minifyEnabled false`이므로 R8 매핑 파일은 생성하지 않는다.
+- 전용 업로드 키는 OneDrive 밖 사용자 접근 제한 폴더에 보관한다. 서명은 `tools/android/sign-release.ps1`로 수행하며 암호를 명령 인수·로그에 출력하지 않는다. 개인 키·암호는 Git/스토어 자료에 넣지 않는다.
+- Google Play 앱 서명이 배포용 서명을 관리한다. 업로드 인증서 SHA-256: `6D:11:2B:44:B0:FC:D1:38:5D:06:E2:D5:F5:3F:A7:7F:EB:C9:58:74:84:86:FF:BB:53:B6:30:64:CD:CC:3E:0C`. 기존 USB 검수 APK와 Play 배포 서명은 다를 수 있어 첫 Play 설치 시 재설치가 필요할 수 있다. 실제 휴대폰 삭제·데이터 초기화는 하지 않았다.
+- 사용자가 지정한 Google 계정 1개를 `Newave Flow 내부 검수` 목록에 등록하고 내부 트랙에 연결했다. [참여 링크](https://play.google.com/apps/internaltest/4701334803795475355)는 등록 계정으로 사용한다. 실제 참여·Play 설치 완료는 사용자가 별도로 확인한다.
+- 앱 설정·첫 검토 전 Play 설치 화면에는 `app.newaveflow.mobile (unreviewed)` 임시 이름이 표시될 수 있다.
+- 이용 대상은 사용자 확인 기준 **18세 이상 교사·사역 담당자**다. 앱에 저장되는 학생·보호자 정보의 처리 근거와 미성년자 절차는 이 대상 연령 확인만으로 해결되지 않는다.
+- 운영 서버/DB는 기존 미국 `us-west2`를 유지했다. 서버 국가 변경은 수행하지 않았다. 학생·보호자 및 종교활동 정보의 처리 근거·국외 보관 안내는 아직 미확정이므로 개인정보 처리방침과 데이터 보안 답변을 확정 제출하지 않았다. 심사 계정은 실제 명단과 격리해야 한다.
+- 콘솔 증빙과 AAB: `frontend/.verification/play-release/`. 실제 회원·학생 기록은 AAB에 포함되거나 이번 스토어 업로드로 전달되지 않았다.
+
+내부 테스트는 12명 연속 14일 비공개 테스트 요건에 포함되지 않는다. 모집 후 앱 설정과 개인정보 기준·격리 심사 접근을 준비하고 비공개 테스트를 별도로 시작한다. [Google 테스트 요건](https://support.google.com/googleplay/android-developer/answer/14151465), [내부 테스트 안내](https://support.google.com/googleplay/android-developer/answer/9845334), [Android 앱 서명](https://developer.android.com/studio/publish/app-signing).
