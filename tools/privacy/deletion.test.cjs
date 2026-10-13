@@ -18,7 +18,11 @@ test('missing-account residual audit runs on an isolated PostgreSQL database', {
  try{
   await c.query('BEGIN');
   await c.query("CREATE TABLE tts_legacy_score(id bigint PRIMARY KEY,name text); CREATE TABLE event_participants(id bigint PRIMARY KEY,kind text,person_id bigint,name text); CREATE TABLE reports(id bigint PRIMARY KEY,teacher_id bigint,note text)");
+  await c.query("CREATE TABLE kakao_auth_flows(id varchar(36) PRIMARY KEY,user_id bigint,kakao_id varchar(100)); INSERT INTO kakao_auth_flows VALUES('11111111-1111-4111-8111-000000000001',NULL,'9302')");
   await verifyErased(c,plan);
+  await c.query("INSERT INTO kakao_auth_flows VALUES('11111111-1111-4111-8111-000000000002',NULL,'9301')");
+  await assert.rejects(verifyErased(c,{...plan,identifiers:[...plan.identifiers,'9301']}),/text/);
+  await c.query("DELETE FROM kakao_auth_flows WHERE kakao_id='9301'");
   await c.query("INSERT INTO reports VALUES(1,1,'보존 보고서')");
   await assert.rejects(verifyErased(c,plan),/reference/);
   await c.query("UPDATE reports SET teacher_id=NULL,note='가상 대상'");

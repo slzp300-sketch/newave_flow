@@ -12,6 +12,7 @@ import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import KakaoConnection from '../components/common/KakaoConnection'
 
 const ROLE_MAP = {
   PASTOR:    { label: '목사님',  bg: 'bg-primary-100    text-primary-700' },
@@ -173,6 +174,8 @@ export default function ProfilePage() {
           <InfoRow icon={Mail}   label="이메일" value={user?.email}   divider />
           <InfoRow icon={Shield} label="권한"  value={roleCfg.label} divider />
         </Card>
+
+        <KakaoConnection />
 
         {/* 내 프로필 편집 */}
         <Card className="!p-0 overflow-hidden">

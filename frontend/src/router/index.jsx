@@ -8,6 +8,7 @@ import client, { refreshSession } from '../api/client'
 
 const Signup = lazy(() => import('../pages/Signup'))
 const Login = lazy(() => import('../pages/Login'))
+const KakaoCallbackPage = lazy(() => import('../pages/KakaoCallbackPage'))
 const FindAccountPage = lazy(() => import('../pages/FindAccountPage'))
 const Home = lazy(() => import('../pages/Home'))
 const AttendancePage = lazy(() => import('../pages/AttendancePage'))
@@ -194,6 +195,7 @@ function RequireRole({ roles }) {
 
 const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingScreen />}><Outlet /></Suspense>, children: [
   { path: '/login', element: <Login /> },
+  { path: '/auth/kakao/callback', element: <KakaoCallbackPage /> },
   { path: '/signup', element: <Signup /> },
   { path: '/find-account', element: <FindAccountPage /> },
   { path: '/support', element: <AccountHelpPage /> },

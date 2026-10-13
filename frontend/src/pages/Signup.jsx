@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import { authApi } from '../api/auth'
 import Button from '../components/common/Button'
 import Header from '../components/layout/Header'
 import EmailInput from '../components/common/EmailInput'
+import { readKakaoPending, registerWithKakao } from '../auth/kakao'
 
 export default function Signup() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const isKakao = params.get('kakao') === '1'
+  const [kakaoReady, setKakaoReady] = useState(false)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -20,6 +24,16 @@ export default function Signup() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState(false)
+  useEffect(() => {
+    if (!isKakao) return
+    let disposed = false
+    readKakaoPending().then(pending => {
+      if (disposed) return
+      if (pending?.registrationTicket) setKakaoReady(true)
+      else setError('카카오 인증 시간이 지났어요. 로그인 화면에서 다시 시작해 주세요.')
+    }).catch(() => { if (!disposed) setError('카카오 인증을 확인하지 못했어요. 다시 로그인해 주세요.') })
+    return () => { disposed = true }
+  }, [isKakao])
 
   const [nameStatus, setNameStatus]   = useState('idle') // idle, loading, available, duplicate
   const [emailStatus, setEmailStatus] = useState('idle')
@@ -72,7 +86,7 @@ export default function Signup() {
 
   const pwMatch = confirmPw === '' ? null : form.password === confirmPw
 
-  const isSubmitDisabled = loading || 
+  const isSubmitDisabled = loading || (isKakao && !kakaoReady) ||
                            nameStatus === 'duplicate' || 
                            emailStatus === 'duplicate' || 
                            nameStatus === 'loading' || 
@@ -99,7 +113,8 @@ export default function Signup() {
     }
 
     try {
-      await authApi.register(payload)
+      if (isKakao) await registerWithKakao(payload)
+      else await authApi.register(payload)
       setSuccess(true)
     } catch (err) {
       setError(err.response?.data?.message ?? '회원가입에 실패했습니다.')
@@ -129,7 +144,8 @@ export default function Signup() {
       
       <div className="px-6 pt-6 pb-10">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">환영합니다!</h2>
-        <p className="text-gray-500 text-sm mb-8">새로운 웨이브에 합류하세요</p>
+        <p className="text-gray-500 text-sm mb-8">{isKakao ? '카카오 인증을 완료했어요. 가입 신청 후 관리자 승인을 기다려 주세요.' : '새로운 웨이브에 합류하세요'}</p>
+        {isKakao && <p className="mb-5 rounded-xl border border-secondary-200 bg-secondary-50 p-3 text-sm leading-relaxed text-secondary-800">이메일로도 로그인할 수 있도록 이메일과 비밀번호를 함께 설정해 주세요. 이미 가입했다면 새로 신청하지 말고 기존 계정에서 카카오를 연결해 주세요.</p>}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
@@ -169,6 +185,8 @@ export default function Signup() {
                 value={form.password}
                 onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
                 placeholder="비밀번호 설정"
+                minLength={isKakao ? 8 : undefined}
+                maxLength={200}
                 required
                 className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium pr-12 transition"
               />

@@ -41,6 +41,12 @@
     --surface-ink: white;
   }
   :root .brand-selection { background-color: var(--surface-bg); }
+  /* Match the shared action selector's specificity so the Kakao color wins. */
+  :root button.social-kakao:not(.brand-color-swatch) {
+    --surface-bg: #fee500;
+    --surface-border: #fee500;
+    --surface-ink: #191919;
+  }
   /* Decorative accents sit on cards and headings, separate from control state. */
   :root .brand-card.brand-card-accent {
     background-image: linear-gradient(135deg, white, theme('colors.primary.50') 55%, theme('colors.secondary.100'));

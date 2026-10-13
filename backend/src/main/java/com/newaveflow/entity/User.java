@@ -33,6 +33,12 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "kakao_id", unique = true, length = 100)
+    private String kakaoId;
+
+    public void connectKakao(String kakaoId) { this.kakaoId = kakaoId; }
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;

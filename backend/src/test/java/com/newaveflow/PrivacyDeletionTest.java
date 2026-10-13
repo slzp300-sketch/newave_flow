@@ -47,6 +47,12 @@ class PrivacyDeletionTest {
                 INSERT INTO tts_answers(id,record_id,question_id,answer_data) VALUES(1,1,1,'{}'),(2,2,1,'{}');
                 INSERT INTO tts_legacy_score(id,name,info_year,week_num,score) VALUES(1,'삭제대상가상',2026,40,50),(2,'보존교사가상',2026,40,60);
                 INSERT INTO completed_operations(id,actor_id,operation_key,fingerprint,result_json,completed_at) VALUES(1,1,'fixture','fixture','{}','2026-10-01');
+                UPDATE users SET kakao_id='9101' WHERE id=1;
+                UPDATE users SET kakao_id='9102' WHERE id=2;
+                INSERT INTO kakao_auth_flows(id,state_hash,challenge,purpose,stage,native_client,expires_at,user_id,kakao_id) VALUES
+                  ('11111111-1111-4111-8111-000000000001',repeat('a',64),repeat('a',43),'LINK','STARTED',false,CURRENT_TIMESTAMP+interval '1 hour',1,NULL),
+                  ('11111111-1111-4111-8111-000000000002',repeat('b',64),repeat('b',43),'LOGIN','AUTHORIZED',false,CURRENT_TIMESTAMP+interval '1 hour',NULL,'9101'),
+                  ('11111111-1111-4111-8111-000000000003',repeat('c',64),repeat('c',43),'LOGIN','AUTHORIZED',false,CURRENT_TIMESTAMP+interval '1 hour',NULL,'9102');
                 """);
             // Recreate old constraints then validate the actual additive migration, including rollback.
             for(String t:List.of("attendances","daily_reports","student_memos","deactivation_requests")) s.execute("ALTER TABLE "+t+" ALTER COLUMN teacher_id SET NOT NULL");
@@ -124,6 +130,8 @@ class PrivacyDeletionTest {
             assertEquals(1,app.getBean(DailyReportRepository.class).findByDateWithDetails(java.time.LocalDate.of(2026,10,11)).size());
             assertEquals("삭제된 계정",app.getBean(com.newaveflow.service.DeactivationRequestService.class).getPendingRequests().get(0).teacherName());
             assertEquals("1",scalar(c,"SELECT count(*) FROM students"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM kakao_auth_flows"));
+            assertEquals("9102",scalar(c,"SELECT kakao_id FROM kakao_auth_flows"));
             System.out.println("Privacy deletion PASS: verified review, stale/unknown inputs rollback, shared records, personal history, missing-user authentication, archived authors");
             s.execute("DROP TABLE daily_reports_before_class_merge; DROP TABLE schema_migrations");
         }

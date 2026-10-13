@@ -96,6 +96,19 @@ class PostgresMigrationTest {
         assertEquals(0,count("SELECT count(*) FROM events WHERE attendance_start_date IS NOT NULL"));
         assertEquals(originalAttendance,checksum("event_student_attendances"));
 
+        String kakao = Files.readString(Path.of("db/migrations/V006__kakao_login.sql"));
+        String usersBeforeKakao = checksum("users");
+        String originalUserValues = scalar("SELECT md5(coalesce(string_agg(md5(to_jsonb(t)::text),'' ORDER BY t.id),'')) FROM users t");
+        assertThrows(SQLException.class, () -> execute(kakao.replace("INSERT INTO schema_migrations(version)", "SELECT 1/0;\nINSERT INTO schema_migrations(version)")));
+        assertEquals(usersBeforeKakao, checksum("users"));
+        assertEquals(0, count("SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='kakao_id'"));
+        execute(kakao);
+        assertEquals(originalUserValues, scalar("SELECT md5(coalesce(string_agg(md5((to_jsonb(t)-'kakao_id')::text),'' ORDER BY t.id),'')) FROM users t"));
+        assertEquals(0, count("SELECT count(*) FROM users WHERE kakao_id IS NOT NULL"));
+        assertEquals(0, count("SELECT count(*) FROM kakao_auth_flows"));
+        assertEquals(originalAttendance, checksum("event_student_attendances"));
+        assertThrows(SQLException.class, () -> execute(kakao));
+
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,
                 "--spring.datasource.username="+user,"--spring.datasource.password="+password,

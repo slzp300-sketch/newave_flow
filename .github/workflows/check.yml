@@ -106,6 +106,16 @@ jobs:
         env:
           PGPASSWORD: migration-ci-only
         run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_privacy_ci'
+      - name: Create isolated Kakao migration rehearsal database
+        env:
+          PGPASSWORD: migration-ci-only
+        run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_kakao_ci'
+      - name: Verify Kakao schema and existing records
+        env:
+          RUN_KAKAO_MIGRATION: 'true'
+          KAKAO_SYNTHETIC_FIXTURE: 'true'
+          KAKAO_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_kakao_ci
+        run: bash gradlew test --tests com.newaveflow.KakaoMigrationTest --no-daemon
       - name: Verify account deletion and shared records
         env:
           RUN_PRIVACY_TEST: 'true'

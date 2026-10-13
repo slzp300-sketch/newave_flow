@@ -1,6 +1,11 @@
 import client from './client'
 
 export const authApi = {
+  kakaoConfig: () => client.get('/auth/kakao/config'),
+  kakaoConnection: () => client.get('/users/me/kakao'),
+  startKakao: (mode, data) => client.post(mode === 'LINK' ? '/users/me/kakao/start' : '/auth/kakao/start', data),
+  completeKakao: data => client.post('/auth/kakao/complete', data),
+  registerKakao: data => client.post('/auth/kakao/register', data),
   login:  (email, password) => client.post('/auth/login', { email, password }),
   register: (data)          => client.post('/auth/register', data),
   logout: ()                => client.post('/auth/logout'),

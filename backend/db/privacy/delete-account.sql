@@ -17,7 +17,7 @@ BEGIN
     'events','event_attendances','event_participants','event_reads','event_student_attendances','meeting_minutes',
     'meeting_minute_confirms','meeting_attendances','notifications','prayer_votes','evangelism_assignments',
     'evangelism_groups','evangelism_group_members','evangelism_schedules','tts_answers','tts_data_entry','tts_item',
-    'tts_legacy_score','tts_question_revisions','completed_operations','schema_migrations')) THEN
+    'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','schema_migrations')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -31,7 +31,7 @@ BEGIN
       AND (ns.nspname<>'public' OR src.relname NOT IN ('teacher_classes','user_tags','event_reads','notifications',
         'meeting_minute_confirms','checklist_records','prayer_votes','meeting_attendances','evangelism_assignments',
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
-        'deactivation_requests','event_student_attendances'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'deactivation_requests','event_student_attendances','kakao_auth_flows'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
   SELECT * INTO target FROM users WHERE id=req.user_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Target account is absent; reconcile the receipt before retry'; END IF;
   IF target.created_at IS DISTINCT FROM req.expected_created_at THEN RAISE EXCEPTION 'Target account identity changed'; END IF;
@@ -40,7 +40,7 @@ BEGIN
   END IF;
 
   INSERT INTO privacy_identifiers(value)
-    SELECT v FROM (VALUES(target.name),(target.email),(target.phone)) x(v)
+    SELECT v FROM (VALUES(target.name),(target.email),(target.phone),(to_jsonb(target)->>'kakao_id')) x(v)
     WHERE v IS NOT NULL AND length(trim(v)) >= 2 ON CONFLICT DO NOTHING;
   -- Every legacy row with a matching name requires an explicit ownership decision, including namesakes.
   FOR legacy IN SELECT id FROM tts_legacy_score WHERE name IN (SELECT value FROM privacy_identifiers) LOOP
@@ -69,6 +69,9 @@ BEGIN
   DELETE FROM tts_answers WHERE record_id IN (SELECT id FROM tts_data_entry WHERE teacher_id=req.user_id);
   DELETE FROM tts_data_entry WHERE teacher_id=req.user_id;
   DELETE FROM tts_legacy_score WHERE id IN (SELECT id FROM privacy_legacy_decisions WHERE remove);
+  IF to_regclass('public.kakao_auth_flows') IS NOT NULL THEN
+    DELETE FROM kakao_auth_flows WHERE user_id=req.user_id OR kakao_id=to_jsonb(target)->>'kakao_id';
+  END IF;
   FOR item IN SELECT * FROM (VALUES
     ('teacher_classes','teacher_id'),('user_tags','user_id'),('event_reads','user_id'),
     ('notifications','user_id'),('meeting_minute_confirms','user_id'),('checklist_records','teacher_id'),
@@ -97,7 +100,7 @@ BEGIN
       EXECUTE format('SELECT count(*) FROM public.%I t WHERE EXISTS(SELECT 1 FROM privacy_identifiers p WHERE strpos(lower(t.%I::text),lower(p.value))>0)',col.table_name,col.column_name) INTO hits;
     ELSE
       EXECUTE format('SELECT count(*) FROM public.%I t WHERE EXISTS(SELECT 1 FROM privacy_identifiers p WHERE strpos(lower(t.%I::text),lower(p.value))>0)
-        AND NOT EXISTS(SELECT 1 FROM privacy_exceptions e WHERE e.table_name=$1 AND e.column_name=$2 AND e.row_id=t.id AND e.before_md5=md5(coalesce(t.%I::text,'''')))',col.table_name,col.column_name,col.column_name)
+        AND NOT EXISTS(SELECT 1 FROM privacy_exceptions e WHERE e.table_name=$1 AND e.column_name=$2 AND e.row_id::text=t.id::text AND e.before_md5=md5(coalesce(t.%I::text,'''')))',col.table_name,col.column_name,col.column_name)
         INTO hits USING col.table_name,col.column_name;
     END IF;
     IF hits>0 THEN RAISE EXCEPTION 'Retained text needs review in %.% (% rows)',col.table_name,col.column_name,hits; END IF;

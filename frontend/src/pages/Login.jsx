@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
 import Button from '../components/common/Button'
 import Brand from '../components/common/Brand'
 import EmailInput from '../components/common/EmailInput'
+import KakaoButton from '../components/common/KakaoButton'
+import { beginKakao } from '../auth/kakao'
 import { flushAuthStorage } from '../native/platform'
 
 export default function Login() {
@@ -22,6 +24,14 @@ export default function Login() {
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+  const [kakaoLoading, setKakaoLoading] = useState(false)
+  const { data: kakaoConfig } = useQuery({ queryKey: ['kakao-config'], queryFn: () => authApi.kakaoConfig().then(r => r.data), retry: false, staleTime: 60000 })
+  const handleKakao = async () => {
+    setError(''); setKakaoLoading(true)
+    try { await beginKakao() }
+    catch (err) { setError(err.response?.data?.message || err.message || '카카오 로그인을 시작하지 못했습니다.') }
+    finally { setKakaoLoading(false) }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -71,6 +81,11 @@ export default function Login() {
           {error && <div role="alert" className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>}
           <Button type="submit" size="lg" loading={loading} className="mt-1">로그인</Button>
         </form>
+        {kakaoConfig?.enabled && <div className="mt-5">
+          <div className="mb-4 flex items-center gap-3 text-xs text-gray-400"><span className="h-px flex-1 bg-gray-200" />또는<span className="h-px flex-1 bg-gray-200" /></div>
+          <KakaoButton onClick={handleKakao} loading={kakaoLoading} disabled={loading} />
+          <p className="mt-2 text-center text-xs leading-relaxed text-gray-500">기존 회원은 이메일 로그인 후 내 정보에서 먼저 연결해 주세요.</p>
+        </div>}
         <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500 mt-4">
           <button onClick={() => navigate('/find-account?tab=id')} className="min-h-11 rounded-xl px-4 py-3">아이디 찾기</button>
           <span aria-hidden="true" className="text-gray-300">·</span>

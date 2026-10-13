@@ -38,6 +38,13 @@ public class AuthService {
             throw AppException.unauthorized("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
+        return issueSession(user);
+    }
+
+    public LoginResponse issueSession(User user) {
+        if (!user.isActive()) {
+            throw AppException.unauthorized("승인 대기 중이거나 비활성화된 계정입니다. 관리자에게 문의해주세요.");
+        }
         String role         = user.getRole().name();
         String accessToken  = tokenProvider.createAccessToken(user.getId(), user.getEmail(), role, user.getAuthVersion());
         String refreshToken = tokenProvider.createRefreshToken(user.getId(), user.getEmail(), role, user.getAuthVersion());

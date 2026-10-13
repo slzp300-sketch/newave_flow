@@ -27,6 +27,7 @@ class EventWindowMigrationTest {
             assertEquals("0",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM events WHERE attendance_start_date IS NOT NULL"));
             try { assertThrows(SQLException.class,()->s.execute(sql)); } finally { s.execute("ROLLBACK"); }
             assertEquals("1",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM schema_migrations WHERE version='V003__event_attendance_window'"));
+            s.execute(Files.readString(Path.of("db/migrations/V006__kakao_login.sql")));
         }
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,

@@ -18,6 +18,15 @@ server:
       enabled: true
       force: true
 
+kakao:
+  enabled: ${KAKAO_LOGIN_ENABLED:false}
+  client-id: ${KAKAO_REST_API_KEY:}
+  client-secret: ${KAKAO_CLIENT_SECRET:}
+  admin-key: ${KAKAO_ADMIN_KEY:}
+  app-id: ${KAKAO_APP_ID:}
+  redirect-uri: ${KAKAO_REDIRECT_URI:https://newaveflow-production.up.railway.app/api/auth/kakao/callback}
+  web-return-uri: ${KAKAO_WEB_RETURN_URI:https://newave-flow.vercel.app/auth/kakao/callback}
+
 logging:
   level:
     root: INFO

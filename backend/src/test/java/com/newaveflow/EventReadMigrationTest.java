@@ -30,6 +30,7 @@ class EventReadMigrationTest {
             assertEquals("1",scalar(c,"SELECT count(*) FROM schema_migrations WHERE version='V002__account_event_reads'"));
             // The current application also expects later additive migrations.
             s.execute(Files.readString(Path.of("db/migrations/V003__event_attendance_window.sql")));
+            s.execute(Files.readString(Path.of("db/migrations/V006__kakao_login.sql")));
         }
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,

@@ -16,6 +16,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> lockById(@Param("id") Long id);
     Optional<User> findByEmail(String email);
     Optional<User> findByEmailIgnoreCase(String email);
+    Optional<User> findByKakaoId(String kakaoId);
     Optional<User> findByName(String name);
     boolean existsByEmail(String email);
     boolean existsByEmailIgnoreCase(String email);

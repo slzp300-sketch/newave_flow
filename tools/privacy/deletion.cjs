@@ -38,7 +38,7 @@ async function verifyErased(client,plan){
   }
   if(!['text','character varying','character'].includes(col.data_type)||col.table_name==='schema_migrations')continue;
   const hasId=columns.some(c=>c.table_name===col.table_name&&c.column_name==='id');
-  const exception=hasId?' AND NOT EXISTS(SELECT 1 FROM jsonb_to_recordset($2::jsonb) AS e("table" text,"column" text,id bigint,"beforeMd5" text) WHERE e."table"=$3 AND e."column"=$4 AND e.id=t.id AND e."beforeMd5"=md5(coalesce(t.'+quote(col.column_name)+"::text,'')))":'';
+  const exception=hasId?' AND NOT EXISTS(SELECT 1 FROM jsonb_to_recordset($2::jsonb) AS e("table" text,"column" text,id bigint,"beforeMd5" text) WHERE e."table"=$3 AND e."column"=$4 AND e.id::text=t.id::text AND e."beforeMd5"=md5(coalesce(t.'+quote(col.column_name)+"::text,'')))":'';
   const values=hasId?[plan.identifiers,JSON.stringify(plan.exceptions),col.table_name,col.column_name]:[plan.identifiers];
   const r=await client.query(`SELECT 1 FROM public.${quote(col.table_name)} t WHERE EXISTS(SELECT 1 FROM unnest($1::text[]) AS p(value) WHERE strpos(lower(t.${quote(col.column_name)}::text),lower(p.value))>0)${exception} LIMIT 1`,values);
   if(r.rowCount)throw Error('Restored personal text requires review');
