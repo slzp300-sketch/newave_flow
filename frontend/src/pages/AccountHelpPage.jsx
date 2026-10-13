@@ -39,6 +39,7 @@ export default function AccountHelpPage({ deletion = false }) {
         <p className="mt-2 text-xs leading-5 text-gray-500">메일 앱이 열리지 않으면 위 주소로 직접 보내주세요. 비밀번호·인증번호·신분증 사진은 보내지 마세요.</p>
       </Card>
       <Link className="block py-3 text-sm text-center text-primary-700 underline" to={deletion ? '/support' : '/account-deletion'}>{deletion ? '일반 문의 안내' : '회원 탈퇴·계정 삭제 안내'}</Link>
+      <Link className="block py-3 text-sm text-center text-primary-700 underline" to="/privacy">개인정보처리방침</Link>
     </div>
   </div>
 }

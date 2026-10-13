@@ -9,6 +9,7 @@ export function navigationSection(pathname) {
 }
 
 export function parentPath(pathname) {
+  if (pathname === '/privacy') return '/login'
   if (inPath(pathname, '/students')) return '/roster'
   if (pathname.startsWith('/event-attendance/')) return '/event-attendance'
   if (pathname.startsWith('/admin/')) return '/admin'

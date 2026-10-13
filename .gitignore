@@ -22,6 +22,7 @@ backend/bin
 frontend/dist
 frontend/.verification
 frontend/dist-native/
+frontend/public/privacy/index.html
 frontend/android/.gradle/
 frontend/android/build/
 frontend/android/app/build/

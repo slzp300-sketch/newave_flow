@@ -18,6 +18,7 @@ test('direct detail entry has a useful parent fallback', () => {
   assert.equal(parentPath('/admin/tts'), '/admin')
   assert.equal(parentPath('/tts'), '/checklist')
   assert.equal(parentPath('/profile'), '/')
+  assert.equal(parentPath('/privacy'), '/login')
 })
 
 test('menu search matches descriptions, multiple terms and only supplied authorized groups', () => {

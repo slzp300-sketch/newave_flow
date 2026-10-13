@@ -445,7 +445,8 @@ export default function ProfilePage() {
 
         {/* 로그아웃 */}
         <Card className="!p-0 overflow-hidden">
-          <button className="w-full px-4 py-4 text-left text-sm font-semibold" onClick={() => navigate('/support')}>고객지원</button>
+          <button className="w-full px-4 py-4 text-left text-sm font-semibold" onClick={() => navigate('/privacy')}>개인정보처리방침</button>
+          <button className="w-full px-4 py-4 text-left text-sm font-semibold border-t border-gray-100" onClick={() => navigate('/support')}>고객지원</button>
           <button className="w-full px-4 py-4 text-left text-sm font-semibold border-t border-gray-100" onClick={() => navigate('/account-deletion')}>회원 탈퇴·계정 삭제 요청</button>
         </Card>
         {!logoutConfirm ? (

@@ -96,6 +96,7 @@ export default function Login() {
           <Link to="/find-account?tab=pw" className="inline-flex min-h-11 items-center px-2 py-2">비밀번호 찾기</Link>
         </nav>
         <nav aria-label="이용 지원" className="mt-1 flex flex-wrap justify-center gap-x-4 text-[11px] text-gray-500">
+          <Link className="inline-flex min-h-11 items-center px-2 py-2" to="/privacy">개인정보처리방침</Link>
           <Link className="inline-flex min-h-11 items-center px-2 py-2" to="/support">고객지원</Link>
           <Link className="inline-flex min-h-11 items-center px-2 py-2" to="/account-deletion">계정 삭제 요청</Link>
         </nav>

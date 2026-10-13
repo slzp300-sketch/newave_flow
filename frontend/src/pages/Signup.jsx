@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import { authApi } from '../api/auth'
 import Button from '../components/common/Button'
@@ -277,6 +277,7 @@ export default function Signup() {
           <Button type="submit" size="lg" loading={loading} disabled={isSubmitDisabled} className="mt-4 shadow-glow">
             가입 신청하기
           </Button>
+          <Link to="/privacy" className="flex min-h-11 items-center justify-center text-xs text-gray-500 underline">개인정보처리방침 보기</Link>
         </form>
       </div>
     </div>
