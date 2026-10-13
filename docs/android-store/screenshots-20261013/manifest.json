@@ -1,0 +1,37 @@
+{
+  "captured": "2026-10-13",
+  "sourceCommit": "5c080b7c1685c69c6114f24065de2ebc6eabafd9",
+  "source": "Current React UI in local web browser, online isolated review API, synthetic data only",
+  "status": "Saved in Google Play listing; review not submitted; final native AAB comparison pending",
+  "format": "JPEG",
+  "assets": [
+    {
+      "file": "01-home.jpg",
+      "width": 390,
+      "height": 693,
+      "bytes": 32260,
+      "sha256": "4d8d5257ad81e73f53f58c1d698c991aa249ccff0ee7a6b3989b14ad00175e9a"
+    },
+    {
+      "file": "02-my-tts.jpg",
+      "width": 390,
+      "height": 693,
+      "bytes": 29470,
+      "sha256": "b949fe89e4a4ce903f08518c4a2617935f8a9a46a8f383eadcc59b7a245df483"
+    },
+    {
+      "file": "04-attendance.jpg",
+      "width": 390,
+      "height": 693,
+      "bytes": 23922,
+      "sha256": "fdb68a3f9044300459bf0989b21da27ee86c7b4e10baaad14f5a74551036fcfe"
+    },
+    {
+      "file": "03-calendar.jpg",
+      "width": 390,
+      "height": 693,
+      "bytes": 23552,
+      "sha256": "3da581b353f75543099aad8e5387f0cd425cbe6fb787a507d1aef79a7964c6e0"
+    }
+  ]
+}
