@@ -28,6 +28,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE u.isActive = true")
     List<User> findAllActiveWithClasses();
 
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE u.id IN :ids")
+    List<User> findAllWithClassesByIdIn(@Param("ids") java.util.Collection<Long> ids);
+
     Optional<User> findByNameAndPhone(String name, String phone);
 
     Optional<User> findByEmailIgnoreCaseAndNameAndPhone(String email, String name, String phone);

@@ -1,0 +1,19 @@
+allprojects {
+    afterEvaluate { p ->
+        if (!p.plugins.hasPlugin('java')) return
+        def harness = tasks.register('compileLoadcheck', JavaCompile) {
+            dependsOn tasks.named('classes')
+            source = p.fileTree('../tools/loadcheck') { include '*.java' }
+            classpath = p.sourceSets.main.runtimeClasspath
+            destinationDirectory = p.file('.verification/loadcheck/classes')
+            options.encoding = 'UTF-8'
+        }
+        tasks.register('prepareLoadcheck') {
+            dependsOn harness
+            doLast {
+                p.file('.verification/loadcheck').mkdirs()
+                p.file('.verification/loadcheck/classpath.txt').text = p.files(harness.get().destinationDirectory, p.sourceSets.main.runtimeClasspath).asPath
+            }
+        }
+    }
+}

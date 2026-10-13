@@ -246,22 +246,47 @@ public class TtsService {
     Map<Long, Map<Integer, Integer>> computeAppScores(int year, Map<Long, User> usersOut) {
         Map<Long, Map<Integer, Integer>> scores = new HashMap<>();
         var timeline = questionPolicy.load();
-
-        for (TtsRecord r : recordRepository.findAllByYearWithAnswers(year)) {
-            if (!TtsPeriod.includes(year, r.getWeekNum())) continue;
-            int s = recordScore(r, timeline);
-            usersOut.putIfAbsent(r.getTeacher().getId(), r.getTeacher());
-            scores.computeIfAbsent(r.getTeacher().getId(), k -> new HashMap<>()).merge(r.getWeekNum(), s, Integer::sum);
+        if (year < TtsPeriod.START_YEAR) return scores;
+        int firstWeek = TtsPeriod.firstManagedWeek(year), lastWeek = TtsPeriod.weeksInYear(year);
+        // Rules are resolved once per week within this request. A later request sees edits immediately.
+        Map<Integer, Map<Long, TtsQuestion>> rulesByWeek = new HashMap<>();
+        for (int week = firstWeek; week <= lastWeek; week++) {
+            rulesByWeek.put(week, timeline.allAt(firstSunday(year).plusWeeks(week - 1L)).stream()
+                    .collect(Collectors.toMap(TtsQuestion::getId, q -> q)));
+        }
+        Long previousRecord = null;
+        Set<Long> seenQuestions = new HashSet<>();
+        for (var row : recordRepository.findScoreRows(year, firstWeek, lastWeek)) {
+            if (!Objects.equals(previousRecord, row.recordId())) {
+                previousRecord = row.recordId();
+                seenQuestions.clear();
+            }
+            var weekly = scores.computeIfAbsent(row.teacherId(), k -> new HashMap<>());
+            // Keep an existing empty/unchecked record distinct from a missing record.
+            weekly.putIfAbsent(row.weekNum(), 0);
+            if (row.questionId() != null && seenQuestions.add(row.questionId())) {
+                weekly.merge(row.weekNum(), answerScore(row.answerData(), rulesByWeek.get(row.weekNum()).get(row.questionId())), Integer::sum);
+            }
         }
 
-        LocalDate from = firstSunday(year);
-        LocalDate to = from.plusWeeks(TtsPeriod.weeksInYear(year)).minusDays(1);
-        loadLinked(from, to).forEach((teacherId, byWeek) -> byWeek.forEach((sunday, types) -> {
-            if (!TtsPeriod.includes(year, weekNum(sunday))) return;
-            int s = linkedScore(types, sunday, timeline);
-            if (s <= 0) return;
-            scores.computeIfAbsent(teacherId, k -> new HashMap<>()).merge(weekNum(sunday), s, Integer::sum);
-        }));
+        boolean hasLinkedRules = rulesByWeek.values().stream().flatMap(r -> r.values().stream())
+                .anyMatch(q -> q.isActive() && isLinked(q));
+        if (hasLinkedRules) {
+            LocalDate from = firstSunday(year).plusWeeks(firstWeek - 1L);
+            LocalDate to = firstSunday(year).plusWeeks(lastWeek).minusDays(1);
+            loadLinked(from, to).forEach((teacherId, byWeek) -> byWeek.forEach((sunday, types) -> {
+                if (weekYear(sunday) != year) return;
+                var rules = rulesByWeek.get(weekNum(sunday));
+                if (rules == null) return;
+                int s = rules.values().stream().filter(q -> q.isActive() && isLinked(q))
+                        .filter(q -> types.contains(q.getLinkType())).mapToInt(TtsService::pointsOf).sum();
+                if (s > 0) scores.computeIfAbsent(teacherId, k -> new HashMap<>()).merge(weekNum(sunday), s, Integer::sum);
+            }));
+        }
+        var missingUsers = new HashSet<>(scores.keySet());
+        missingUsers.removeAll(usersOut.keySet());
+        if (!missingUsers.isEmpty()) userRepository.findAllWithClassesByIdIn(missingUsers)
+                .forEach(u -> usersOut.put(u.getId(), u));
         return scores;
     }
 
@@ -344,7 +369,7 @@ public class TtsService {
 
         // 이름이 정확히 한 명과 일치할 때만 시트 점수를 그 교사에게 붙인다
         // 활동 상태나 현재 역할이 다른 동명이인도 포함해 잘못된 계정 연결을 막는다.
-        Map<String, List<User>> byName = userRepository.findAll().stream()
+        Map<String, List<User>> byName = imported.isEmpty() ? Map.of() : userRepository.findAll().stream()
                 .collect(Collectors.groupingBy(u -> u.getName().trim()));
 
         Map<String, Map<String, Object>> people = new LinkedHashMap<>();
@@ -504,7 +529,10 @@ public class TtsService {
     }
 
     private int answerScore(TtsAnswer answer, TtsQuestion question) {
-        String data = answer.getAnswerData();
+        return answerScore(answer.getAnswerData(), question);
+    }
+
+    private int answerScore(String data, TtsQuestion question) {
         if (question == null || isLinked(question) || data == null || data.isBlank()) return 0;
         if (question.getType() == TtsQuestionType.DAYS) {
             try {
