@@ -14,6 +14,8 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState } from '../utils/queryReadState'
 import { eventApi } from '../api/event'
@@ -39,6 +41,7 @@ const getGradeStyle = (grade) => {
 export default function EventAttendanceAdminPage() {
   const today = useToday(eventToday)
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useViewMode('admin-event-attendance', 'large')
   const [selectedEventId, setSelectedEventId] = usePersistedState('selectedEventId', null)
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', null)
   const [selectedTeacherGrade, setSelectedTeacherGrade] = usePersistedState('selectedTeacherGrade', null)
@@ -141,6 +144,10 @@ export default function EventAttendanceAdminPage() {
   })
 
   const currentTeacherGradeData = selectedTeacherGrade ? teacherGradeSummary[selectedTeacherGrade] : null
+  const studentRows = (selectedGrade ? currentGradeData?.classes || [] : summary)
+    .flatMap(cls => cls.records.map(row => ({ ...row, className: cls.classGroupName })))
+  const teacherRows = selectedTeacherGrade ? currentTeacherGradeData?.teachers || [] : teacherSummary
+  const attendanceLabel = status => ({ PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }[status] || '미제출')
 
   // 행사 선택 시 상태 초기화
   const handleEventSelect = (id) => {
@@ -165,6 +172,9 @@ export default function EventAttendanceAdminPage() {
 
         <AdminIntro title="행사별 참여를 살펴보세요" description="행사를 선택한 뒤 학년과 반을 눌러 상세 명단을 확인하세요." />
         <SearchField label="출석 행사 검색" value={search} onChange={setSearch} placeholder="행사 이름 또는 날짜 검색" />
+        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+        {viewMode !== 'large' && (activeTab === 'teacher' ? selectedTeacherGrade : selectedGrade) && <button type="button" className="min-h-11 self-start px-3 text-xs font-semibold text-primary-700"
+          onClick={() => activeTab === 'teacher' ? setSelectedTeacherGrade(null) : setSelectedGrade(null)}>학년 선택 해제 · 전체 명단 보기</button>}
         {/* 행사 선택 */}
         <div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">행사 선택</p>
@@ -223,6 +233,14 @@ export default function EventAttendanceAdminPage() {
                 {/* 전체 통계 */}
                 <EventStatusSummary records={teacherSummary} total={teacherSummary.length} />
 
+                <RecordViews mode={viewMode} rows={teacherRows} rowKey={row => row.teacherId} columns={[
+                  { label: '교사', render: row => row.teacherName },
+                  { label: '학년', render: row => row.grade },
+                  { label: '참석', render: row => attendanceLabel(row.status) },
+                  { label: '불참 사유', render: row => row.absenceReason },
+                  { label: '부분참석 시작', render: row => row.partialFromDate },
+                  { label: '부분참석 메모', render: row => row.partialNote },
+                ]}>
                 {teacherSummaryLoading ? (
                   <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
                 ) : teacherSummary.length === 0 ? (
@@ -321,6 +339,7 @@ export default function EventAttendanceAdminPage() {
                     </Card>
                   </div>
                 )}
+                </RecordViews>
               </>
             )}
 
@@ -330,6 +349,15 @@ export default function EventAttendanceAdminPage() {
             <EventStatusSummary records={summary.flatMap(cls => cls.records)} total={totalStudents} />
 
             {/* 학년/반별 계층 결과 */}
+            <RecordViews mode={viewMode} rows={studentRows} rowKey={row => row.studentId} columns={[
+              { label: '학생', render: row => row.studentName },
+              { label: '학년', render: row => row.grade },
+              { label: '반', render: row => row.className },
+              { label: '참석', render: row => attendanceLabel(row.status) },
+              { label: '불참 사유', render: row => row.absenceReason },
+              { label: '부분참석 시작', render: row => row.partialFromDate },
+              { label: '부분참석 메모', render: row => row.partialNote },
+            ]}>
             {summaryLoading ? (
               <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
             ) : summary.length === 0 ? (
@@ -476,6 +504,7 @@ export default function EventAttendanceAdminPage() {
                 ))}
               </div>
             )}
+            </RecordViews>
             </>)}
 
           </>

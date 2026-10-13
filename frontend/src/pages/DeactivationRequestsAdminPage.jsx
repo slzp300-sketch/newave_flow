@@ -9,11 +9,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, XCircle, Loader2, Clock, Users } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import { deactivationApi } from '../api/students'
 
 export default function DeactivationRequestsAdminPage() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useViewMode('admin-deactivation-requests', 'large')
 
   const requestsQuery = useQuery({
     queryKey: ['deactivation-requests-pending'],
@@ -42,6 +45,7 @@ export default function DeactivationRequestsAdminPage() {
       <div className="flex flex-col gap-4 px-4 py-5">
         <AdminIntro title="제적 신청을 확인하세요" description="학생 정보와 신청 사유를 확인한 뒤 승인 또는 반려해 주세요." />
         <SearchField label="제적 신청 검색" value={search} onChange={setSearch} placeholder="학생, 반 또는 담임 이름 검색" />
+        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
       </div>
       <AdminReadGuard queries={[requestsQuery]} label="제적 신청 목록">
       {!!search.trim() && <div className="px-4"><FilterResults count={filtered.length} total={requests.length} unit="건" filtered onReset={() => setSearch('')} />{!filtered.length && <AdminEmpty />}</div>}
@@ -66,6 +70,17 @@ export default function DeactivationRequestsAdminPage() {
             </p>
           </div>
 
+          <RecordViews mode={viewMode} rows={filtered} columns={[
+            { label: '학생', render: req => req.studentName },
+            { label: '학년 · 반', render: req => `${req.studentGrade || ''} ${req.classGroupName || ''}` },
+            { label: '담임', render: req => req.teacherName },
+            { label: '신청 일시', render: req => req.requestedAt },
+            { label: '제적 사유', render: req => req.reason },
+            { label: '신청 처리', action: true, render: req => <div className="flex flex-wrap gap-2">
+              <button type="button" aria-label={`${req.studentName} 제적 반려`} onClick={() => rejectMutation.mutate(req.id)} disabled={rejectMutation.isPending || approveMutation.isPending || queryReadState([requestsQuery]) !== 'ready'} className="min-h-11 flex-1 rounded-xl bg-gray-100 px-2 font-semibold">반려</button>
+              <button type="button" aria-label={`${req.studentName} 제적 승인`} onClick={() => approveMutation.mutate(req.id)} disabled={rejectMutation.isPending || approveMutation.isPending || queryReadState([requestsQuery]) !== 'ready'} className="min-h-11 flex-1 rounded-xl bg-red-500 px-2 font-semibold text-white">승인</button>
+            </div> },
+          ]}>
           {filtered.map((req, idx) => (
             <motion.div
               key={req.id}
@@ -118,6 +133,7 @@ export default function DeactivationRequestsAdminPage() {
               </Card>
             </motion.div>
           ))}
+          </RecordViews>
         </div>
       )}
     </AdminReadGuard>

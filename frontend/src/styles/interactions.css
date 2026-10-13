@@ -52,7 +52,27 @@
     background-image: linear-gradient(135deg, white, theme('colors.primary.50') 55%, theme('colors.secondary.100'));
     border-top-color: theme('colors.secondary.300');
   }
-  :root .brand-nav-indicator { background-color: theme('colors.secondary.100'); }
+  :root .brand-nav-indicator { background-color: theme('colors.secondary.50'); }
+  :root .brand-nav-link { background-color: transparent; }
+  :root .brand-nav-link:focus-visible { outline: 2px solid theme('colors.primary.600'); outline-offset: -2px; }
+
+  /* Event urgency stays on the preview; expanded actions retain their usual color. */
+  :root .home-event[data-urgency='soon'],
+  :root button.home-event-preview[data-urgency='soon']:not(.brand-color-swatch) {
+    --surface-bg: theme('colors.amber.50');
+    --surface-border: theme('colors.amber.200');
+    --surface-ink: theme('colors.amber.900');
+    background-color: var(--surface-bg);
+    border-color: var(--surface-border);
+  }
+  :root .home-event[data-urgency='imminent'],
+  :root button.home-event-preview[data-urgency='imminent']:not(.brand-color-swatch) {
+    --surface-bg: theme('colors.rose.50');
+    --surface-border: theme('colors.rose.200');
+    --surface-ink: theme('colors.rose.900');
+    background-color: var(--surface-bg);
+    border-color: var(--surface-border);
+  }
   :root :is(.brand-action-icon, .brand-action > .ui-list-icon) { background-color: inherit; color: inherit; }
 
   :root input:is([type='checkbox'], [type='radio']):checked {

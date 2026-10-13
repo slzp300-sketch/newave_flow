@@ -69,7 +69,7 @@ export default function MenuPage() {
   const attention = path => path === '/tts' ? tts.pending : path === '/events' ? schedule.hasNew
     : path === '/checklist' ? tasks.tasks.some(t => t.state === 'pending') : tasks.needsAction(path)
   const [search, setSearch] = useState('')
-  const [scope, setScope] = useState('all')
+  const [scope, setScope] = useState('personal')
   const canManage = ADMIN_ROLES.includes(user?.role)
   const common = COMMON_GROUPS.map(g => ({ ...g, items: g.items.map(i => ({ ...i, desc: DESCRIPTIONS[i.to] })) }))
   const groups = canManage ? [...common, ...MENU_GROUPS.map(g => ({ ...g, title: `관리 · ${g.title}`, admin: true }))] : common
@@ -82,7 +82,7 @@ export default function MenuPage() {
       <div className="sticky top-14 z-20 border-b border-gray-200 bg-white px-4 pb-4 pt-3 space-y-3">
         <SearchField label="메뉴 검색" value={search} onChange={setSearch} placeholder="어떤 기능을 찾으세요?" />
         {canManage && <SegmentedControl label="메뉴 범위" value={scope} onChange={setScope}
-          options={[{ value: 'all', label: '전체' }, { value: 'personal', label: '나의 활동' }, { value: 'admin', label: '관리' }]} />}
+          options={[{ value: 'personal', label: '나의 활동' }, { value: 'admin', label: '관리' }]} />}
       </div>
       <div className="px-4 py-5 space-y-6">
         {search && <p role="status" className="text-sm text-gray-500">검색 결과 <strong className="text-gray-900">{count}개</strong></p>}
@@ -105,9 +105,9 @@ export default function MenuPage() {
         {!count && <div className="brand-card rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center">
           <SearchX size={28} className="mx-auto mb-3 text-gray-400" />
           <p className="font-semibold">검색 결과가 없어요</p>
-          <p className="mt-2 text-sm text-gray-500">다른 단어나 메뉴 범위로 다시 찾아보세요.</p>
+          <p className="mt-2 text-sm text-gray-500">{canManage ? '다른 단어나 메뉴 범위로 다시 찾아보세요.' : '다른 단어로 다시 찾아보세요.'}</p>
           <button type="button" className="mt-4 min-h-11 rounded-full bg-primary-50 px-5 text-sm font-semibold text-primary-700"
-            onClick={() => { setSearch(''); setScope('all') }}>전체 메뉴 보기</button>
+            onClick={() => setSearch('')}>검색 초기화</button>
         </div>}
       </div>
     </div>

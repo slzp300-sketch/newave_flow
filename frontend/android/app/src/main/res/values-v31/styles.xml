@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ requires a solid background and masks the central icon.
+         The separate launch logo fits completely inside the 192dp safe circle. -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#063190</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/newave_splash_icon</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:statusBarColor">#063190</item>
+        <item name="android:navigationBarColor">#063190</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

@@ -1,6 +1,6 @@
 # Android 스토어 준비 자료
 
-작성: 2026-10-12. **자료 준비본이며 Play Console 제출·출시 완료가 아니다.**
+작성: 2026-10-12, 갱신: 2026-10-13. **자료와 Play Console 앱 초안을 준비했으며, 심사 제출·공개 출시 완료가 아니다.**
 
 | 파일 | 용도 | 상태 |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ Google 공식 요구 규격: 아이콘 512×512 32-bit PNG(1MB 이하), 그래�
 
 ## 출시까지 남은 조건
 
-1. Play Console 신원·전화번호·기기 인증 완료(2026-10-13 사용자 확인). 카카오 운영 반영 후 새 앱 생성과 등록 준비를 진행한다.
+1. Play Console 신원·전화번호·기기 인증 완료(2026-10-13 사용자 확인). 카카오 운영 반영과 새 앱 초안 생성 완료. 등록 자료와 테스트를 준비한다.
 2. 개인정보 처리방침·실제 삭제 절차·백업 보관 기한과 민감정보/미성년자 처리 확정.
 3. 운영 native 출처 허용과 새 화면 배포, 기기 로그인·주간 통계 표시·재실행 로그인 유지 확인 완료(2026-10-12, 실기기 결과는 사용자 확인).
 4. Android 실기기 전체 시나리오와 가상 심사 환경 검증.
@@ -36,3 +36,15 @@ Google 공식 요구 규격: 아이콘 512×512 32-bit PNG(1MB 이하), 그래�
 6. 내부 테스트 업로드, 계정에 적용되는 비공개 테스트 및 출시 신청.
 
 규격 확인일 2026-10-12. [Google 미리보기 자료 기준](https://support.google.com/googleplay/android-developer/answer/9866151), [앱 등록 안내](https://support.google.com/googleplay/android-developer/answer/9859152).
+
+## Play Console 앱 생성 완료 (2026-10-13)
+
+- [뉴웨이브 플로우 대시보드](https://play.google.com/console/u/0/developers/8210423266953776729/app/4976215546588082744/app-dashboard)
+- 패키지: `app.newaveflow.mobile`. 생성 양식에서 사용 가능 확인 완료.
+- 기본 언어: 한국어 `ko-KR`, 유형: 앱, 가격: 무료.
+- 사용자가 개발자 프로그램 정책 준수, Play 앱 서명 약관, 미국 수출법 준수·수출 승인 확인 선언에 별도로 동의한 뒤 초안을 생성했다.
+- 생성 완료 대시보드 확인과 증빙 저장 완료: `frontend/.verification/kakao-registration/play-app-created.png`.
+- AAB 업로드·테스트 배포·심사 제출은 아직 진행하지 않았다. 기존 검수폰에는 원래 서명의 c967789 업데이트 APK를 설치했다. 업로드 키와 Play 앱 서명은 출시 준비 단계에서 별도로 확정한다.
+- 현재 계정 대시보드는 프로덕션 신청 전에 12명 이상이 연속 14일 이상 참여하는 비공개 테스트를 요구한다. 참여 인원 0명이며, 앱 설정과 테스트를 마쳐야 한다.
+- Android 시작 화면의 잘린 로고를 수정했다. 전체 파란 배경과 중앙 흰색 로고를 분리하고 Android 12 이상의 시스템 마스크 안에 전체 로고가 들어가도록 여백을 추가했다. 원본 SVG를 바꾸지 않고 `tools/android/create-splash.mjs`로 전용 벡터 두 개를 생성한다. Android assembleDebug/lintDebug 통과. 실기기 설치·화면 결과는 별도 확인한다.
+- Android 12 이상은 시스템 시작 화면이 적용된다. 배경색·아이콘 안전 영역 기준은 [Android 시작 화면 공식 문서](https://developer.android.com/develop/ui/views/launch/splash-screen)를 따랐다. Android 12 실기기에서 직접 확인한 것으로 보고하지 않는다.

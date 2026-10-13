@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Trash2, Save, ChevronLeft, ChevronRight, CheckCircle2, MoveDown, LayoutList, Trophy, ChevronDown, ArrowUpDown } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import Button from '../components/common/Button'
 import Badge from '../components/common/Badge'
 import { ttsApi } from '../api/tts'
@@ -49,6 +51,7 @@ export default function TtsAdminPage() {
 const PAGE_SIZE = 10
 
 function ScoresTab() {
+  const [viewMode, setViewMode] = useViewMode('admin-tts-scores', 'large')
   const [search, setSearch] = useState('')
   const [year, setYear] = useState(ttsYear)
   const [quarter, setQuarter] = useState(() => defaultQuarter(ttsYear()))
@@ -98,6 +101,7 @@ function ScoresTab() {
       <p className="text-xs text-gray-500 text-center">{quarterDateLabel(year, quarter)}</p>
 
       <SearchField label="TTS 점수 교사 검색" value={search} onChange={value => { setSearch(value); setPage(0); setExpanded(null) }} placeholder="교사 이름 또는 학년 검색" />
+      <ViewModeToggle mode={viewMode} onChange={setViewMode} />
       {/* 기준 점수 설정 */}
       <Card className="p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -162,6 +166,13 @@ function ScoresTab() {
 
           {!filteredScores.length && <AdminEmpty />}
           {/* 목록 */}
+          <RecordViews mode={viewMode} rows={pageItems} rowKey={t => t.key ?? `u${t.teacherId}`}
+            onRowClick={t => { const key = t.key ?? `u${t.teacherId}`; setExpanded(expanded === key ? null : key) }} columns={[
+              { label: '교사', render: t => t.teacherName },
+              { label: '학년', render: t => t.grade },
+              { label: '분기 합계', render: t => `${t.totalScore}점` },
+              { label: '기준 달성', render: t => t.totalScore >= threshold ? '달성' : `${threshold - t.totalScore}점 부족` },
+            ]}>
           <div className="flex flex-col gap-2">
             {pageItems.map((t, idx) => {
               const isBelow = t.totalScore < threshold
@@ -217,6 +228,11 @@ function ScoresTab() {
               )
             })}
           </div>
+          </RecordViews>
+          {viewMode !== 'large' && pageItems.filter(t => (t.key ?? `u${t.teacherId}`) === expanded).map(t => <section key={expanded} aria-label={`${t.teacherName} 주차별 점수`}>
+            <h3 className="mb-2 text-sm font-semibold">{t.teacherName} · 주차별 점수</h3>
+            <WeeklyScoreDetail year={year} scores={t.weeklyScores} total={t.totalScore} />
+          </section>)}
 
           {/* 페이지 네비게이션 */}
           {totalPages > 1 && (
@@ -274,6 +290,7 @@ function WeeklyScoreDetail({ year, scores, total }) {
 }
 
 function SummaryTab({ offset, onOffsetChange }) {
+  const [viewMode, setViewMode] = useViewMode('admin-tts-summary', 'large')
   const [search, setSearch] = useState('')
   // 서버와 같은 주차 규칙: 일~토, 1월 1일이 든 주가 1주차 (연도는 그 주 토요일 기준)
   const sunday = getWeekStartByOffset(offset, 0)
@@ -326,6 +343,7 @@ function SummaryTab({ offset, onOffsetChange }) {
       </div>
 
       <SearchField label="주간 TTS 교사 검색" value={search} onChange={setSearch} placeholder="교사 이름 또는 학년 검색" />
+      <ViewModeToggle mode={viewMode} onChange={setViewMode} />
       <div className="flex items-center justify-between px-1">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{search.trim() ? '검색된 교사 참여 현황' : '학년별 참여 현황'}</p>
         <span className="text-xs font-bold text-gray-400">총 {gradeNames.length}개 학년</span>
@@ -340,7 +358,15 @@ function SummaryTab({ offset, onOffsetChange }) {
                <p className="text-xs font-bold">{search.trim() ? '조건에 맞는 교사가 없습니다' : '등록된 교사 정보가 없습니다'}</p>
             </div>
           ) : (
-            gradeNames.map(grade => {
+            <RecordViews mode={viewMode} rows={gradeNames.flatMap(grade => groupedData[grade])} rowKey={t => t.key ?? `u${t.teacherId}`} columns={[
+              { label: '교사', render: t => t.teacherName },
+              { label: '학년', render: t => t.grade },
+              { label: '참여', render: t => t.isSubmitted ? '참여' : '미참여' },
+              { label: '주간 점수', render: t => `${t.score ?? 0}점` },
+              { label: '기록 출처', render: t => t.scoreSource === 'SHEET' ? '시트 확정 점수' : '앱 기록' },
+              { label: '마지막 수정', render: t => formatUpdatedAt(t.updatedAt) },
+            ]}>
+            {gradeNames.map(grade => {
               const teachers = groupedData[grade]
               const submittedCount = teachers.filter(t => t.isSubmitted).length
               const ratio = submittedCount / teachers.length
@@ -419,7 +445,8 @@ function SummaryTab({ offset, onOffsetChange }) {
                   </AnimatePresence>
                 </div>
               )
-            })
+            })}
+            </RecordViews>
           )}
         </div>
       )}

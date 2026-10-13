@@ -9,6 +9,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserPlus, X, Loader2, UserMinus, CheckCircle2, Search, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import Button from '../components/common/Button'
 import { classesApi } from '../api/classes'
 import { usersApi } from '../api/users'
@@ -16,6 +18,7 @@ import { usersApi } from '../api/users'
 export default function AdminClassManagePage() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useViewMode('admin-class-assignment', 'large')
   const [selectedClassId, setSelectedClassId] = usePersistedState('selectedClassId', null)
   const [activeGrade, setActiveGrade] = usePersistedState('activeGrade', '전체')
 
@@ -75,6 +78,7 @@ export default function AdminClassManagePage() {
       <div className="flex flex-col gap-4 px-4 py-5">
         <AdminIntro title="반마다 담당 교사를 연결해요" description="반을 선택해 담임·부담임을 배정하거나 변경하세요." />
         <SearchField label="반과 담당 교사 검색" value={search} onChange={setSearch} placeholder="학년, 반 또는 교사 이름 검색" />
+        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
       </div>
       {!isLoading && (
         <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 ">
@@ -103,6 +107,12 @@ export default function AdminClassManagePage() {
         <div className="px-4 py-6 flex flex-col gap-8">
           <FilterResults count={resultCount} total={roster.length} unit="반" filtered={!!search.trim() || activeGrade !== '전체'} onReset={() => { setSearch(''); setActiveGrade('전체') }} />
           {!resultCount && <AdminEmpty />}
+          <RecordViews mode={viewMode} rows={displayedEntries.flatMap(([, classes]) => classes)} onRowClick={cls => setSelectedClassId(cls.id)} columns={[
+            { label: '반', render: cls => cls.name },
+            { label: '학년', render: cls => cls.grade },
+            { label: '담당 교사', render: cls => cls.teachers?.map(t => t.name).join(', ') || '미배정' },
+            { label: '학생 수', render: cls => `${cls.students?.length ?? 0}명` },
+          ]}>
           {displayedEntries.map(([grade, classes], gIdx) => (
             <motion.div 
               key={grade}
@@ -127,6 +137,7 @@ export default function AdminClassManagePage() {
               </div>
             </motion.div>
           ))}
+          </RecordViews>
         </div>
       )}
       

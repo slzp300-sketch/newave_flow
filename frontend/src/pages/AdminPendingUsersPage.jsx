@@ -5,6 +5,8 @@ import { adminUsersApi } from '../api/adminUsers'
 import Header from '../components/layout/Header'
 import Button from '../components/common/Button'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import SearchField from '../components/common/SearchField'
 import { AdminIntro, AdminEmpty, FilterResults } from '../components/common/AdminTools'
 import QueryNotice from '../components/common/QueryNotice'
@@ -16,6 +18,7 @@ import { Link } from 'react-router-dom'
 export default function AdminPendingUsersPage() {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useViewMode('admin-pending-users', 'large')
 
   const pendingQuery = useQuery({
     queryKey: ['pending-users'],
@@ -47,10 +50,17 @@ export default function AdminPendingUsersPage() {
         승인 후 반 배정하기 <span aria-hidden="true">›</span>
       </Link>
       <SearchField label="승인 대기 교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
+      <ViewModeToggle mode={viewMode} onChange={setViewMode} />
       {!hasQueryData([pendingQuery]) ? <QueryNotice queries={[pendingQuery]} label="승인 대기 목록" /> : <>
         <QueryRefreshNotice queries={[pendingQuery]} label="승인 대기 목록" />
         <FilterResults count={filtered.length} total={pendingUsers.length} filtered={!!search.trim()} onReset={() => setSearch('')} />
         {!filtered.length && <AdminEmpty title={search.trim() ? undefined : '승인 대기 중인 교사가 없습니다'} description={search.trim() ? undefined : '신규 가입 신청이 들어오면 여기에 표시됩니다.'} />}
+        <RecordViews mode={viewMode} rows={filtered} columns={[
+          { label: '교사', render: user => user.name },
+          { label: '이메일', render: user => user.email },
+          { label: '상태', render: () => '승인 대기' },
+          { label: '승인', action: true, render: user => <Button onClick={() => approve(user.id)} loading={isPending && variables === user.id} disabled={!ready || isPending} className="w-full">{user.name} 승인</Button> },
+        ]}>
         {filtered.map(user => <Card key={user.id} className="flex flex-col gap-4 p-5">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0"><h3 className="font-bold text-gray-900">{user.name}</h3><p className="mt-1 break-all text-xs text-gray-500">{user.email}</p></div>
@@ -60,6 +70,7 @@ export default function AdminPendingUsersPage() {
             <UserCheck size={17} /> {user.name} 승인
           </Button>
         </Card>)}
+        </RecordViews>
       </>}
     </div>
   </div>

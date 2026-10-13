@@ -17,6 +17,8 @@ import client from '../api/client'
 import { eventApi } from '../api/event'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import Button from '../components/common/Button'
 import Badge from '../components/common/Badge'
 import { toApiDate } from '../utils/date'
@@ -56,6 +58,7 @@ const getEventColors = (color) => {
 export default function CalendarAdminPage() {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useViewMode('admin-calendar', 'large')
   const [period, setPeriod] = useState('all')
   const [showForm, setShowForm] = useState(false)
   const [showChoice, setShowChoice] = useState(false)
@@ -202,6 +205,7 @@ export default function CalendarAdminPage() {
           <AdminIntro title="부서 일정을 관리하세요" description="다가오는 일정과 지난 행사를 찾아 수정하거나 새 일정을 등록하세요."
             action={<Button size="sm" onClick={() => setShowChoice(true)}><Plus size={16} /> 일정 추가</Button>} />
           <SearchField label="관리할 일정 검색" value={search} onChange={setSearch} placeholder="일정 이름, 설명 또는 날짜 검색" />
+          <ViewModeToggle mode={viewMode} onChange={setViewMode} label="일정 목록 보기 방식" />
           <SegmentedControl label="일정 기간" value={period} onChange={setPeriod}
             options={[{value: 'all', label: '전체'}, {value: 'upcoming', label: '진행·예정'}, {value: 'past', label: '종료된 일정'}]} />
         </div>
@@ -381,6 +385,18 @@ export default function CalendarAdminPage() {
             <p className="text-sm font-bold">등록된 일정이 없습니다.</p>
           </div>
         ) : (
+          <RecordViews mode={viewMode} rows={[...categorizedEvents.ongoing, ...categorizedEvents.upcoming, ...categorizedEvents.past]} rowClassName={event => isEventEnded(event, today) ? 'event-inactive' : ''} columns={[
+            { label: '일정', render: event => event.title },
+            { label: '기간', render: event => `${event.eventDate}${event.endDate && event.endDate !== event.eventDate ? ` ~ ${event.endDate}` : ''}` },
+            { label: '시간', render: event => event.startTime ? `${event.startTime}${event.endTime ? ` ~ ${event.endTime}` : ''}` : '하루종일' },
+            { label: '상태', render: event => isEventEnded(event, today) ? '종료된 일정' : event.eventDate <= today ? '진행 중' : '예정' },
+            { label: '설명', render: event => event.description },
+            { label: '출석 접수', render: event => <EventAttendanceStatus event={event} today={today} /> },
+            { label: '관리', action: true, render: event => <div className="flex gap-2">
+              <button type="button" onClick={() => handleEdit(event)} aria-label={`${event.title} 수정`} className="min-h-11 rounded-xl border border-primary-200 px-3 font-semibold">수정</button>
+              <button type="button" onClick={() => handleDelete(event.id)} aria-label={`${event.title} 삭제`} className="min-h-11 rounded-xl border border-red-200 px-3 font-semibold text-red-600">삭제</button>
+            </div> },
+          ]}>
           <div className="flex flex-col gap-8">
             {[
               { key: 'ongoing', label: '진행중인 일정', dot: 'bg-emerald-500', list: categorizedEvents.ongoing },
@@ -456,6 +472,7 @@ export default function CalendarAdminPage() {
               </div>
             ))}
           </div>
+          </RecordViews>
         )}
         </AdminReadGuard>
       </div>

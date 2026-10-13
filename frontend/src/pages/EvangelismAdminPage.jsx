@@ -18,6 +18,8 @@ import {
 } from '@dnd-kit/core'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import Badge from '../components/common/Badge'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { evangelismApi, usersApi } from '../api/evangelism'
@@ -73,6 +75,7 @@ export default function EvangelismAdminPage() {
 
 // ── 조 관리 탭 ──────────────────────────────────────────────────────────
 function GroupManagementTab({ teachers }) {
+  const [viewMode, setViewMode] = useViewMode('admin-evangelism-groups', 'large')
   const qc = useQueryClient()
   const [moveSheet, setMoveSheet]       = useState(null)
   const [showAddGroup, setShowAddGroup] = useState(false)
@@ -209,6 +212,19 @@ function GroupManagementTab({ teachers }) {
         </AnimatePresence>
 
         {/* ── 전체 조 카드 (2열 그리드) ── */}
+        <div className="px-4"><ViewModeToggle mode={viewMode} onChange={setViewMode} label="전도 조 보기 방식" /></div>
+        <div className={viewMode === 'large' ? '' : 'px-4'}>
+        <RecordViews mode={viewMode} rows={groups} columns={[
+          { label: '전도 조', render: g => g.name },
+          { label: '인원', render: g => `${g.members?.length ?? 0}명` },
+          { label: '조원', action: true, render: g => <div className="flex flex-wrap gap-1.5">{g.members?.length ? g.members.map(m => <button type="button" key={m.id} disabled={moving} onClick={() => setMoveSheet({ teacherId: m.teacherId, teacherName: m.teacherName, fromGroupId: g.id })} className="min-h-11 rounded-xl bg-primary-50 px-3">{m.teacherName} · 이동</button>) : '비어 있음'}</div> },
+          { label: '조 관리', action: true, render: g => <div className="flex flex-wrap gap-2">
+            {editingId === g.id ? <><input aria-label={`${g.name} 새 이름`} className="min-h-11 w-full rounded-xl border p-2" value={editingName} onChange={e => setEditingName(e.target.value)} />
+              <button type="button" disabled={updateGroupMeta.isPending || !editingName.trim()} onClick={() => updateGroupMeta.mutate({ id: g.id, data: { name: editingName } })} className="min-h-11 rounded-xl border px-3">이름 저장</button></>
+              : <button type="button" onClick={() => { setEditingId(g.id); setEditingName(g.name) }} className="min-h-11 rounded-xl border px-3">이름 수정</button>}
+            <button type="button" disabled={deleteGroup.isPending} onClick={() => { if (window.confirm(`${g.name}을(를) 삭제할까요?`)) deleteGroup.mutate(g.id) }} className="min-h-11 rounded-xl border px-3 text-red-600">조 삭제</button>
+          </div> },
+        ]}>
         <div className="px-4 grid grid-cols-2 gap-3">
           {groups.map((g, idx) => {
             const c = getGroupColor(idx)
@@ -260,6 +276,8 @@ function GroupManagementTab({ teachers }) {
               </GroupDropZone>
             )
           })}
+        </div>
+        </RecordViews>
         </div>
 
         {/* ── 배정 대기 풀 ── */}
@@ -473,6 +491,7 @@ function MoveSheet({ teacherName, fromGroupId, groups, moving, onMove, onUnassig
 
 // ── 일정 관리 탭 ──────────────────────────────────────────────────────────
 function ScheduleManagementTab({ teachers }) {
+  const [viewMode, setViewMode] = useViewMode('admin-evangelism-schedules', 'large')
   const qc = useQueryClient()
   const [showForm, setShowForm]       = useState(false)
   const [editTarget, setEditTarget]   = useState(null)
@@ -583,11 +602,22 @@ function ScheduleManagementTab({ teachers }) {
       </AnimatePresence>
 
       <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] px-1 mt-1">예정 일정</p>
+      <ViewModeToggle mode={viewMode} onChange={setViewMode} label="전도 일정 보기 방식" />
       {upcoming.length === 0 && !showForm && (
         <Card className="py-8 flex items-center justify-center">
           <p className="text-sm text-gray-400">등록된 예정 일정이 없습니다</p>
         </Card>
       )}
+      <RecordViews mode={viewMode} rows={[...upcoming, ...past]} columns={[
+        { label: '전도 일자', render: s => fmtDate(s.scheduledDate) },
+        { label: '담당 조', render: s => s.assignments?.[0]?.groupName || '담당 없음' },
+        { label: '상태', render: s => ({ ACTIVE: '당번', CANCELED: '취소됨', UPCOMING: '예정', COMPLETED: '완료' }[s.status] || s.status) },
+        { label: '관리', action: true, render: s => <div className="flex flex-wrap gap-2">
+          {s.status !== 'CANCELED' && <><button type="button" onClick={() => openEdit(s)} className="min-h-11 rounded-xl border px-3">수정</button>
+            <button type="button" disabled={cancelMutation.isPending} onClick={() => { if (window.confirm('일정을 취소하시겠습니까?')) cancelMutation.mutate(s.id) }} className="min-h-11 rounded-xl border px-3">일정 취소</button></>}
+          <button type="button" onClick={() => setDeleteTarget(s)} className="min-h-11 rounded-xl border px-3 text-red-600">삭제</button>
+        </div> },
+      ]}>
       {upcoming.map((s, i) => (
         <ScheduleAdminCard key={s.id} schedule={s} index={i} groups={groups}
           onEdit={() => openEdit(s)}
@@ -606,6 +636,7 @@ function ScheduleManagementTab({ teachers }) {
           ))}
         </>
       )}
+      </RecordViews>
 
       <AnimatePresence>
         {deleteTarget && (

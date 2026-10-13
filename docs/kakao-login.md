@@ -69,3 +69,13 @@ V006은 nullable 회원번호와 빈 인증 요청 테이블만 추가하며 기
 최신 운영 PostgreSQL 백업을 Windows 사용자 DPAPI로 암호화해 OneDrive 밖의 접근 제한 폴더에 보관했다. 별도 PostgreSQL 18.6 복원본의 34개 테이블·2,176개 행 해시가 원본 스냅샷과 일치했다. 복원본에서 V006 실패 롤백·정상 적용·재적용 차단·기존 값 보존과 `prod`, `ddl-auto=validate` 기동 검사를 통과했다.
 
 이후 승인된 운영 V006 적용 전후 기존 33개 업무 테이블의 건수·행 해시가 모두 일치했다. 추가된 카카오 회원번호는 전부 NULL이고 임시 인증 테이블은 비어 있다. TLS 서버 인증서 확인에 사용한 임시 Railway SSH 키는 확인 직후 등록 해제하고 이 작업에서 만든 개인 키도 제거했다. 운영 서버·웹 배포와 실제 운영 로그인 확인은 이 DB 적용과 별도로 확인한다.
+
+## 운영 배포와 Android 업데이트 완료 (2026-10-13)
+
+- 사용자 승인으로 [c967789](https://github.com/slzp300-sketch/newave_flow/commit/c96778984290e72a030d8227360c5e30ec642516)을 main에 반영했다. 동일 커밋의 Vercel·Railway 배포가 모두 성공했다.
+- [CI 38349091609](https://github.com/slzp300-sketch/newave_flow/actions/runs/38349091609)의 backend, frontend, Android, PostgreSQL 17·18 다섯 작업이 모두 성공했다.
+- 운영 health 정상, 카카오 설정 `enabled=true`, 로그인 화면의 노란 버튼 `rgb(254,229,0)`과 375px 배치를 확인했다. 기존 PWA 탭은 새 버전 다시 열기를 거쳐 갱신했다.
+- 사용자의 별도 운영 인증 검사 승인 후 실제 카카오 인증으로 ‘계정 연결 또는 가입 신청’ 화면에 진입했다. 운영 회원 계정 연결·신규 가입 제출·관리자 승인·업무 기록 저장은 검사하지 않았다. 기존 계정 연결과 동일 회원 재로그인은 앞서 가상 Local Admin에서 검증했다.
+- Galaxy Note9(SM-N960N)에 기존 서명으로 `adb install -r` 성공. 최초 설치 시각 `2026-10-12 21:59:20` 유지, 갱신 시각 `2026-10-13 14:12:17`, 설치 APK 전체 해시와 준비한 c967789 APK 일치를 확인했다. 앱 프로세스 실행도 확인했다. 사용자의 실제 로그인 상태·화면 체감은 별도 확인 대상이다.
+- 작업용 DB 복원본과 임시 접속값·카카오 키 복사본을 정리했다. 암호화 백업과 복원·V006 검증 근거는 `C:/Users/upup0/AppData/Local/NewaveFlow/Backups/2026-10-13-kakao`에 현재 사용자/SYSTEM만 접근하도록 보존했다. DPAPI 백업 복호화에는 이 Windows 사용자 환경이 필요하다.
+- 운영 인증 및 콘솔 증빙: `frontend/.verification/kakao-registration/production-kakao-auth-success.png`, `production-webhook-configured.png`. 업데이트 파일: 같은 폴더의 `newaveflow-c967789-update.apk`.

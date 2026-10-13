@@ -11,6 +11,8 @@ import { format, subWeeks, startOfWeek } from 'date-fns'
 import { Users, CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import { attendanceApi } from '../api/attendance'
 import { weekLabels } from '../utils/date'
 
@@ -47,7 +49,7 @@ function getGradeColor(grade) {
 }
 
 // ── 학생 목록 패널 ────────────────────────────────────────────
-function StudentDetailPanel({ classId, className, date, onBack }) {
+function StudentDetailPanel({ classId, className, date, onBack, viewMode }) {
   const studentsQuery = useQuery({
     queryKey: ['admin-attendance-students', classId, date],
     queryFn: () => attendanceApi.getByClass(classId, date).then(r => r.data),
@@ -96,6 +98,12 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
           <p className="text-sm font-bold text-gray-400">아직 출석 데이터가 없습니다</p>
         </Card>
       ) : (
+        <RecordViews mode={viewMode} rows={students} rowKey={s => s.studentId} columns={[
+          { label: '학생', render: s => s.studentName },
+          { label: '출석', render: s => ({ PRESENT: '출석', ABSENT: '결석', LATE: '지각' }[s.status] || '미기록') },
+          { label: '결석 사유', render: s => s.absentReason },
+          { label: '메모', render: s => s.note },
+        ]}>
         <Card className="flex flex-col gap-1.5 p-3">
           {students.map((s, idx) => (
             <motion.div
@@ -139,13 +147,14 @@ function StudentDetailPanel({ classId, className, date, onBack }) {
             </motion.div>
           ))}
         </Card>
+        </RecordViews>
       )}
     </div>
   )
 }
 
 // ── 반 목록 패널 ─────────────────────────────────────────────
-function ClassListPanel({ grade, classes, date, onBack, onSelectClass }) {
+function ClassListPanel({ grade, classes, date, onBack, onSelectClass, viewMode }) {
   const color = getGradeColor(grade)
   return (
     <div className="flex flex-col gap-4">
@@ -159,6 +168,14 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass }) {
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">반별 현황</p>
       </div>
 
+      <RecordViews mode={viewMode} rows={classes} rowKey={cls => cls.classGroupId} onRowClick={onSelectClass} columns={[
+        { label: '반', render: cls => cls.classGroupName },
+        { label: '담임', render: cls => cls.teacherName },
+        { label: '전체', render: cls => `${cls.totalStudents}명` },
+        { label: '출석', render: cls => `${cls.presentCount}명` },
+        { label: '결석', render: cls => `${cls.absentCount}명` },
+        { label: '보고서', render: cls => cls.submitted ? '제출 완료' : '미제출' },
+      ]}>
       <div className="flex flex-col gap-3">
         {classes.map((cls, idx) => {
           const pct = cls.totalStudents > 0 ? (cls.presentCount / cls.totalStudents) * 100 : 0
@@ -205,15 +222,22 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass }) {
           )
         })}
       </div>
+      </RecordViews>
     </div>
   )
 }
 
 // ── 학년 카드 그리드 ─────────────────────────────────────────
-function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade }) {
+function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade, viewMode }) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
+      <RecordViews mode={viewMode} rows={gradeList} rowKey={g => g.grade} onRowClick={g => onSelectGrade(g.grade)} columns={[
+        { label: '학년', render: g => g.grade },
+        { label: '전체', render: g => `${g.total}명` },
+        { label: '출석', render: g => `${g.present}명` },
+        { label: '결석', render: g => `${g.absent}명` },
+      ]}>
       <div className="grid grid-cols-2 gap-3">
         {gradeList.map((g, idx) => {
           const color = getGradeColor(g.grade)
@@ -243,12 +267,13 @@ function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade }) {
           )
         })}
       </div>
+      </RecordViews>
     </div>
   )
 }
 
 // ── 결석자 목록 패널 ─────────────────────────────────────────
-function AbsentListPanel({ date }) {
+function AbsentListPanel({ date, viewMode }) {
   const absentQuery = useQuery({
     queryKey: ['admin-absent-list', date],
     queryFn: () => attendanceApi.getAdminAbsent(date).then(r => r.data),
@@ -272,6 +297,13 @@ function AbsentListPanel({ date }) {
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">결석자 목록</p>
         <span className="text-xs font-bold text-red-500">{absentList.length}명</span>
       </div>
+      <RecordViews mode={viewMode} rows={absentList} rowKey={(s, index) => `${s.ageGroup}:${s.classGroupName}:${s.studentName}:${index}`} columns={[
+        { label: '학생', render: s => s.studentName },
+        { label: '학년', render: s => s.ageGroup },
+        { label: '반', render: s => s.classGroupName },
+        { label: '출석', render: s => s.status === 'LATE' ? '지각' : '결석' },
+        { label: '결석 사유', render: s => s.absentReason },
+      ]}>
       <Card className="flex flex-col gap-1.5 p-3">
         {absentList.map((s, idx) => {
           const gradeColor = getGradeColor(getGradeKey(s.ageGroup))
@@ -310,12 +342,14 @@ function AbsentListPanel({ date }) {
           )
         })}
       </Card>
+      </RecordViews>
     </div>
   )
 }
 
 // ── 메인 페이지 ──────────────────────────────────────────────
 export default function AdminStudentAttendancePage() {
+  const [viewMode, setViewMode] = useViewMode('admin-student-attendance', 'large')
   const sundays = getPastSundays()
   const [selectedDate, setSelectedDate] = useState(sundays[0])
   const [activeTab, setActiveTab] = usePersistedState('activeTab', 'grade')
@@ -377,6 +411,7 @@ export default function AdminStudentAttendancePage() {
       <div className="px-4 py-5 flex flex-col gap-5">
 
         <AdminIntro title="주일 출석 현황" description="학년 → 반 → 학생 순서로 확인하거나 결석자만 모아 보세요." />
+        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
         {/* 주차 선택 */}
         <section>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">주차 선택 (기준 주일)</p>
@@ -428,6 +463,7 @@ export default function AdminStudentAttendancePage() {
             {/* 뷰 전환 */}
             {selectedClass ? (
               <StudentDetailPanel
+                viewMode={viewMode}
                 classId={selectedClass.classGroupId}
                 className={selectedClass.classGroupName}
                 date={selectedDate}
@@ -435,6 +471,7 @@ export default function AdminStudentAttendancePage() {
               />
             ) : selectedGrade ? (
               <ClassListPanel
+                viewMode={viewMode}
                 grade={selectedGrade}
                 classes={gradeGroups[selectedGrade]?.classes || []}
                 date={selectedDate}
@@ -442,9 +479,10 @@ export default function AdminStudentAttendancePage() {
                 onSelectClass={handleSelectClass}
               />
             ) : activeTab === 'absent' ? (
-              <AbsentListPanel date={selectedDate} />
+              <AbsentListPanel date={selectedDate} viewMode={viewMode} />
             ) : (
               <GradeGridPanel
+                viewMode={viewMode}
                 gradeGroups={gradeGroups}
                 gradeList={gradeList}
                 onSelectGrade={handleSelectGrade}

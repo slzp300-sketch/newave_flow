@@ -1,6 +1,6 @@
-import { useState, useMemo, useSyncExternalStore } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { useState, useMemo, useSyncExternalStore, useEffect, useRef, useId } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
 import { Reveal, AnimatedValue, ProgressFill, SelectionMark } from '../components/common/Motion'
 import { addDays, format } from 'date-fns'
@@ -80,6 +80,22 @@ export function CheckTab({ embedded = false }) {
   const queryClient = useQueryClient()
   const [offset, setOffset] = useState(0)
   const [saveError, setSaveError] = useState('')
+  const [showEditor, setShowEditor] = useState(false)
+  const editorRef = useRef(null)
+  const editorButtonRef = useRef(null)
+  const editorId = useId()
+  useEffect(() => {
+    if (!embedded || !showEditor) return
+    const frame = requestAnimationFrame(() => {
+      editorRef.current?.focus({ preventScroll: true })
+      editorRef.current?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [embedded, showEditor])
+  const closeEditor = () => {
+    setShowEditor(false)
+    editorButtonRef.current?.focus({ preventScroll: true })
+  }
   const todayStr = useToday()
   const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const offline = useSyncExternalStore(onlineManager.subscribe, () => !onlineManager.isOnline())
@@ -227,7 +243,11 @@ export function CheckTab({ embedded = false }) {
               onToggleDay={toggleDay} disabled={!ready || offline}
               days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr, today: i === todayIdx }))} />
             <div className="mt-3 flex gap-2">
-              <Link to="/tts?tab=check" className="brand-action flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-primary-200 px-2 text-xs">이번 주 기록 수정<ChevronRight size={14} aria-hidden="true" /></Link>
+              <button ref={editorButtonRef} type="button" aria-expanded={showEditor} aria-controls={editorId}
+                onClick={() => showEditor ? closeEditor() : setShowEditor(true)}
+                className={`brand-action flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border px-2 text-xs ${showEditor ? 'border-secondary-300 bg-secondary-50 text-secondary-800' : 'border-primary-200'}`}>
+                {showEditor ? '이번 주 기록 닫기' : '이번 주 기록 수정'}<ChevronDown size={14} aria-hidden="true" className={showEditor ? 'rotate-180' : ''} />
+              </button>
               <button type="button" onClick={() => navigate('/tts?tab=stats&view=mine')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">내 상세 통계</button>
             </div>
           </section> : <ScoreCard
@@ -247,7 +267,11 @@ export function CheckTab({ embedded = false }) {
             }
           />}
 
-          {!embedded && <div className="space-y-3">
+          {(!embedded || showEditor) && <div id={editorId} ref={editorRef} role="region" tabIndex={-1} aria-label="이번 주 기록 수정" className="scroll-mt-20 space-y-3 focus:outline-none">
+          {embedded && <div className="flex items-center justify-between gap-2 px-1">
+            <h2 className="brand-section-title font-semibold">이번 주 기록 수정</h2>
+            <button type="button" onClick={closeEditor} className="min-h-11 px-3 text-xs font-semibold text-primary-700">접기</button>
+          </div>}
           {dayQuestions.length > 0 && (
             <DayGrid
               items={dayQuestions}

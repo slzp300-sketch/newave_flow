@@ -10,6 +10,8 @@ import { motion } from 'framer-motion'
 import { Users, Loader2, CheckCircle2, XCircle, RefreshCw, Clock } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import client from '../api/client'
 import { format, addDays } from 'date-fns'
 import { formatUpdatedAt } from '../utils/date'
@@ -42,6 +44,7 @@ const GRADE_ORDER = ['전체', '유치', '초1', '초2', '초3', '초4', '초5',
 export default function AdminMeetingAttendancePage() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useViewMode('admin-meeting-attendance', 'large')
   const weeks = getPastSaturdays()
   const [selectedDate, setSelectedDate] = useState(weeks[0])
   const [statusFilter, setStatusFilter] = usePersistedState('statusFilter', '전체')
@@ -240,9 +243,10 @@ export default function AdminMeetingAttendancePage() {
 
         {/* 교사 명단 */}
         <div>
-          <div className="flex items-center justify-between px-1 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1 mb-3">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">교사 명단</p>
             <p className="text-xs font-bold text-primary-500">{filteredList.length}명</p>
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
           </div>
 
           {(isAttLoading && attendanceList.length === 0) ? (
@@ -255,6 +259,14 @@ export default function AdminMeetingAttendancePage() {
               <p className="text-sm font-bold text-gray-300">조건에 맞는 결과가 없습니다</p>
             </Card>
           ) : (
+            <RecordViews mode={viewMode} rows={filteredList} rowKey={row => row.teacherId} columns={[
+              { label: '교사', render: row => row.teacherName },
+              { label: '학년', render: row => row.displayGrade },
+              { label: '참석', render: row => row.satStatus === 'ATTEND' ? '참석' : row.satStatus === 'ABSENT' ? '불참' : '미제출' },
+              { label: '불참 사유', render: row => row.satReason || '—' },
+              { label: '회의록 확인', render: row => row.satStatus === 'ATTEND' ? '참석자(면제)' : row.minuteConfirmed ? '확인 완료' : '미확인' },
+              { label: '마지막 수정', render: row => formatUpdatedAt(row.satUpdatedAt) },
+            ]}>
             <div className="flex flex-col gap-6">
               {sortedGrades.map(grade => (
                 <div key={grade} className="flex flex-col gap-2.5">
@@ -347,6 +359,7 @@ export default function AdminMeetingAttendancePage() {
                 </div>
               ))}
             </div>
+            </RecordViews>
           )}
         </div>
         </AdminReadGuard>

@@ -28,9 +28,9 @@ export function useViewMode(key, defaultMode) {
 }
 
 /** 큰 카드 / 작은 카드 / 목록 / 자세히 전환 버튼 */
-export default function ViewModeToggle({ mode, onChange }) {
+export default function ViewModeToggle({ mode, onChange, label = '명단 보기 방식' }) {
   return (
-    <div role="group" aria-label="명단 보기 방식" className="flex items-center bg-gray-100 rounded-2xl p-1 flex-shrink-0">
+    <div role="group" aria-label={label} className="flex w-fit max-w-full items-center bg-gray-100 rounded-2xl p-1 flex-shrink-0">
       {MODES.map(({ id, label, Icon }) => (
         <button
           key={id}
@@ -56,7 +56,7 @@ export default function ViewModeToggle({ mode, onChange }) {
  */
 export function DetailTable({ columns, rows, rowKey = r => r.id, onRowClick, rowClassName }) {
   return (
-    <div className="brand-card bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+    <div className="brand-card min-w-0 w-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
       <table className="w-full text-xs whitespace-nowrap">
         <thead>
           <tr className="bg-gray-50 text-gray-400 font-bold text-left">
@@ -66,10 +66,12 @@ export function DetailTable({ columns, rows, rowKey = r => r.id, onRowClick, row
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {rows.map(row => (
+          {rows.map((row, index) => (
             <tr
-              key={rowKey(row)}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              key={rowKey(row, index)}
+              onClick={onRowClick ? event => {
+                if (!event.target.closest('button, a, input, select, textarea, [role="button"]')) onRowClick(row)
+              } : undefined}
               className={`${onRowClick ? 'cursor-pointer active:bg-gray-50' : ''} ${rowClassName?.(row) || ''}`}
             >
               {columns.map((c, i) => (

@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, FileText, CheckCircle2, XCircle, Play, Users, PenLine, Trash2, ChevronDown, ChevronUp, ToggleLeft, ToggleRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import Button from '../components/common/Button'
 import { formatDate, toApiDate } from '../utils/date'
 import client from '../api/client'
@@ -15,6 +17,8 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export default function MeetingMinutesAdminPage() {
+  const [viewMode, setViewMode] = useViewMode('admin-minutes', 'large')
+  const [statusView, setStatusView] = useViewMode('admin-minute-status', 'large')
   const [search, setSearch] = useState('')
   const [visibility, setVisibility] = useState('all')
   const [loadError, setLoadError] = useState(false)
@@ -238,6 +242,7 @@ export default function MeetingMinutesAdminPage() {
           </motion.div>
         )}
 
+        <ViewModeToggle mode={viewMode} onChange={setViewMode} label="회의록 목록 보기 방식" />
         <div className="flex flex-col gap-8">
           {loading ? <p role="status" className="py-10 text-center text-sm text-gray-500">회의록을 불러오는 중…</p> : loadError ? <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">회의록을 불러오지 못했습니다.<Button variant="secondary" className="mt-3" onClick={fetchMinutes}>다시 불러오기</Button></div> : Object.keys(groupedMinutes).length === 0 ? (
             <div className="py-20 text-center text-gray-400">
@@ -245,7 +250,19 @@ export default function MeetingMinutesAdminPage() {
               <p className="text-sm font-bold">{search.trim() || visibility !== 'all' ? '조건에 맞는 회의록이 없습니다.' : '등록된 회의록이 없습니다.'}</p>
             </div>
           ) : (
-            Object.entries(groupedMinutes).map(([month, items]) => (
+            <RecordViews mode={viewMode} rows={filteredMinutes} onRowClick={m => fetchStatus(m.id)} columns={[
+              { label: '회의록', render: m => m.title },
+              { label: '회의 일자', render: m => m.meetingDate },
+              { label: '공개', render: m => m.isActive ? '공개' : '비공개' },
+              { label: '내용', render: m => m.content },
+              { label: '영상', render: m => m.videoLink ? <a href={m.videoLink} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary-700 underline">영상 열기</a> : '없음' },
+              { label: '관리', action: true, render: m => <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => handleEdit(m)} className="min-h-11 rounded-xl bg-primary-50 px-3 font-semibold" aria-label={`${m.title} 수정`}>수정</button>
+                <button type="button" onClick={() => handleToggleActive(m)} className="min-h-11 rounded-xl bg-gray-100 px-3 font-semibold">{m.isActive ? '비공개로 전환' : '공개로 전환'}</button>
+                <button type="button" onClick={() => handleDelete(m.id)} className="min-h-11 rounded-xl bg-red-50 px-3 font-semibold text-red-600" aria-label={`${m.title} 삭제`}>삭제</button>
+              </div> },
+            ]}>
+            {Object.entries(groupedMinutes).map(([month, items]) => (
               <div key={month} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 px-1">
                   <span className="w-1 h-4 bg-primary-500 rounded-full" />
@@ -309,6 +326,8 @@ export default function MeetingMinutesAdminPage() {
                             className="pt-4 border-t border-gray-100 overflow-hidden"
                           >
                             <div className="flex flex-col gap-4 p-2">
+                              <ViewModeToggle mode={statusView} onChange={setStatusView} label="회의록 참석 명단 보기 방식" />
+                              <MinuteStatusViews mode={statusView} rows={selectedStatus.data}>
                               {(() => {
                                 const GRADE_ORDER = ['유치', '초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '미분류']
                                 const grouped = {}
@@ -369,6 +388,7 @@ export default function MeetingMinutesAdminPage() {
                                   </div>
                                 ))
                               })()}
+                              </MinuteStatusViews>
                             </div>
                           </motion.div>
                         )}
@@ -377,10 +397,26 @@ export default function MeetingMinutesAdminPage() {
                   ))}
                 </div>
               </div>
-            ))
+            ))}
+            </RecordViews>
           )}
         </div>
+        {viewMode !== 'large' && selectedStatus && <section aria-label="회의록 참석 및 확인 현황" className="space-y-3">
+          <h2 className="brand-section-title text-sm font-semibold">{minutes.find(m => m.id === selectedStatus.id)?.title} · 참석 및 확인 현황</h2>
+          <ViewModeToggle mode={statusView} onChange={setStatusView} label="회의록 참석 명단 보기 방식" />
+          <MinuteStatusViews mode={statusView} rows={selectedStatus.data} />
+        </section>}
       </div>
     </div>
   )
+}
+
+function MinuteStatusViews({ mode, rows, children }) {
+  return <RecordViews mode={mode} rows={rows} rowKey={row => row.teacherId} columns={[
+    { label: '교사', render: row => row.teacherName },
+    { label: '학년', render: row => row.teacherGrade },
+    { label: '참석', render: row => ({ ATTEND: '참석', ABSENT: '불참' }[row.attendanceStatus] || '미제출') },
+    { label: '불참 사유', render: row => row.attendanceReason },
+    { label: '회의록 확인', render: row => row.attendanceStatus === 'ATTEND' ? '참석자(면제)' : row.confirmed ? '확인 완료' : '미확인' },
+  ]}>{children}</RecordViews>
 }

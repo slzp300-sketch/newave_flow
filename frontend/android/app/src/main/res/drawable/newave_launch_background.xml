@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape><solid android:color="#063190" /></shape></item>
+    <!-- The background fills the window independently of the logo's aspect ratio. -->
+    <item android:width="208dp" android:height="174dp" android:gravity="center"
+        android:drawable="@drawable/newave_splash_logo" />
+</layer-list>

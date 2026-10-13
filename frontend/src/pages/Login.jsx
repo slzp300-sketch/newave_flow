@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '../api/auth'
@@ -86,18 +86,17 @@ export default function Login() {
           <KakaoButton onClick={handleKakao} loading={kakaoLoading} disabled={loading} />
           <p className="mt-2 text-center text-xs leading-relaxed text-gray-500">기존 회원은 이메일 로그인 후 내 정보에서 먼저 연결해 주세요.</p>
         </div>}
-        <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500 mt-4">
-          <button onClick={() => navigate('/find-account?tab=id')} className="min-h-11 rounded-xl px-4 py-3">아이디 찾기</button>
+        <nav aria-label="회원가입 및 계정 찾기" className="mt-4 flex flex-wrap items-center justify-center gap-x-1 border-t border-gray-200 pt-3 text-xs text-gray-500">
+          <Link to="/signup" className="inline-flex min-h-11 items-center px-2 py-2 font-semibold text-primary-700">회원가입</Link>
           <span aria-hidden="true" className="text-gray-300">·</span>
-          <button onClick={() => navigate('/find-account?tab=pw')} className="min-h-11 rounded-xl px-4 py-3">비밀번호 찾기</button>
-        </div>
-        <div className="mt-5 pt-5 border-t border-gray-200 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-500">
-          <span>처음 오셨나요?</span> <button onClick={() => navigate('/signup')} className="min-h-11 rounded-xl px-5 py-3 font-semibold text-primary-700">회원가입</button>
-        </div>
-        <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
-          <button className="min-h-11 px-4 py-3 rounded-xl" onClick={() => navigate('/support')}>고객지원</button>
-          <button className="min-h-11 px-4 py-3 rounded-xl" onClick={() => navigate('/account-deletion')}>계정 삭제 요청</button>
-        </div>
+          <Link to="/find-account?tab=id" className="inline-flex min-h-11 items-center px-2 py-2">아이디 찾기</Link>
+          <span aria-hidden="true" className="text-gray-300">·</span>
+          <Link to="/find-account?tab=pw" className="inline-flex min-h-11 items-center px-2 py-2">비밀번호 찾기</Link>
+        </nav>
+        <nav aria-label="이용 지원" className="mt-1 flex flex-wrap justify-center gap-x-4 text-[11px] text-gray-500">
+          <Link className="inline-flex min-h-11 items-center px-2 py-2" to="/support">고객지원</Link>
+          <Link className="inline-flex min-h-11 items-center px-2 py-2" to="/account-deletion">계정 삭제 요청</Link>
+        </nav>
         <p className="text-center mt-5 text-xs tracking-[.2em] text-gray-400">NEWAVE YOUTH MINISTRY</p>
       </div>
     </div>

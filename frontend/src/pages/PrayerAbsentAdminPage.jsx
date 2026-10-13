@@ -9,6 +9,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { BookOpen, CheckCircle2, Clock, Users, Loader2 } from 'lucide-react'
 import Header from '../components/layout/Header'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
+import RecordViews from '../components/common/RecordViews'
 import Card from '../components/common/Card'
 import { prayerVoteApi } from '../api/prayerVote'
 import { formatUpdatedAt, weekLabels } from '../utils/date'
@@ -39,6 +41,7 @@ function getPastMondays(count = 8) {
 }
 
 export default function PrayerAbsentAdminPage() {
+  const [viewMode, setViewMode] = useViewMode('admin-prayer-absent', 'large')
   const [search, setSearch] = useState('')
   const [selectedWeek, setSelectedWeek] = useState(getThisWeekMonday())
   const [activeGrade, setActiveGrade] = useState('전체')
@@ -149,9 +152,10 @@ export default function PrayerAbsentAdminPage() {
 
         {/* 불참 목록 */}
         <div>
-          <div className="flex items-center justify-between px-1 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1 mb-3">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">불참 교사 명단</p>
             <p className="text-xs font-bold text-primary-500">{filteredList.length}명 검색됨</p>
+            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
           </div>
 
           {isLoading ? (
@@ -162,6 +166,17 @@ export default function PrayerAbsentAdminPage() {
               <p className="text-sm font-bold text-gray-300">조건에 맞는 결과가 없습니다</p>
             </Card>
           ) : (
+            <RecordViews mode={viewMode} rows={filteredList} columns={[
+              { label: '교사', render: vote => vote.teacherName },
+              { label: '학년', render: vote => vote.teacherGrade },
+              { label: '불참 사유', render: vote => vote.reason },
+              { label: '마지막 수정', render: vote => formatUpdatedAt(vote.updatedAt) },
+              { label: '필사 확인 일시', render: vote => formatUpdatedAt(vote.scriptureCopySubmittedAt) },
+              { label: '필사 제출', action: true, render: vote => <button type="button" aria-pressed={vote.scriptureCopySubmitted}
+                aria-label={`${vote.teacherName} 필사 제출 확인`} disabled={toggleMutation.isPending || queryReadState([absentQuery]) !== 'ready'}
+                onClick={() => toggleMutation.mutate({ id: vote.id, submitted: !vote.scriptureCopySubmitted })}
+                className="min-h-11 w-full rounded-xl border border-primary-200 px-3 py-2 text-xs font-semibold">{vote.scriptureCopySubmitted ? '제출 완료' : '미제출'}</button> },
+            ]}>
             <div className="flex flex-col gap-6">
               {sortedGrades.map(grade => (
                 <div key={grade} className="flex flex-col gap-2.5">
@@ -240,6 +255,7 @@ export default function PrayerAbsentAdminPage() {
                 </div>
               ))}
             </div>
+            </RecordViews>
           )}
         </div>
 
