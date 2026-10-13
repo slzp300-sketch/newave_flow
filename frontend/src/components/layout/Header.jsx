@@ -44,7 +44,7 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
       )}
       <h1 className="flex flex-1 min-w-0 items-center gap-2 py-2 text-lg font-semibold text-gray-900 tracking-tight">
         {title === 'Newave Flow' ? <Brand /> : <>
-          <FeatureIcon path={location.pathname} size={24} className="text-primary-700" />
+          <span className="brand-heading-icon"><FeatureIcon path={location.pathname} size={20} /></span>
           <span className="min-w-0 break-keep">{title}</span>
         </>}
       </h1>

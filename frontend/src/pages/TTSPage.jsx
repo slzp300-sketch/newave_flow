@@ -1,5 +1,6 @@
-import { useState, useMemo, useSyncExternalStore, useId } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useMemo, useSyncExternalStore } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ChevronRight } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
 import { Reveal, AnimatedValue, ProgressFill, SelectionMark } from '../components/common/Motion'
 import { addDays, format } from 'date-fns'
@@ -79,8 +80,6 @@ export function CheckTab({ embedded = false }) {
   const queryClient = useQueryClient()
   const [offset, setOffset] = useState(0)
   const [saveError, setSaveError] = useState('')
-  const [expanded, setExpanded] = useState(false)
-  const detailId = useId()
   const todayStr = useToday()
   const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const offline = useSyncExternalStore(onlineManager.subscribe, () => !onlineManager.isOnline())
@@ -202,10 +201,10 @@ export function CheckTab({ embedded = false }) {
         </div>
       ) : (
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
-          {embedded ? <section aria-label="오늘의 영성체크" className="brand-card relative rounded-2xl border border-primary-200 p-4">
+          {embedded ? <section aria-label="오늘의 영성체크" className="brand-card brand-card-accent relative rounded-2xl border border-primary-200 p-4">
             <AttentionDot show={ready && todayChecks.length > 0 && (saving || todayChecks.some(c => !c.checked))} label="오늘 영성체크가 남았어요" />
             <div className="flex items-center justify-between gap-2 pr-2">
-              <h2 className="flex items-center gap-2 text-base font-semibold"><FeatureIcon path="/tts" size={24} />오늘의 영성체크</h2>
+              <h2 className="flex items-center gap-2 text-base font-semibold"><span className="brand-heading-icon"><FeatureIcon path="/tts" size={20} /></span>오늘의 영성체크</h2>
               <span className="shrink-0 text-xs text-gray-500">{format(new Date(todayStr + 'T12:00:00'), 'M.d')}</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -228,7 +227,7 @@ export function CheckTab({ embedded = false }) {
               onToggleDay={toggleDay} disabled={!ready || offline}
               days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr, today: i === todayIdx }))} />
             <div className="mt-3 flex gap-2">
-              <button type="button" aria-expanded={expanded} aria-controls={detailId} onClick={() => setExpanded(!expanded)} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">{expanded ? '기록 수정 접기' : '이번 주 기록 수정'}</button>
+              <Link to="/tts?tab=check" className="brand-action flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-primary-200 px-2 text-xs">이번 주 기록 수정<ChevronRight size={14} aria-hidden="true" /></Link>
               <button type="button" onClick={() => navigate('/tts?tab=stats&view=mine')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">내 상세 통계</button>
             </div>
           </section> : <ScoreCard
@@ -248,7 +247,7 @@ export function CheckTab({ embedded = false }) {
             }
           />}
 
-          <div id={detailId} hidden={embedded && !expanded} className="space-y-3">
+          {!embedded && <div className="space-y-3">
           {dayQuestions.length > 0 && (
             <DayGrid
               items={dayQuestions}
@@ -264,23 +263,9 @@ export function CheckTab({ embedded = false }) {
           {otherQuestions.length > 0 && (
             <Card>
               <div className="flex items-center justify-between mb-3">
-                <p className="font-bold text-gray-900 text-sm">예배 · 모임</p>
+                <h2 className="brand-section-title font-bold text-gray-900 text-sm">예배 · 모임</h2>
                 <p className="text-xs font-bold text-gray-400">참석하면 체크</p>
               </div>
-              {embedded ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {otherQuestions.map(({ q, color }) => (
-                    <CheckTile
-                      key={q.id}
-                      q={q}
-                      color={color}
-                      checked={isLinked(q) ? !!linked[q.id] : answers[q.id] === true}
-                      disabled={!isLinked(q) && (!ready || offline)}
-                      onClick={() => isLinked(q) ? navigate(LINK_PATH[q.linkType]) : toggleAttend(q)}
-                    />
-                  ))}
-                </div>
-              ) : (
               <div className="flex flex-col gap-2">
                 {otherQuestions.map(({ q, color }) => isLinked(q) ? (
                   <CheckRow
@@ -303,11 +288,10 @@ export function CheckTab({ embedded = false }) {
                   />
                 ))}
               </div>
-              )}
             </Card>
           )}
 
-          </div>
+          </div>}
           {!embedded && (
             <p className="text-xs text-gray-400 font-medium text-center mt-1">
               지난 주 기록도 언제든 고칠 수 있어요. 아직 오지 않은 요일은 체크할 수 없어요.
@@ -321,9 +305,9 @@ export function CheckTab({ embedded = false }) {
 function ScoreCard({ score, maxScore, weekLabel, items, message, saveStatus }) {
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
   return (
-    <Reveal className="brand-card rounded-2xl border border-primary-100 bg-primary-50 p-5">
+    <Reveal className="brand-card brand-card-accent rounded-2xl border border-primary-100 bg-primary-50 p-5">
       <div className="flex justify-between gap-3 items-center text-sm">
-        <h2 className="font-medium text-primary-800">{weekLabel} 점수</h2>
+        <h2 className="brand-section-title font-medium text-primary-800">{weekLabel} 점수</h2>
         <span className="text-xs text-gray-500" role="status" aria-live="polite"><span key={saveStatus} className="motion-fade inline-flex items-center gap-1">{saveStatus}</span></span>
       </div>
       <p className="mt-3"><strong className="text-4xl font-semibold tabular-nums"><AnimatedValue value={score} /></strong><span className="ml-2 text-sm text-gray-500">/ {maxScore}점</span></p>
@@ -344,7 +328,7 @@ function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle, disab
   return (
     <Card>
       <div className="flex items-center justify-between mb-4 gap-2">
-        <h2 className="font-semibold text-base">매일의 말씀과 기도</h2>
+        <h2 className="brand-section-title font-semibold text-base">매일의 말씀과 기도</h2>
         <span className="text-xs text-gray-500">탭하면 저장돼요</span>
       </div>
       <div className="flex flex-col gap-5">
@@ -396,23 +380,6 @@ function CheckRow({ q, color, checked, sub, onClick, disabled }) {
       <span className={`text-xs font-bold flex-shrink-0 ${checked ? color.text : 'text-gray-300'}`}>+{pointsOf(q)}</span>
       <span className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
         {checked && <SelectionMark size={16} className="text-white" />}
-      </span>
-    </button>
-  )
-}
-
-// 홈용 참석·자동 반영 항목 작은 타일 (2칸 배치)
-function CheckTile({ q, color, checked, onClick, disabled }) {
-  return (
-    <button aria-pressed={checked}
-      onClick={onClick}
-      disabled={disabled}
-      className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all active:scale-[0.97] ${checked ? color.soft : 'bg-gray-50'}`}
-    >
-      <span className="text-base flex-shrink-0">{q.emoji}</span>
-      <span className="flex-1 min-w-0 text-xs font-bold text-gray-900 truncate">{q.title}</span>
-      <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
-        {checked && <SelectionMark size={12} className="text-white" />}
       </span>
     </button>
   )

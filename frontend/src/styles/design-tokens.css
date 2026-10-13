@@ -18,6 +18,13 @@
   .ui-list-icon-green { @apply bg-primary-50 text-primary-700; }
   .ui-admin-intro { @apply border-l-4 border-secondary-500 pl-3; }
   .ui-section-title { @apply text-base font-semibold tracking-tight text-gray-900; }
+  .brand-section-title, .ui-section-title { @apply flex items-center gap-2; }
+  .brand-section-title::before, .ui-section-title::before {
+    content: '';
+    @apply block h-3.5 w-1 shrink-0 rounded-full bg-secondary-500;
+  }
+  .brand-heading-icon { @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary-100 text-secondary-700; }
+  .brand-heading-icon:empty { display: none; }
   /* Keep existing component names while retiring the old glass treatment. */
   .glass-card { @apply bg-white border border-gray-200; }
   .glass-effect { @apply bg-white border-b border-gray-200; }

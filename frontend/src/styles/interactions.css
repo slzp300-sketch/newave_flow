@@ -41,6 +41,11 @@
     --surface-ink: white;
   }
   :root .brand-selection { background-color: var(--surface-bg); }
+  /* Decorative accents sit on cards and headings, separate from control state. */
+  :root .brand-card.brand-card-accent {
+    background-image: linear-gradient(135deg, white, theme('colors.primary.50') 55%, theme('colors.secondary.100'));
+    border-top-color: theme('colors.secondary.300');
+  }
   :root .brand-nav-indicator { background-color: theme('colors.secondary.100'); }
   :root :is(.brand-action-icon, .brand-action > .ui-list-icon) { background-color: inherit; color: inherit; }
 

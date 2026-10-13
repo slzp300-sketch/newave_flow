@@ -23,7 +23,7 @@ export default function HomeSchedule() {
   return <section aria-label="이번 주 일정" className="brand-card relative rounded-2xl border border-primary-200 p-4">
     <AttentionDot show={hasNew} label="이번 주 새로 확인할 일정이 있어요" />
     <div className="mb-3 flex items-center justify-between gap-2 pr-2">
-      <h2 className="flex items-center gap-2 text-base font-semibold"><FeatureIcon path="/calendar" size={24} />이번 주 일정</h2>
+      <h2 className="flex items-center gap-2 text-base font-semibold"><span className="brand-heading-icon"><FeatureIcon path="/calendar" size={20} /></span>이번 주 일정</h2>
       <Link to="/calendar" className="brand-action flex min-h-11 items-center rounded-lg px-2 text-xs">달력 보기</Link>
     </div>
     <p className="mb-3 text-xs text-gray-500">{format(dateOf(from), 'M.d')} – {format(dateOf(to), 'M.d')} · 새 일정은 눌러서 확인해 주세요</p>

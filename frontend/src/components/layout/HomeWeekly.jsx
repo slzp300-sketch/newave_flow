@@ -11,7 +11,7 @@ export default function HomeWeekly() {
   const failed = reads.filter(q => q.isError || q.fetchStatus === 'paused')
   return <section aria-label="이번 주 할 일">
     <div className="flex items-center justify-between mb-2">
-      <h2 className="text-base font-semibold">이번 주 할 일</h2>
+      <h2 className="brand-section-title text-base font-semibold">이번 주 할 일</h2>
       <Link to="/checklist" className="brand-action flex min-h-11 items-center rounded-lg px-3 text-sm">전체 보기</Link>
     </div>
     {!!failed.length && <QueryNotice queries={failed} label="할 일 현황" />}
