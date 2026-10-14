@@ -55,6 +55,13 @@ class PrivacyDeletionTest {
                   ('11111111-1111-4111-8111-000000000003',repeat('c',64),repeat('c',43),'LOGIN','AUTHORIZED',false,CURRENT_TIMESTAMP+interval '1 hour',NULL,'9102');
                 """);
             // Recreate old constraints then validate the actual additive migration, including rollback.
+            s.execute("INSERT INTO community_agreements(user_id,policy_version,accepted_at) VALUES(1,'2026-10-14-v1',CURRENT_TIMESTAMP)");
+            s.execute("""
+                INSERT INTO content_reports(id,revision,reporter_id,request_id,target_type,content_type,target_id,subject,reason,details,status,action,moderator_id,created_at,updated_at) VALUES
+                (1,0,1,'11111111-1111-4111-8111-000000000011','CONTENT','OTHER',NULL,'Own synthetic safety report','PRIVACY','Remove with reporter','OPEN','NONE',NULL,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
+                (2,0,2,'11111111-1111-4111-8111-000000000012','USER',NULL,1,'Reported synthetic account','PRIVACY','Remove with reported account','OPEN','NONE',NULL,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
+                (3,0,2,'11111111-1111-4111-8111-000000000013','CONTENT','OTHER',NULL,'Preserved synthetic safety report','PRIVACY','Retain other content; anonymize moderator','RESOLVED','REVIEWED',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+                """);
             for(String t:List.of("attendances","daily_reports","student_memos","deactivation_requests")) s.execute("ALTER TABLE "+t+" ALTER COLUMN teacher_id SET NOT NULL");
             s.execute("CREATE TABLE schema_migrations(version varchar(80) PRIMARY KEY,applied_at timestamp DEFAULT CURRENT_TIMESTAMP)");
             var before=EventReadMigrationTest.fingerprints(c);
@@ -132,6 +139,9 @@ class PrivacyDeletionTest {
             assertEquals("1",scalar(c,"SELECT count(*) FROM students"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM kakao_auth_flows"));
             assertEquals("9102",scalar(c,"SELECT kakao_id FROM kakao_auth_flows"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM community_agreements"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports WHERE moderator_id IS NULL AND reporter_id=2"));
             System.out.println("Privacy deletion PASS: verified review, stale/unknown inputs rollback, shared records, personal history, missing-user authentication, archived authors");
             s.execute("DROP TABLE daily_reports_before_class_merge; DROP TABLE schema_migrations");
         }

@@ -32,7 +32,7 @@ async function verifyErased(client,plan){
  const quote=s=>'"'+s.replaceAll('"','""')+'"';
  const columns=(await client.query("SELECT table_name,column_name,data_type FROM information_schema.columns WHERE table_schema='public'")).rows;
  for(const col of columns){
-  if(['user_id','teacher_id','actor_id'].includes(col.column_name)&&['bigint','integer','smallint'].includes(col.data_type)){
+  if(['user_id','teacher_id','actor_id','reporter_id','moderator_id'].includes(col.column_name)&&['bigint','integer','smallint'].includes(col.data_type)){
    const r=await client.query(`SELECT 1 FROM public.${quote(col.table_name)} WHERE ${quote(col.column_name)}=$1 LIMIT 1`,[plan.userId]);
    if(r.rowCount)throw Error('Restored account reference requires review');
   }
@@ -44,6 +44,9 @@ async function verifyErased(client,plan){
   if(r.rowCount)throw Error('Restored personal text requires review');
  }
  const legacy=plan.legacyDecisions.filter(r=>r.remove).map(r=>r.id);
+ if(columns.some(c=>c.table_name==='content_reports') &&
+   (await client.query("SELECT 1 FROM content_reports WHERE target_type='USER' AND target_id=$1 LIMIT 1",[plan.userId])).rowCount)
+  throw Error('Restored reported account reference requires review');
  if((await client.query('SELECT 1 FROM tts_legacy_score WHERE id=ANY($1::bigint[]) LIMIT 1',[legacy])).rowCount||
     (await client.query("SELECT 1 FROM event_participants WHERE kind='TEACHER' AND person_id=$1 LIMIT 1",[plan.userId])).rowCount)
   throw Error('Restored personal snapshot requires review');

@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { parentPath } from '../../utils/navigation'
-import { ChevronLeft, LogOut, Bell } from 'lucide-react'
+import { ChevronLeft, LogOut, Bell, Flag } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '../../store/authStore'
 import { notificationApi } from '../../api/notifications'
@@ -51,6 +51,10 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
       
       <div className="flex items-center gap-1 shrink-0">
         {right}
+        {user && !location.pathname.startsWith('/safety/') && location.pathname !== '/community-guidelines' && (
+          <button onClick={() => navigate('/safety/report', { state: { subject: title } })}
+            className="icon-button" aria-label="콘텐츠·사용자 신고" title="콘텐츠·사용자 신고"><Flag size={19} /></button>
+        )}
         {user && showNotification && (
           <button
             onClick={() => navigate('/notifications')}

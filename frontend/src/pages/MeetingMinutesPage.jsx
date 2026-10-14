@@ -8,6 +8,7 @@ import {
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
+import ReportLink from '../components/common/ReportLink'
 import { formatDate } from '../utils/date'
 import client from '../api/client'
 import useAuthStore from '../store/authStore'
@@ -125,6 +126,7 @@ export default function MeetingMinutesPage() {
               <div className="prose prose-sm max-w-none text-gray-600 mb-8 whitespace-pre-wrap leading-relaxed">
                 {selected.content}
               </div>
+              <div className="mb-4"><ReportLink contentType="MEETING_MINUTE" targetId={selected.id} label="이 회의록 신고" /></div>
 
               {selected.videoLink && (
                 <div className="mb-8">

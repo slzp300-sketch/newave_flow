@@ -44,6 +44,9 @@ const ProfilePage = lazy(() => import('../pages/ProfilePage'))
 const NotificationPage = lazy(() => import('../pages/NotificationPage'))
 const AccountHelpPage = lazy(() => import('../pages/AccountHelpPage'))
 const PrivacyPage = lazy(() => import('../pages/PrivacyPage'))
+const CommunityPolicyPage = lazy(() => import('../pages/CommunityPolicyPage'))
+const ContentReportPage = lazy(() => import('../pages/ContentReportPage'))
+const ContentReportsAdminPage = lazy(() => import('../pages/ContentReportsAdminPage'))
 
 // JWT payload의 exp(초 단위)를 보고 만료됐거나 bufferMs 이내에 만료되는지 확인
 function isTokenExpiredOrExpiring(token, bufferMs = 5 * 60 * 1000) {
@@ -202,6 +205,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
   { path: '/support', element: <AccountHelpPage /> },
   { path: '/account-deletion', element: <AccountHelpPage deletion /> },
   { path: '/privacy', element: <PrivacyPage /> },
+  { path: '/community-guidelines', element: <CommunityPolicyPage /> },
   {
     element: <RequireAuth />,
     children: [
@@ -226,10 +230,12 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
           { path: '/class-manage',         element: <ClassManagePage /> },
           { path: '/notifications',        element: <NotificationPage /> },
           { path: '/profile',              element: <ProfilePage /> },
+          { path: '/safety/report', element: <ContentReportPage /> },
           {
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
             children: [
               { path: '/admin',             element: <AdminDashboard /> },
+              { path: '/admin/content-reports', element: <ContentReportsAdminPage /> },
               { path: '/admin/teachers',    element: <AdminTeacherManagePage /> },
               { path: '/admin/calendar',    element: <CalendarAdminPage /> },
               { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },

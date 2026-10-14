@@ -81,6 +81,7 @@ class ReviewIsolationHttpTest {
             JsonNode session = login(http, base, ReviewFixtures.TEACHER_EMAIL);
             assertEquals(1, session.at("/user/id").asLong());
             String teacher = session.get("accessToken").asText();
+            http.postForObject(base + "/safety/agreement", request(Map.of("version", CommunitySafetyService.POLICY_VERSION, "accepted", true), teacher), String.class);
             String admin = login(http, base, ReviewFixtures.ADMIN_EMAIL).get("accessToken").asText();
             assertTrue(http.exchange(base + "/students/my-class", HttpMethod.GET, request(null, teacher), String.class).getBody().contains("가상학생"));
             assertThrows(HttpClientErrorException.Unauthorized.class, () -> http.getForObject(base + "/students/1", String.class));

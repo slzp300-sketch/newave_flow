@@ -99,6 +99,11 @@ public class User {
         this.isActive = true;
     }
 
+    public void suspend() {
+        this.isActive = false;
+        revokeSessions();
+    }
+
     public void updateLargeFont(boolean largeFont) {
         this.largeFont = largeFont;
     }

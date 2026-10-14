@@ -16,6 +16,13 @@ import AttentionDot from '../components/common/AttentionDot'
 
 const COMMON_GROUPS = [
   {
+    title: '안전한 이용',
+    items: [
+      { to: '/safety/report', title: '콘텐츠·사용자 신고' },
+      { to: '/community-guidelines', title: '이용수칙' },
+    ],
+  },
+  {
     title: '주간 체크',
     items: [
       { to: '/checklist',      title: '주간 체크 현황' },
@@ -47,6 +54,8 @@ const COMMON_GROUPS = [
 const ADMIN_ROLES = ['ADMIN', 'PASTOR', 'EXECUTIVE']
 
 const DESCRIPTIONS = {
+  '/safety/report': '문제 신고와 내 처리 내역 확인',
+  '/community-guidelines': '함께 지키는 기록·사진 이용수칙',
   '/checklist': '이번 주 제출할 항목을 한눈에',
   '/attendance': '우리 반 주일 출석과 결석 사유',
   '/tts': '매일 영성 체크 · 주간 및 분기 통계',

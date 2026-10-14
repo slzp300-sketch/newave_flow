@@ -13,6 +13,7 @@ import { classesApi } from '../api/classes'
 import { usersApi } from '../api/users'
 import { tagsApi } from '../api/tags'
 import useAuthStore from '../store/authStore'
+import ReportLink from '../components/common/ReportLink'
 
 // ── 상수 ────────────────────────────────────────────────
 const GRADES = ['전체', '중1', '중2', '중3', '고1', '고2', '고3']
@@ -766,6 +767,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
           </div>
 
           <div className="px-4 flex flex-col gap-2">
+            <ReportLink targetType="USER" targetId={teacher.id} label="이 사용자·프로필 사진 신고" />
             {teacher.className && <InfoRow label="담당 반" value={teacher.className} icon="📚" />}
             {teacher.birthDate && (
               <InfoRow label="나이"

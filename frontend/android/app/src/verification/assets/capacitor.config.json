@@ -1,0 +1,7 @@
+{
+  "appId": "app.newaveflow.mobile.verification",
+  "appName": "뉴웨이브 플로우 검수",
+  "webDir": "dist-native",
+  "server": { "hostname": "localhost", "androidScheme": "https", "cleartext": true },
+  "android": { "allowMixedContent": true, "webContentsDebuggingEnabled": true, "adjustMarginsForEdgeToEdge": "auto" }
+}

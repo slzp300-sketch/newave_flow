@@ -31,6 +31,7 @@ class EventReadMigrationTest {
             // The current application also expects later additive migrations.
             s.execute(Files.readString(Path.of("db/migrations/V003__event_attendance_window.sql")));
             s.execute(Files.readString(Path.of("db/migrations/V006__kakao_login.sql")));
+            s.execute(Files.readString(Path.of("db/migrations/V008__community_safety.sql")));
         }
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,

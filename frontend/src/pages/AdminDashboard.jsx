@@ -16,6 +16,7 @@ export const MENU_GROUPS = [
     bg: 'bg-primary-50',
     desc: '신규가입, 권한, 반 배정, 제적 관리',
     items: [
+      { to: '/admin/content-reports', title: '신고 관리', desc: '콘텐츠·사용자 신고 검토와 보호 조치' },
       { to: '/admin/pending-users', title: '가입 승인 대기', desc: '신규 가입 교사 승인 및 반 배정' },
       { to: '/admin/teachers', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
       { to: '/admin/class-assignment', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
     <div className="flex flex-col gap-5 px-4 py-5">
       <AdminIntro title="관리할 업무를 찾아보세요" description="회원과 반 배정부터 출석·활동 기록까지 한곳에서 관리합니다." />
       <SearchField label="관리자 메뉴 검색" value={search} onChange={setSearch} placeholder="교사, 출석, TTS 등 메뉴 검색" />
-      {search.trim() && <FilterResults count={count} total={13} unit="개" filtered onReset={() => setSearch('')} />}
+      {search.trim() && <FilterResults count={count} total={MENU_GROUPS.reduce((n, group) => n + group.items.length, 0)} unit="개" filtered onReset={() => setSearch('')} />}
       {!count && <AdminEmpty />}
       {groups.map((group, idx) => <Reveal key={group.title} delay={idx * 0.04}>
         <section className="brand-card overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">

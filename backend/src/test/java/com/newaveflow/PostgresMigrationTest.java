@@ -109,6 +109,7 @@ class PostgresMigrationTest {
         assertEquals(originalAttendance, checksum("event_student_attendances"));
         assertThrows(SQLException.class, () -> execute(kakao));
 
+        execute(Files.readString(Path.of("db/migrations/V008__community_safety.sql")));
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,
                 "--spring.datasource.username="+user,"--spring.datasource.password="+password,

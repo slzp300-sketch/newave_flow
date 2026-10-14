@@ -17,7 +17,7 @@ BEGIN
     'events','event_attendances','event_participants','event_reads','event_student_attendances','meeting_minutes',
     'meeting_minute_confirms','meeting_attendances','notifications','prayer_votes','evangelism_assignments',
     'evangelism_groups','evangelism_group_members','evangelism_schedules','tts_answers','tts_data_entry','tts_item',
-    'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','schema_migrations')) THEN
+    'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','community_agreements','content_reports','schema_migrations')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -31,7 +31,7 @@ BEGIN
       AND (ns.nspname<>'public' OR src.relname NOT IN ('teacher_classes','user_tags','event_reads','notifications',
         'meeting_minute_confirms','checklist_records','prayer_votes','meeting_attendances','evangelism_assignments',
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
-        'deactivation_requests','event_student_attendances','kakao_auth_flows'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'deactivation_requests','event_student_attendances','kakao_auth_flows','community_agreements','content_reports'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
   SELECT * INTO target FROM users WHERE id=req.user_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Target account is absent; reconcile the receipt before retry'; END IF;
   IF target.created_at IS DISTINCT FROM req.expected_created_at THEN RAISE EXCEPTION 'Target account identity changed'; END IF;
@@ -71,6 +71,14 @@ BEGIN
   DELETE FROM tts_legacy_score WHERE id IN (SELECT id FROM privacy_legacy_decisions WHERE remove);
   IF to_regclass('public.kakao_auth_flows') IS NOT NULL THEN
     DELETE FROM kakao_auth_flows WHERE user_id=req.user_id OR kakao_id=to_jsonb(target)->>'kakao_id';
+  END IF;
+  IF to_regclass('public.community_agreements') IS NOT NULL THEN
+    DELETE FROM community_agreements WHERE user_id=req.user_id;
+  END IF;
+  IF to_regclass('public.content_reports') IS NOT NULL THEN
+    -- Account-linked safety records contain no shared attendance/TTS outcomes.
+    DELETE FROM content_reports WHERE reporter_id=req.user_id OR (target_type='USER' AND target_id=req.user_id);
+    UPDATE content_reports SET moderator_id=NULL WHERE moderator_id=req.user_id;
   END IF;
   FOR item IN SELECT * FROM (VALUES
     ('teacher_classes','teacher_id'),('user_tags','user_id'),('event_reads','user_id'),

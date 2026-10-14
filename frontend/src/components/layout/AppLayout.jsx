@@ -6,6 +6,7 @@ import BottomNav from './BottomNav'
 import usePullToRefresh from '../../hooks/usePullToRefresh'
 import useAuthStore from '../../store/authStore'
 import { useMotionPreference } from '../common/Motion'
+import CommunitySafetyGate from '../common/CommunitySafetyGate'
 
 export default function AppLayout() {
   const { pathname } = useLocation()
@@ -73,7 +74,7 @@ export default function AppLayout() {
         style={pullDistance > 0 ? { transform: `translateY(${pullDistance * 0.4}px)` } : undefined}
       >
         {/* Opacity only: a transform here would displace fixed submit bars and dialogs. */}
-        <div key={pathname} className="motion-page"><Outlet /></div>
+        <div key={pathname} className="motion-page"><CommunitySafetyGate><Outlet /></CommunitySafetyGate></div>
       </main>
       <BottomNav />
     </div>

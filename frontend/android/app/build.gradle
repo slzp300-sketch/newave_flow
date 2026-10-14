@@ -7,8 +7,9 @@ android {
         applicationId "app.newaveflow.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
+        versionCode 5
         versionName "1.0.0"
+        manifestPlaceholders = [authScheme: 'newaveflow']
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,6 +18,15 @@ android {
         }
     }
     buildTypes {
+        verification {
+            initWith debug
+            applicationIdSuffix '.verification'
+            versionNameSuffix '-verification'
+            matchingFallbacks = ['debug']
+            manifestPlaceholders = [authScheme: 'newaveflowverification']
+            resValue 'string', 'app_name', '뉴웨이브 플로우 검수'
+            resValue 'string', 'title_activity_main', '뉴웨이브 플로우 검수'
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
