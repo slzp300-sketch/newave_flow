@@ -33,6 +33,28 @@ test('missing-account residual audit runs on an isolated PostgreSQL database', {
   await assert.rejects(verifyErased(c,plan),/snapshot/);
   await c.query("DELETE FROM event_participants; INSERT INTO tts_legacy_score VALUES(1,'옛 별명')");
   await assert.rejects(verifyErased(c,{...plan,legacyDecisions:[{id:1,remove:true}]}),/snapshot/);
+  await c.query('DELETE FROM tts_legacy_score');
+  // Optional V011-style residual state: another account's valid hashes contain the erased name.
+  // Omit format CHECKs here deliberately to exercise the audit's schema-drift rejection too.
+  await c.query(`CREATE TABLE apple_notification_subjects(subject_hash varchar(64) PRIMARY KEY,user_id bigint);
+   CREATE TABLE apple_notification_receipts(jti_hash varchar(64) PRIMARY KEY,subject_hash varchar(64) NOT NULL REFERENCES apple_notification_subjects(subject_hash) ON DELETE CASCADE,payload_hash varchar(64) NOT NULL);
+   INSERT INTO apple_notification_subjects VALUES(repeat('c',61)||'ada',2);
+   INSERT INTO apple_notification_receipts VALUES(repeat('3',61)||'ada',repeat('c',61)||'ada',repeat('7',61)||'ada')`);
+  const collisionPlan={...plan,identifiers:[...plan.identifiers,'Ada']};
+  const hashes=async()=>({subjects:(await c.query('SELECT * FROM apple_notification_subjects ORDER BY subject_hash')).rows,receipts:(await c.query('SELECT * FROM apple_notification_receipts ORDER BY jti_hash')).rows});
+  const preservedHashes=await hashes();
+  await verifyErased(c,collisionPlan);
+  assert.deepEqual(await hashes(),preservedHashes,'A name fragment inside another account\'s SHA-256 data must not block or change restored data');
+  await c.query('UPDATE apple_notification_subjects SET user_id=1');
+  await assert.rejects(verifyErased(c,collisionPlan),/account reference/,'Hash exceptions must never skip the numeric owner audit');
+  await c.query('UPDATE apple_notification_subjects SET user_id=2');
+  await c.query("ALTER TABLE apple_notification_subjects ADD COLUMN unreviewed_note text; UPDATE apple_notification_subjects SET unreviewed_note='Ada retained plaintext'");
+  await assert.rejects(verifyErased(c,collisionPlan),/personal text/,'New plaintext fields in a reviewed table must still be audited');
+  await c.query('UPDATE apple_notification_subjects SET unreviewed_note=NULL');
+  await c.query("UPDATE apple_notification_receipts SET payload_hash='Ada'");
+  await assert.rejects(verifyErased(c,collisionPlan),/Invalid restored Apple notification hash/);
+  await c.query("UPDATE apple_notification_receipts SET payload_hash=repeat('7',61)||'ada'");
+  await verifyErased(c,collisionPlan);
  }finally{await c.query('ROLLBACK');await c.end();}
 });
 test('rehearsal never commits, and database rejection rolls back',async()=>{

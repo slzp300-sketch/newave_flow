@@ -13,6 +13,7 @@ import java.util.Base64;
 @Component @ConfigurationProperties(prefix = "apple") @Getter @Setter
 public class AppleProperties {
     private boolean enabled;
+    private boolean notificationsEnabled;
     private String clientId = "";
     private String teamId = "";
     private String keyId = "";
@@ -20,8 +21,11 @@ public class AppleProperties {
     private String tokenEncryptionKey = "";
 
     @PostConstruct public void validate() {
-        if (!enabled) return;
-        if (!clientId.matches("[A-Za-z0-9][A-Za-z0-9.-]{2,199}") || !teamId.matches("[A-Z0-9]{10}") || !keyId.matches("[A-Z0-9]{10}")) {
+        if (enabled && !notificationsEnabled) throw new IllegalStateException("Apple login requires server-to-server notifications to be enabled.");
+        if (!enabled && !notificationsEnabled) return;
+        if (!clientId.matches("[A-Za-z0-9][A-Za-z0-9.-]{2,199}")) throw new IllegalStateException("Apple notifications require the exact primary app client identifier.");
+        if (!enabled) return; // Notification verification uses public keys, including while login is temporarily disabled.
+        if (!teamId.matches("[A-Z0-9]{10}") || !keyId.matches("[A-Z0-9]{10}")) {
             throw new IllegalStateException("Apple client, team and key identifiers are required when enabled.");
         }
         signingKey();

@@ -26,6 +26,8 @@ public class ReviewEnvironmentGuard implements EnvironmentPostProcessor, Ordered
         if (env.getProperty("app.seed.enabled", Boolean.class, false)
                 || env.getProperty("kakao.enabled", Boolean.class, false)
                 || env.getProperty("apple.enabled", Boolean.class, false)
+                || env.getProperty("apple.notifications-enabled", Boolean.class, false)
+                || env.getProperty("APPLE_NOTIFICATIONS_ENABLED", Boolean.class, false)
                 || !env.getProperty("apple.private-key", "").isBlank()
                 || !env.getProperty("apple.token-encryption-key", "").isBlank()
                 || env.getProperty("spring.h2.console.enabled", Boolean.class, false)

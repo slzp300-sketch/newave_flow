@@ -33,7 +33,7 @@ class AppleClientTest {
         client = new AppleClient(config, transport, keys, json);
     }
     AppleProperties configured() {
-        var result = new AppleProperties(); result.setEnabled(true); result.setClientId("app.example.synthetic"); result.setTeamId("SYNTHETIC1"); result.setKeyId("SYNTHETIC2");
+        var result = new AppleProperties(); result.setEnabled(true); result.setNotificationsEnabled(true); result.setClientId("app.example.synthetic"); result.setTeamId("SYNTHETIC1"); result.setKeyId("SYNTHETIC2");
         result.setPrivateKey(Base64.getEncoder().encodeToString(ec.getPrivate().getEncoded()));
         byte[] encryption = new byte[32]; new SecureRandom().nextBytes(encryption);
         result.setTokenEncryptionKey(Base64.getEncoder().encodeToString(encryption)); return result;
@@ -99,6 +99,9 @@ class AppleClientTest {
         config.validate();
         var empty = new AppleProperties(); assertDoesNotThrow(empty::validate);
         empty.setEnabled(true); assertThrows(IllegalStateException.class, empty::validate);
+        config.setNotificationsEnabled(false); assertThrows(IllegalStateException.class, config::validate); config.setNotificationsEnabled(true);
+        var notificationOnly = new AppleProperties(); notificationOnly.setNotificationsEnabled(true); notificationOnly.setClientId("app.example.synthetic");
+        assertDoesNotThrow(notificationOnly::validate);
         config.setPrivateKey("invalid-private-key"); assertThrows(IllegalStateException.class, config::validate);
         config = configured(); config.setTokenEncryptionKey(Base64.getEncoder().encodeToString(new byte[16]));
         assertThrows(IllegalStateException.class, config::validate);

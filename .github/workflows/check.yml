@@ -131,6 +131,15 @@ jobs:
           RUN_APPLE_DELETION_MIGRATION: 'true'
           APPLE_DELETION_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_apple_deletion_ci
         run: bash gradlew test --tests com.newaveflow.AppleDeletionMigrationTest --no-daemon
+      - name: Create isolated Apple notification migration database
+        env:
+          PGPASSWORD: migration-ci-only
+        run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_apple_notifications_ci'
+      - name: Verify optional Apple notifications and durable replay handling
+        env:
+          RUN_APPLE_NOTIFICATION_MIGRATION: 'true'
+          APPLE_NOTIFICATION_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_apple_notifications_ci
+        run: bash gradlew test --tests com.newaveflow.AppleNotificationMigrationTest --no-daemon
       - name: Create isolated community safety rehearsal database
         env:
           PGPASSWORD: migration-ci-only

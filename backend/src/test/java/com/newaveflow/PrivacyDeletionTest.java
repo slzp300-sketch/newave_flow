@@ -119,6 +119,90 @@ class PrivacyDeletionTest {
                 INSERT INTO privacy_exceptions VALUES('users','name',4,md5('삭제대상가상'),'별도로 본인 확인한 동명이인 계정 보존');
                 INSERT INTO privacy_exceptions VALUES('tts_legacy_score','name',3,md5('삭제대상가상'),'원본 대조로 다른 교사의 점수임을 확인');
                 """;
+            // Production can remain on V010 with notifications disabled: erasure must not require V011.
+            assertNull(scalar(c,"SELECT to_regclass('public.apple_notification_subjects')"));
+            assertNull(scalar(c,"SELECT to_regclass('public.apple_notification_receipts')"));
+            var beforeOptionalNotifications=EventReadMigrationTest.fingerprints(c);
+            c.setAutoCommit(false);
+            try {
+                s.execute(inputs+review+namesakeReview);
+                s.execute(deletion);
+                assertEquals("0",scalar(c,"SELECT count(*) FROM users WHERE id=1"));
+                assertEquals("1",scalar(c,"SELECT count(*) FROM users WHERE id=2"));
+                assertEquals("PRESENT",scalar(c,"SELECT status FROM attendances WHERE id=1 AND teacher_id IS NULL"));
+                assertEquals("1",scalar(c,"SELECT count(*) FROM apple_accounts WHERE user_id=2"));
+            } finally {c.rollback();c.setAutoCommit(true);}
+            assertEquals(beforeOptionalNotifications,EventReadMigrationTest.fingerprints(c),"The V011-absent rehearsal must leave every original row intact after rollback");
+
+            // Hibernate created the V010 schema above; apply the real optional V011 SQL, not a test copy.
+            s.execute("INSERT INTO schema_migrations(version) VALUES('V010__account_deletion_requests')");
+            var beforeV011=EventReadMigrationTest.fingerprints(c);
+            s.execute(Files.readString(Path.of("db/migrations/V011__apple_notifications.sql")));
+            var afterV011=EventReadMigrationTest.fingerprints(c);
+            beforeV011.remove("schema_migrations");afterV011.remove("schema_migrations");
+            afterV011.remove("apple_notification_subjects");afterV011.remove("apple_notification_receipts");
+            assertEquals(beforeV011,afterV011,"Optional notification migration must preserve all existing rows");
+            s.execute("""
+                INSERT INTO apple_notification_subjects(subject_hash,user_id,consent_revoked_at,account_deleted_at,grant_started_at,updated_at) VALUES
+                  (repeat('a',64),1,100,NULL,90,CURRENT_TIMESTAMP),
+                  (repeat('b',64),1,NULL,120,110,CURRENT_TIMESTAMP),
+                  (repeat('c',61)||'ada',2,NULL,NULL,130,CURRENT_TIMESTAMP),
+                  (repeat('d',64),NULL,140,NULL,NULL,CURRENT_TIMESTAMP);
+                INSERT INTO apple_notification_receipts(jti_hash,subject_hash,payload_hash,received_at) VALUES
+                  (repeat('1',64),repeat('a',64),repeat('5',64),CURRENT_TIMESTAMP),
+                  (repeat('2',64),repeat('b',64),repeat('6',64),CURRENT_TIMESTAMP),
+                  (repeat('3',61)||'ada',repeat('c',61)||'ada',repeat('7',61)||'ada',CURRENT_TIMESTAMP),
+                  (repeat('4',64),repeat('d',64),repeat('8',64),CURRENT_TIMESTAMP);
+                """);
+            // Short real names can occur inside unrelated hashes; they must not block erasure.
+            s.execute("""
+                INSERT INTO users(id,name,email,password,role,is_active,large_font,auth_version,created_at)
+                  VALUES(5,'Ada','hash-collision@example.invalid','synthetic','TEACHER',true,false,0,'2026-10-03');
+                INSERT INTO apple_notification_subjects(subject_hash,user_id,updated_at)
+                  VALUES(repeat('e',64),5,CURRENT_TIMESTAMP);
+                INSERT INTO apple_notification_receipts(jti_hash,subject_hash,payload_hash,received_at)
+                  VALUES(repeat('9',64),repeat('e',64),repeat('a',64),CURRENT_TIMESTAMP);
+                """);
+            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true);";
+            // Excluding reviewed hash fields must not exclude a future plaintext field in the same table.
+            assertRejectedDeletionRestoresAllRows(c,inputs,collisionReview,deletion,
+                "ALTER TABLE apple_notification_subjects ADD COLUMN unreviewed_note text; UPDATE apple_notification_subjects SET unreviewed_note='Ada retained plaintext' WHERE user_id=2;",
+                "Retained text needs review");
+            String collisionSubjectsSql="SELECT jsonb_agg(to_jsonb(t) ORDER BY subject_hash)::text FROM apple_notification_subjects t WHERE user_id IS DISTINCT FROM 5";
+            String collisionReceiptsSql="SELECT jsonb_agg(to_jsonb(t) ORDER BY jti_hash)::text FROM apple_notification_receipts t WHERE subject_hash<>repeat('e',64)";
+            String collisionSubjectsBefore=scalar(c,collisionSubjectsSql), collisionReceiptsBefore=scalar(c,collisionReceiptsSql);
+            c.setAutoCommit(false);
+            try {
+                s.execute(inputs+collisionReview);
+                s.execute(deletion);
+                assertEquals("0",scalar(c,"SELECT count(*) FROM users WHERE id=5"));
+                assertEquals("0",scalar(c,"SELECT count(*) FROM apple_notification_subjects WHERE user_id=5"));
+                assertEquals("0",scalar(c,"SELECT count(*) FROM apple_notification_receipts WHERE subject_hash=repeat('e',64)"));
+                assertEquals(collisionSubjectsBefore,scalar(c,collisionSubjectsSql),"Unrelated subject hashes containing the deleted name must survive unchanged");
+                assertEquals(collisionReceiptsBefore,scalar(c,collisionReceiptsSql),"Unrelated receipt and payload hashes containing the deleted name must survive unchanged");
+                c.commit();
+            } finally {c.rollback();c.setAutoCommit(true);}
+            // A retained-text error happens after notification removal and must roll everything back.
+            assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
+                "UPDATE student_memos SET sketch='subject@example.invalid must be reviewed' WHERE id=1;",
+                "Retained text needs review");
+            // Even a previously reviewed table may not gain a new cascade into shared data.
+            for(String unsafeNotificationForeignKey:List.of(
+                "ALTER TABLE events ADD COLUMN notification_owner varchar(64) REFERENCES apple_notification_subjects(subject_hash) ON DELETE CASCADE; UPDATE events SET notification_owner=repeat('a',64);",
+                "ALTER TABLE events ADD COLUMN notification_receipt varchar(64) REFERENCES apple_notification_receipts(jti_hash) ON DELETE CASCADE; UPDATE events SET notification_receipt=repeat('1',64);",
+                "ALTER TABLE apple_notification_subjects ADD COLUMN unreviewed_owner bigint REFERENCES users(id) ON DELETE CASCADE; UPDATE apple_notification_subjects SET unreviewed_owner=1 WHERE user_id=2;")) {
+                assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
+                    unsafeNotificationForeignKey,"Unreviewed Apple notification foreign key");
+            }
+            assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
+                "CREATE TABLE unknown_notification_owner(id bigint PRIMARY KEY, subject_hash varchar(64) REFERENCES apple_notification_subjects(subject_hash) ON DELETE CASCADE); INSERT INTO unknown_notification_owner VALUES(1,repeat('a',64));",
+                "Unreviewed table");
+            assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
+                "DROP TABLE apple_notification_receipts;","Incomplete Apple notification privacy schema");
+            String preservedNotificationSubjectsSql="SELECT jsonb_agg(to_jsonb(t) ORDER BY subject_hash)::text FROM apple_notification_subjects t WHERE user_id IS DISTINCT FROM 1";
+            String preservedNotificationReceiptsSql="SELECT jsonb_agg(to_jsonb(t) ORDER BY jti_hash)::text FROM apple_notification_receipts t WHERE subject_hash IN (SELECT subject_hash FROM apple_notification_subjects WHERE user_id IS DISTINCT FROM 1)";
+            String preservedNotificationSubjects=scalar(c,preservedNotificationSubjectsSql);
+            String preservedNotificationReceipts=scalar(c,preservedNotificationReceiptsSql);
             var userRepo=app.getBean(UserRepository.class);
             assertTrue(userRepo.findById(1L).isPresent());
             var tokens=app.getBean(JwtTokenProvider.class);
@@ -153,13 +237,29 @@ class PrivacyDeletionTest {
             assertEquals("synthetic.apple.preserved",scalar(c,"SELECT subject FROM apple_accounts"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM apple_auth_flows"));
             assertEquals("synthetic.apple.preserved",scalar(c,"SELECT subject FROM apple_auth_flows"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM apple_notification_subjects WHERE user_id=1"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM apple_notification_receipts WHERE subject_hash IN (repeat('a',64),repeat('b',64))"));
+            assertEquals("2",scalar(c,"SELECT count(*) FROM apple_notification_subjects"));
+            assertEquals("2",scalar(c,"SELECT count(*) FROM apple_notification_receipts"));
+            assertEquals(preservedNotificationSubjects,scalar(c,preservedNotificationSubjectsSql),"Other accounts and unlinked replay protection must survive unchanged");
+            assertEquals(preservedNotificationReceipts,scalar(c,preservedNotificationReceiptsSql),"Other accounts and unlinked event receipts must survive unchanged");
             assertEquals("1",scalar(c,"SELECT count(*) FROM account_deletion_requests WHERE status='COMPLETED' AND user_id IS NULL AND user_created_at IS NULL AND completed_at IS NOT NULL"));
             assertEquals("0",scalar(c,"SELECT count(*) FROM community_agreements"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports WHERE moderator_id IS NULL AND reporter_id=2"));
-            System.out.println("Privacy deletion PASS: verified review, stale/unknown inputs rollback, shared records, personal history, missing-user authentication, archived authors");
-            s.execute("DROP TABLE daily_reports_before_class_merge; DROP TABLE schema_migrations");
+            System.out.println("Privacy deletion PASS: verified review, stale/unknown inputs rollback, optional Apple notification schema and cascade guards, shared records, personal history, missing-user authentication, archived authors");
+            s.execute("DROP TABLE apple_notification_receipts; DROP TABLE apple_notification_subjects; DROP TABLE daily_reports_before_class_merge; DROP TABLE schema_migrations");
         }
+    }
+    private static void assertRejectedDeletionRestoresAllRows(Connection c,String inputs,String reviewed,String deletion,String unsafe,String expectedMessage)throws SQLException {
+        var before=EventReadMigrationTest.fingerprints(c);
+        c.setAutoCommit(false);
+        try(var s=c.createStatement()) {
+            s.execute(inputs+reviewed+unsafe);
+            SQLException failure=assertThrows(SQLException.class,()->s.execute(deletion));
+            assertTrue(failure.getMessage().contains(expectedMessage),failure.getMessage());
+        } finally {c.rollback();c.setAutoCommit(true);}
+        assertEquals(before,EventReadMigrationTest.fingerprints(c),"Rejected deletion must roll back all notification and existing data");
     }
     static String scalar(Connection c,String sql)throws SQLException{return EventReadMigrationTest.scalar(c,sql);}
 }

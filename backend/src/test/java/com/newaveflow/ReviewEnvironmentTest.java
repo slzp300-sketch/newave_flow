@@ -27,7 +27,7 @@ class ReviewEnvironmentTest {
             var env = safeEnvironment(); env.setProperty(key, "synthetic-not-allowed");
             assertThrows(IllegalStateException.class, () -> guard.postProcessEnvironment(env, null), key);
         }
-        for (String key : new String[]{"app.seed.enabled", "kakao.enabled", "apple.enabled", "spring.h2.console.enabled", "jwt.accept-legacy-issuer"}) {
+        for (String key : new String[]{"app.seed.enabled", "kakao.enabled", "apple.enabled", "apple.notifications-enabled", "APPLE_NOTIFICATIONS_ENABLED", "spring.h2.console.enabled", "jwt.accept-legacy-issuer"}) {
             var env = safeEnvironment(); env.setProperty(key, "true");
             assertThrows(IllegalStateException.class, () -> guard.postProcessEnvironment(env, null), key);
         }

@@ -3,6 +3,7 @@ package com.newaveflow.controller;
 import com.newaveflow.dto.meeting.MeetingMinuteCreateRequest;
 import com.newaveflow.dto.meeting.MeetingMinuteDto;
 import com.newaveflow.entity.*;
+import com.newaveflow.exception.AppException;
 import com.newaveflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/minutes")
 @RequiredArgsConstructor
-@lombok.extern.slf4j.Slf4j
 public class MeetingMinuteController {
 
     private final MeetingMinuteRepository meetingMinuteRepository;
@@ -30,11 +30,7 @@ public class MeetingMinuteController {
 
     @GetMapping
     public ResponseEntity<List<MeetingMinuteDto>> getAll(@AuthenticationPrincipal User currentUser) {
-        boolean isAdmin = currentUser.getRole() == User.Role.PASTOR || 
-                          currentUser.getRole() == User.Role.EXECUTIVE || 
-                          currentUser.getRole() == User.Role.ADMIN;
-        
-        List<MeetingMinute> minutes = isAdmin 
+        List<MeetingMinute> minutes = canManage(currentUser)
             ? meetingMinuteRepository.findAllByOrderByMeetingDateDesc()
             : meetingMinuteRepository.findAllByIsActiveTrueOrderByMeetingDateDesc();
         
@@ -59,7 +55,6 @@ public class MeetingMinuteController {
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping
     public ResponseEntity<MeetingMinute> create(@RequestBody MeetingMinuteCreateRequest request) {
-        log.debug("Creating meeting minutes: {}", request);
         MeetingMinute minutes = MeetingMinute.builder()
             .title(request.title())
             .content(request.content())
@@ -102,7 +97,9 @@ public class MeetingMinuteController {
 
     @PostMapping("/{id}/confirm")
     public ResponseEntity<Void> confirm(@PathVariable Long id, @AuthenticationPrincipal User currentUser) {
-        MeetingMinute minutes = meetingMinuteRepository.findById(id).orElseThrow();
+        MeetingMinute minutes = meetingMinuteRepository.findById(id)
+            .filter(minute -> minute.isActive() || canManage(currentUser))
+            .orElseThrow(() -> AppException.notFound("회의록을 찾을 수 없습니다."));
         
         if (meetingMinuteConfirmRepository.findByMinutesAndUser(minutes, currentUser).isEmpty()) {
             meetingMinuteConfirmRepository.save(MeetingMinuteConfirm.builder()
@@ -114,9 +111,11 @@ public class MeetingMinuteController {
         return ResponseEntity.noContent().build();
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @GetMapping("/{id}/status")
     public ResponseEntity<List<Map<String, Object>>> getStatus(@PathVariable Long id) {
-        MeetingMinute minutes = meetingMinuteRepository.findById(id).orElseThrow();
+        MeetingMinute minutes = meetingMinuteRepository.findById(id)
+            .orElseThrow(() -> AppException.notFound("회의록을 찾을 수 없습니다."));
         List<User> teachers = userRepository.findByIsActiveTrue().stream()
             .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
             .toList();
@@ -146,5 +145,10 @@ public class MeetingMinuteController {
         }).toList();
         
         return ResponseEntity.ok(result);
+    }
+
+    private static boolean canManage(User user) {
+        return user.getRole() == User.Role.ADMIN || user.getRole() == User.Role.PASTOR
+            || user.getRole() == User.Role.EXECUTIVE;
     }
 }

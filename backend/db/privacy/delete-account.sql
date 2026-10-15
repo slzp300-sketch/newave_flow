@@ -18,7 +18,8 @@ BEGIN
     'meeting_minute_confirms','meeting_attendances','notifications','prayer_votes','evangelism_assignments',
     'evangelism_groups','evangelism_group_members','evangelism_schedules','tts_answers','tts_data_entry','tts_item',
     'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','apple_accounts','apple_auth_flows',
-    'account_deletion_requests','community_agreements','content_reports','schema_migrations')) THEN
+    'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
+    'apple_notification_receipts','schema_migrations')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -33,7 +34,26 @@ BEGIN
         'meeting_minute_confirms','checklist_records','prayer_votes','meeting_attendances','evangelism_assignments',
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
         'deactivation_requests','event_student_attendances','kakao_auth_flows','apple_accounts','apple_auth_flows',
-        'account_deletion_requests','community_agreements','content_reports'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+  -- V011 is optional. When present, only its reviewed owner and receipt edges may cascade.
+  IF (to_regclass('public.apple_notification_subjects') IS NULL) <>
+     (to_regclass('public.apple_notification_receipts') IS NULL) THEN
+    RAISE EXCEPTION 'Incomplete Apple notification privacy schema';
+  END IF;
+  IF EXISTS(SELECT 1 FROM pg_constraint fk JOIN pg_class src ON src.oid=fk.conrelid
+    JOIN pg_namespace ns ON ns.oid=src.relnamespace
+    WHERE fk.contype='f' AND (
+      fk.confrelid=to_regclass('public.apple_notification_receipts')
+      OR (fk.confrelid=to_regclass('public.apple_notification_subjects') AND (
+        ns.nspname<>'public' OR src.relname<>'apple_notification_receipts' OR fk.confdeltype<>'c'
+        OR fk.conkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='subject_hash')]::smallint[]
+        OR fk.confkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='subject_hash')]::smallint[]))
+      OR (fk.conrelid=to_regclass('public.apple_notification_subjects') AND fk.confrelid='public.users'::regclass AND (
+        fk.confdeltype<>'c'
+        OR fk.conkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='user_id')]::smallint[]
+        OR fk.confkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[])))) THEN
+    RAISE EXCEPTION 'Unreviewed Apple notification foreign key';
+  END IF;
   SELECT * INTO target FROM users WHERE id=req.user_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Target account is absent; reconcile the receipt before retry'; END IF;
   IF target.created_at IS DISTINCT FROM req.expected_created_at THEN RAISE EXCEPTION 'Target account identity changed'; END IF;
@@ -94,6 +114,13 @@ BEGIN
   IF to_regclass('public.apple_accounts') IS NOT NULL THEN
     DELETE FROM apple_accounts WHERE user_id=req.user_id;
   END IF;
+  IF to_regclass('public.apple_notification_subjects') IS NOT NULL THEN
+    -- Delete only subjects linked to this account, including all client/subject scopes.
+    -- Unlinked replay state and other accounts' state remain intact.
+    DELETE FROM apple_notification_receipts WHERE subject_hash IN (
+      SELECT subject_hash FROM apple_notification_subjects WHERE user_id=req.user_id);
+    DELETE FROM apple_notification_subjects WHERE user_id=req.user_id;
+  END IF;
   IF to_regclass('public.community_agreements') IS NOT NULL THEN
     DELETE FROM community_agreements WHERE user_id=req.user_id;
   END IF;
@@ -131,6 +158,19 @@ BEGIN
   FOR col IN SELECT c.table_name,c.column_name FROM information_schema.columns c
     WHERE c.table_schema='public' AND c.data_type IN ('text','character varying','character')
       AND c.table_name NOT IN ('schema_migrations') LOOP
+    -- V011 stores only SHA-256 values in these exact fields. A name fragment in a hash
+    -- is not retained plaintext; ownership erasure above determines which hashes to remove.
+    -- Validate the surviving format and keep scanning every other/new text column.
+    IF (col.table_name,col.column_name) IN (
+      ('apple_notification_subjects','subject_hash'),
+      ('apple_notification_receipts','subject_hash'),
+      ('apple_notification_receipts','jti_hash'),
+      ('apple_notification_receipts','payload_hash')) THEN
+      EXECUTE format('SELECT count(*) FROM public.%I WHERE %I IS NULL OR %I::text !~ ''^[0-9a-f]{64}$''',
+        col.table_name,col.column_name,col.column_name) INTO hits;
+      IF hits>0 THEN RAISE EXCEPTION 'Invalid Apple notification hash in %.%',col.table_name,col.column_name; END IF;
+      CONTINUE;
+    END IF;
     IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name=col.table_name AND column_name='id') THEN
       EXECUTE format('SELECT count(*) FROM public.%I t WHERE EXISTS(SELECT 1 FROM privacy_identifiers p WHERE strpos(lower(t.%I::text),lower(p.value))>0)',col.table_name,col.column_name) INTO hits;
     ELSE

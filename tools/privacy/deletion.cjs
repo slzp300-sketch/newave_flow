@@ -3,6 +3,12 @@ const sqlRoot=path.resolve(__dirname,'../../backend/db/privacy');
 const inputs=fs.readFileSync(path.join(sqlRoot,'request-tables.sql'),'utf8');
 const deletion=fs.readFileSync(path.join(sqlRoot,'delete-account.sql'),'utf8');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const appleNotificationHashes=new Set([
+ 'apple_notification_subjects.subject_hash',
+ 'apple_notification_receipts.subject_hash',
+ 'apple_notification_receipts.jti_hash',
+ 'apple_notification_receipts.payload_hash',
+]);
 function validate(plan){
  if(!UUID.test(plan.requestId)||!Number.isSafeInteger(plan.userId)||plan.userId<=0||!plan.expectedCreatedAt)throw Error('Invalid reviewed request');
  for(const k of ['identityVerified','handoverReviewed','externalCopiesReviewed','freeTextReviewed'])if(plan[k]!==true)throw Error('Review incomplete');
@@ -37,6 +43,13 @@ async function verifyErased(client,plan){
    if(r.rowCount)throw Error('Restored account reference requires review');
   }
   if(!['text','character varying','character'].includes(col.data_type)||col.table_name==='schema_migrations')continue;
+  // These reviewed V011 fields contain SHA-256 values, not plaintext identifiers.
+  // Numeric owner checks above still apply, and future text columns are still audited.
+  if(appleNotificationHashes.has(`${col.table_name}.${col.column_name}`)){
+   const invalid=await client.query(`SELECT 1 FROM public.${quote(col.table_name)} WHERE ${quote(col.column_name)} IS NULL OR ${quote(col.column_name)}::text !~ '^[0-9a-f]{64}$' LIMIT 1`);
+   if(invalid.rowCount)throw Error('Invalid restored Apple notification hash requires review');
+   continue;
+  }
   const hasId=columns.some(c=>c.table_name===col.table_name&&c.column_name==='id');
   const exception=hasId?' AND NOT EXISTS(SELECT 1 FROM jsonb_to_recordset($2::jsonb) AS e("table" text,"column" text,id bigint,"beforeMd5" text) WHERE e."table"=$3 AND e."column"=$4 AND e.id::text=t.id::text AND e."beforeMd5"=md5(coalesce(t.'+quote(col.column_name)+"::text,'')))":'';
   const values=hasId?[plan.identifiers,JSON.stringify(plan.exceptions),col.table_name,col.column_name]:[plan.identifiers];
