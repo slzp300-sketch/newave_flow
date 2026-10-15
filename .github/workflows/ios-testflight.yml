@@ -31,6 +31,7 @@ on:
         type: string
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: ios-testflight
   cancel-in-progress: false
@@ -52,6 +53,10 @@ jobs:
         run: python3 tools/ios/release-preflight.py
       - name: Test release validation without credentials
         run: python3 -B -m unittest discover -s tools/ios -p 'test_*.py'
+      - name: Require successful regression and native checks on this exact main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/ios/release-readiness.py
   signed:
     needs: preflight
     runs-on: macos-15
@@ -80,6 +85,10 @@ jobs:
           npm test
           npm run ios:sync
           npm run ios:verify
+      - name: Recheck main and required jobs after environment approval and web build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/ios/release-readiness.py
       - name: Sign, inspect and export with the installed distribution profile
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

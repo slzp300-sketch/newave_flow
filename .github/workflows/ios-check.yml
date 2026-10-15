@@ -33,10 +33,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Select an installed supported Xcode
         run: python3 tools/ios/select-xcode.py
-      - name: Inspect the SDK and iPhone simulator
+      - name: Inspect the SDK and select iPhone and iPad simulators
         run: |
           xcodebuild -version
-          python3 tools/ios/select-simulator.py
+          python3 tools/ios/select-simulator.py --family iphone --env-var IOS_SIMULATOR_ID \
+            --report frontend/.verification/ios/iphone-simulator.json
+          python3 tools/ios/select-simulator.py --family ipad --env-var IOS_IPAD_SIMULATOR_ID \
+            --report frontend/.verification/ios/ipad-simulator.json
       - name: Test release guards with synthetic profiles and app bundles
         run: python3 -B -m unittest discover -s tools/ios -p 'test_*.py'
       - name: Install the locked dependencies
@@ -73,30 +76,40 @@ jobs:
             -derivedDataPath .verification/ios/DerivedData \
             -resultBundlePath .verification/ios/native-tests.xcresult \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES test 2>&1 | tee .verification/ios/native-tests.log
-      - name: Launch the Release app and capture its initial screen
-        timeout-minutes: 8
+      - name: Check the Release login screen on iPhone and iPad compatibility mode
+        timeout-minutes: 12
         working-directory: frontend
         run: |
           set -x
-          xcrun simctl bootstatus "$IOS_SIMULATOR_ID" -b
-          xcrun simctl install "$IOS_SIMULATOR_ID" .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
-          xcrun simctl launch --terminate-running-process "$IOS_SIMULATOR_ID" app.newaveflow.mobile
           xcrun swiftc ../tools/ios/check-launch-screen.swift -o .verification/ios/check-launch-screen
           .verification/ios/check-launch-screen --self-test
-          deadline=$((SECONDS + 90))
-          screen_ready=false
-          while (( SECONDS < deadline )); do
-            xcrun simctl io "$IOS_SIMULATOR_ID" screenshot .verification/ios/iphone-launch.png
-            if .verification/ios/check-launch-screen .verification/ios/iphone-launch.png; then
-              screen_ready=true
-              break
+          for family in iphone ipad; do
+            if [[ "$family" == iphone ]]; then
+              simulator="$IOS_SIMULATOR_ID"
+              screenshot=.verification/ios/iphone-launch.png
+            else
+              simulator="$IOS_IPAD_SIMULATOR_ID"
+              screenshot=.verification/ios/ipad-compatibility-launch.png
             fi
-            sleep 5
+            xcrun simctl bootstatus "$simulator" -b
+            xcrun simctl install "$simulator" .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
+            xcrun simctl launch --terminate-running-process "$simulator" app.newaveflow.mobile
+            deadline=$((SECONDS + 90))
+            screen_ready=false
+            while (( SECONDS < deadline )); do
+              xcrun simctl io "$simulator" screenshot "$screenshot"
+              if .verification/ios/check-launch-screen "$screenshot"; then
+                screen_ready=true
+                break
+              fi
+              sleep 5
+            done
+            if [[ "$screen_ready" != true ]]; then
+              echo "The Release login screen on $family did not become visible within 90 seconds."
+              exit 1
+            fi
+            xcrun simctl shutdown "$simulator"
           done
-          if [[ "$screen_ready" != true ]]; then
-            echo "The Release login screen did not become visible within 90 seconds."
-            exit 1
-          fi
       - name: Save native test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -106,7 +119,7 @@ jobs:
             frontend/.verification/ios/*.log
             frontend/.verification/ios/*.png
             frontend/.verification/ios/*.plist
-            frontend/.verification/ios/bundle-inspection.json
+            frontend/.verification/ios/*.json
             frontend/.verification/ios/*.xcresult
           if-no-files-found: ignore
           retention-days: 5

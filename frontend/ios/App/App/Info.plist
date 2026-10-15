@@ -36,9 +36,9 @@
 		</dict>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>프로필과 보고서에 직접 촬영한 사진을 첨부할 때 카메라를 사용합니다.</string>
+	<string>교사 또는 학생의 프로필 사진을 직접 촬영할 때 카메라를 사용합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>프로필과 보고서에 첨부할 사진을 선택할 때 사용합니다.</string>
+	<string>교사 또는 학생의 프로필 사진으로 사용할 사진을 선택할 때 사용합니다.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

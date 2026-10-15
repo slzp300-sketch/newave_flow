@@ -8,6 +8,7 @@
 - `tools/ios/verify-bundle.py`: 앱 Bundle ID·버전·지원 기기·콜백·사진 권한 안내, 자체 UserDefaults 사유, Capacitor/Cordova의 manifest 실제 포함 여부를 검사한다. 광고 추적 선언·원격 개발 서버·네이티브 응답 로그·웹 번들의 개인 키/소스맵이 들어오면 실패한다. App Privacy 신고나 실제 네트워크 분석을 대신하지 않는다.
 - `ios-testflight.yml`: main에서만 직접 실행하는 서명·IPA 내보내기와 선택 업로드 경로. 자동 push/PR 실행은 없고, 업로드 기본값은 `false`다. 현재 저장소 활성화 변수·보호 환경·Apple 비밀값은 이 작업에서 설정하지 않았다.
 - `test_release_tools.py`: 가상 프로파일·앱 번들로 잘못된 팀, wildcard/개발/Ad Hoc/기업 배포, 만료, Apple 권한 누락, 입력 변조, 추적 선언, 최종 SDK manifest 누락 등을 거절하는지 검사한다.
+- `release-readiness.py`: GitHub 읽기 전용 API로 선택한 SHA가 현재 main인지, 그 SHA의 최신 회귀·iOS 실행과 필수 작업이 전부 성공했는지 검사한다. 이전 커밋/이전 성공 실행·PR·다른 저장소 결과와 건너뛴 작업으로 통과시키지 않는다. 환경 승인 대기와 웹 빌드 후, Apple 서명 도구 실행 직전에도 다시 확인한다. API를 확인할 수 없으면 서명 단계로 넘어가지 않는다.
 
 ```sh
 python3 -B -m unittest discover -s tools/ios -p 'test_*.py'
@@ -38,10 +39,10 @@ Capacitor와 Cordova는 Apple의 개인정보 manifest 필수 SDK 목록에 있�
 
 ## 서명 빌드와 선택 업로드 실행
 
-1. 같은 main 커밋의 웹·백엔드 회귀 검사와 `iOS native checks`가 성공했는지 확인한다. 기능이 변경됐으면 해당 SHA로 다시 검수한다.
+1. 같은 main 커밋의 `Regression checks` 5개 작업과 `iOS native checks`가 성공해야 한다. 문서·백업 도구만 바뀌어 iOS 자동 실행이 생략된 커밋도, 서명하려면 Actions에서 `iOS native checks`를 main으로 직접 실행한다. workflow 이름만 같거나 이전 SHA가 성공한 것은 인정하지 않는다. 자동 검사 API가 실패하거나 최신 실행이 진행 중/실패/취소 상태면 먼저 해결한다. 검사 증거는 각 workflow의 같은 실행 시도에서 모두 성공해야 하므로, 실패 후에는 `Re-run all jobs`로 전체 작업을 다시 실행한다. 실패한 작업만 재실행하면 이전 시도의 성공 작업은 인정하지 않아 서명이 차단된다.
 2. Actions의 `iOS signed build and optional TestFlight upload`를 main에서 실행한다. `commit_sha`는 현재 main의 전체 40자리 SHA, `version`은 예를 들어 `1.0.0`, `build_number`는 App Store Connect에서 아직 사용하지 않은 증가 번호를 입력한다. workflow가 원격의 번호 중복을 예약·조회하지는 않는다. 처음에는 `upload=false`로 서명·내보내기를 확인한다.
 3. `apple_login=false`는 기본 UI/이메일 흐름의 내부 검수용이다. 최종 App Store 제출 준비 완료를 뜻하지 않는다. `true`는 서버 V011·Apple 설정·실제 수신 주소·능력 활성화·기기 검증 준비가 끝난 뒤 선택한다. 이 경우 프로파일과 최종 앱의 Apple 로그인 entitlement가 모두 일치해야 한다.
-4. Environment 승인 화면에서 SHA·버전·번호·Apple 로그인·업로드 선택을 확인하고 승인한다. `upload=true`에는 추가로 `UPLOAD TO TESTFLIGHT` 문구가 필요하다. 이는 Apple 계정에 해당 IPA를 보내는 동작이다. 테스터 초대·외부 베타 심사·정식 심사 제출·공개 출시는 실행하지 않는다.
+4. Environment 승인 화면에서 SHA·버전·번호·Apple 로그인·업로드 선택을 확인하고 승인한다. 대기 중 main이 바뀌거나 최신 검사 결과가 바뀌면 서명 직전 검사에서 멈춘다. `upload=true`에는 추가로 `UPLOAD TO TESTFLIGHT` 문구가 필요하다. 이는 Apple 계정에 해당 IPA를 보내는 동작이다. 테스터 초대·외부 베타 심사·정식 심사 제출·공개 출시는 실행하지 않는다.
 5. 프로파일의 앱·팀·배포 유형·만료와 인증서 일치를 검사하고 임시 Keychain에서 서명한다. Archive와 내보낸 IPA 모두 Bundle ID·버전·개인정보 파일·서명·권한을 다시 확인한다. 배포용 인증서·프로파일은 24시간 이상 유효해야 한다.
 6. 선택 업로드는 먼저 Apple의 바이너리 검증을 호출하고, 같은 SHA256의 IPA를 전송한다. 업로드 명령 성공 후에도 App Store Connect의 처리 결과·경고·TestFlight 빌드 표시를 직접 확인한다. 중단/시간 초과일 때는 중복 업로드 전에 해당 버전·빌드가 이미 들어갔는지 먼저 확인한다. [Apple 빌드 업로드와 처리](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
 
