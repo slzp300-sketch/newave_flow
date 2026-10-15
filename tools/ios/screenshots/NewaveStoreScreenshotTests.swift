@@ -79,7 +79,7 @@ final class NewaveStoreScreenshotTests: XCTestCase {
             try await Task.sleep(nanoseconds: 1_500_000_000)
             try Data(filename.utf8).write(to: directory.appendingPathComponent("ready"), options: .atomic)
             let acknowledged = directory.appendingPathComponent(filename + ".captured")
-            let captureDeadline = Date().addingTimeInterval(45)
+            let captureDeadline = Date().addingTimeInterval(120)
             while !FileManager.default.fileExists(atPath: acknowledged.path) && Date() < captureDeadline {
                 try await Task.sleep(nanoseconds: 200_000_000)
             }

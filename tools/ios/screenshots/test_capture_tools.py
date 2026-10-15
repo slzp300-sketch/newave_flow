@@ -24,6 +24,24 @@ def png(width, height, color=2):
 
 
 class ScreenshotPreparation(unittest.TestCase):
+    def test_reinstalled_test_host_uses_the_new_container_and_recovers_its_diagnostics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            before, after = output / 'container-before-install', output / 'container-after-xcode-install'
+            latest = after / 'tmp/newave-store-screenshots'
+            latest.mkdir(parents=True)
+            (latest / 'ready').write_text('01-home.png')
+            (latest / '01-home.png.json').write_text('{"timeZone":"Asia/Seoul","fixture":{"errors":[]}}')
+            module = capture['current_handoff'].__globals__
+            with patch.dict(module, {'OUTPUT': output}), patch.dict(module, {'command': unittest.mock.Mock(side_effect=[str(before), str(after), str(after)])}):
+                initial = capture['current_handoff']('synthetic-device')
+                self.assertFalse((initial / 'ready').exists())
+                refreshed = capture['current_handoff']('synthetic-device')
+                self.assertEqual((refreshed / 'ready').read_text(), '01-home.png')
+                # Final recovery must rediscover the current container even if the only saved path is stale.
+                capture['collect_diagnostics']('synthetic-device', [initial])
+                self.assertTrue((output / 'diagnostics/01-home.png.json').exists())
+
     def test_native_command_keeps_failure_and_timeout_evidence_without_hiding_failure(self):
         failures = [subprocess.TimeoutExpired(['synthetic-simctl'], 180, output=b'initial boot pending'),
                     subprocess.CalledProcessError(1, ['synthetic-simctl'], output='synthetic install failed')]

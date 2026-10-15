@@ -50,6 +50,26 @@ def inspect_png(path):
     return {'width': width, 'height': height, 'sha256': hashlib.sha256(raw).hexdigest()}
 
 
+def current_handoff(simulator):
+    container = Path(command(['xcrun', 'simctl', 'get_app_container', simulator, 'app.newaveflow.mobile', 'data']))
+    return container / 'tmp/newave-store-screenshots'
+
+
+def collect_diagnostics(simulator, handoffs):
+    # xcodebuild can reinstall the test host and replace its data-container UUID.
+    try:
+        latest = current_handoff(simulator)
+        handoffs = [path for path in handoffs if path != latest] + [latest]
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        print(f'Final container lookup failed: {type(error).__name__}; preserving known diagnostics', flush=True)
+    diagnostics = OUTPUT / 'diagnostics'
+    diagnostics.mkdir(exist_ok=True)
+    for handoff in handoffs:
+        if handoff.is_dir():
+            for item in handoff.glob('*.json'):
+                shutil.copyfile(item, diagnostics / item.name)
+
+
 def main():
     if sys.platform != 'darwin' or os.environ.get('GITHUB_ACTIONS') != 'true':
         raise SystemExit('Capture only on the disposable macOS simulator runner')
@@ -67,8 +87,7 @@ def main():
     # Keep the real simulator status bar. Cosmetic overrides can hang while SpringBoard warms up.
     command(['xcrun', 'simctl', 'ui', simulator, 'appearance', 'light'], timeout=180)
     command(['xcrun', 'simctl', 'install', simulator, str(app)], timeout=180)
-    container = Path(command(['xcrun', 'simctl', 'get_app_container', simulator, 'app.newaveflow.mobile', 'data']))
-    handoff = container / 'tmp/newave-store-screenshots'
+    handoff = current_handoff(simulator)
     if handoff.exists():
         raise ValueError('Capture requires a fresh simulator app container')
     args = ['xcodebuild', '-project', 'frontend/ios/App/App.xcodeproj', '-scheme', 'App',
@@ -77,12 +96,28 @@ def main():
             '-only-testing:AppTests/NewaveStoreScreenshotTests', 'ENABLE_TESTABILITY=YES',
             'CODE_SIGN_IDENTITY=-', 'CODE_SIGNING_ALLOWED=YES', 'test-without-building']
     captured = {}
+    handoffs = [handoff]
     process = None
     try:
         with (OUTPUT / 'capture-tests.log').open('w', encoding='utf8') as log:
             process = subprocess.Popen(args, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             deadline = time.monotonic() + 600
+            next_discovery = 0
             while process.poll() is None and time.monotonic() < deadline:
+                if time.monotonic() >= next_discovery:
+                    try:
+                        latest = current_handoff(simulator)
+                    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                        # A temporary missing container is expected during the test-host reinstall.
+                        next_discovery = time.monotonic() + 5
+                        continue
+                    if latest != handoff:
+                        if captured:
+                            raise ValueError('The screenshot test host was replaced after capture started')
+                        handoff = latest
+                        handoffs.append(handoff)
+                        print(f'Following reinstalled test host at {handoff}', flush=True)
+                    next_discovery = time.monotonic() + 5
                 marker = handoff / 'ready'
                 filename = marker.read_text() if marker.is_file() else ''
                 if filename and filename not in expected:
@@ -108,11 +143,7 @@ def main():
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait(timeout=10)
-        if handoff.is_dir():
-            diagnostics = OUTPUT / 'diagnostics'
-            diagnostics.mkdir(exist_ok=True)
-            for item in handoff.glob('*.json'):
-                shutil.copyfile(item, diagnostics / item.name)
+        collect_diagnostics(simulator, handoffs)
     receipt = {'sourceCommit': os.environ['GITHUB_SHA'], 'version': app_info['CFBundleShortVersionString'],
                'build': app_info['CFBundleVersion'], 'device': selected['name'], 'runtime': selected['runtime'],
                'nativeSimulator': True, 'syntheticData': True, 'externalNetworkBlocked': True,
