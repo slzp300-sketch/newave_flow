@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import shlex
 import shutil
 import signal
 import struct
@@ -17,7 +18,26 @@ OUTPUT = ROOT / 'frontend/.verification/store-screenshots'
 
 
 def command(args, timeout=60):
-    return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT, timeout=timeout).strip()
+    started = time.monotonic()
+    description = shlex.join(args)
+    print(f'Running {description} (limit {timeout}s)', flush=True)
+    with (OUTPUT / 'capture-command.log').open('a', encoding='utf8') as log:
+        log.write(f'Running {description} (limit {timeout}s)\n')
+        log.flush()
+        try:
+            result = subprocess.check_output(args, text=True, stderr=subprocess.STDOUT, timeout=timeout).strip()
+            log.write(result + '\n')
+            return result
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            output = error.output or ''
+            if isinstance(output, bytes):
+                output = output.decode('utf8', errors='replace')
+            log.write(f'{type(error).__name__}: {output}\n')
+            raise
+        finally:
+            duration = time.monotonic() - started
+            log.write(f'Finished after {duration:.1f}s\n')
+            print(f'Command finished after {duration:.1f}s', flush=True)
 
 
 def inspect_png(path):
@@ -44,10 +64,9 @@ def main():
     screenshots = OUTPUT / 'screenshots'
     screenshots.mkdir(exist_ok=True)
     command(['xcrun', 'simctl', 'bootstatus', simulator, '-b'], timeout=240)
-    command(['xcrun', 'simctl', 'status_bar', simulator, 'override', '--time', '9:41',
-             '--dataNetwork', 'wifi', '--wifiMode', 'active', '--wifiBars', '3', '--batteryState', 'charged', '--batteryLevel', '100'])
-    command(['xcrun', 'simctl', 'ui', simulator, 'appearance', 'light'])
-    command(['xcrun', 'simctl', 'install', simulator, str(app)])
+    # Keep the real simulator status bar. Cosmetic overrides can hang while SpringBoard warms up.
+    command(['xcrun', 'simctl', 'ui', simulator, 'appearance', 'light'], timeout=180)
+    command(['xcrun', 'simctl', 'install', simulator, str(app)], timeout=180)
     container = Path(command(['xcrun', 'simctl', 'get_app_container', simulator, 'app.newaveflow.mobile', 'data']))
     handoff = container / 'tmp/newave-store-screenshots'
     if handoff.exists():

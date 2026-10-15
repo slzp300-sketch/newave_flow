@@ -2,6 +2,7 @@
 import json
 import runpy
 import struct
+import subprocess
 import tempfile
 import unittest
 import zlib
@@ -23,6 +24,23 @@ def png(width, height, color=2):
 
 
 class ScreenshotPreparation(unittest.TestCase):
+    def test_native_command_keeps_failure_and_timeout_evidence_without_hiding_failure(self):
+        failures = [subprocess.TimeoutExpired(['synthetic-simctl'], 180, output=b'initial boot pending'),
+                    subprocess.CalledProcessError(1, ['synthetic-simctl'], output='synthetic install failed')]
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            for failure in failures:
+                with self.subTest(error=type(failure).__name__), patch.dict(capture['command'].__globals__, {'OUTPUT': output}), \
+                        patch('subprocess.check_output', side_effect=failure) as run:
+                    with self.assertRaises(type(failure)):
+                        capture['command'](['synthetic-simctl'], timeout=180)
+                    self.assertEqual(run.call_args.kwargs['timeout'], 180)
+            log = (output / 'capture-command.log').read_text(encoding='utf8')
+            self.assertIn('initial boot pending', log)
+            self.assertIn('synthetic install failed', log)
+            self.assertIn('TimeoutExpired', log)
+            self.assertIn('CalledProcessError', log)
+
     def test_native_template_contains_only_embedded_invented_fixtures(self):
         fixture, javascript, swift = prepare['sources']()
         self.assertEqual(len(fixture['scenes']), 5)
