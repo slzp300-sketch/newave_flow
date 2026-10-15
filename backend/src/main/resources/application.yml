@@ -34,6 +34,14 @@ kakao:
   redirect-uri: ${KAKAO_REDIRECT_URI:https://newaveflow-production.up.railway.app/api/auth/kakao/callback}
   web-return-uri: ${KAKAO_WEB_RETURN_URI:https://newave-flow.vercel.app/auth/kakao/callback}
 
+apple:
+  enabled: ${APPLE_LOGIN_ENABLED:false}
+  client-id: ${APPLE_CLIENT_ID:}
+  team-id: ${APPLE_TEAM_ID:}
+  key-id: ${APPLE_KEY_ID:}
+  private-key: ${APPLE_PRIVATE_KEY:}
+  token-encryption-key: ${APPLE_TOKEN_ENCRYPTION_KEY:}
+
 logging:
   level:
     root: INFO
@@ -160,3 +168,11 @@ kakao:
   client-secret: ""
   admin-key: ""
   app-id: ""
+
+apple:
+  enabled: false
+  client-id: ""
+  team-id: ""
+  key-id: ""
+  private-key: ""
+  token-encryption-key: ""

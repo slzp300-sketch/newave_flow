@@ -23,6 +23,7 @@ public class CommunitySafetyConfig implements WebMvcConfigurer {
                 return true;
             }
         }).addPathPatterns("/api/**").excludePathPatterns("/api/auth/**", "/api/safety/**", "/api/notifications/**",
-            "/api/event-reads/**", "/api/users/me/password", "/api/users/me/settings", "/api/users/me/kakao/**");
+            "/api/event-reads/**", "/api/users/me/password", "/api/users/me/settings", "/api/users/me/kakao/**",
+            "/api/users/me/apple/**", "/api/account-deletion/**");
     }
 }

@@ -6,6 +6,8 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ko</string>
+	<key>NewaveAppleSignInEnabled</key>
+	<string>$(NEWAVE_APPLE_SIGN_IN_ENABLED)</string>
 	<key>CFBundleDisplayName</key>
         <string>뉴웨이브 플로우</string>
 	<key>CFBundleExecutable</key>

@@ -22,6 +22,7 @@
 		AAA8D6ECF1AA405CB71CEBE3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5A6E2D997F2641ECB260C8E6 /* PrivacyInfo.xcprivacy */; };
 		F09558D6AEB4412889183B35 /* AppTests.mdimporter in Copy Files */ = {isa = PBXBuildFile; fileRef = F72C53C3BB504125BE84052F /* AppTests.mdimporter */; };
 		F86B41DE28F040EFAAE87420 /* NewaveKeychainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086E2F8F3CBF4E4CBDF955B5 /* NewaveKeychainTests.swift */; };
+		D5964ABB07754E4597209794 /* NewaveAppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 		5A6E2D997F2641ECB260C8E6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; name = "PrivacyInfo.xcprivacy"; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; lastKnownFileType = text.xml; includeInIndex = 0; };
 		F72C53C3BB504125BE84052F /* AppTests.mdimporter */ = {isa = PBXFileReference; name = "AppTests.xctest"; path = "AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; explicitFileType = "wrapper.cfbundle"; includeInIndex = 0; };
 		086E2F8F3CBF4E4CBDF955B5 /* NewaveKeychainTests.swift */ = {isa = PBXFileReference; name = "NewaveKeychainTests.swift"; path = "NewaveKeychainTests.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; includeInIndex = 0; };
+		DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */ = {isa = PBXFileReference; name = "NewaveAppleSignInPlugin.swift"; path = "NewaveAppleSignInPlugin.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +100,7 @@
 				8F5A8658B39546428E11FA65 /* NewaveSecureStoragePlugin.swift */,
 				3D9ACDA8DA0B47DABEBC08BA /* NewaveBridgeViewController.swift */,
 				5A6E2D997F2641ECB260C8E6 /* PrivacyInfo.xcprivacy */,
+				DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -227,6 +230,7 @@
 				946A5EB846A040EBAD662949 /* NewaveKeychainStore.swift in Sources */,
 				3406CF4E3C864734B39BCF9D /* NewaveSecureStoragePlugin.swift in Sources */,
 				B58B412DC3794F64B06E2C10 /* NewaveBridgeViewController.swift in Sources */,
+				D5964ABB07754E4597209794 /* NewaveAppleSignInPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -389,6 +393,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				NEWAVE_APPLE_SIGN_IN_ENABLED = NO;
 			};
 			name = Debug;
 		};
@@ -410,6 +415,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				NEWAVE_APPLE_SIGN_IN_ENABLED = NO;
 			};
 			name = Release;
 		};

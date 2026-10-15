@@ -110,6 +110,8 @@ class PostgresMigrationTest {
         assertThrows(SQLException.class, () -> execute(kakao));
 
         execute(Files.readString(Path.of("db/migrations/V008__community_safety.sql")));
+        execute(Files.readString(Path.of("db/migrations/V009__apple_login.sql")));
+        execute(Files.readString(Path.of("db/migrations/V010__account_deletion_requests.sql")));
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
                 "--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,
                 "--spring.datasource.username="+user,"--spring.datasource.password="+password,

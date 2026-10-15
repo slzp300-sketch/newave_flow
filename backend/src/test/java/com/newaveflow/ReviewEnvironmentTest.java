@@ -23,11 +23,11 @@ class ReviewEnvironmentTest {
         assertDoesNotThrow(() -> guard.postProcessEnvironment(safeEnvironment(), null));
         var mixed = safeEnvironment(); mixed.setActiveProfiles("review", "prod");
         assertThrows(IllegalStateException.class, () -> guard.postProcessEnvironment(mixed, null));
-        for (String key : new String[]{"PGHOST", "PGDATABASE", "PGUSER", "PGPASSWORD", "JWT_SECRET", "KAKAO_REST_API_KEY", "KAKAO_CLIENT_SECRET", "KAKAO_ADMIN_KEY", "BOOTSTRAP_ADMIN_PASSWORD"}) {
+        for (String key : new String[]{"PGHOST", "PGDATABASE", "PGUSER", "PGPASSWORD", "JWT_SECRET", "KAKAO_REST_API_KEY", "KAKAO_CLIENT_SECRET", "KAKAO_ADMIN_KEY", "APPLE_PRIVATE_KEY", "APPLE_TOKEN_ENCRYPTION_KEY", "apple.private-key", "apple.token-encryption-key", "BOOTSTRAP_ADMIN_PASSWORD"}) {
             var env = safeEnvironment(); env.setProperty(key, "synthetic-not-allowed");
             assertThrows(IllegalStateException.class, () -> guard.postProcessEnvironment(env, null), key);
         }
-        for (String key : new String[]{"app.seed.enabled", "kakao.enabled", "spring.h2.console.enabled", "jwt.accept-legacy-issuer"}) {
+        for (String key : new String[]{"app.seed.enabled", "kakao.enabled", "apple.enabled", "spring.h2.console.enabled", "jwt.accept-legacy-issuer"}) {
             var env = safeEnvironment(); env.setProperty(key, "true");
             assertThrows(IllegalStateException.class, () -> guard.postProcessEnvironment(env, null), key);
         }

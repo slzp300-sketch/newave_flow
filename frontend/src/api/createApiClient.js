@@ -11,6 +11,9 @@ export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSe
   let refreshPromise = null
   const environment = () => authStore.getState().apiEnvironment || 'production'
   const sessionScope = () => `${environment()}:${authStore.getState().user?.id ?? 'anonymous'}`
+  const assertExpectedSession = config => {
+    if (config.expectedAuthSessionId && config.expectedAuthSessionId !== authStore.getState().authIdentity?.sessionId) throw new Error('로그인 상태가 변경되었습니다.')
+  }
   const resolveBase = async selected => {
     if (selected === 'production') return baseURL
     if (selected !== 'review') throw new Error('로그인 환경이 올바르지 않습니다.')
@@ -23,13 +26,14 @@ export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSe
     if (refreshPromise) return refreshPromise
     const originalSession = authStore.getState().refreshToken
     const originalEnvironment = environment()
+    const originalIdentity = authStore.getState().authIdentity
     refreshPromise = (async () => {
       if (!originalSession) throw Object.assign(new Error('로그인이 필요합니다.'), { response: { status: 401 } })
       const selectedBase = await resolveBase(originalEnvironment)
       if (authStore.getState().refreshToken !== originalSession || environment() !== originalEnvironment) throw new Error('로그인 상태가 변경되었습니다.')
       const { data } = await axios.post(`${selectedBase}/auth/refresh`, { refreshToken: originalSession }, { timeout: 15000 })
       if (authStore.getState().refreshToken !== originalSession || environment() !== originalEnvironment) throw new Error('로그인 상태가 변경되었습니다.')
-      authStore.getState().setAuth(data.user, data.accessToken, data.refreshToken, originalEnvironment)
+      authStore.getState().setAuth(data.user, data.accessToken, data.refreshToken, originalEnvironment, originalIdentity)
       return data
     })().catch(error => {
       if ([401, 403].includes(error.response?.status) && authStore.getState().refreshToken === originalSession && environment() === originalEnvironment) {
@@ -42,10 +46,12 @@ export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSe
   }
 
   client.interceptors.request.use(async config => {
+    assertExpectedSession(config)
     const selected = config._apiEnvironment ?? config.apiEnvironment ?? environment()
     const scope = config._sessionScope ?? sessionScope()
     if (!config.skipAuth && (selected !== environment() || scope !== sessionScope())) throw new Error('로그인 상태가 변경되었습니다.')
     config.baseURL = await resolveBase(selected)
+    assertExpectedSession(config)
     if (!config.skipAuth && (selected !== environment() || scope !== sessionScope())) throw new Error('로그인 상태가 변경되었습니다.')
     config._apiEnvironment = selected
     config._sessionScope = scope
@@ -59,12 +65,14 @@ export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSe
   })
 
   client.interceptors.response.use(response => {
+    assertExpectedSession(response.config)
     if (!response.config.skipAuth && response.config._sessionScope !== sessionScope()) throw new Error('로그인 상태가 변경되었습니다.')
     if (['post', 'put', 'patch', 'delete'].includes(response.config.method)) onWriteSuccess(response.config)
     return response
   }, async error => {
     const original = error.config
     if (!original) throw error
+    assertExpectedSession(original)
     if (!original.skipAuth && original._sessionScope !== sessionScope()) throw new Error('로그인 상태가 변경되었습니다.')
     const method = (original.method || 'get').toLowerCase()
     if (!error.response && ['get', 'head'].includes(method) && !original._networkRetry && error.code !== 'ERR_CANCELED') {

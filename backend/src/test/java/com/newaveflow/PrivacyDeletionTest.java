@@ -53,6 +53,14 @@ class PrivacyDeletionTest {
                   ('11111111-1111-4111-8111-000000000001',repeat('a',64),repeat('a',43),'LINK','STARTED',false,CURRENT_TIMESTAMP+interval '1 hour',1,NULL),
                   ('11111111-1111-4111-8111-000000000002',repeat('b',64),repeat('b',43),'LOGIN','AUTHORIZED',false,CURRENT_TIMESTAMP+interval '1 hour',NULL,'9101'),
                   ('11111111-1111-4111-8111-000000000003',repeat('c',64),repeat('c',43),'LOGIN','AUTHORIZED',false,CURRENT_TIMESTAMP+interval '1 hour',NULL,'9102');
+                INSERT INTO apple_accounts(user_id,subject,refresh_token_ciphertext,revoked_at) VALUES
+                  (1,'synthetic.apple.deleted',NULL,CURRENT_TIMESTAMP),(2,'synthetic.apple.preserved','synthetic-encrypted-token',NULL);
+                INSERT INTO apple_auth_flows(id,state_hash,nonce_hash,challenge,purpose,stage,expires_at,user_id,subject) VALUES
+                  ('22222222-1111-4111-8111-000000000001',repeat('a',64),repeat('a',64),repeat('a',43),'LINK','STARTED',CURRENT_TIMESTAMP+interval '1 hour',1,NULL),
+                  ('22222222-1111-4111-8111-000000000002',repeat('b',64),repeat('b',64),repeat('b',43),'LOGIN','REGISTERING',CURRENT_TIMESTAMP+interval '1 hour',NULL,'synthetic.apple.deleted'),
+                  ('22222222-1111-4111-8111-000000000003',repeat('c',64),repeat('c',64),repeat('c',43),'LOGIN','REGISTERING',CURRENT_TIMESTAMP+interval '1 hour',NULL,'synthetic.apple.preserved');
+                INSERT INTO account_deletion_requests(id,user_id,user_created_at,receipt_token_hash,status,requested_at,target_at,handover_required)
+                  VALUES('11111111-1111-4111-8111-111111111111',1,'2026-10-01',repeat('d',64),'REQUESTED',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '7 days',false);
                 """);
             // Recreate old constraints then validate the actual additive migration, including rollback.
             s.execute("INSERT INTO community_agreements(user_id,policy_version,accepted_at) VALUES(1,'2026-10-14-v1',CURRENT_TIMESTAMP)");
@@ -83,6 +91,8 @@ class PrivacyDeletionTest {
             for(String unsafe:List.of(
                 review+"UPDATE privacy_request SET identity_verified=false;",
                 review+"UPDATE privacy_request SET expected_created_at='2025-01-01';",
+                review+"UPDATE privacy_request SET request_id='22222222-2222-4222-8222-222222222222';",
+                review+"UPDATE apple_accounts SET revoked_at=NULL,refresh_token_ciphertext='synthetic-unrevoked' WHERE user_id=1;",
                 review+"DELETE FROM privacy_legacy_decisions;",
                 review+"DELETE FROM privacy_redactions;",
                 review+"UPDATE privacy_redactions SET before_md5='stale';")) {
@@ -139,6 +149,11 @@ class PrivacyDeletionTest {
             assertEquals("1",scalar(c,"SELECT count(*) FROM students"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM kakao_auth_flows"));
             assertEquals("9102",scalar(c,"SELECT kakao_id FROM kakao_auth_flows"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM apple_accounts"));
+            assertEquals("synthetic.apple.preserved",scalar(c,"SELECT subject FROM apple_accounts"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM apple_auth_flows"));
+            assertEquals("synthetic.apple.preserved",scalar(c,"SELECT subject FROM apple_auth_flows"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM account_deletion_requests WHERE status='COMPLETED' AND user_id IS NULL AND user_created_at IS NULL AND completed_at IS NOT NULL"));
             assertEquals("0",scalar(c,"SELECT count(*) FROM community_agreements"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports WHERE moderator_id IS NULL AND reporter_id=2"));

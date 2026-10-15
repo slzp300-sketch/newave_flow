@@ -1,9 +1,34 @@
 import XCTest
 import WebKit
+import AuthenticationServices
 @testable import App
 
 final class NewaveKeychainTests: XCTestCase {
     private var store: NewaveKeychainStore!
+
+    @MainActor func testAppleRevocationObserverRemovesNotificationSubscriptionOnRelease() {
+        let center = NotificationCenter()
+        var received = 0
+        var observer: NewaveAppleCredentialObserver? = NewaveAppleCredentialObserver(center: center) { received += 1 }
+        XCTAssertNotNil(observer)
+        center.post(name: ASAuthorizationAppleIDProvider.credentialRevokedNotification, object: nil)
+        XCTAssertEqual(received, 1)
+        observer = nil
+        center.post(name: ASAuthorizationAppleIDProvider.credentialRevokedNotification, object: nil)
+        XCTAssertEqual(received, 1)
+    }
+
+    @MainActor func testAppleRequestPreservesNonceStateAndRejectsMalformedProof() throws {
+        let nonce = String(repeating: "n", count: 43)
+        let state = String(repeating: "s", count: 43)
+        let request = try XCTUnwrap(NewaveAppleSignInPlugin.makeRequest(nonce: nonce, state: state))
+        XCTAssertEqual(request.nonce, nonce)
+        XCTAssertEqual(request.state, state)
+        XCTAssertEqual(request.requestedScopes, [.fullName, .email])
+        XCTAssertNil(NewaveAppleSignInPlugin.makeRequest(nonce: "short", state: state))
+        XCTAssertNil(NewaveAppleSignInPlugin.makeRequest(nonce: nonce, state: state + "\n"))
+        XCTAssertNil(NewaveAppleSignInPlugin.makeRequest(nonce: String(repeating: "x", count: 129), state: state))
+    }
 
     override func setUpWithError() throws {
         store = NewaveKeychainStore(service: "app.newaveflow.synthetic-tests.\(UUID().uuidString)")
@@ -12,6 +37,7 @@ final class NewaveKeychainTests: XCTestCase {
     override func tearDownWithError() throws {
         try store.remove("newave-auth")
         try store.remove("newave-kakao-pending")
+        try store.remove("newave-deletion-receipt")
     }
 
     func testSessionAndKakaoProofDoNotOverwriteEachOther() throws {
@@ -25,12 +51,14 @@ final class NewaveKeychainTests: XCTestCase {
     }
 
     func testRefreshUpdatesAnExistingItemAndLogoutRemovesIt() throws {
+        try store.set("newave-deletion-receipt", value: "synthetic receipt")
         try store.set("newave-auth", value: "old synthetic session")
         try store.set("newave-auth", value: "new synthetic session")
         XCTAssertEqual(try store.get("newave-auth"), "new synthetic session")
         try store.remove("newave-auth")
         try store.remove("newave-auth")
         XCTAssertNil(try store.get("newave-auth"))
+        XCTAssertEqual(try store.get("newave-deletion-receipt"), "synthetic receipt")
     }
 
     func testUnsupportedKeysCannotReachOtherKeychainItems() throws {
@@ -66,6 +94,17 @@ final class NewaveKeychainTests: XCTestCase {
         XCTAssertEqual(webView.url?.scheme, "capacitor")
         let result = try await webView.callAsyncJavaScript("""
             const storage = (method, options) => Capacitor.nativePromise('NewaveSecureStorage', method, options);
+            const apple = (method, options = {}) => Capacitor.nativePromise('NewaveAppleSignIn', method, options);
+            const availability = await apple('getAvailability');
+            if (availability.available !== false) throw new Error('Simulator CI must keep Apple login disabled');
+            try {
+                await apple('signIn', { nonce: 'n'.repeat(43), state: 's'.repeat(43) });
+                throw new Error('Unconfigured Apple sign-in must reject before showing a sheet');
+            } catch (error) {
+                if (error.code !== 'APPLE_NOT_CONFIGURED') throw error;
+            }
+            const artwork = await apple('buttonImage', { width: 327 });
+            if (!artwork.image?.startsWith('data:image/png;base64,') || artwork.image.length < 1000) throw new Error('System Apple button artwork is missing');
             const key = 'newave-kakao-pending';
             await storage('remove', { key });
             try {

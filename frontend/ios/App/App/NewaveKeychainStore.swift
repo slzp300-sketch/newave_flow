@@ -11,7 +11,7 @@ enum NewaveKeychainError: Error {
 // Login sessions and short-lived OAuth handoffs must remain independent items.
 final class NewaveKeychainStore {
     private let service: String
-    private static let keys: Set<String> = ["newave-auth", "newave-kakao-pending"]
+    private static let keys: Set<String> = ["newave-auth", "newave-kakao-pending", "newave-deletion-receipt"]
 
     init(service: String = (Bundle.main.bundleIdentifier ?? "app.newaveflow.mobile") + ".session.v1") {
         self.service = service

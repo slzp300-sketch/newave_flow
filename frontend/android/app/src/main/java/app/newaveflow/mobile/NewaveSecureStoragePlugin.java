@@ -39,7 +39,8 @@ public class NewaveSecureStoragePlugin extends Plugin {
         return (SecretKey) store.getKey(ALIAS, null);
     }
     private boolean validate(PluginCall call) {
-        if (KEY.equals(call.getString("key")) || "newave-kakao-pending".equals(call.getString("key"))) return true;
+        if (KEY.equals(call.getString("key")) || "newave-kakao-pending".equals(call.getString("key"))
+            || "newave-deletion-receipt".equals(call.getString("key"))) return true;
         call.reject("Unsupported storage key");
         return false;
     }

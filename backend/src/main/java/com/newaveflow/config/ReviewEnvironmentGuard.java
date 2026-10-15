@@ -20,11 +20,14 @@ public class ReviewEnvironmentGuard implements EnvironmentPostProcessor, Ordered
                     + ", database kind: " + databaseKind(env.getProperty("spring.datasource.url", "")) + ")");
         }
         for (String key : new String[]{"PGHOST", "PGDATABASE", "PGUSER", "PGPASSWORD", "JWT_SECRET",
-                "KAKAO_REST_API_KEY", "KAKAO_CLIENT_SECRET", "KAKAO_ADMIN_KEY", "BOOTSTRAP_ADMIN_PASSWORD"}) {
+                "KAKAO_REST_API_KEY", "KAKAO_CLIENT_SECRET", "KAKAO_ADMIN_KEY", "APPLE_PRIVATE_KEY", "APPLE_TOKEN_ENCRYPTION_KEY", "BOOTSTRAP_ADMIN_PASSWORD"}) {
             if (!env.getProperty(key, "").isBlank()) fail("production credentials must not be mounted in review");
         }
         if (env.getProperty("app.seed.enabled", Boolean.class, false)
                 || env.getProperty("kakao.enabled", Boolean.class, false)
+                || env.getProperty("apple.enabled", Boolean.class, false)
+                || !env.getProperty("apple.private-key", "").isBlank()
+                || !env.getProperty("apple.token-encryption-key", "").isBlank()
                 || env.getProperty("spring.h2.console.enabled", Boolean.class, false)
                 || !env.getProperty("app.review.mode", Boolean.class, false)
                 || !"newave-flow-review".equals(env.getProperty("jwt.issuer"))

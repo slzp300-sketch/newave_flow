@@ -105,3 +105,17 @@ test('invalid login credentials do not try to refresh an old session', async () 
   await assert.rejects(api.client.post('/auth/login', { email: 'test@example.invalid', password: 'synthetic' }))
   assert.equal(api.refreshes(), 0)
 })
+
+test('Refresh preserves the Apple session identity and a revocation logout cannot target a later session', async () => {
+  const api = setup()
+  const identity = { provider: 'apple', subject: 'synthetic-subject', sessionId: '11111111-1111-1111-1111-111111111111' }
+  api.state.authIdentity = identity
+  api.state.setAuth = (user, accessToken, refreshToken, apiEnvironment, authIdentity) => Object.assign(api.state, { user, accessToken, refreshToken, apiEnvironment, authIdentity })
+  await api.refreshSession()
+  assert.equal(api.state.authIdentity, identity)
+  let requests = 0
+  api.client.defaults.adapter = async config => { requests++; return ok(config) }
+  api.state.authIdentity = null
+  await assert.rejects(api.client.post('/auth/logout', undefined, { expectedAuthSessionId: identity.sessionId }), /로그인 상태/)
+  assert.equal(requests, 0)
+})

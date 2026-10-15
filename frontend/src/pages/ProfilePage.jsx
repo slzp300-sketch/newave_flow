@@ -13,6 +13,7 @@ import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import KakaoConnection from '../components/common/KakaoConnection'
+import AppleConnection from '../components/common/AppleConnection'
 
 const ROLE_MAP = {
   PASTOR:    { label: '목사님',  bg: 'bg-primary-100    text-primary-700' },
@@ -176,6 +177,7 @@ export default function ProfilePage() {
         </Card>
 
         <KakaoConnection />
+        <AppleConnection />
 
         {/* 내 프로필 편집 */}
         <Card className="!p-0 overflow-hidden">

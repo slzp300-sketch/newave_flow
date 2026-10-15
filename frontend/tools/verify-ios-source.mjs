@@ -17,6 +17,7 @@ assert.equal(packageInfo.dependencies['@capacitor/ios'], packageInfo.dependencie
 assert.equal(config.appId, 'app.newaveflow.mobile')
 assert.equal(config.server.iosScheme, 'capacitor')
 assert.equal(config.server.cleartext, false)
+assert.equal(config.loggingBehavior, 'none', 'Native bridge responses may contain sign-in credentials')
 assert.equal(config.server.url, undefined, 'Live reload must not ship in the app')
 assert.equal(info.CFBundleDisplayName, '뉴웨이브 플로우')
 assert.deepEqual(info.CFBundleURLTypes.flatMap(v => v.CFBundleURLSchemes), ['newaveflow'])
@@ -38,7 +39,16 @@ assert.equal(appTarget.firstTarget.dependencies.length, 0, 'App must not depend 
 assert.ok(tests[1].dependencies.some(d => objects.PBXTargetDependency[d.value].target === appTarget.uuid))
 const sources = objects.PBXSourcesBuildPhase[appTarget.firstTarget.buildPhases.find(p => p.comment === 'Sources').value]
 const sourceNames = sources.files.map(f => objects.PBXFileReference[objects.PBXBuildFile[f.value].fileRef].path.replaceAll('"', ''))
-for (const name of ['NewaveBridgeViewController.swift','NewaveKeychainStore.swift','NewaveSecureStoragePlugin.swift']) assert.ok(sourceNames.includes(name), `${name} must compile in App`)
+for (const name of ['NewaveBridgeViewController.swift','NewaveKeychainStore.swift','NewaveSecureStoragePlugin.swift','NewaveAppleSignInPlugin.swift']) assert.ok(sourceNames.includes(name), `${name} must compile in App`)
+assert.equal(info.NewaveAppleSignInEnabled, '$(NEWAVE_APPLE_SIGN_IN_ENABLED)')
+for (const configuration of Object.values(objects.XCBuildConfiguration)) {
+  if (configuration?.buildSettings?.PRODUCT_BUNDLE_IDENTIFIER === 'app.newaveflow.mobile') {
+    assert.equal(configuration.buildSettings.NEWAVE_APPLE_SIGN_IN_ENABLED, 'NO', 'Apple login requires an explicit signed-device build opt-in')
+    assert.equal(configuration.buildSettings.CODE_SIGN_ENTITLEMENTS, undefined, 'Simulator CI must not require an Apple provisioning profile')
+  }
+}
+const appleEntitlements = plist.parse(fs.readFileSync(path.join(app, 'AppleSignIn.entitlements'), 'utf8'))
+assert.deepEqual(appleEntitlements['com.apple.developer.applesignin'], ['Default'])
 assert.ok(fs.readFileSync(path.join(app, 'SceneDelegate.swift'),'utf8').includes('NewaveBridgeViewController()'))
 assert.ok(fs.readFileSync(path.join(app, 'Base.lproj/Main.storyboard'),'utf8').includes('customClass="NewaveBridgeViewController"'))
 const icon = fs.readFileSync(path.join(app,'Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png'))

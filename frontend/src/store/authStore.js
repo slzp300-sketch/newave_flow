@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { isNativeApp, secureAuthStorage } from '../native/platform'
+import { validAuthIdentity } from '../auth/authIdentity'
 
 let hydrationError = null
 export function assertAuthHydrated() {
@@ -14,14 +15,17 @@ const useAuthStore = create(
       accessToken:  null,
       refreshToken: null,
       apiEnvironment: 'production',
+      authIdentity: null,
+      appleCheckPaused: false,
+      setAppleCheckPaused: appleCheckPaused => set({ appleCheckPaused }),
 
       isHydrated: false,
 
-      setAuth: (user, accessToken, refreshToken, apiEnvironment = 'production') =>
-        set({ user, accessToken, refreshToken, apiEnvironment }),
+      setAuth: (user, accessToken, refreshToken, apiEnvironment = 'production', authIdentity = null) =>
+        set({ user, accessToken, refreshToken, apiEnvironment, authIdentity: validAuthIdentity(authIdentity) ? authIdentity : null }),
 
       clearAuth: () =>
-        set({ user: null, accessToken: null, refreshToken: null, apiEnvironment: 'production' }),
+        set({ user: null, accessToken: null, refreshToken: null, apiEnvironment: 'production', authIdentity: null }),
 
       updateAccessToken: (accessToken) => set({ accessToken }),
 
@@ -41,6 +45,7 @@ const useAuthStore = create(
         accessToken:  state.accessToken,
         refreshToken: state.refreshToken,
         apiEnvironment: state.apiEnvironment,
+        authIdentity: validAuthIdentity(state.authIdentity) ? state.authIdentity : null,
       }),
       onRehydrateStorage: () => (state, error) => {
         hydrationError = error ?? null

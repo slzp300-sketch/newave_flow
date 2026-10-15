@@ -13,7 +13,7 @@ export const authApi = {
     return { ...response, data: { ...response.data, apiEnvironment } }
   },
   register: (data)          => client.post('/auth/register', data),
-  logout: ()                => client.post('/auth/logout'),
+  logout: (config)          => client.post('/auth/logout', undefined, config),
   me:     ()                => client.get('/users/me'),
   checkEmail: (email)       => client.get('/auth/check-email', { params: { email } }),
   checkName:  (name)        => client.get('/auth/check-name', { params: { name } }),

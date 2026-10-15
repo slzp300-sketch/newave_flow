@@ -3,7 +3,7 @@
 DO $$
 DECLARE
   req record; target record; item record; col record; legacy record;
-  hits bigint; changed bigint; current_digest text;
+  hits bigint; changed bigint; current_digest text; apple_subject text;
 BEGIN
   IF (SELECT count(*) FROM privacy_request) <> 1 THEN RAISE EXCEPTION 'Exactly one reviewed request is required'; END IF;
   SELECT * INTO req FROM privacy_request;
@@ -17,7 +17,8 @@ BEGIN
     'events','event_attendances','event_participants','event_reads','event_student_attendances','meeting_minutes',
     'meeting_minute_confirms','meeting_attendances','notifications','prayer_votes','evangelism_assignments',
     'evangelism_groups','evangelism_group_members','evangelism_schedules','tts_answers','tts_data_entry','tts_item',
-    'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','community_agreements','content_reports','schema_migrations')) THEN
+    'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','apple_accounts','apple_auth_flows',
+    'account_deletion_requests','community_agreements','content_reports','schema_migrations')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -31,16 +32,31 @@ BEGIN
       AND (ns.nspname<>'public' OR src.relname NOT IN ('teacher_classes','user_tags','event_reads','notifications',
         'meeting_minute_confirms','checklist_records','prayer_votes','meeting_attendances','evangelism_assignments',
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
-        'deactivation_requests','event_student_attendances','kakao_auth_flows','community_agreements','content_reports'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'deactivation_requests','event_student_attendances','kakao_auth_flows','apple_accounts','apple_auth_flows',
+        'account_deletion_requests','community_agreements','content_reports'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
   SELECT * INTO target FROM users WHERE id=req.user_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Target account is absent; reconcile the receipt before retry'; END IF;
   IF target.created_at IS DISTINCT FROM req.expected_created_at THEN RAISE EXCEPTION 'Target account identity changed'; END IF;
   IF target.role='ADMIN' AND target.is_active AND (SELECT count(*) FROM users WHERE role='ADMIN' AND is_active) <= 1 THEN
     RAISE EXCEPTION 'Cannot remove the last active administrator';
   END IF;
+  IF to_regclass('public.account_deletion_requests') IS NOT NULL THEN
+    IF EXISTS(SELECT 1 FROM account_deletion_requests WHERE user_id=req.user_id
+      AND (id<>req.request_id::text OR user_created_at IS DISTINCT FROM req.expected_created_at OR status<>'REQUESTED')) THEN
+      RAISE EXCEPTION 'App deletion receipt does not match the reviewed request';
+    END IF;
+  END IF;
+  IF to_regclass('public.apple_accounts') IS NOT NULL THEN
+    -- A database deletion cannot revoke Apple authorization. The in-app request must do so first.
+    IF EXISTS(SELECT 1 FROM apple_accounts WHERE user_id=req.user_id
+      AND (revoked_at IS NULL OR refresh_token_ciphertext IS NOT NULL)) THEN
+      RAISE EXCEPTION 'Apple authorization must be revoked before account erasure';
+    END IF;
+    SELECT subject INTO apple_subject FROM apple_accounts WHERE user_id=req.user_id;
+  END IF;
 
   INSERT INTO privacy_identifiers(value)
-    SELECT v FROM (VALUES(target.name),(target.email),(target.phone),(to_jsonb(target)->>'kakao_id')) x(v)
+    SELECT v FROM (VALUES(target.name),(target.email),(target.phone),(to_jsonb(target)->>'kakao_id'),(apple_subject)) x(v)
     WHERE v IS NOT NULL AND length(trim(v)) >= 2 ON CONFLICT DO NOTHING;
   -- Every legacy row with a matching name requires an explicit ownership decision, including namesakes.
   FOR legacy IN SELECT id FROM tts_legacy_score WHERE name IN (SELECT value FROM privacy_identifiers) LOOP
@@ -72,6 +88,12 @@ BEGIN
   IF to_regclass('public.kakao_auth_flows') IS NOT NULL THEN
     DELETE FROM kakao_auth_flows WHERE user_id=req.user_id OR kakao_id=to_jsonb(target)->>'kakao_id';
   END IF;
+  IF to_regclass('public.apple_auth_flows') IS NOT NULL THEN
+    DELETE FROM apple_auth_flows WHERE user_id=req.user_id OR subject=apple_subject;
+  END IF;
+  IF to_regclass('public.apple_accounts') IS NOT NULL THEN
+    DELETE FROM apple_accounts WHERE user_id=req.user_id;
+  END IF;
   IF to_regclass('public.community_agreements') IS NOT NULL THEN
     DELETE FROM community_agreements WHERE user_id=req.user_id;
   END IF;
@@ -96,6 +118,11 @@ BEGIN
       EXECUTE format('UPDATE public.%I SET teacher_id=NULL WHERE teacher_id=$1',item.tbl) USING req.user_id;
     END IF;
   END LOOP;
+  IF to_regclass('public.account_deletion_requests') IS NOT NULL THEN
+    -- Preserve only an anonymous status receipt; completion is committed with the actual erasure.
+    UPDATE account_deletion_requests SET user_id=NULL,user_created_at=NULL,status='COMPLETED',completed_at=CURRENT_TIMESTAMP
+      WHERE user_id=req.user_id AND id=req.request_id::text;
+  END IF;
   DELETE FROM users WHERE id=req.user_id;
   GET DIAGNOSTICS changed=ROW_COUNT;
   IF changed<>1 THEN RAISE EXCEPTION 'Account delete count mismatch'; END IF;

@@ -1,4 +1,4 @@
-// Operator-only CLI: no HTTP deletion endpoint, no credentials/row contents in console output.
+// Operator-only erasure CLI: HTTP accepts requests but never performs the reviewed deletion.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto'),tls=require('node:tls');
 const {runDeletion}=require('./deletion.cjs');
 const root=path.resolve(__dirname,'../..'),privateRoot=path.join(root,'.backups');
@@ -25,21 +25,39 @@ async function connect(){
  const client=new Client({connectionString:url.href,connectionTimeoutMillis:15000,
   ssl:{rejectUnauthorized:true,ca:fs.readFileSync(path.join(privateRoot,'ca.crt'),'utf8'),servername:'localhost',
    checkServerIdentity:(_h,p)=>p.fingerprint256!==cert.fingerprint256?Error('Pinned certificate changed'):tls.checkServerIdentity('localhost',p)},
-  options:action==='plan'?'-c default_transaction_read_only=on':''});
+  options:['plan','requests'].includes(action)?'-c default_transaction_read_only=on':''});
  await client.connect();return client;
 }
 let client;
 (async()=>{
- if(!['plan','rehearse','execute'].includes(action))throw Error('Use plan <userId>, rehearse <private-plan-file> or execute <private-plan-file> <requestId>');
+ if(!['requests','plan','rehearse','execute'].includes(action))throw Error('Use requests, plan <userId>, rehearse <private-plan-file> or execute <private-plan-file> <requestId>');
  checkFolder();client=await connect();
+ if(action==='requests'){
+  const result=await client.query("SELECT id AS request_id,user_id,requested_at,target_at,handover_required FROM account_deletion_requests WHERE status='REQUESTED' ORDER BY requested_at");
+  // Internal IDs and dates only; no names, addresses, password or receipt token hashes.
+  console.log(JSON.stringify({requests:result.rows}));return;
+ }
  if(action==='plan'){
   const id=Number(arg);if(!Number.isSafeInteger(id)||id<=0)throw Error('Invalid account ID');
-  const result=await client.query('SELECT id,name,email,phone,created_at::text FROM users WHERE id=$1',[id]);
+  const result=await client.query('SELECT id,name,email,phone,kakao_id,created_at::text FROM users WHERE id=$1',[id]);
   if(result.rowCount!==1||!result.rows[0].created_at)throw Error('A uniquely identified account is required');
-  const u=result.rows[0],requestId=crypto.randomUUID();
+  const u=result.rows[0];let requestId=crypto.randomUUID();
+  const receiptTable=await client.query("SELECT to_regclass('public.account_deletion_requests') AS name");
+  if(receiptTable.rows[0].name){
+   const receipt=await client.query("SELECT id,user_created_at::text FROM account_deletion_requests WHERE user_id=$1 AND status='REQUESTED'",[id]);
+   if(receipt.rowCount){
+    if(receipt.rows[0].user_created_at!==u.created_at)throw Error('App deletion request no longer matches the account');
+    requestId=receipt.rows[0].id;
+   }
+  }
   const legacy=await client.query('SELECT id FROM tts_legacy_score WHERE name=$1 ORDER BY id',[u.name]);
   const plan={requestId,userId:id,expectedCreatedAt:u.created_at,identityVerified:false,handoverReviewed:false,externalCopiesReviewed:false,freeTextReviewed:false,
-   identifiers:[u.name,u.email,u.phone].filter(v=>v&&v.trim().length>=2),legacyDecisions:legacy.rows.map(r=>({id:Number(r.id),remove:null})),redactions:[],exceptions:[]};
+   identifiers:[u.name,u.email,u.phone,u.kakao_id].filter(v=>v&&v.trim().length>=2),legacyDecisions:legacy.rows.map(r=>({id:Number(r.id),remove:null})),redactions:[],exceptions:[]};
+  const appleTable=await client.query("SELECT to_regclass('public.apple_accounts') AS name");
+  if(appleTable.rows[0].name){
+   const apple=await client.query('SELECT subject FROM apple_accounts WHERE user_id=$1',[id]);
+   for(const row of apple.rows)if(row.subject)plan.identifiers.push(row.subject);
+  }
   const quote=v=>'"'+v.replaceAll('"','""')+'"';
   const columns=await client.query("SELECT c.table_name,c.column_name FROM information_schema.columns c WHERE c.table_schema='public' AND c.data_type IN ('text','character varying','character') AND EXISTS(SELECT 1 FROM information_schema.columns k WHERE k.table_schema='public' AND k.table_name=c.table_name AND k.column_name='id') ORDER BY c.table_name,c.column_name");
   plan.reviewCandidates=[];

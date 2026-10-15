@@ -9,6 +9,7 @@ class NewaveBridgeViewController: CAPBridgeViewController {
             do {
                 try store.remove("newave-auth")
                 try store.remove("newave-kakao-pending")
+                try store.remove("newave-deletion-receipt")
                 defaults.set(true, forKey: "newave.session.install.v1")
             } catch {
                 // Keep the marker unset so clearing is retried on the next launch.
@@ -16,5 +17,6 @@ class NewaveBridgeViewController: CAPBridgeViewController {
             }
         }
         bridge?.registerPluginInstance(NewaveSecureStoragePlugin())
+        bridge?.registerPluginInstance(NewaveAppleSignInPlugin())
     }
 }

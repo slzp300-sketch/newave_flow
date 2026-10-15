@@ -32,7 +32,7 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App \
 
 ## 보안 저장과 카카오 인증
 
-`NewaveSecureStoragePlugin`은 `newave-auth`와 `newave-kakao-pending`만 허용한다. Swift 저장소는 Keychain에서 로그인과 OAuth 증명을 별개 항목으로 저장하고 다른 앱·장치 백업과 공유하지 않는다. 읽기·쓰기 실패 시 평문으로 대체하지 않는다. Keychain이 앱 제거 후 남을 수 있어 새 설치 시 이전 항목을 정리한다. 설치 여부만 자체 UserDefaults에 저장하며 그 API 사유를 `PrivacyInfo.xcprivacy`에 선언했다. 개인정보 수집 항목 전체는 App Store 등록 단계에서 별도로 작성한다.
+`NewaveSecureStoragePlugin`은 `newave-auth`, `newave-kakao-pending`, `newave-deletion-receipt`만 허용한다. Swift 저장소는 Keychain에서 로그인·OAuth 증명·삭제 접수증을 별개 항목으로 저장하고 다른 앱·장치 백업과 공유하지 않는다. 로그아웃해도 삭제 처리 결과를 확인할 수 있도록 접수증은 유지한다. 읽기·쓰기 실패 시 평문으로 대체하지 않는다. Keychain이 앱 제거 후 남을 수 있어 새 설치 시 이전 항목을 정리한다. 설치 여부만 자체 UserDefaults에 저장하며 그 API 사유를 `PrivacyInfo.xcprivacy`에 선언했다. 개인정보 수집 항목 전체는 App Store 등록 단계에서 별도로 작성한다.
 
 저장값이 없을 때도 네이티브 조회는 `{ value: null }` 객체를 반환한다. 인자 없는 `call.resolve()`는 JavaScript에 `undefined`를 전달해 새 설치의 로그인 초기화를 실패시키므로 사용하지 않는다. WKWebView 검사는 실제 네이티브 브리지를 통해 빈 값 조회·가상 값 저장·조회·삭제와 삭제 후 재조회를 확인한다.
 
@@ -44,6 +44,8 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App \
 
 자동 서버 검사는 합성 자료를 사용한다. Keychain 검사는 임시 테스트 항목을 만들고 제거한다. 실제 학생·교사 자료나 운영 사용자 비밀번호로 쓰기 검수하지 않는다. 클라우드 시작 화면은 비로그인 화면만 확인한다.
 
-실제 iPhone에서는 사진 선택·카메라 권한·키보드·여백·카카오 복귀·로그인 재시작·이용수칙·신고를 TestFlight로 확인한다. Apple 로그인, 앱 내 탈퇴 접수, 콘텐츠 기준 대조·보완, App Store 개인정보·등급·화면 자료와 정식 심사가 남아 있다. 이 기본 프로젝트를 App Store 제출 완료로 표시하지 않는다.
+Apple 로그인·기존 계정 연결·승인 대기 가입과 외부 인증 철회 감시는 구현했으며 기본 비활성이다. 설정·남은 검수는 [Apple 로그인 연결](ios-apple-sign-in.md)을 따른다. 앱 내 탈퇴 접수·로그아웃 후 접수증 조회와 수동 삭제 절차 연결은 [계정 삭제 운영 절차](account-deletion-runbook.md)에 정리했다.
+
+실제 iPhone에서는 사진 선택·카메라 권한·키보드·여백·카카오 복귀·로그인 재시작·이용수칙·신고·Apple 인증·삭제 접수증을 TestFlight로 확인한다. Apple 계정 설정과 서버 간 알림, 콘텐츠 기준 대조·보완, App Store 개인정보·등급·화면 자료와 정식 심사가 남아 있다. 코드와 시뮬레이터 검증을 App Store 제출 완료로 표시하지 않는다.
 
 개발자 명의는 학생·종교 관련 수집 항목과 Apple 기준을 대조해 가입 전에 결정한다. Apple 가입·결제·인증서 발급·TestFlight 업로드는 기본 컴파일 검증과 별도 절차다. 상세 범위와 일정은 [iOS 개발과 출시 계획](ios-release-plan-2026-10-15.md)을 따른다.
