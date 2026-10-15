@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { parentPath } from '../../utils/navigation'
 import { ChevronLeft, LogOut, Bell, Flag } from 'lucide-react'
@@ -7,12 +8,23 @@ import { notificationApi } from '../../api/notifications'
 import { authApi } from '../../api/auth'
 import Brand from '../common/Brand'
 import FeatureIcon from '../common/FeatureIcon'
+import ReviewEnvironmentNotice from '../common/ReviewEnvironmentNotice'
 
 export default function Header({ title, showBack = false, onBack, showLogout = false, showNotification = true, right }) {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
   const { user, clearAuth } = useAuthStore()
+  const headerRef = useRef(null)
+  useLayoutEffect(() => {
+    const element = headerRef.current
+    const root = document.documentElement
+    const measure = () => root.style.setProperty('--app-header-height', `${element.getBoundingClientRect().height}px`)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => { observer.disconnect(); root.style.removeProperty('--app-header-height') }
+  }, [])
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['unread-notifications'],
@@ -32,7 +44,8 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 min-h-14 flex items-center gap-2">
+    <header ref={headerRef} className="app-header sticky top-0 z-40 bg-white border-b border-gray-200">
+      <div className="app-header-row px-4 flex items-center gap-2">
       {showBack && (
         <button
           onClick={onBack ?? (() => location.key === 'default' ? navigate(parentPath(location.pathname), { replace: true }) : navigate(-1))}
@@ -77,6 +90,8 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
           </button>
         )}
       </div>
+      </div>
+      <ReviewEnvironmentNotice />
     </header>
   )
 }

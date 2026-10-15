@@ -147,6 +147,7 @@ def main():
     receipt = {'sourceCommit': os.environ['GITHUB_SHA'], 'version': app_info['CFBundleShortVersionString'],
                'build': app_info['CFBundleVersion'], 'device': selected['name'], 'runtime': selected['runtime'],
                'nativeSimulator': True, 'syntheticData': True, 'externalNetworkBlocked': True,
+               'headerSafeAreaVerified': True,
                'nativeConfiguration': 'Release with testability enabled; fixture code is only in AppTests',
                'fixtureKind': 'invented-store-screenshots-v1', 'screenshotFiles': expected, 'files': captured}
     (OUTPUT / 'capture-receipt.json').write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + '\n', encoding='utf8')

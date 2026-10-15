@@ -134,12 +134,12 @@ export default function AdminTeacherManagePage() {
           <>
             <motion.div key="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedId(null)} className="fixed inset-0 bg-black/40 z-[60]" />
-            <div key="sheet" className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
+            <div key="sheet" className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 12 }}
-                className="w-full max-w-[360px] pointer-events-auto flex flex-col gap-2"
+                className="safe-modal-panel w-full max-w-[360px] pointer-events-auto flex flex-col gap-2"
               >
                 <UserManagementCard
                   user={selectedUser}

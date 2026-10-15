@@ -617,9 +617,9 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
+        className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
       >
-        <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] pointer-events-auto">
+        <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-80 pointer-events-auto">
           <div className="p-6 border-b border-gray-50 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">반 배정 변경</p>
@@ -720,9 +720,9 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
+        className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
       >
-        <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pointer-events-auto">
+        <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85 pointer-events-auto">
           <div className="p-6 border-b border-gray-50 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">
@@ -934,9 +934,9 @@ function GradeAdvanceModal({ grades, onClose, onSuccess }) {
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
+        className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
       >
-        <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] pointer-events-auto">
+        <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85 pointer-events-auto">
           <div className="p-6 border-b border-gray-50 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">연도 개편</p>

@@ -137,7 +137,7 @@ export default function Signup() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
+      <div className="safe-page-top min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
         <div className="w-20 h-20 bg-secondary-100 text-secondary-700 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">✅</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">가입 신청 완료</h2>
         <p className="text-gray-500 text-center text-sm mb-8">

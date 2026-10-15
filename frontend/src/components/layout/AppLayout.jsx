@@ -12,7 +12,7 @@ export default function AppLayout() {
   const { pathname } = useLocation()
   const reduced = useMotionPreference()
   const { isRefreshing, pullDistance } = usePullToRefresh()
-  const { user, apiEnvironment } = useAuthStore()
+  const { user } = useAuthStore()
   const largeFontMode = user?.largeFont ?? false
 
   useEffect(() => {
@@ -33,11 +33,10 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-surface flex flex-col overflow-x-clip">
       <ScrollRestoration />
-      {apiEnvironment === 'review' && <div role="status" className="mx-auto w-full max-w-mobile bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">가상 심사 환경 · 실제 회원·학생 자료와 분리됨</div>}
       
       {/* Pull to Refresh Animated Indicator */}
       <div 
-        className="fixed top-0 left-0 w-full flex justify-center pointer-events-none z-[60]"
+        className="safe-refresh-top fixed left-0 w-full flex justify-center pointer-events-none z-[60]"
         style={{ 
           height: pullDistance > 0 ? pullDistance + 40 : 0,
           opacity: pullProgress,

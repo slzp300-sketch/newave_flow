@@ -222,7 +222,7 @@ function StudentRoster() {
 
   return (
     <>
-      <div className="sticky top-14 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+      <div className="sticky below-app-header z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
         <div className="flex overflow-x-auto px-4 pt-3 pb-2 gap-2" style={{ scrollbarWidth: 'none' }}>
           {GRADES.map(grade => {
             const gc = GRADE_COLORS[grade]
@@ -368,7 +368,7 @@ function TeacherRoster() {
     <>
       <div className="flex flex-col gap-0 pb-4">
         {/* 상단 탭 */}
-        <div className="sticky top-14 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+        <div className="sticky below-app-header z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100">
           <div className="flex items-center px-4 pt-3 pb-0">
             <button aria-pressed={activeTab === 'executive'}
               onClick={() => setActiveTab('executive')}
@@ -722,14 +722,14 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
+      <div className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.92, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 12 }}
           transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-          className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl overflow-y-auto"
-          style={{ maxHeight: '85vh' }}
+          className="safe-modal-panel w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl overflow-y-auto"
+          style={{ maxHeight: 'min(85vh, var(--safe-overlay-height))' }}
         >
           <div className="flex justify-end px-4 pt-4 pb-0">
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
@@ -896,14 +896,14 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
+      <div className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.92, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 12 }}
           transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-          className="w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl flex flex-col"
-          style={{ maxHeight: '82vh' }}
+          className="safe-modal-panel w-full max-w-[360px] bg-white rounded-3xl pointer-events-auto shadow-2xl flex flex-col"
+          style={{ maxHeight: 'min(82vh, var(--safe-overlay-height))' }}
         >
           <div className="flex flex-col flex-shrink-0">
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
@@ -1179,14 +1179,14 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose} className="fixed inset-0 bg-black/40 z-[60]" />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
+      <div className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
           transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-          className="w-full max-w-[430px] bg-white rounded-3xl flex flex-col pointer-events-auto"
-          style={{ maxHeight: '82vh' }}
+          className="safe-modal-panel w-full max-w-[430px] bg-white rounded-3xl flex flex-col pointer-events-auto"
+          style={{ maxHeight: 'min(82vh, var(--safe-overlay-height))' }}
         >
           <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
             <div className="flex items-center justify-between mb-2">

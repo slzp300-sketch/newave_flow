@@ -66,6 +66,7 @@ class ScreenshotPreparation(unittest.TestCase):
         self.assertNotIn('__FIXTURE_BASE64__', swift)
         self.assertNotIn('__SCRIPT_BASE64__', swift)
         self.assertNotIn('__AUTH_BASE64__', swift)
+        self.assertNotIn('__GEOMETRY_BASE64__', swift)
         self.assertIn('compileContentRuleList', swift)
         self.assertIn('NewaveStoreScreenshotTests', swift)
         self.assertNotIn('rosterData', javascript)

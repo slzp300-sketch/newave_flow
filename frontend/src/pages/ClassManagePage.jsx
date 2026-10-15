@@ -345,9 +345,9 @@ function MemoSheet({ student, onClose, onSaved }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center px-4"
+        className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4"
       >
-        <div className="w-full max-w-[430px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '80vh' }}>
+        <div className="safe-modal-panel w-full max-w-[430px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: 'min(80vh, var(--safe-overlay-height))' }}>
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <StickyNote size={18} className="text-amber-400" />
@@ -415,9 +415,9 @@ function DeactivationReasonModal({ student, onClose, onSubmitted }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
         transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center px-6"
+        className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-6"
       >
-        <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 flex flex-col gap-4">
+        <div className="safe-modal-panel w-full max-w-sm bg-white rounded-3xl shadow-xl p-6 flex flex-col gap-4">
           <div className="flex items-start justify-between">
             <div>
               <p className="font-bold text-gray-900 text-base">{student.name} 제적 신청</p>
@@ -495,9 +495,9 @@ function EditStudentSheet({ student, onClose, onSaved }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center px-4"
+        className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4"
       >
-        <div className="w-full max-w-[430px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '90vh' }}>
+        <div className="safe-modal-panel w-full max-w-[430px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: 'min(90vh, var(--safe-overlay-height))' }}>
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <p className="font-bold text-gray-900 text-lg">{student.name} 정보 수정</p>
             <button onClick={onClose} className="p-2 rounded-full bg-gray-100">

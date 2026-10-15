@@ -26,7 +26,9 @@ def sources():
     auth = json.dumps({'state': {'user': data['user'], 'accessToken': f'synthetic.{payload}.not-a-real-signature',
         'refreshToken': 'synthetic-unused-refresh', 'apiEnvironment': 'production', 'authIdentity': None}, 'version': 0}, ensure_ascii=False)
     swift = (HERE / 'NewaveStoreScreenshotTests.swift').read_text(encoding='utf8')
-    for key, value in [('__FIXTURE_BASE64__', serialized), ('__SCRIPT_BASE64__', javascript), ('__AUTH_BASE64__', auth)]:
+    geometry = (HERE / 'screen-geometry.js').read_text(encoding='utf8')
+    for key, value in [('__FIXTURE_BASE64__', serialized), ('__SCRIPT_BASE64__', javascript), ('__AUTH_BASE64__', auth),
+                       ('__GEOMETRY_BASE64__', geometry)]:
         if swift.count(key) != 1:
             raise ValueError('Screenshot template must contain exactly one expected placeholder')
         swift = swift.replace(key, encode(value))

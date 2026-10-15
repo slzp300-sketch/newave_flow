@@ -315,14 +315,14 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
       onMouseDown={event => event.stopPropagation()}
       onCancel={event => { event.preventDefault(); requestClose() }}
       onClick={event => { if (event.target === event.currentTarget) requestClose() }}
-      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-4 open:flex items-center justify-center backdrop:bg-black/40 backdrop:backdrop-blur-sm">
+      className="safe-overlay safe-overlay-spaced fixed inset-0 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-4 open:flex items-center justify-center backdrop:bg-black/40 backdrop:backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         className="w-full max-w-[430px]"
       >
-        <div aria-busy={updateMutation.isPending || undefined} className="w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85dvh]">
+        <div aria-busy={updateMutation.isPending || undefined} className="w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85d">
           <div className="p-5 border-b border-gray-50 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">{cls.grade}</p>

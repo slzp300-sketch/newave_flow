@@ -92,7 +92,7 @@ export default function MenuPage() {
   return (
     <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
       <Header title="전체 메뉴" />
-      <div className="sticky top-14 z-20 border-b border-gray-200 bg-white px-4 pb-4 pt-3 space-y-3">
+      <div className="sticky below-app-header z-20 border-b border-gray-200 bg-white px-4 pb-4 pt-3 space-y-3">
         <SearchField label="메뉴 검색" value={search} onChange={setSearch} placeholder="어떤 기능을 찾으세요?" />
         {canManage && <SegmentedControl label="메뉴 범위" value={scope} onChange={setScope}
           options={[{ value: 'personal', label: '나의 활동' }, { value: 'admin', label: '관리' }]} />}

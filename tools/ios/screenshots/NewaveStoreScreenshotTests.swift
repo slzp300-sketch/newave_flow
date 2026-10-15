@@ -20,6 +20,7 @@ final class NewaveStoreScreenshotTests: XCTestCase {
         let fixture = try XCTUnwrap(Data(base64Encoded: "__FIXTURE_BASE64__"))
         let script = try XCTUnwrap(String(data: XCTUnwrap(Data(base64Encoded: "__SCRIPT_BASE64__")), encoding: .utf8))
         let auth = try XCTUnwrap(String(data: XCTUnwrap(Data(base64Encoded: "__AUTH_BASE64__")), encoding: .utf8))
+        let geometryScript = try XCTUnwrap(String(data: XCTUnwrap(Data(base64Encoded: "__GEOMETRY_BASE64__")), encoding: .utf8))
         let data = try XCTUnwrap(JSONSerialization.jsonObject(with: fixture) as? [String: Any])
         let scenes = try XCTUnwrap(data["scenes"] as? [[String: Any]])
         let rules = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WKContentRuleList, Error>) in
@@ -71,12 +72,32 @@ final class NewaveStoreScreenshotTests: XCTestCase {
                     value as? Bool == true { ready = true; break }
                 try await Task.sleep(nanoseconds: 200_000_000)
             }
-            let diagnostics = (try? await webView.evaluateJavaScript("JSON.stringify({timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone, localTime:new Date().toString(), fixture:window.__newaveScreenshot, text:document.body?.innerText})")) as? String ?? "WebView not ready"
+            if ready {
+                _ = try await webView.evaluateJavaScript("window.scrollTo(0,0); document.activeElement?.blur()")
+                try await Task.sleep(nanoseconds: 1_500_000_000)
+            }
+            let webFrame = webView.convert(webView.bounds, to: window)
+            let nativeGeometry: [String: Any] = [
+                "safeTop": Double(window.safeAreaInsets.top), "safeBottom": Double(window.safeAreaInsets.bottom),
+                "windowWidth": Double(window.bounds.width), "windowHeight": Double(window.bounds.height),
+                "webViewOriginX": Double(webFrame.minX), "webViewOriginY": Double(webFrame.minY),
+                "webViewWidth": Double(webFrame.width), "webViewHeight": Double(webFrame.height),
+                "screenScale": Double(window.screen.scale), "scrollOffsetY": Double(webView.scrollView.contentOffset.y),
+                "adjustedContentInsetTop": Double(webView.scrollView.adjustedContentInset.top)
+            ]
+            let geometry = (try? await webView.callAsyncJavaScript(geometryScript, arguments: ["native": nativeGeometry],
+                in: nil, contentWorld: .page)) as? [String: Any] ?? [:]
+            let diagnostics = (try? await webView.callAsyncJavaScript("""
+                return JSON.stringify({timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    localTime:new Date().toString(), fixture:window.__newaveScreenshot,
+                    text:document.body?.innerText, geometry});
+                """, arguments: ["geometry": geometry], in: nil, contentWorld: .page)) as? String ?? "WebView not ready"
             try diagnostics.write(to: directory.appendingPathComponent(filename + ".json"), atomically: true, encoding: .utf8)
             XCTAssertTrue(ready, "Screenshot screen not ready: \(filename); see synthetic diagnostics")
             guard ready else { return }
-            _ = try await webView.evaluateJavaScript("window.scrollTo(0,0); document.activeElement?.blur()")
-            try await Task.sleep(nanoseconds: 1_500_000_000)
+            let headerSafe = geometry["valid"] as? Bool == true
+            XCTAssertTrue(headerSafe, "Header overlaps the native safe area: \(filename); see geometry diagnostics")
+            guard headerSafe else { return }
             try Data(filename.utf8).write(to: directory.appendingPathComponent("ready"), options: .atomic)
             let acknowledged = directory.appendingPathComponent(filename + ".captured")
             let captureDeadline = Date().addingTimeInterval(120)

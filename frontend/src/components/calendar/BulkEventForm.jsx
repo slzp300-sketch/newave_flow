@@ -44,8 +44,8 @@ export function AddEventChoice({ open, onClose, onSingle, onBulk }) {
   return createPortal(
     <>
       <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
-      <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 pointer-events-none">
-        <div className="pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-4 shadow-2xl flex flex-col gap-2">
+      <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 pointer-events-none">
+        <div className="safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-4 shadow-2xl flex flex-col gap-2">
           <p className="text-sm font-bold text-gray-900 px-1 pb-1">일정 추가</p>
           <button type="button" className={item} onClick={() => { onClose(); onSingle() }}>
             <CalendarPlus size={20} className="text-primary-500" />
@@ -154,8 +154,8 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
   return createPortal(
     <>
       <div className="fixed inset-0 z-[60] bg-black/60" onClick={onClose} />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-        <div className="pointer-events-auto bg-white w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+        <div className="pointer-events-auto bg-white w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col safe-modal-panel safe-modal-90">
           <div className="flex justify-between items-center px-5 pt-5 pb-3">
             <h3 className="text-lg font-bold text-gray-900">여러 일정 한번에 추가</h3>
             <button type="button" onClick={onClose} className="p-2 bg-gray-50 rounded-full text-gray-400" aria-label="닫기"><X size={18} /></button>

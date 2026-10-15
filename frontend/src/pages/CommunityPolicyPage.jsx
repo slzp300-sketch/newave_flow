@@ -5,6 +5,7 @@ import { ShieldCheck } from 'lucide-react'
 import { safetyApi } from '../api/safety'
 import useAuthStore from '../store/authStore'
 import { authApi } from '../api/auth'
+import ReviewEnvironmentNotice from '../components/common/ReviewEnvironmentNotice'
 
 export function agreementKey(user, environment) { return ['community-agreement', environment, user?.id] }
 
@@ -33,7 +34,8 @@ export default function CommunityPolicyPage({ required = false }) {
     catch { setError('서버 로그아웃에 실패했습니다. 연결을 확인해주세요.'); setBusy(false); return }
     qc.clear(); clearAuth(); navigate('/login', { replace: true })
   }
-  return <div className="mx-auto min-h-screen w-full max-w-mobile bg-white px-5 py-7 pb-24">
+  return <div className="safe-page-top mx-auto min-h-screen w-full max-w-mobile bg-white px-5 pb-24" style={{ '--safe-page-space': '1.75rem' }}>
+    <ReviewEnvironmentNotice />
     <ShieldCheck className="mb-4 text-primary-600" size={32} aria-hidden="true" />
     <h1 className="text-2xl font-bold text-gray-900">함께 지키는 이용수칙</h1>
     <p className="mt-3 text-sm leading-relaxed text-gray-600">학생과 교사의 기록을 안전하게 나누기 위한 약속입니다.{required && ' 콘텐츠를 작성하기 전에 한 번 확인하고 동의해주세요.'}</p>

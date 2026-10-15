@@ -76,40 +76,26 @@ jobs:
             -derivedDataPath .verification/ios/DerivedData \
             -resultBundlePath .verification/ios/native-tests.xcresult \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES test 2>&1 | tee .verification/ios/native-tests.log
-      - name: Check the Release login screen on iPhone and iPad compatibility mode
-        timeout-minutes: 12
+      - name: Prepare the Release login screen verifier
+        timeout-minutes: 2
         working-directory: frontend
         run: |
-          set -x
           xcrun swiftc ../tools/ios/check-launch-screen.swift -o .verification/ios/check-launch-screen
           .verification/ios/check-launch-screen --self-test
-          for family in iphone ipad; do
-            if [[ "$family" == iphone ]]; then
-              simulator="$IOS_SIMULATOR_ID"
-              screenshot=.verification/ios/iphone-launch.png
-            else
-              simulator="$IOS_IPAD_SIMULATOR_ID"
-              screenshot=.verification/ios/ipad-compatibility-launch.png
-            fi
-            xcrun simctl bootstatus "$simulator" -b
-            xcrun simctl install "$simulator" .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
-            xcrun simctl launch --terminate-running-process "$simulator" app.newaveflow.mobile
-            deadline=$((SECONDS + 90))
-            screen_ready=false
-            while (( SECONDS < deadline )); do
-              xcrun simctl io "$simulator" screenshot "$screenshot"
-              if .verification/ios/check-launch-screen "$screenshot"; then
-                screen_ready=true
-                break
-              fi
-              sleep 5
-            done
-            if [[ "$screen_ready" != true ]]; then
-              echo "The Release login screen on $family did not become visible within 90 seconds."
-              exit 1
-            fi
-            xcrun simctl shutdown "$simulator"
-          done
+      - name: Check the Release login screen on iPhone
+        timeout-minutes: 9
+        working-directory: frontend
+        run: |
+          python3 ../tools/ios/check-release-launch.py --family iphone --simulator "$IOS_SIMULATOR_ID" \
+            --app .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
+            --checker .verification/ios/check-launch-screen --output .verification/ios
+      - name: Check the Release login screen in iPad compatibility mode
+        timeout-minutes: 9
+        working-directory: frontend
+        run: |
+          python3 ../tools/ios/check-release-launch.py --family ipad --simulator "$IOS_IPAD_SIMULATOR_ID" \
+            --app .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
+            --checker .verification/ios/check-launch-screen --output .verification/ios
       - name: Save native test evidence
         if: always()
         uses: actions/upload-artifact@v4

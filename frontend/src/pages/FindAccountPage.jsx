@@ -21,7 +21,7 @@ export default function FindAccountPage() {
   const [tab, setTab] = useState(searchParams.get('tab') === 'pw' ? TAB_PW : TAB_ID)
 
   return (
-    <div className="min-h-screen bg-primary-900 flex flex-col items-center justify-center px-5 py-8 max-w-mobile mx-auto">
+    <div className="safe-page-top min-h-screen bg-primary-900 flex flex-col items-center justify-center px-5 pb-8 max-w-mobile mx-auto" style={{ '--safe-page-space': '2rem' }}>
       <div className="mb-8 text-center animate-[fadeIn_0.5s_ease]">
         <h1><Brand emblem light /></h1>
       </div>

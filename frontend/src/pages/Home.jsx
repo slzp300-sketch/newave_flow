@@ -375,7 +375,7 @@ function AdminView({ navigate, today }) {
       {/* 바로가기 추가 모달 */}
       <AnimatePresence>
         {showLinkModal && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+          <div className="safe-overlay safe-overlay-sm-spaced fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -388,7 +388,7 @@ function AdminView({ navigate, today }) {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
+              className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col safe-modal-panel safe-modal-80 overflow-hidden"
             >
               <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
                 <div>

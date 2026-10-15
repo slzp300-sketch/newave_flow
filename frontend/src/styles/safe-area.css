@@ -1,0 +1,46 @@
+/* The native WebView covers the display. Reserve only the insets supplied by it. */
+@layer base {
+  :root {
+    --app-safe-top: env(safe-area-inset-top, 0px);
+    --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-viewport-height: 100vh;
+  }
+  @supports (height: 100dvh) {
+    :root { --safe-viewport-height: 100dvh; }
+  }
+}
+
+@layer utilities {
+  .app-header { padding-top: var(--app-safe-top); }
+  .app-header-row { min-height: 3.5rem; }
+  .below-app-header { top: var(--app-header-height, calc(3.5rem + var(--app-safe-top))); }
+  .safe-page-top { padding-top: calc(var(--app-safe-top) + var(--safe-page-space, 0px)); }
+  .safe-notice-top { top: calc(.75rem + var(--app-safe-top)); }
+  .safe-refresh-top { top: var(--app-safe-top); }
+
+  /* Keep backdrops full-screen while fitting their panels between the cutouts. */
+  .safe-overlay {
+    --safe-overlay-gap: 0px;
+    --safe-overlay-height: calc(var(--safe-viewport-height) - max(var(--app-safe-top), var(--safe-overlay-gap)) - max(var(--app-safe-bottom), var(--safe-overlay-gap)));
+  }
+  /* Beat responsive padding utilities without raising the modifier specificity. */
+  .safe-overlay[class] {
+    padding-top: max(var(--app-safe-top), var(--safe-overlay-gap));
+    padding-bottom: max(var(--app-safe-bottom), var(--safe-overlay-gap));
+  }
+  .safe-overlay-spaced { --safe-overlay-gap: 1rem; }
+  .safe-modal-panel {
+    max-height: min(var(--safe-modal-limit, var(--safe-viewport-height)), var(--safe-overlay-height, calc(var(--safe-viewport-height) - var(--app-safe-top) - var(--app-safe-bottom))));
+    overflow-y: auto;
+  }
+  .safe-modal-80 { --safe-modal-limit: 80vh; }
+  .safe-modal-85 { --safe-modal-limit: 85vh; }
+  .safe-modal-85d { --safe-modal-limit: 85vh; }
+  .safe-modal-90 { --safe-modal-limit: 90vh; }
+  @supports (height: 100dvh) {
+    .safe-modal-85d { --safe-modal-limit: 85dvh; }
+  }
+  @media (min-width: 640px) {
+    .safe-overlay-sm-spaced { --safe-overlay-gap: 1rem; }
+  }
+}

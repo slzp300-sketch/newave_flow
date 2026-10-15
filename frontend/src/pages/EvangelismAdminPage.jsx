@@ -436,7 +436,7 @@ function MoveSheet({ teacherName, fromGroupId, groups, moving, onMove, onUnassig
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm"
+      className="safe-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div
@@ -444,7 +444,7 @@ function MoveSheet({ teacherName, fromGroupId, groups, moving, onMove, onUnassig
         animate={{ y: 0 }}
         exit={{ y: 80 }}
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-mobile bg-white rounded-t-3xl p-6 flex flex-col gap-4 safe-bottom"
+        className="safe-modal-panel w-full max-w-mobile bg-white rounded-t-3xl p-6 flex flex-col gap-4"
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-1" />
         <div>
@@ -701,11 +701,11 @@ function ScheduleAdminCard({ schedule, index, groups, past, onEdit, onDelete, on
 function DeleteConfirmModal({ schedule, isPending, onConfirm, onCancel }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm"
+      className="safe-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm"
       onClick={onCancel}
     >
       <motion.div initial={{ y: 60 }} animate={{ y: 0 }} exit={{ y: 60 }} onClick={e => e.stopPropagation()}
-        className="w-full max-w-mobile bg-white rounded-t-3xl p-6 flex flex-col gap-4 safe-bottom"
+        className="safe-modal-panel w-full max-w-mobile bg-white rounded-t-3xl p-6 flex flex-col gap-4"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-red-100 flex items-center justify-center flex-shrink-0">

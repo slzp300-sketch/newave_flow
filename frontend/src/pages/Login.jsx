@@ -53,7 +53,7 @@ export default function Login() {
       if (!isAppleCancellation(err)) setError(err.response?.data?.message || err.message || 'Apple 로그인을 완료하지 못했습니다.')
     } finally { setAppleLoading(false) }
   }
-  if (appleRegistration) return <div className="min-h-screen max-w-mobile mx-auto bg-white px-6 py-10">
+  if (appleRegistration) return <div className="safe-page-top min-h-screen max-w-mobile mx-auto bg-white px-6 pb-10" style={{ '--safe-page-space': '2.5rem' }}>
     <h1 className="text-xl font-semibold">계정 연결 또는 가입 신청</h1>
     <p className="mt-4 text-sm leading-relaxed text-gray-600">Apple 인증을 완료했어요. 기존 회원은 이메일로 로그인한 뒤 ‘내 정보 → Apple 계정 연결’을 이용해 주세요.</p>
     <p className="mt-3 text-xs leading-relaxed text-gray-500">이메일이 같더라도 기존 계정과 자동으로 연결하지 않습니다. 반 배정과 기록을 이어가려면 기존 계정에서 연결해 주세요.</p>
@@ -80,7 +80,7 @@ export default function Login() {
 
 
   return (
-    <div className="min-h-screen bg-white max-w-mobile mx-auto">
+    <div className="safe-page-top min-h-screen bg-white max-w-mobile mx-auto">
       <div className={`login-hero motion-login ${appleEnabled ? 'h-[180px]' : 'h-[254px]'} flex flex-col items-center justify-center text-white`}>
         <Brand emblem light />
         <p className="text-sm font-medium tracking-[.12em] mt-6">시대를 바꿀 새로운 파도</p>

@@ -63,7 +63,7 @@ export default function NativeRuntime({ router }) {
     }
   }, [router])
   if (!storageError && !appleNotice) return null
-  return <div role="alert" className="fixed inset-x-3 top-3 z-[100] rounded-xl bg-amber-50 border border-amber-300 p-4 text-sm text-amber-950 shadow-lg">
+  return <div role="alert" className="safe-notice-top fixed inset-x-3 z-[100] rounded-xl bg-amber-50 border border-amber-300 p-4 text-sm text-amber-950 shadow-lg">
     {storageError ? '로그인 정보를 휴대폰에 저장하지 못했습니다. 앱을 다시 시작하면 로그인이 필요할 수 있습니다.' : appleNotice}
     {appleNotice && !storageError && <button className="ml-3 min-h-11 px-2 font-semibold underline" onClick={() => setAppleNotice('')}>확인</button>}
   </div>

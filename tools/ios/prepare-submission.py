@@ -111,15 +111,15 @@ def main():
     images = [check_png(args.screenshots / filename) for filename in SCREENSHOTS]
     receipt = json.loads(args.receipt.read_text(encoding='utf-8-sig'))
     require(re.fullmatch(r'[0-9a-f]{40}', receipt.get('sourceCommit', '')) is not None, 'Missing capture commit')
-    require(all(receipt.get(key) is True for key in ('nativeSimulator', 'syntheticData', 'externalNetworkBlocked')),
-            'Capture must use the isolated native simulator workflow')
+    require(all(receipt.get(key) is True for key in ('nativeSimulator', 'syntheticData', 'externalNetworkBlocked', 'headerSafeAreaVerified')),
+            'Capture must use the isolated native simulator workflow and pass native header safe-area verification')
     require(receipt.get('screenshotFiles') == SCREENSHOTS, 'Capture receipt inventory differs')
     for item in images:
         recorded = receipt.get('files', {}).get(item['file'], {})
         require(all(recorded.get(key) == item[key] for key in ('width', 'height', 'sha256')),
                 f'{item["file"]}: capture receipt does not match the image')
     public_receipt = {key: receipt.get(key) for key in ('sourceCommit', 'version', 'build', 'device', 'runtime',
-        'nativeSimulator', 'syntheticData', 'externalNetworkBlocked', 'nativeConfiguration', 'fixtureKind', 'screenshotFiles', 'files')}
+        'nativeSimulator', 'syntheticData', 'externalNetworkBlocked', 'headerSafeAreaVerified', 'nativeConfiguration', 'fixtureKind', 'screenshotFiles', 'files')}
     args.output.mkdir(parents=True)
     shutil.copyfile(args.metadata, args.output / 'metadata.ko-KR.json')
     for filename in SCREENSHOTS:

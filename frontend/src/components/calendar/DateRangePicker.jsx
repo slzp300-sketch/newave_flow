@@ -57,8 +57,8 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
   return createPortal(
     <>
       <div className="fixed inset-0 z-[80] bg-black/50" onClick={onClose} />
-      <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
-        <div className="pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl">
+      <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
+        <div className="safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl">
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={() => setMonth(m => subMonths(m, 1))} className="p-2 rounded-lg active:bg-gray-100" aria-label="이전 달">
               <ChevronLeft size={18} />

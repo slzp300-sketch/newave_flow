@@ -36,7 +36,7 @@ jobs:
           sudo systemsetup -settimezone Asia/Seoul
           [[ "$(sudo systemsetup -gettimezone)" == 'Time Zone: Asia/Seoul' ]]
           python3 tools/ios/select-xcode.py
-          node --test tools/ios/screenshots/fixture-network.test.mjs
+          node --test tools/ios/screenshots/*.test.mjs
           python3 -B -m unittest discover -s tools/ios/screenshots -p 'test_*.py'
       - name: Build actual web assets with the reserved unreachable API address
         working-directory: frontend
