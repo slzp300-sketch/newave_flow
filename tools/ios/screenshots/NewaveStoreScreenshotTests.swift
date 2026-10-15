@@ -63,14 +63,15 @@ final class NewaveStoreScreenshotTests: XCTestCase {
                     if (!state) return false;
                     if (state.errors.length) throw new Error(state.errors.join('; '));
                     const body = document.body?.innerText || '';
-                    return expected.every(text => body.includes(text)) && paths.every(path => state.requests.includes(path))
+                    return Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Seoul'
+                        && expected.every(text => body.includes(text)) && paths.every(path => state.requests.includes(path))
                         && !!document.querySelector('nav[aria-label="주요 메뉴"]')
                         && !document.querySelector('[role="alert"]');
                     """, arguments: ["expected": scene["text"]!, "paths": scene["requests"]!], in: nil, contentWorld: .page),
                     value as? Bool == true { ready = true; break }
                 try await Task.sleep(nanoseconds: 200_000_000)
             }
-            let diagnostics = (try? await webView.evaluateJavaScript("JSON.stringify({fixture:window.__newaveScreenshot, text:document.body?.innerText})")) as? String ?? "WebView not ready"
+            let diagnostics = (try? await webView.evaluateJavaScript("JSON.stringify({timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone, localTime:new Date().toString(), fixture:window.__newaveScreenshot, text:document.body?.innerText})")) as? String ?? "WebView not ready"
             try diagnostics.write(to: directory.appendingPathComponent(filename + ".json"), atomically: true, encoding: .utf8)
             XCTAssertTrue(ready, "Screenshot screen not ready: \(filename); see synthetic diagnostics")
             guard ready else { return }

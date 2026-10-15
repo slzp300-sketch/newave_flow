@@ -24,6 +24,7 @@
         (!url.searchParams.get('from') || event.eventDate >= url.searchParams.get('from')) &&
         (!url.searchParams.get('to') || event.eventDate <= url.searchParams.get('to'))) };
     }
+    if (path === '/events/attendance-required') return { status: 200, body: fixture.events.filter(event => event.attendanceRequired) };
     if (path === '/events/903') return { status: 200, body: fixture.events.find(event => event.id === 903) };
     if (Object.hasOwn(fixture.responses, path)) return { status: 200, body: fixture.responses[path] };
     state.errors.push(`Missing fixture: ${path}`);

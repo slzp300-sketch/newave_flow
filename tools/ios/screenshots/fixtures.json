@@ -3,7 +3,7 @@
   "clock": "2026-10-15T00:41:00.000Z",
   "user": {"id": 901, "name": "김하늘", "email": "teacher@screenshots.newaveflow.invalid", "role": "TEACHER", "largeFont": false},
   "scenes": [
-    {"file": "01-home.png", "route": "/", "text": ["오늘의 영성체크", "이번 주 나의 기록"], "requests": ["/tts/week", "/events"]},
+    {"file": "01-home.png", "route": "/", "text": ["오늘의 영성체크", "이번 주 나의 기록"], "requests": ["/tts/week", "/events", "/prayer-votes/mine", "/meetings/attendance", "/weekly-status", "/events/attendance-required", "/events/903/student-attendance"]},
     {"file": "02-tts.png", "route": "/tts?tab=stats&view=mine", "text": ["나의 2026년 분기 기록", "주차별 점수와 체크 내역"], "requests": ["/tts/stats"]},
     {"file": "03-calendar.png", "route": "/calendar", "text": ["2026년 10월", "함께하는 기도모임"], "requests": ["/events"]},
     {"file": "04-attendance.png", "route": "/attendance", "text": ["중등 1반", "김새봄", "담임·부담임 공동 기록"], "requests": ["/classes/901/students", "/attendance", "/reports/status"]},
@@ -15,6 +15,9 @@
     "/auth/apple/config": {"enabled": false},
     "/safety/agreement": {"accepted": true, "version": "2026-10-15"},
     "/notifications/unread-count": 0,
+    "/prayer-votes/mine": {"id": 901, "teacherId": 901, "teacherName": "김하늘", "weekStart": "2026-10-12", "status": "PRESENT", "reason": "", "scriptureSubmitted": false},
+    "/meetings/attendance": {"id": 901, "teacherId": 901, "meetingDate": "2026-10-17", "status": "PRESENT"},
+    "/weekly-status": {"attendanceSubmittedThisWeek": false, "unconfirmedMinutesCount": 0, "currentWeekMinutesExists": false, "currentWeekMinutesConfirmed": false},
     "/event-reads": {"901": "fixture-1", "902": "fixture-2", "903": "fixture-3"},
     "/tts/questions": [
       {"id": 901, "title": "말씀 (3장 이상)", "type": "DAYS", "points": 5, "active": true, "linkType": "NONE", "orderIndex": 1},

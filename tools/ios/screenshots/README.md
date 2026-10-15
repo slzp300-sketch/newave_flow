@@ -4,6 +4,7 @@
 
 - `fixtures.json`의 사람·학교·일정·기록은 새로 만든 예시다. 기존 roster/MSW 자료를 가져오지 않는다.
 - 웹 API는 `.invalid` 호스트로 빌드한다. 촬영용 WebView는 모든 HTTP(S) 연결을 차단하고, 미등록 요청이나 쓰기 요청은 실패시킨다. 생산 코드에 촬영용 로그인·라우트·환경 플래그를 추가하지 않는다.
+- 일회용 macOS의 시간대를 `Asia/Seoul`로 설정하고 WebView에서도 확인한다. 화면별 진단에 실제 시간대와 가상 시각을 남겨 단말 날짜와 한국 기준 행사 날짜가 달라지는 것을 막는다.
 - 일회용 CI checkout에서만 기존 AppTests 소스를 촬영 전용 테스트로 교체한다. App.app에는 가상 자료가 들어가지 않으며 앱/IPA는 산출물로 배포하지 않는다. 실제 화면 준비를 확인한 뒤 `simctl io screenshot`으로 전체 기기 화면을 촬영한다.
 - 화면 픽셀과 크기는 앱의 원본이다. `normalize-png.swift`는 완전히 불투명한 원본만 허용하고 sRGB RGB PNG로 저장한다. 텍스트·도형 합성, 화면 재배치·리사이즈·보정은 하지 않는다. 원본도 `originals/`에 보존한다.
 - `screenshots/`의 `01-home.png`부터 `05-event.png`와 `capture-receipt.json`을 제출 준비 패키지에 넣는다. 실제 최종 출시 버전의 기능·디자인·데이터 표시가 바뀌면 같은 과정으로 다시 촬영한다.
