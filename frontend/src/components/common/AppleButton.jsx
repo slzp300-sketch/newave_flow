@@ -19,6 +19,7 @@ export default function AppleButton({ onClick, disabled, loading, className = ''
   }, [])
   return <button ref={element} type="button" aria-label="Apple로 계속하기" aria-busy={loading || undefined}
     disabled={disabled || loading} onClick={onClick}
+    style={{ '--surface-bg': '#000', '--surface-border': '#000', '--surface-ink': '#fff' }}
     className={`relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-black text-base font-semibold text-white disabled:opacity-60 ${className}`}>
     {image ? <img src={image} alt="" className="h-12 w-full" /> : <span>Apple로 계속하기</span>}
     {loading && <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black text-sm" role="status">Apple 연결 중…</span>}

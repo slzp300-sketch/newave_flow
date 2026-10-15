@@ -93,6 +93,11 @@ final class NewaveKeychainTests: XCTestCase {
         }
         XCTAssertEqual(webView.url?.scheme, "capacitor")
         let result = try await webView.callAsyncJavaScript("""
+            const readyBy = Date.now() + 30000;
+            const loginReady = () => document.querySelector('#root form #login-password')
+                && document.querySelector('#root form button[type="submit"]')?.textContent.includes('로그인');
+            while (!loginReady() && Date.now() < readyBy) await new Promise(resolve => setTimeout(resolve, 100));
+            if (!loginReady()) throw new Error('The packaged React login screen did not render after native storage hydration');
             const storage = (method, options) => Capacitor.nativePromise('NewaveSecureStorage', method, options);
             const apple = (method, options = {}) => Capacitor.nativePromise('NewaveAppleSignIn', method, options);
             const availability = await apple('getAvailability');

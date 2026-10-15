@@ -77,8 +77,22 @@ jobs:
           xcrun simctl bootstatus "$IOS_SIMULATOR_ID" -b
           xcrun simctl install "$IOS_SIMULATOR_ID" .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
           xcrun simctl launch --terminate-running-process "$IOS_SIMULATOR_ID" app.newaveflow.mobile
-          sleep 3
-          xcrun simctl io "$IOS_SIMULATOR_ID" screenshot .verification/ios/iphone-launch.png
+          xcrun swiftc ../tools/ios/check-launch-screen.swift -o .verification/ios/check-launch-screen
+          .verification/ios/check-launch-screen --self-test
+          deadline=$((SECONDS + 90))
+          screen_ready=false
+          while (( SECONDS < deadline )); do
+            xcrun simctl io "$IOS_SIMULATOR_ID" screenshot .verification/ios/iphone-launch.png
+            if .verification/ios/check-launch-screen .verification/ios/iphone-launch.png; then
+              screen_ready=true
+              break
+            fi
+            sleep 5
+          done
+          if [[ "$screen_ready" != true ]]; then
+            echo "The Release login screen did not become visible within 90 seconds."
+            exit 1
+          fi
       - name: Save native test evidence
         if: always()
         uses: actions/upload-artifact@v4
