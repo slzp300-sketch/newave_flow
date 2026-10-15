@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { App as NativeApp } from '@capacitor/app'
 import { focusManager } from '@tanstack/react-query'
-import { isNativeApp } from './platform'
+import { isNativeApp, nativePlatform } from './platform'
 import { nativeBackDestination } from './backNavigation'
 import { queryClient } from '../queryClient'
 import { nativeKakaoDestination } from '../auth/kakaoFlow'
@@ -25,7 +25,7 @@ export default function NativeRuntime({ router }) {
     const openKakao = ({ url }) => { const path = nativeKakaoDestination(url); if (path) void router.navigate(path) }
     void register('appUrlOpen', openKakao)
     void NativeApp.getLaunchUrl().then(value => { if (!disposed && value?.url) openKakao(value) }).catch(() => {})
-    void register('backButton', () => {
+    if (nativePlatform === 'android') void register('backButton', () => {
       if (queryClient.isMutating()) return
       const dialog = Array.from(document.querySelectorAll('dialog[open]')).at(-1)
       if (dialog) {

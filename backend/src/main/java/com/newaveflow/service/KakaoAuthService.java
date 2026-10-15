@@ -47,7 +47,7 @@ public class KakaoAuthService {
         if (flows.count() >= 5000) throw new AppException(HttpStatus.TOO_MANY_REQUESTS, "로그인 요청이 많아요. 잠시 후 다시 시도해 주세요.");
         String state = randomToken();
         var flow = KakaoAuthFlow.builder().id(UUID.randomUUID().toString()).stateHash(hexHash(state))
-            .challenge(request.challenge()).purpose(purpose).stage(Stage.STARTED).nativeClient("android".equals(request.platform()))
+            .challenge(request.challenge()).purpose(purpose).stage(Stage.STARTED).nativeClient(Set.of("android", "ios").contains(request.platform()))
             .expiresAt(Instant.now().plusSeconds(600)).user(owner).authVersion(owner == null ? null : owner.getAuthVersion()).build();
         flows.save(flow);
         String url = "https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=" + KakaoClient.encode(config.getClientId())

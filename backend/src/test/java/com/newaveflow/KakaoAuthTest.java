@@ -52,8 +52,12 @@ class KakaoAuthTest {
     }
     String access(User user) { return "Bearer " + tokens.createAccessToken(user.getId(), user.getEmail(), user.getRole().name(), user.getAuthVersion()); }
     KakaoCompleteRequest authorize(User user, String subject, boolean nativeClient) throws Exception {
+        return authorize(user, subject, nativeClient ? "android" : "web");
+    }
+    KakaoCompleteRequest authorize(User user, String subject, String platform) throws Exception {
+        boolean nativeClient = !"web".equals(platform);
         String path = user == null ? "/api/auth/kakao/start" : "/api/users/me/kakao/start";
-        var request = post(path).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(new KakaoStartRequest(KakaoAuthService.challenge(VERIFIER), nativeClient ? "android" : "web", user == null ? null : PASSWORD)));
+        var request = post(path).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(new KakaoStartRequest(KakaoAuthService.challenge(VERIFIER), platform, user == null ? null : PASSWORD)));
         if (user != null) request.header("Authorization", access(user));
         var started = json.readTree(http.perform(request).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         var query = new URI(started.path("authorizationUrl").asText()).getRawQuery();
@@ -73,6 +77,26 @@ class KakaoAuthTest {
         if (user != null) call.header("Authorization", access(user));
         var response = http.perform(call).andExpect(status().is(expected)).andReturn().getResponse();
         return json.readTree(response.getContentAsString());
+    }
+
+    @Test void iosHandoffRequiresTheOriginalDeviceProofAndCanOnlyBeConsumedOnce() throws Exception {
+        var teacher = account("ios-native@example.invalid", "9901", true);
+        var proof = authorize(null, "9901", "ios");
+        assertTrue(flows.findById(proof.flowId()).orElseThrow().isNativeClient());
+        complete(new KakaoCompleteRequest(proof.flowId(), proof.ticket(), "x".repeat(43)), null, 400);
+        var session = complete(proof, null, 200);
+        assertEquals("SIGNED_IN", session.path("status").asText());
+        assertEquals(teacher.getId(), session.path("session").path("user").path("id").asLong());
+        complete(proof, null, 400);
+    }
+
+    @Test void unrecognizedPlatformsCannotCreateAuthenticationFlows() throws Exception {
+        for (String platform : List.of("ios-attacker", "native", "https://attacker.invalid")) {
+            http.perform(post("/api/auth/kakao/start").contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(new KakaoStartRequest(KakaoAuthService.challenge(VERIFIER), platform, null))))
+                .andExpect(status().isBadRequest());
+        }
+        assertEquals(0, flows.count());
     }
 
     @Test void existingConnectionKeepsIdPasswordRoleAndTtsRecords() throws Exception {

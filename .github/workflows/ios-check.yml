@@ -1,0 +1,86 @@
+name: iOS native checks
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'codex/ios-*']
+    paths:
+      - 'frontend/**'
+      - 'tools/ios/**'
+      - '.github/workflows/ios-check.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'tools/ios/**'
+      - '.github/workflows/ios-check.yml'
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Select an installed supported Xcode
+        run: python3 tools/ios/select-xcode.py
+      - name: Inspect the SDK and iPhone simulator
+        run: |
+          xcodebuild -version
+          python3 tools/ios/select-simulator.py
+      - name: Install the locked dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Web regression tests and iOS native sync
+        working-directory: frontend
+        run: |
+          npm test
+          npm run ios:sync
+          npm run ios:verify
+      - name: Compile the iOS Release app without distribution signing
+        working-directory: frontend
+        run: |
+          set -o pipefail
+          mkdir -p .verification/ios
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath .verification/ios/DerivedData \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee .verification/ios/release-build.log
+      - name: Test Keychain on the iPhone simulator
+        working-directory: frontend
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Debug -destination "id=$IOS_SIMULATOR_ID" \
+            -derivedDataPath .verification/ios/DerivedData \
+            -resultBundlePath .verification/ios/native-tests.xcresult \
+            CODE_SIGNING_ALLOWED=NO test 2>&1 | tee .verification/ios/native-tests.log
+      - name: Launch the Release app and capture its initial screen
+        working-directory: frontend
+        run: |
+          xcrun simctl bootstatus "$IOS_SIMULATOR_ID" -b
+          xcrun simctl install "$IOS_SIMULATOR_ID" .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
+          xcrun simctl launch --terminate-running-process "$IOS_SIMULATOR_ID" app.newaveflow.mobile
+          sleep 3
+          xcrun simctl io "$IOS_SIMULATOR_ID" screenshot .verification/ios/iphone-launch.png
+      - name: Save native test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-native-verification
+          path: |
+            frontend/.verification/ios/*.log
+            frontend/.verification/ios/*.png
+            frontend/.verification/ios/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 5

@@ -39,14 +39,15 @@ public class NewaveSecureStoragePlugin extends Plugin {
         return (SecretKey) store.getKey(ALIAS, null);
     }
     private boolean validate(PluginCall call) {
-        if (KEY.equals(call.getString("key"))) return true;
+        if (KEY.equals(call.getString("key")) || "newave-kakao-pending".equals(call.getString("key"))) return true;
         call.reject("Unsupported storage key");
         return false;
     }
     @PluginMethod public void get(PluginCall call) {
         if (!validate(call)) return;
         try {
-            String saved = preferences().getString(KEY, null);
+            String storageKey = call.getString("key");
+            String saved = preferences().getString(storageKey, null);
             JSObject result = new JSObject();
             if (saved != null) {
                 String[] parts = saved.split(":", 2);
@@ -58,7 +59,7 @@ public class NewaveSecureStoragePlugin extends Plugin {
             call.resolve(result);
         } catch (Exception error) {
             // Keys cannot follow a device restore. Discard unusable ciphertext, never use plaintext.
-            if (preferences().edit().remove(KEY).commit()) call.resolve(new JSObject());
+            if (preferences().edit().remove(call.getString("key")).commit()) call.resolve(new JSObject());
             else call.reject("Unable to read secure session");
         }
     }
@@ -71,13 +72,13 @@ public class NewaveSecureStoragePlugin extends Plugin {
             cipher.init(Cipher.ENCRYPT_MODE, key());
             String ciphertext = Base64.encodeToString(cipher.getIV(), Base64.NO_WRAP) + ":"
                 + Base64.encodeToString(cipher.doFinal(value.getBytes(StandardCharsets.UTF_8)), Base64.NO_WRAP);
-            if (!preferences().edit().putString(KEY, ciphertext).commit()) throw new IllegalStateException();
+            if (!preferences().edit().putString(call.getString("key"), ciphertext).commit()) throw new IllegalStateException();
             call.resolve();
         } catch (Exception error) { call.reject("Unable to save secure session"); }
     }
     @PluginMethod public void remove(PluginCall call) {
         if (!validate(call)) return;
-        if (preferences().edit().remove(KEY).commit()) call.resolve();
+        if (preferences().edit().remove(call.getString("key")).commit()) call.resolve();
         else call.reject("Unable to remove secure session");
     }
 }

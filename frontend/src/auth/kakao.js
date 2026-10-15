@@ -1,5 +1,5 @@
 import { Browser } from '@capacitor/browser'
-import { isNativeApp, secureAuthStorage } from '../native/platform'
+import { isNativeApp, nativePlatform, secureAuthStorage } from '../native/platform'
 import { authApi } from '../api/auth'
 import { parseKakaoCallback, validatePending } from './kakaoFlow'
 
@@ -25,7 +25,7 @@ export async function readKakaoPending() {
 export async function beginKakao(mode = 'LOGIN', currentPassword) {
   const verifier = encode(crypto.getRandomValues(new Uint8Array(32)))
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
-  const { data } = await authApi.startKakao(mode, { challenge: encode(new Uint8Array(digest)), platform: isNativeApp ? 'android' : 'web', currentPassword })
+  const { data } = await authApi.startKakao(mode, { challenge: encode(new Uint8Array(digest)), platform: nativePlatform, currentPassword })
   const authorization = new URL(data.authorizationUrl)
   if (authorization.origin !== 'https://kauth.kakao.com' || authorization.pathname !== '/oauth/authorize') throw new Error('카카오 로그인 주소를 확인하지 못했습니다.')
   await writePending({ flowId: data.flowId, verifier, mode, expiresAt: Date.now() + 10 * 60 * 1000 })

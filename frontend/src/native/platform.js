@@ -2,6 +2,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core'
 import { createSecureStorage } from './secureStorage'
 
 export const isNativeApp = Capacitor.isNativePlatform()
+export const nativePlatform = Capacitor.getPlatform()
 export const secureAuthStorage = isNativeApp
   ? createSecureStorage(registerPlugin('NewaveSecureStorage'), () => {
     window.dispatchEvent(new Event('newave:storage-error'))

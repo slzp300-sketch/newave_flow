@@ -11,9 +11,13 @@ class NativeCorsTest {
             .getCorsConfiguration(new MockHttpServletRequest("OPTIONS", "/api/auth/login"));
         assertNotNull(config);
         assertEquals("https://localhost", config.checkOrigin("https://localhost"));
+        assertEquals("capacitor://localhost", config.checkOrigin("capacitor://localhost"));
         assertEquals("https://newave-flow.vercel.app", config.checkOrigin("https://newave-flow.vercel.app"));
         assertNull(config.checkOrigin("http://localhost"));
         assertNull(config.checkOrigin("https://localhost.attacker.invalid"));
+        assertNull(config.checkOrigin("capacitor://localhost.attacker.invalid"));
+        assertNull(config.checkOrigin("capacitor://attacker.invalid"));
+        assertNull(config.checkOrigin("null"));
         assertNull(config.checkOrigin("https://attacker.invalid"));
     }
 }
