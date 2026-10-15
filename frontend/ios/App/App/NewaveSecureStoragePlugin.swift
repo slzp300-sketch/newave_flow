@@ -26,7 +26,7 @@ public class NewaveSecureStoragePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func get(_ call: CAPPluginCall) {
         perform(call) { key in
             if let value = try self.store.get(key) { call.resolve(["value": value]) }
-            else { call.resolve() }
+            else { call.resolve(["value": NSNull()]) }
         }
     }
 

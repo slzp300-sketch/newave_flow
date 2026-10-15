@@ -54,7 +54,7 @@ final class NewaveKeychainTests: XCTestCase {
     }
 
     @MainActor
-    func testPackagedWebViewRegistersStorageAndSupportsKakaoDeviceProof() async throws {
+    func testPackagedWebViewHandlesFreshStorageAndKakaoDeviceProof() async throws {
         let controller = NewaveBridgeViewController()
         controller.loadViewIfNeeded()
         XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveSecureStorage"))
@@ -65,6 +65,19 @@ final class NewaveKeychainTests: XCTestCase {
         }
         XCTAssertEqual(webView.url?.scheme, "capacitor")
         let result = try await webView.callAsyncJavaScript("""
+            const storage = (method, options) => Capacitor.nativePromise('NewaveSecureStorage', method, options);
+            const key = 'newave-kakao-pending';
+            await storage('remove', { key });
+            try {
+                const empty = await storage('get', { key });
+                if (!empty || empty.value !== null) throw new Error('Missing storage must resolve to an object with a null value');
+                const value = '가상 기기 인증 증명 🧪';
+                await storage('set', { key, value });
+                if ((await storage('get', { key })).value !== value) throw new Error('Native storage bridge lost the value');
+            } finally {
+                await storage('remove', { key });
+            }
+            if ((await storage('get', { key })).value !== null) throw new Error('Removed storage must return null');
             const bytes = new Uint8Array(32);
             crypto.getRandomValues(bytes);
             const digest = await crypto.subtle.digest('SHA-256', bytes);

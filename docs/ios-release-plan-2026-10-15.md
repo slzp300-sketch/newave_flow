@@ -33,7 +33,7 @@ Google Play는 개인 개발자 계정으로 진행했다. Apple의 개인 계�
 
 Capacitor 8은 macOS와 Xcode 26 이상을 사용하고 iOS 15 이상을 지원한다. App Store Connect 제출도 현재 Xcode 26 이상의 iOS 26 SDK 빌드가 필요하다. 빌드에 쓰는 SDK와 사용자의 최소 iOS 버전은 별도 설정이다. [Capacitor 환경](https://capacitorjs.com/docs/getting-started/environment-setup), [iOS 지원 버전](https://capacitorjs.com/docs/updating/8-0), [Apple 제출 기준](https://developer.apple.com/news/upcoming-requirements/?id=04282026a)
 
-먼저 macOS 자동 빌드에서 서명 없는 시뮬레이터 빌드를 확인한다. 성공하면 개발자 계정의 앱 식별자·서명 인증서·배포 권한과 업로드 인증을 연결한다. 인증서와 개인 키는 보호된 CI 설정에 저장하고 로그·앱·일반 빌드 산출물에 포함하지 않는다. 초기 네이티브 오류를 CI 로그로 해결하기 어려울 때는 원격 Mac을 잠깐 사용할 수 있는 경로를 별도 검토한다. [GitHub iOS 서명 안내](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications)
+먼저 macOS 자동 빌드에서 개발자 인증서 없이 시뮬레이터용 임시 서명으로 빌드와 Keychain을 확인한다. 서명을 완전히 끄면 Keychain 검사가 실패하므로 시뮬레이터에서도 임시 서명을 유지한다. 성공하면 개발자 계정의 앱 식별자·배포용 서명 인증서·권한과 업로드 인증을 연결한다. 인증서와 개인 키는 보호된 CI 설정에 저장하고 로그·앱·일반 빌드 산출물에 포함하지 않는다. 초기 네이티브 오류를 CI 로그로 해결하기 어려울 때는 원격 Mac을 잠깐 사용할 수 있는 경로를 별도 검토한다. [GitHub iOS 서명 안내](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications)
 
 ## 구현과 배포 순서
 

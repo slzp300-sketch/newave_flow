@@ -70,8 +70,10 @@ jobs:
             -resultBundlePath .verification/ios/native-tests.xcresult \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES test 2>&1 | tee .verification/ios/native-tests.log
       - name: Launch the Release app and capture its initial screen
+        timeout-minutes: 8
         working-directory: frontend
         run: |
+          set -x
           xcrun simctl bootstatus "$IOS_SIMULATOR_ID" -b
           xcrun simctl install "$IOS_SIMULATOR_ID" .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
           xcrun simctl launch --terminate-running-process "$IOS_SIMULATOR_ID" app.newaveflow.mobile

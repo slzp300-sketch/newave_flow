@@ -34,6 +34,8 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App \
 
 `NewaveSecureStoragePlugin`은 `newave-auth`와 `newave-kakao-pending`만 허용한다. Swift 저장소는 Keychain에서 로그인과 OAuth 증명을 별개 항목으로 저장하고 다른 앱·장치 백업과 공유하지 않는다. 읽기·쓰기 실패 시 평문으로 대체하지 않는다. Keychain이 앱 제거 후 남을 수 있어 새 설치 시 이전 항목을 정리한다. 설치 여부만 자체 UserDefaults에 저장하며 그 API 사유를 `PrivacyInfo.xcprivacy`에 선언했다. 개인정보 수집 항목 전체는 App Store 등록 단계에서 별도로 작성한다.
 
+저장값이 없을 때도 네이티브 조회는 `{ value: null }` 객체를 반환한다. 인자 없는 `call.resolve()`는 JavaScript에 `undefined`를 전달해 새 설치의 로그인 초기화를 실패시키므로 사용하지 않는다. WKWebView 검사는 실제 네이티브 브리지를 통해 빈 값 조회·가상 값 저장·조회·삭제와 삭제 후 재조회를 확인한다.
+
 카카오 시작 요청은 web·android·ios를 구분하고 Android와 iOS 모두 기존의 일회성 인증 결과와 기기 증명으로 앱에 복귀한다. 앱 이동 주소에 로그인 JWT를 넣지 않는다. `newaveflow://auth/kakao`의 정확한 경로·필드와 기기 증명·만료를 검사한다. 앱 출처는 `capacitor://localhost`만 추가했다. 브라우저 임의 출처나 `null` 출처를 허용하지 않는다.
 
 기존 Android 저장소는 카카오 임시 증명의 키를 거절하고 로그인 키 하나만 보관했다. 두 키를 각각 암호화해 저장·조회·삭제하도록 수정했고 기존 로그인 키·암호화 형식은 유지한다. 기존 Play 버전 5 파일은 변경하지 않는다. Android 수정은 다음 앱 빌드에 포함된다.
