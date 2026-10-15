@@ -1,0 +1,58 @@
+{
+  "fixtureKind": "invented-store-screenshots-v1",
+  "clock": "2026-10-15T00:41:00.000Z",
+  "user": {"id": 901, "name": "김하늘", "email": "teacher@screenshots.newaveflow.invalid", "role": "TEACHER", "largeFont": false},
+  "scenes": [
+    {"file": "01-home.png", "route": "/", "text": ["오늘의 영성체크", "이번 주 나의 기록"], "requests": ["/tts/week", "/events"]},
+    {"file": "02-tts.png", "route": "/tts?tab=stats&view=mine", "text": ["나의 2026년 분기 기록", "주차별 점수와 체크 내역"], "requests": ["/tts/stats"]},
+    {"file": "03-calendar.png", "route": "/calendar", "text": ["2026년 10월", "함께하는 기도모임"], "requests": ["/events"]},
+    {"file": "04-attendance.png", "route": "/attendance", "text": ["중등 1반", "김새봄", "담임·부담임 공동 기록"], "requests": ["/classes/901/students", "/attendance", "/reports/status"]},
+    {"file": "05-event.png", "route": "/event-attendance/903", "text": ["가을 나눔 예배", "행사 출석 체크", "김새봄"], "requests": ["/events/903", "/events/903/student-attendance"]}
+  ],
+  "responses": {
+    "/health": {"status": "UP"},
+    "/auth/kakao/config": {"enabled": false},
+    "/auth/apple/config": {"enabled": false},
+    "/safety/agreement": {"accepted": true, "version": "2026-10-15"},
+    "/notifications/unread-count": 0,
+    "/event-reads": {"901": "fixture-1", "902": "fixture-2", "903": "fixture-3"},
+    "/tts/questions": [
+      {"id": 901, "title": "말씀 (3장 이상)", "type": "DAYS", "points": 5, "active": true, "linkType": "NONE", "orderIndex": 1},
+      {"id": 902, "title": "기도 (10분 이상)", "type": "DAYS", "points": 5, "active": true, "linkType": "NONE", "orderIndex": 2},
+      {"id": 903, "title": "주일 예배", "type": "ATTEND", "points": 10, "active": true, "linkType": "NONE", "orderIndex": 3}
+    ],
+    "/tts/week": {"year": 2026, "weekNum": 42, "weekStart": "2026-10-11", "importedPeriod": false, "answers": [
+      {"questionId": 901, "answerData": "{\"월\":true,\"화\":true,\"수\":true,\"목\":true}"},
+      {"questionId": 902, "answerData": "{\"월\":true,\"화\":true,\"수\":true}"},
+      {"questionId": 903, "answerData": "true"}
+    ], "linked": []},
+    "/tts/stats": {"year": 2026, "currentWeek": 42, "people": [
+      {"key": "teacher-901", "teacherId": 901, "name": "김하늘", "grade": "중등 1반", "weekly": {"40": 55, "41": 60, "42": 45}, "sheetWeeks": []}
+    ]},
+    "/classes": [{"id": 901, "name": "중등 1반", "ageGroup": "중등", "description": "함께 자라는 우리 반"}],
+    "/classes/901/students": [
+      {"id": 901, "name": "김새봄", "grade": "중1", "school": "한빛중학교"},
+      {"id": 902, "name": "박다온", "grade": "중1", "school": "한빛중학교"},
+      {"id": 903, "name": "정이든", "grade": "중1", "school": "새봄중학교"},
+      {"id": 904, "name": "윤하람", "grade": "중1", "school": "새봄중학교"}
+    ],
+    "/attendance": [
+      {"studentId": 901, "status": "PRESENT", "note": ""},
+      {"studentId": 902, "status": "PRESENT", "note": ""},
+      {"studentId": 903, "status": "PRESENT", "note": ""},
+      {"studentId": 904, "status": "ABSENT", "absentReason": "가족 일정", "note": ""}
+    ],
+    "/reports/status": {"status": "DRAFT", "updatedAt": "2026-10-15T09:30:00"},
+    "/events/903/student-attendance": [
+      {"studentId": 901, "studentName": "김새봄", "className": "중등 1반", "status": null},
+      {"studentId": 902, "studentName": "박다온", "className": "중등 1반", "status": null},
+      {"studentId": 903, "studentName": "정이든", "className": "중등 1반", "status": null},
+      {"studentId": 904, "studentName": "윤하람", "className": "중등 1반", "status": null}
+    ]
+  },
+  "events": [
+    {"id": 901, "title": "함께하는 기도모임", "description": "서로의 한 주를 나누고 함께 기도해요.", "eventDate": "2026-10-15", "endDate": "2026-10-15", "startTime": "19:30", "endTime": "20:30", "eventType": "REGULAR", "color": "emerald", "attendanceRequired": false, "readVersion": "fixture-1"},
+    {"id": 902, "title": "교사 준비 모임", "description": "다음 주 말씀과 반별 활동을 준비해요.", "eventDate": "2026-10-17", "endDate": "2026-10-17", "startTime": "10:00", "endTime": "11:00", "eventType": "MEETING", "color": "blue", "attendanceRequired": false, "readVersion": "fixture-2"},
+    {"id": 903, "title": "가을 나눔 예배", "description": "함께 예배하고 마음을 나누는 시간입니다.", "eventDate": "2026-10-18", "endDate": "2026-10-18", "startTime": "11:00", "endTime": "12:30", "eventType": "SPECIAL", "color": "amber", "attendanceRequired": true, "attendanceTarget": "STUDENT_ONLY", "attendanceStartDate": "2026-10-11", "attendanceDeadline": "2026-10-18", "readVersion": "fixture-3"}
+  ]
+}

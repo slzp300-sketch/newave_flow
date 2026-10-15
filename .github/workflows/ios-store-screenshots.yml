@@ -1,0 +1,75 @@
+name: iOS synthetic store screenshots
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Exact main commit to capture (no Apple credentials or production data)'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: ios-store-screenshots
+  cancel-in-progress: false
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    env:
+      VITE_API_URL: https://screenshots.newaveflow.invalid/api
+      REQUESTED_SHA: ${{ inputs.commit_sha }}
+    steps:
+      - name: Require the explicit main revision
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/main && "$REQUESTED_SHA" == "$GITHUB_SHA" ]]
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Select Xcode and verify the isolated fixture
+        run: |
+          python3 tools/ios/select-xcode.py
+          node --test tools/ios/screenshots/fixture-network.test.mjs
+          python3 -B -m unittest discover -s tools/ios/screenshots -p 'test_*.py'
+      - name: Build actual web assets with the reserved unreachable API address
+        working-directory: frontend
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run ios:sync
+          npm run ios:verify
+      - name: Prepare the disposable native test source and simulator
+        run: python3 tools/ios/screenshots/prepare.py
+      - name: Compile the actual Release app and screenshot-only test bundle
+        timeout-minutes: 18
+        run: |
+          set -o pipefail
+          xcodebuild -project frontend/ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination "id=$SCREENSHOT_SIMULATOR_ID" -parallel-testing-enabled NO \
+            -derivedDataPath frontend/.verification/store-screenshots/DerivedData \
+            ENABLE_TESTABILITY=YES CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES build-for-testing \
+            2>&1 | tee frontend/.verification/store-screenshots/build.log
+          xcrun swiftc tools/ios/screenshots/normalize-png.swift \
+            -o frontend/.verification/store-screenshots/normalize-png
+      - name: Capture five native screens and verify their sizes and RGB pixels
+        timeout-minutes: 15
+        run: python3 tools/ios/screenshots/capture.py
+      - name: Save only screenshots, provenance and synthetic test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-store-screenshots
+          path: |
+            frontend/.verification/store-screenshots/screenshots/*.png
+            frontend/.verification/store-screenshots/originals/*.png
+            frontend/.verification/store-screenshots/diagnostics/*.json
+            frontend/.verification/store-screenshots/capture-receipt.json
+            frontend/.verification/store-screenshots/device.json
+            frontend/.verification/store-screenshots/*.log
+            frontend/.verification/store-screenshots/*.xcresult
+          if-no-files-found: error
+          retention-days: 14

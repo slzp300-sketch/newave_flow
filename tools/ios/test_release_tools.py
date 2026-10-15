@@ -137,6 +137,7 @@ class BuiltBundle(unittest.TestCase):
         self.info = {'CFBundleIdentifier': 'app.newaveflow.mobile', 'CFBundleDisplayName': '뉴웨이브 플로우',
                      'UIDeviceFamily': [1], 'MinimumOSVersion': '15.0', 'CFBundleSupportedPlatforms': ['iPhoneSimulator'],
                      'CFBundleShortVersionString': '1.0.0', 'CFBundleVersion': '1', 'NewaveAppleSignInEnabled': 'NO',
+                     'ITSAppUsesNonExemptEncryption': False,
                      'CFBundleURLTypes': [{'CFBundleURLSchemes': ['newaveflow']}],
                      'NSCameraUsageDescription': 'Synthetic camera purpose', 'NSPhotoLibraryUsageDescription': 'Synthetic photo purpose'}
         self.write_plist('Info.plist', self.info)
@@ -162,6 +163,17 @@ class BuiltBundle(unittest.TestCase):
 
     def test_complete_simulator_bundle(self):
         self.assertEqual(bundle['verify'](self.app)['privacyManifests'], 3)
+
+    def test_missing_or_changed_encryption_declaration_requires_review(self):
+        for value in (None, True, 'false'):
+            with self.subTest(value=value):
+                if value is None:
+                    self.info.pop('ITSAppUsesNonExemptEncryption', None)
+                else:
+                    self.info['ITSAppUsesNonExemptEncryption'] = value
+                self.write_plist('Info.plist', self.info)
+                with self.assertRaises(ValueError):
+                    bundle['verify'](self.app)
 
     def test_sdk_manifest_must_reach_final_app(self):
         (self.app / 'Frameworks/Cordova.framework/PrivacyInfo.xcprivacy').unlink()

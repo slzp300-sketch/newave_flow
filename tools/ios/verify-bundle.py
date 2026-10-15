@@ -27,6 +27,8 @@ def verify(app, apple_login=False, device=False):
     expected_platform = 'iPhoneOS' if device else 'iPhoneSimulator'
     require(expected_platform in info.get('CFBundleSupportedPlatforms', []), 'Wrong build platform')
     require(info.get('NewaveAppleSignInEnabled') == ('YES' if apple_login else 'NO'), 'Apple login setting mismatch')
+    require(info.get('ITSAppUsesNonExemptEncryption') is False,
+            'Encryption declaration changed or missing; review docs/ios-submission-evidence.md')
     schemes = [s for entry in info.get('CFBundleURLTypes', []) for s in entry.get('CFBundleURLSchemes', [])]
     require(schemes == ['newaveflow'], 'Unexpected callback URL schemes')
     require(not info.get('NSAppTransportSecurity', {}).get('NSAllowsArbitraryLoads'), 'Unrestricted HTTP is enabled')
@@ -61,7 +63,7 @@ def verify(app, apple_login=False, device=False):
                 for entry in app_privacy.get('NSPrivacyAccessedAPITypes', [])), 'Missing UserDefaults reason')
     return {'bundleId': BUNDLE_ID, 'version': info.get('CFBundleShortVersionString'),
             'build': info.get('CFBundleVersion'), 'platform': expected_platform,
-            'appleLogin': apple_login, 'privacyManifests': 3}
+            'appleLogin': apple_login, 'privacyManifests': 3, 'usesNonExemptEncryption': False}
 
 
 if __name__ == '__main__':
