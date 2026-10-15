@@ -25,6 +25,37 @@ class ReleaseOrchestration(unittest.TestCase):
         self.assertNotIn('private key', str(error.exception))
         self.assertNotIn('private-argument', str(error.exception))
 
+    def test_signed_entitlements_request_xml_and_preserve_validation(self):
+        entitlements = {'application-identifier': 'SYNTHETIC1.app.newaveflow.mobile',
+                        'com.apple.developer.team-identifier': 'SYNTHETIC1', 'get-task-allow': False}
+
+        def codesign(args, **kwargs):
+            # Current codesign's default display is human-readable DER, not a plist.
+            output = plistlib.dumps(entitlements) if '--xml' in args else b'[Dict]\n[Key] private owner'
+            return Mock(returncode=0, stdout=output, stderr=b'Executable=private path')
+
+        with patch('subprocess.run', side_effect=codesign):
+            for stage in ('Archive entitlement inspection', 'Exported entitlement inspection'):
+                with self.subTest(stage=stage):
+                    inspected = release['signed_entitlements'](Path('Synthetic.app'), stage)
+                    self.assertEqual(inspected, entitlements)
+                    preflight['verify_signed_entitlements'](inspected, 'SYNTHETIC1', False)
+                    with self.assertRaises(ValueError):
+                        preflight['verify_signed_entitlements'](inspected, 'DIFFERENT1', False)
+
+    def test_invalid_plist_output_reports_stage_without_private_contents(self):
+        for stage in ('Profile decoding', 'Archive entitlement inspection',
+                      'Exported entitlement inspection', 'Exported profile inspection'):
+            for output in (b'[Dict]\n[Key] private owner', b'<?xml version="1.0"?><private-owner>',
+                           plistlib.dumps(['private owner'])):
+                with self.subTest(stage=stage, output_type=output[:8]), \
+                     patch('subprocess.run', return_value=Mock(returncode=0, stdout=output)):
+                    with self.assertRaises(ValueError) as error:
+                        release['command_plist'](['synthetic-tool', 'private-argument'], stage)
+                    self.assertEqual(str(error.exception),
+                                     f'{stage} returned invalid property-list data; no raw private output was published')
+                    self.assertTrue(error.exception.__suppress_context__)
+
     def test_signing_and_upload_stop_before_platform_commands_when_not_configured(self):
         with patch.dict('os.environ', {}, clear=True), patch('subprocess.run') as run:
             for action in ('sign', 'upload'):

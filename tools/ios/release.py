@@ -27,6 +27,23 @@ def command(args, label, *, cwd=None, env=None):
     return result.stdout
 
 
+def command_plist(args, label):
+    output = command(args, label)
+    try:
+        result = plistlib.loads(output)
+        require(isinstance(result, dict), 'Expected a property-list dictionary')
+    except Exception:
+        # Parser errors can contain fragments of private tool output.
+        raise ValueError(f'{label} returned invalid property-list data; no raw private output was published') from None
+    return result
+
+
+def signed_entitlements(app, label):
+    # Modern codesign defaults to a human-readable DER representation, not a plist.
+    # https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles
+    return command_plist(['codesign', '--display', '--entitlements', '-', '--xml', str(app)], label)
+
+
 def private_directory():
     require(sys.platform == 'darwin', 'Signing/upload only runs on a disposable macOS runner')
     temp = Path(os.environ['RUNNER_TEMP']).resolve()
@@ -47,7 +64,7 @@ def sign():
     profile_file = private / 'distribution.mobileprovision'
     profile_file.write_bytes(helpers['decode_secret'](os.environ, 'IOS_PROFILE_BASE64'))
     require(bool(os.environ.get('P12_PASSWORD')), 'Missing secret: P12_PASSWORD')
-    profile = plistlib.loads(command(['security', 'cms', '-D', '-i', str(profile_file)], 'Profile decoding'))
+    profile = command_plist(['security', 'cms', '-D', '-i', str(profile_file)], 'Profile decoding')
     profile_uuid = helpers['validate_profile'](profile, team, apple)
     cert_pem = private / 'distribution.pem'
     cert_pem.write_bytes(command(['openssl', 'pkcs12', '-in', str(certificate), '-clcerts', '-nokeys',
@@ -89,8 +106,8 @@ def sign():
     summary = verify_bundle(app, apple_login=apple, device=True)
     require(summary['version'] == os.environ['RELEASE_VERSION'] and summary['build'] == os.environ['RELEASE_BUILD'], 'Archive version mismatch')
     command(['codesign', '--verify', '--deep', '--strict', str(app)], 'Archive signature validation')
-    signed_entitlements = plistlib.loads(command(['codesign', '--display', '--entitlements', '-', str(app)], 'Signed entitlement inspection'))
-    helpers['verify_signed_entitlements'](signed_entitlements, team, apple)
+    archive_entitlements = signed_entitlements(app, 'Archive entitlement inspection')
+    helpers['verify_signed_entitlements'](archive_entitlements, team, apple)
     export = private / 'ExportOptions.plist'
     export.write_bytes(plistlib.dumps({'method': 'app-store-connect', 'destination': 'export',
         'signingStyle': 'manual', 'teamID': team, 'signingCertificate': matches[0],
@@ -105,9 +122,9 @@ def sign():
     exported = verify_bundle(exported_app, apple_login=apple, device=True)
     require(exported == summary, 'Export changed the app metadata')
     command(['codesign', '--verify', '--deep', '--strict', str(exported_app)], 'Exported IPA signature validation')
-    exported_entitlements = plistlib.loads(command(['codesign', '--display', '--entitlements', '-', str(exported_app)], 'Exported entitlement inspection'))
+    exported_entitlements = signed_entitlements(exported_app, 'Exported entitlement inspection')
     helpers['verify_signed_entitlements'](exported_entitlements, team, apple)
-    exported_profile = plistlib.loads(command(['security', 'cms', '-D', '-i', str(exported_app / 'embedded.mobileprovision')], 'Exported profile inspection'))
+    exported_profile = command_plist(['security', 'cms', '-D', '-i', str(exported_app / 'embedded.mobileprovision')], 'Exported profile inspection')
     require(helpers['validate_profile'](exported_profile, team, apple) == profile_uuid, 'Export used a different provisioning profile')
     summary.update({'commit': os.environ['RELEASE_SHA'], 'ipaSha256': hashlib.sha256(ipas[0].read_bytes()).hexdigest(),
                     'uploadCommandCompleted': False, 'appleProcessingVerified': False})
