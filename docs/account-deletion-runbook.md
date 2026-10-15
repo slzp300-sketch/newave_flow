@@ -63,7 +63,7 @@ Apple 서버 알림용 V011은 별도 활성화 단계에서 적용한다. 최�
 ## 실제 요청 한 건의 실행 순서
 
 1. 접수 번호를 발급하고 본인 확인, 담당 반 인계, 외부 사본(시트·메신저·문서·메일 포함)을 검토한다. 현재 사용자 ID와 계정 생성시각을 대조한다. 마지막 관리자는 먼저 운영 권한을 인계한다.
-2. `node tools/privacy/account-deletion.cjs plan <userId>`로 읽기 전용 조사한다. 검수안은 접근이 제한된 `.backups/privacy/<요청번호>.review.json`에만 생성한다. 채팅·Git·노션에 원문을 붙이지 않는다.
+2. 예약 백업과 동일한 `NEWAVE_BACKUP_DIRECTORY`를 지정한다. 이 PC에서는 `$env:NEWAVE_BACKUP_DIRECTORY = Join-Path $env:LOCALAPPDATA 'NewaveFlow\Backups\automatic\.backups'`다. `node tools/privacy/account-deletion.cjs plan <userId>`로 읽기 전용 조사한다. 검수안은 지정한 보호 폴더 아래 `privacy/<요청번호>.review.json`에만 생성한다. 백업과 삭제 CLI는 같은 설정의 DPAPI 제공자를 사용한다. 경로를 바꿀 때는 기존 삭제 이력도 함께 보존해야 하며 비어 있는 새 이력 폴더로 우회하지 않는다. 채팅·Git·노션에 원문을 붙이지 않는다.
 3. `reviewCandidates`는 이름·이메일·전화번호가 남은 필드의 ID/해시 목록이다. 과거 이름·연락처도 `identifiers`에 추가한다. 자동 검색이 찾지 못하는 별명·이미지·첨부·문맥상의 식별 정보는 별도 사람이 확인한다.
 4. `legacyDecisions`의 각 행을 참/거짓으로 확정하고, `redactions`에는 `table`, `column`, `id`, `beforeMd5`, `replacement`를 지정한다. 다른 사람의 동일 이름을 보존할 때만 `exceptions`에 정확한 행/필드/해시와 10자 이상의 설명을 넣는다. 검토가 끝난 네 가지 확인 항목만 `true`로 바꾼다.
 5. 최신 암호화 백업을 별도 `newave_privacy_...` 로컬 DB에 복원하고 V004를 적용한다. `PRIVACY_REHEARSAL_DATABASE` 환경변수를 이 이름으로 지정한 뒤 `node tools/privacy/account-deletion.cjs rehearse <보호된 검수안 경로>`를 실행한다. **rehearse는 로컬 DB만 허용하며 전부 롤백한다.**

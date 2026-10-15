@@ -8,14 +8,14 @@
 - 한국 시간 매일 21:00 및 현재 사용자 로그인 시 실행. 이미 그날 성공한 백업이 있으면 건너뛴다. 꺼져 있던 동안 놓친 실행은 다음 사용 시 보완한다.
 - 이 Windows 사용자로 로그인한 상태와 인터넷 연결이 필요하다. 화면 잠금 중에도 로그인 세션이 유지되면 실행 가능하다. Windows 비밀번호를 예약 작업에 저장하지 않는다.
 - 실패 시 30분 간격으로 최대 3회 재시도. 숨김 창으로 실행하며 동시에 여러 백업을 실행하지 않는다.
-- 저장소 루트의 `.backups/`에 암호화 파일, 건수·해시 영수증, 실행 기록을 보관한다. Git에서 제외하고 현재 사용자·SYSTEM·관리자만 파일에 접근하도록 설정했다.
+- `NEWAVE_BACKUP_DIRECTORY`가 지정한 폴더에 암호화 파일, 건수·해시 영수증, 실행 기록을 보관한다. 미지정 시 저장소 루트의 `.backups/`를 사용한다. 이 PC의 예약 작업은 OneDrive 밖 `%LOCALAPPDATA%\NewaveFlow\Backups\automatic\.backups`를 사용하며 현재 사용자·SYSTEM·관리자만 접근한다.
 - 2026-10-12 사용자 승인에 따라 생성 후 30일 지난 암호화 백업과 영수증은 다음 작업 실행 때 자동 삭제한다. 최신 여부와 무관하게 만료본 복원은 차단한다. 이 PC가 꺼져 있으면 정리도 다음 실행까지 지연된다. 인터넷이 없어도 로컬 정리는 먼저 실행하도록 예약 작업의 네트워크 필수 조건을 해제했다.
 
 ## 보호와 검사
 
 1. 기존 Railway CLI 로그인으로 DB 접속 설정을 읽는다. DB 비밀번호를 코드·명령 인자·로그에 기록하지 않는다.
 2. 검증된 SSH 연결에서 받은 공개 CA·서버 인증서를 사용한다. Node 연결은 인증서 지문·서버 이름을 검사하고 `pg_dump`는 `verify-full`로 검증한다. 인증서 변경 시 검증을 우회하지 않고 백업 실패로 기록한다.
-3. 읽기 전용 트랜잭션의 같은 PostgreSQL 스냅샷으로 전체 테이블 건수·내용 해시와 덤프를 생성한다.
+3. 읽기 전용 트랜잭션의 같은 PostgreSQL 스냅샷으로 전체 테이블 건수·내용 해시와 덤프를 생성한다. 원본과 복원본 모두 UTC 세션에서 해시를 계산해 시간대에 따른 `timestamptz` 표현 차이를 없앤다.
 4. Windows DPAPI의 `CurrentUser`로 암호화하고 즉시 복호화해 SHA-256과 백업 형식을 확인한 다음 완료 파일로 저장한다.
 5. 첫 실행 및 마지막 복원 검증으로부터 7일 이상 지난 실행에서 별도 로컬 PostgreSQL에 전체 복원한다. 모든 테이블의 건수·내용 해시가 일치해야 복원 검증 성공으로 기록한다. 이번 실행이 실제 생성한 임시 DB만 정리한다.
 6. 원본 대조 후 별도 암호화 삭제 이력을 복원본에 재적용한다. 미완료 삭제 의도, 계정 생성시각 불일치, 이전 텍스트와 검수안 불일치 등은 복원 검수를 중단한다. 복원본을 운영에 연결하기 전에도 같은 재적용 절차가 필수다. 이력은 DB 덤프와 따로 보관한다.
@@ -27,6 +27,7 @@ DPAPI 복호화에는 이 Windows 사용자 환경이 필요하다. PC 분실·W
 저장소 루트에서 실행한다.
 
 ```powershell
+$env:NEWAVE_BACKUP_DIRECTORY = Join-Path $env:LOCALAPPDATA 'NewaveFlow\Backups\automatic\.backups'
 node tools/backup/backup.cjs backup --force
 node tools/backup/backup.cjs verify
 node tools/backup/backup.cjs prune --dry-run
@@ -39,7 +40,7 @@ Get-ScheduledTaskInfo -TaskName 'NewaveFlow-EncryptedDatabaseBackup'
 - `.backups/history.jsonl`: 성공·실패 이력. 과거 실패 파일이 남아 있더라도 최신 성공 시각과 함께 판단한다.
 - 예약 작업의 `LastTaskResult = 0`은 해당 실행의 정상 종료다. 실제 백업 생성 시각은 위 영수증을 확인한다.
 
-실행 의존성은 기존 Node.js, Windows PowerShell, Railway CLI 로그인, PostgreSQL 18 도구와 `pg` 모듈이다. `.backups/config.json`이 가리키는 `backend/.verification` 안의 도구·로컬 검수 DB·비밀번호 파일을 정리하면 백업 또는 복원 검사가 중단된다. 폴더를 옮길 때는 설정과 예약 작업 경로를 함께 갱신한다. 키·접속 설정·암호화 백업을 Git에 추가하지 않는다.
+실행 의존성은 기존 Node.js, Windows PowerShell, Railway CLI 로그인, PostgreSQL 18 도구와 `pg` 모듈이다. 설정에 `dpapiPython` 절대 경로가 있으면 `protect.py`가 바이너리 입출력을 처리한다. 없으면 기존 `protect.ps1`을 사용하며 두 방식은 같은 DPAPI 사용자 범위와 entropy를 사용한다. 이 PC는 PowerShell 파이프 EOF 문제를 피하려고 기존 Python 런타임을 지정했다. 백업 폴더의 `config.json`이 가리키는 도구·로컬 검수 DB·비밀번호 파일을 정리하면 백업 또는 복원 검사가 중단된다. 폴더를 옮길 때는 설정과 예약 작업 경로를 함께 갱신한다. 예약 등록은 `register-task.ps1 -BackupDirectory <절대경로>`로 현재 백업의 전체 복원 확인 후 수행한다. 키·접속 설정·암호화 백업을 Git에 추가하지 않는다.
 
 ## 최초 검증 결과
 

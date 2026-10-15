@@ -1,11 +1,18 @@
 // Operator-only erasure CLI: HTTP accepts requests but never performs the reviewed deletion.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto'),tls=require('node:tls');
 const {runDeletion}=require('./deletion.cjs');
-const root=path.resolve(__dirname,'../..'),privateRoot=path.join(root,'.backups');
+const root=path.resolve(__dirname,'../..'),privateRoot=process.env.NEWAVE_BACKUP_DIRECTORY
+ ? path.resolve(process.env.NEWAVE_BACKUP_DIRECTORY) : path.join(root,'.backups');
 const config=JSON.parse(fs.readFileSync(path.join(privateRoot,'config.json'),'utf8'));
 const folder=path.join(privateRoot,'privacy'),action=process.argv[2],arg=process.argv[3];
 const opts={windowsHide:true,stdio:['pipe','pipe','pipe'],maxBuffer:32*1024*1024,timeout:45000};
-function crypt(mode,data){return cp.execFileSync(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-File',path.join(root,'tools/backup/protect.ps1'),mode],{...opts,input:data});}
+function crypt(mode,data){
+ if(config.dpapiPython){
+  if(!path.isAbsolute(config.dpapiPython))throw Error('DPAPI Python path must be absolute');
+  return cp.execFileSync(config.dpapiPython,[path.join(root,'tools/backup/protect.py'),mode],{...opts,input:data});
+ }
+ return cp.execFileSync(path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-File',path.join(root,'tools/backup/protect.ps1'),mode],{...opts,input:data});
+}
 function checkFolder(){
  fs.mkdirSync(folder,{recursive:true,mode:0o700});
  if(fs.lstatSync(folder).isSymbolicLink()||fs.realpathSync(folder)!==path.resolve(folder))throw Error('Unsafe privacy folder');

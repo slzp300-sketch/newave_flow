@@ -3,14 +3,21 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 const crypto=require('node:crypto'),dns=require('node:dns').promises,tls=require('node:tls');
 const {pruneExpired,assertRestorable}=require('./retention.cjs');
 const {replayLedger}=require('../privacy/deletion.cjs');
-const root=path.resolve(__dirname,'../..'),folder=path.join(root,'.backups');
+const root=path.resolve(__dirname,'../..'),folder=process.env.NEWAVE_BACKUP_DIRECTORY
+  ? path.resolve(process.env.NEWAVE_BACKUP_DIRECTORY) : path.join(root,'.backups');
 const configFile=path.join(folder,'config.json');
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const options={windowsHide:true,stdio:['pipe','pipe','pipe'],timeout:180000,maxBuffer:256*1024*1024};
 const action=process.argv[2]||'backup';
 let stage='configuration',lockOwned=false,production,localAdmin,localDb,startedLocal=false,config;
 const powershell=path.join(process.env.SystemRoot,'System32/WindowsPowerShell/v1.0/powershell.exe');
-function crypt(mode,buffer){return cp.execFileSync(powershell,['-NoProfile','-NonInteractive','-File',path.join(__dirname,'protect.ps1'),mode],{...options,input:buffer});}
+function crypt(mode,buffer){
+  if(config.dpapiPython){
+    if(!path.isAbsolute(config.dpapiPython))throw Error('DPAPI Python path must be absolute');
+    return cp.execFileSync(config.dpapiPython,[path.join(__dirname,'protect.py'),mode],{...options,input:buffer});
+  }
+  return cp.execFileSync(powershell,['-NoProfile','-NonInteractive','-File',path.join(__dirname,'protect.ps1'),mode],{...options,input:buffer});
+}
 function withDumpFile(buffer,run){
   // pg_restore --list can close stdin early on Windows. Use an ACL-protected, short-lived file.
   const file=path.join(folder,'.work-'+crypto.randomUUID()+'.dump');
