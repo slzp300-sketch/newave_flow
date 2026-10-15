@@ -34,6 +34,24 @@ test('missing-account residual audit runs on an isolated PostgreSQL database', {
   await c.query("DELETE FROM event_participants; INSERT INTO tts_legacy_score VALUES(1,'옛 별명')");
   await assert.rejects(verifyErased(c,{...plan,legacyDecisions:[{id:1,remove:true}]}),/snapshot/);
   await c.query('DELETE FROM tts_legacy_score');
+  await c.query("CREATE TABLE moderated_photos(id bigint PRIMARY KEY,target_type text,target_id bigint,pending_image text,submitted_by bigint,reviewed_by bigint,review_note text); CREATE TABLE content_reports(id bigint PRIMARY KEY,target_type text,content_type text,target_id bigint,assigned_to_id bigint)");
+  await c.query("INSERT INTO moderated_photos VALUES(1,'USER',1,NULL,NULL,NULL,NULL)");
+  await assert.rejects(verifyErased(c,plan),/photo account reference/);
+  await c.query("UPDATE moderated_photos SET target_id=2,submitted_by=1");
+  await assert.rejects(verifyErased(c,plan),/account reference/);
+  await c.query("UPDATE moderated_photos SET submitted_by=NULL,reviewed_by=1");
+  await assert.rejects(verifyErased(c,plan),/account reference/);
+  await c.query("UPDATE moderated_photos SET reviewed_by=NULL,pending_image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAADElEQVR4XmP4z4AEAA0BAQAPfkcCAAAAAElFTkSuQmCC'");
+  await verifyErased(c,{...plan,identifiers:['iVB']});
+  await c.query("UPDATE moderated_photos SET review_note='iVB retained plaintext'");
+  await assert.rejects(verifyErased(c,{...plan,identifiers:['iVB']}),/personal text/);
+  await c.query("UPDATE moderated_photos SET review_note=NULL,pending_image='data:image/png;base64,iVBnot-valid'");
+  await assert.rejects(verifyErased(c,{...plan,identifiers:['iVB']}),/personal text/);
+  await c.query("UPDATE moderated_photos SET pending_image=NULL; INSERT INTO content_reports VALUES(1,'CONTENT','USER_PROFILE_PHOTO',1,NULL)");
+  await assert.rejects(verifyErased(c,plan),/reported account reference/);
+  await c.query("UPDATE content_reports SET target_id=2,assigned_to_id=1");
+  await assert.rejects(verifyErased(c,plan),/account reference/);
+  await c.query("UPDATE content_reports SET assigned_to_id=NULL");
   // Optional V011-style residual state: another account's valid hashes contain the erased name.
   // Omit format CHECKs here deliberately to exercise the audit's schema-drift rejection too.
   await c.query(`CREATE TABLE apple_notification_subjects(subject_hash varchar(64) PRIMARY KEY,user_id bigint);

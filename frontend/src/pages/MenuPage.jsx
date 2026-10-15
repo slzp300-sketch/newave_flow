@@ -13,6 +13,7 @@ import useWeeklyTasks from '../hooks/useWeeklyTasks'
 import useWeeklyEvents from '../hooks/useWeeklyEvents'
 import useTtsAttention from '../hooks/useTtsAttention'
 import AttentionDot from '../components/common/AttentionDot'
+import useSafetyAttention from '../hooks/useSafetyAttention'
 
 const COMMON_GROUPS = [
   {
@@ -75,7 +76,10 @@ export default function MenuPage() {
   const tasks = useWeeklyTasks()
   const schedule = useWeeklyEvents()
   const tts = useTtsAttention()
+  const safety = useSafetyAttention()
   const attention = path => path === '/tts' ? tts.pending : path === '/events' ? schedule.hasNew
+    : path === '/admin/content-reports' ? (safety.data?.openCount || safety.data?.reviewingCount)
+    : path === '/admin/content-photos' ? safety.data?.pendingPhotoCount
     : path === '/checklist' ? tasks.tasks.some(t => t.state === 'pending') : tasks.needsAction(path)
   const [search, setSearch] = useState('')
   const [scope, setScope] = useState('personal')

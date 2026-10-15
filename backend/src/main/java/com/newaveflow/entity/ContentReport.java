@@ -25,15 +25,26 @@ public class ContentReport {
     @Builder.Default @Column(nullable = false) private LocalDateTime createdAt = LocalDateTime.now();
     @Builder.Default @Column(nullable = false) private LocalDateTime updatedAt = LocalDateTime.now();
     private LocalDateTime resolvedAt;
+    private Long assignedToId;
+    @org.hibernate.annotations.ColumnDefault("false") @Builder.Default @Column(nullable=false) private boolean urgent=false;
+    @org.hibernate.annotations.ColumnDefault("(CURRENT_TIMESTAMP + INTERVAL '24' HOUR)") @Builder.Default @Column(nullable=false) private LocalDateTime dueAt=LocalDateTime.now().plusHours(24);
 
     public enum TargetType { CONTENT, USER }
-    public enum ContentType { MEETING_MINUTE, DAILY_REPORT, OTHER }
+    public enum ContentType { MEETING_MINUTE, DAILY_REPORT, EVENT, USER_PROFILE_PHOTO, STUDENT_PHOTO, OTHER }
     public enum Reason { INAPPROPRIATE_CONTENT, HARASSMENT, PRIVACY, OTHER }
     public enum Status { OPEN, REVIEWING, RESOLVED, DISMISSED }
-    public enum Action { NONE, HIDE_MINUTE, SUSPEND_USER, REVIEWED }
+    public enum Action { NONE, HIDE_MINUTE, HIDE_REPORT_NOTES, HIDE_PHOTO, REDACT_EVENT, SUSPEND_USER, REVIEWED }
+
+    public void assign(Long actorId,boolean urgent) {
+        assignedToId=actorId; this.urgent=urgent;
+        if(urgent && createdAt.plusHours(4).isBefore(dueAt)) dueAt=createdAt.plusHours(4);
+        if(status==Status.OPEN) status=Status.REVIEWING;
+        updatedAt=LocalDateTime.now();
+    }
 
     public void resolve(Status status, Action action, String note, Long moderatorId) {
         this.status = status; this.action = action; this.resolutionNote = note; this.moderatorId = moderatorId;
+        this.assignedToId=moderatorId;
         this.updatedAt = LocalDateTime.now();
         this.resolvedAt = status == Status.RESOLVED || status == Status.DISMISSED ? updatedAt : null;
     }

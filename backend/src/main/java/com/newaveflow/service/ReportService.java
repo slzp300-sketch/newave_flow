@@ -26,6 +26,7 @@ public class ReportService {
 
     @Transactional
     public DailyReport saveOrUpdate(ReportRequest request, Long teacherId) {
+        ContentTextFilter.check(request.specialNotes());
         if (request.reportDate().isAfter(LocalDate.now())) throw AppException.badRequest("미래 날짜는 저장할 수 없습니다.");
         ClassGroup classGroup = classGroupRepository.lockById(request.classGroupId())
                 .orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));

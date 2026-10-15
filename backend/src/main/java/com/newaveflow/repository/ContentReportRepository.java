@@ -13,6 +13,9 @@ public interface ContentReportRepository extends JpaRepository<ContentReport, Lo
     long countByReporterIdAndCreatedAtAfter(Long reporterId, LocalDateTime since);
     Page<ContentReport> findByReporterId(Long reporterId, Pageable pageable);
     Page<ContentReport> findByStatus(ContentReport.Status status, Pageable pageable);
+    long countByStatus(ContentReport.Status status);
+    long countByResolvedAtIsNullAndDueAtBefore(LocalDateTime now);
+    long countByResolvedAtIsNullAndUrgentTrue();
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from ContentReport r where r.id = :id")
     Optional<ContentReport> lockById(@Param("id") Long id);

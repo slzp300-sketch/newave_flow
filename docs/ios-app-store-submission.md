@@ -172,7 +172,7 @@ Review Notes는 최대 4,000바이트다. placeholder 교체 후 UTF-8 크기를
 
 ## 5. 화면 자료 준비
 
-현재 iPhone 전용 설정을 유지한다면 iPhone 크기로 준비한다. 권장 작업 규격은 **6.9형 세로 1320×2868px**이며 공식 허용 규격 중 하나다. 크기별 1~10장, PNG/JPEG, 알파·투명도 없는 파일을 사용한다. 6.9형을 제공하지 않을 때는 공식 표의 6.5형 요구를 확인한다. iPad 지원을 추가하면 iPad 요구도 다시 적용한다. [스크린샷 규격](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
+현재 iPhone 전용 설정을 유지한다면 iPhone 크기로 준비한다. 2026-10-15 다시 열람한 공식 표는 필수 iPhone 크기를 **Dynamic Island 중형**으로 표시하며 허용 세로 규격은 1179×2556 또는 1206×2622px다. 작업 기준은 **1206×2622px**로 갱신했다. 보조 대형 화면에는 1320×2868px 등 공식 허용 규격을 쓸 수 있다. 크기별 1~10장, PNG/JPEG, 알파·투명도 없는 파일을 사용하고 제출 직전 콘솔과 공식 표를 다시 확인한다. iPad 지원을 추가하면 iPad 요구도 적용한다. [스크린샷 규격](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
 
 | 순서 | 화면 후보 | 가상 자료와 강조 내용 |
 | --- | --- | --- |
@@ -183,6 +183,8 @@ Review Notes는 최대 4,000바이트다. placeholder 교체 후 UTF-8 크기를
 | 5 | 행사 출석 체크 | 접수 중인 가상 행사 참석 선택 |
 
 최종 iOS 빌드의 실제 시뮬레이터 또는 iPhone 화면으로 촬영하고, 같은 빌드에서 사용자가 볼 수 있는 기능을 보여준다. 기존 Android/웹 화면을 확대해 iOS 최종 화면으로 제출하지 않는다. 실명·전화번호·사진·로그인 비밀번호가 보이는 화면을 사용하지 않는다. **이번 작업에서는 스크린샷·영상 생성이나 스토어 업로드를 하지 않았다.**
+
+서명된 빌드의 수동 생성·선택 업로드 경로와 비밀값 격리, iPhone 검수 13개 흐름 및 원본 캡처 절차를 [TestFlight 운영 절차](ios-testflight-runbook.md)에 준비했다. 가상 프로파일/번들 검사는 실제 배포 인증서 검증이나 iPhone 통과를 뜻하지 않는다. 기존 CI의 비로그인 시작 화면 증거도 위 다섯 장의 완성품으로 사용하지 않는다. App Store의 접근성 지원 표시는 VoiceOver·큰 글자 등 최종 기기 검수 결과가 확인된 항목만 선택한다. [접근성 표시 개요](https://developer.apple.com/help/app-store-connect/manage-app-accessibility/overview-of-accessibility-nutrition-labels/)
 
 ## 6. 미완료 관문과 제출 자료
 

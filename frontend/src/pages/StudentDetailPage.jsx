@@ -8,6 +8,7 @@ import { formatDate } from '../utils/date'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
+import ReportLink from '../components/common/ReportLink'
 
 export default function StudentDetailPage() {
   const { id } = useParams()
@@ -48,6 +49,7 @@ export default function StudentDetailPage() {
             <h2 className="text-2xl font-bold text-gray-900">{student?.name}</h2>
             <p className="text-primary-600 font-bold text-sm">{[student?.grade, student?.school].filter(Boolean).join(' · ')}</p>
           </div>
+          {student?.profileImage && <ReportLink contentType="STUDENT_PHOTO" targetId={student.id} label="학생 사진 신고" />}
         </motion.div>
 
         {/* 기본 정보 */}

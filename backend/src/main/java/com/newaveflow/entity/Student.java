@@ -89,6 +89,7 @@ public class Student {
     }
 
     public void assignClass(ClassGroup classGroup) { this.classGroup = classGroup; }
+    public void setProfileImage(String image) { this.profileImage = image; }
     public void updateGrade(String grade) { this.grade = grade; }
     public void deactivate() { this.isActive = false; }
     public void activate()   { this.isActive = true; }

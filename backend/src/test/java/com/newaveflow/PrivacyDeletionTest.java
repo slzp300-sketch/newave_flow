@@ -78,6 +78,28 @@ class PrivacyDeletionTest {
             s.execute("ROLLBACK"); assertEquals(before,EventReadMigrationTest.fingerprints(c));
             s.execute(migration);
             var afterMigration=EventReadMigrationTest.fingerprints(c); afterMigration.remove("schema_migrations");before.remove("schema_migrations");assertEquals(before,afterMigration);
+            // Exercise the production V012/V013 foreign-key actions, absent from Hibernate's scalar IDs.
+            s.execute("""
+                ALTER TABLE user_status_events ADD FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE;
+                ALTER TABLE user_status_events ADD FOREIGN KEY(actor_id) REFERENCES users(id) ON DELETE SET NULL;
+                ALTER TABLE user_status_events ADD FOREIGN KEY(report_id) REFERENCES content_reports(id) ON DELETE SET NULL;
+                ALTER TABLE moderated_photos ADD FOREIGN KEY(submitted_by) REFERENCES users(id) ON DELETE SET NULL;
+                ALTER TABLE moderated_photos ADD FOREIGN KEY(reviewed_by) REFERENCES users(id) ON DELETE SET NULL;
+                ALTER TABLE content_reports ADD FOREIGN KEY(assigned_to_id) REFERENCES users(id) ON DELETE SET NULL;
+                INSERT INTO content_reports(id,revision,reporter_id,request_id,target_type,content_type,target_id,subject,reason,details,status,action,created_at,updated_at)
+                  VALUES(4,0,2,'11111111-1111-4111-8111-000000000014','CONTENT','USER_PROFILE_PHOTO',1,'Profile concern','PRIVACY','Remove target picture report','OPEN','NONE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+                UPDATE content_reports SET assigned_to_id=1 WHERE id=3;
+                INSERT INTO user_status_events(id,user_id,actor_id,action,reason,report_id,created_at) VALUES
+                  (1,1,3,'SUSPEND','Remove own history',2,CURRENT_TIMESTAMP),
+                  (2,2,1,'RESTORE','Keep other account history',3,CURRENT_TIMESTAMP),
+                  (3,3,2,'RESTORE','Keep history without removed report',4,CURRENT_TIMESTAMP);
+                INSERT INTO students(id,name,class_group_id,is_active,profile_image) VALUES(2,'Other synthetic student',1,true,'shared-approved-image');
+                INSERT INTO moderated_photos(id,revision,target_type,target_id,pending_image,submitted_by,submitted_at,status,reviewed_by,reviewed_at,review_note) VALUES
+                  (1,0,'USER',1,'private-candidate',1,CURRENT_TIMESTAMP,'PENDING',NULL,NULL,NULL),
+                  (2,0,'USER',2,'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAADElEQVR4XmP4z4AEAA0BAQAPfkcCAAAAAElFTkSuQmCC',2,CURRENT_TIMESTAMP,'PENDING',NULL,NULL,NULL),
+                  (3,0,'STUDENT',1,'cancel-authored-candidate',1,CURRENT_TIMESTAMP,'PENDING',NULL,NULL,NULL),
+                  (4,0,'STUDENT',2,NULL,1,CURRENT_TIMESTAMP,'APPROVED',1,CURRENT_TIMESTAMP,'Approved synthetic photograph');
+                """);
 
             String inputs=Files.readString(Path.of("db/privacy/request-tables.sql"));
             String deletion=Files.readString(Path.of("db/privacy/delete-account.sql"));
@@ -119,6 +141,22 @@ class PrivacyDeletionTest {
                 INSERT INTO privacy_exceptions VALUES('users','name',4,md5('삭제대상가상'),'별도로 본인 확인한 동명이인 계정 보존');
                 INSERT INTO privacy_exceptions VALUES('tts_legacy_score','name',3,md5('삭제대상가상'),'원본 대조로 다른 교사의 점수임을 확인');
                 """;
+            // Restore replay must remain compatible with backups made before V012/V013.
+            c.setAutoCommit(false);
+            try {
+                s.execute("DROP TABLE user_status_events; DROP TABLE moderated_photos; ALTER TABLE content_reports DROP COLUMN assigned_to_id");
+                s.execute(inputs+review+namesakeReview); s.execute(deletion);
+                assertEquals("0",scalar(c,"SELECT count(*) FROM users WHERE id=1"));
+            } finally { c.rollback(); c.setAutoCommit(true); }
+            for(String unsafeSafety:List.of(
+                "ALTER TABLE events ADD COLUMN unreviewed_photo bigint REFERENCES moderated_photos(id) ON DELETE CASCADE; UPDATE events SET unreviewed_photo=1;",
+                "ALTER TABLE events ADD COLUMN unreviewed_history bigint REFERENCES user_status_events(id) ON DELETE CASCADE; UPDATE events SET unreviewed_history=1;",
+                "ALTER TABLE user_status_events ADD COLUMN unreviewed_owner bigint REFERENCES users(id) ON DELETE CASCADE;",
+                "ALTER TABLE content_reports ADD COLUMN unreviewed_owner bigint REFERENCES users(id) ON DELETE CASCADE;"))
+                assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,unsafeSafety,"Unreviewed safety lifecycle");
+            assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
+                "DROP TABLE moderated_photos;","Incomplete photo moderation privacy schema");
+            String preservedPhoto=scalar(c,"SELECT to_jsonb(p)::text FROM moderated_photos p WHERE id=2");
             // Production can remain on V010 with notifications disabled: erasure must not require V011.
             assertNull(scalar(c,"SELECT to_regclass('public.apple_notification_subjects')"));
             assertNull(scalar(c,"SELECT to_regclass('public.apple_notification_receipts')"));
@@ -163,7 +201,7 @@ class PrivacyDeletionTest {
                 INSERT INTO apple_notification_receipts(jti_hash,subject_hash,payload_hash,received_at)
                   VALUES(repeat('9',64),repeat('e',64),repeat('a',64),CURRENT_TIMESTAMP);
                 """);
-            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true);";
+            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true); INSERT INTO privacy_identifiers VALUES('iVB');";
             // Excluding reviewed hash fields must not exclude a future plaintext field in the same table.
             assertRejectedDeletionRestoresAllRows(c,inputs,collisionReview,deletion,
                 "ALTER TABLE apple_notification_subjects ADD COLUMN unreviewed_note text; UPDATE apple_notification_subjects SET unreviewed_note='Ada retained plaintext' WHERE user_id=2;",
@@ -230,7 +268,14 @@ class PrivacyDeletionTest {
             assertEquals("학생 기록 보존",scalar(c,"SELECT special_notes FROM daily_reports_before_class_merge"));
             assertEquals(1,app.getBean(DailyReportRepository.class).findByDateWithDetails(java.time.LocalDate.of(2026,10,11)).size());
             assertEquals("삭제된 계정",app.getBean(com.newaveflow.service.DeactivationRequestService.class).getPendingRequests().get(0).teacherName());
-            assertEquals("1",scalar(c,"SELECT count(*) FROM students"));
+            assertEquals("2",scalar(c,"SELECT count(*) FROM students"));
+            assertEquals("shared-approved-image",scalar(c,"SELECT profile_image FROM students WHERE id=2"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM user_status_events WHERE user_id=1 OR actor_id=1"));
+            assertEquals("2",scalar(c,"SELECT count(*) FROM user_status_events"));
+            assertNull(scalar(c,"SELECT report_id FROM user_status_events WHERE id=3"));
+            assertEquals("2",scalar(c,"SELECT count(*) FROM moderated_photos"));
+            assertEquals(preservedPhoto,scalar(c,"SELECT to_jsonb(p)::text FROM moderated_photos p WHERE id=2"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM moderated_photos WHERE id=4 AND submitted_by IS NULL AND reviewed_by IS NULL AND status='APPROVED'"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM kakao_auth_flows"));
             assertEquals("9102",scalar(c,"SELECT kakao_id FROM kakao_auth_flows"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM apple_accounts"));
@@ -246,7 +291,7 @@ class PrivacyDeletionTest {
             assertEquals("1",scalar(c,"SELECT count(*) FROM account_deletion_requests WHERE status='COMPLETED' AND user_id IS NULL AND user_created_at IS NULL AND completed_at IS NOT NULL"));
             assertEquals("0",scalar(c,"SELECT count(*) FROM community_agreements"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports"));
-            assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports WHERE moderator_id IS NULL AND reporter_id=2"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM content_reports WHERE moderator_id IS NULL AND assigned_to_id IS NULL AND reporter_id=2"));
             System.out.println("Privacy deletion PASS: verified review, stale/unknown inputs rollback, optional Apple notification schema and cascade guards, shared records, personal history, missing-user authentication, archived authors");
             s.execute("DROP TABLE apple_notification_receipts; DROP TABLE apple_notification_subjects; DROP TABLE daily_reports_before_class_merge; DROP TABLE schema_migrations");
         }

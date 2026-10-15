@@ -152,6 +152,24 @@ jobs:
       - name: Create isolated TTS configuration rehearsal database
         env:
           PGPASSWORD: migration-ci-only
+        run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_suspension_ci'
+      - name: Verify suspension backfill and account lifecycle
+        env:
+          RUN_SUSPENSION_MIGRATION: 'true'
+          SUSPENSION_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_suspension_ci
+        run: bash gradlew test --tests com.newaveflow.UserSuspensionMigrationTest --no-daemon
+      - name: Create isolated photo and content moderation database
+        env:
+          PGPASSWORD: migration-ci-only
+        run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_moderation_ci'
+      - name: Verify moderation schema and old-client compatibility
+        env:
+          RUN_CONTENT_MODERATION_MIGRATION: 'true'
+          CONTENT_MODERATION_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_moderation_ci
+        run: bash gradlew test --tests com.newaveflow.ContentModerationMigrationTest --no-daemon
+      - name: Create isolated TTS configuration rehearsal database
+        env:
+          PGPASSWORD: migration-ci-only
         run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_tts_links_ci'
       - name: Verify TTS meeting links and historical rules
         env:

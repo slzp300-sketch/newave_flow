@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Student s where s.id=:id")
+    java.util.Optional<Student> lockById(@org.springframework.data.repository.query.Param("id") Long id);
     List<Student> findByClassGroupIdAndIsActiveTrue(Long classGroupId);
     List<Student> findByClassGroupIdOrderByIsActiveDescNameAsc(Long classGroupId);
     List<Student> findAllByIsActiveTrueOrderByGradeAscNameAsc();

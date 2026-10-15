@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FileText, Play, CheckCircle2, Calendar, 
@@ -16,37 +17,24 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export default function MeetingMinutesPage() {
-  const [minutes, setMinutes] = useState([])
-  const [selected, setSelected] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const { user } = useAuthStore()
+  const [selectedId, setSelectedId] = useState(null)
+  const { user, apiEnvironment } = useAuthStore()
+  const query = useQuery({
+    queryKey: ['meeting-minutes', apiEnvironment, user?.id],
+    queryFn: ({ signal }) => client.get('/minutes', { signal }).then(r => r.data),
+    refetchOnWindowFocus: 'always', refetchInterval: 30000,
+  })
+  const minutes = query.isError ? [] : query.data ?? []
+  const selected = minutes.find(minute => minute.id === selectedId) ?? null
+  const confirm = useMutation({
+    mutationFn: id => client.post(`/minutes/${id}/confirm`),
+    onSuccess: () => query.refetch(),
+    onError: () => { setSelectedId(null); query.refetch() },
+  })
 
   useEffect(() => {
-    fetchMinutes()
-  }, [])
-
-  const fetchMinutes = async () => {
-    try {
-      const res = await client.get('/minutes')
-      setMinutes(res.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleConfirm = async (id) => {
-    try {
-      await client.post(`/minutes/${id}/confirm`)
-      fetchMinutes() // Refresh
-      if (selected?.id === id) {
-        setSelected(prev => ({ ...prev, confirmed: true }))
-      }
-    } catch (err) {
-      console.error(err)
-    }
-  }
+    if (selectedId != null && !query.isPending && !selected) setSelectedId(null)
+  }, [selectedId, selected, query.isPending])
 
   // 월별 그룹화 로직
   const groupedMinutes = minutes.reduce((acc, m) => {
@@ -56,11 +44,13 @@ export default function MeetingMinutesPage() {
     return acc
   }, {})
 
-  if (loading) return <div className="p-10 text-center text-gray-400">로딩 중...</div>
+  if (query.isPending) return <div role="status" className="p-10 text-center text-gray-400">로딩 중...</div>
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
       <Header title="회의록 및 영상" showBack />
+      {query.isError && <p role="alert" className="m-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">회의록의 최신 공개 상태를 확인하지 못했습니다. <button className="min-h-11 underline" onClick={() => query.refetch()}>다시 시도</button></p>}
+      {confirm.isError && <p role="alert" className="mx-4 text-sm text-red-700">{confirm.error.response?.data?.message || '확인 상태를 저장하지 못했습니다. 다시 시도해 주세요.'}</p>}
 
       <div className="px-4 py-5 flex flex-col gap-8">
         {Object.keys(groupedMinutes).length === 0 ? (
@@ -80,7 +70,7 @@ export default function MeetingMinutesPage() {
                   <MinuteCard 
                     key={m.id} 
                     minute={m} 
-                    onClick={() => setSelected(m)} 
+                    onClick={() => { confirm.reset(); setSelectedId(m.id); query.refetch() }}
                   />
                 ))}
               </div>
@@ -97,7 +87,7 @@ export default function MeetingMinutesPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4"
-            onClick={() => setSelected(null)}
+            onClick={() => setSelectedId(null)}
           >
             <motion.div
               initial={{ y: '100%' }}
@@ -118,7 +108,7 @@ export default function MeetingMinutesPage() {
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 leading-tight">{selected.title}</h3>
                 </div>
-                <button onClick={() => setSelected(null)} className="p-2 bg-gray-50 rounded-full text-gray-400">
+                <button aria-label="회의록 닫기" onClick={() => setSelectedId(null)} className="p-2 bg-gray-50 rounded-full text-gray-400">
                   <ChevronRight className="rotate-90" size={20} />
                 </button>
               </div>
@@ -165,8 +155,8 @@ export default function MeetingMinutesPage() {
                       <AlertCircle size={16} className="shrink-0" />
                       회의에 참석하지 못하셨다면 회의록과 영상을 꼼꼼히 확인하신 후 아래 버튼을 눌러주세요.
                     </div>
-                    <Button size="lg" onClick={() => handleConfirm(selected.id)}>
-                      확인 체크하기
+                    <Button size="lg" disabled={confirm.isPending} onClick={() => confirm.mutate(selected.id)}>
+                      {confirm.isPending ? '저장 중…' : '확인 체크하기'}
                     </Button>
                   </>
                 )}

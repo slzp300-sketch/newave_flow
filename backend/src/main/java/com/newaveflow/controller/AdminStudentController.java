@@ -28,16 +28,18 @@ public class AdminStudentController {
 
     // 학생 신규 등록
     @PostMapping
-    public ResponseEntity<AdminStudentDto> createStudent(@RequestBody StudentCreateRequest request) {
-        return ResponseEntity.ok(studentService.createStudent(request));
+    public ResponseEntity<AdminStudentDto> createStudent(@RequestBody StudentCreateRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.newaveflow.entity.User actor) {
+        return ResponseEntity.ok(studentService.createStudent(request,actor));
     }
 
     // 학생 정보 수정
     @PutMapping("/{id}")
     public ResponseEntity<AdminStudentDto> updateStudent(
             @PathVariable Long id,
-            @RequestBody StudentCreateRequest request) {
-        return ResponseEntity.ok(studentService.updateStudentAdmin(id, request));
+            @RequestBody StudentCreateRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.newaveflow.entity.User actor) {
+        return ResponseEntity.ok(studentService.updateStudentAdmin(id, request,actor));
     }
 
     // 학생 반 배정 변경

@@ -767,7 +767,8 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
           </div>
 
           <div className="px-4 flex flex-col gap-2">
-            <ReportLink targetType="USER" targetId={teacher.id} label="이 사용자·프로필 사진 신고" />
+            <ReportLink targetType="USER" targetId={teacher.id} label="이 사용자 신고" />
+            {teacher.profileImage && <ReportLink contentType="USER_PROFILE_PHOTO" targetId={teacher.id} label="프로필 사진 신고" />}
             {teacher.className && <InfoRow label="담당 반" value={teacher.className} icon="📚" />}
             {teacher.birthDate && (
               <InfoRow label="나이"
@@ -1325,6 +1326,7 @@ function StudentRow({ student, colors, idx }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap mb-1">
           <span className="font-bold text-gray-900 text-sm">{student.name}</span>
+          {student.profileImage && <ReportLink contentType="STUDENT_PHOTO" targetId={student.id} label="사진 신고" />}
           {student.baptism === true  && <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-secondary-100 text-secondary-600">세례</span>}
           {student.baptism === false && <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">미세례</span>}
         </div>

@@ -17,7 +17,7 @@ class CommunitySafetyMigrationTest {
         assertTrue(url.matches("jdbc:postgresql://(127\\.0\\.0\\.1|localhost):[0-9]+/newave_community_[a-z0-9_]+"));
         try(var app=application(url,user,password,"create")) { assertTrue(app.isActive()); }
         try(var c=DriverManager.getConnection(url,user,password); var s=c.createStatement()) {
-            s.execute("DROP TABLE content_reports; DROP TABLE community_agreements");
+            s.execute("DROP TABLE content_reports; DROP TABLE community_agreements; DROP TABLE moderated_photos; ALTER TABLE daily_reports DROP COLUMN notes_hidden");
             s.execute("DROP TABLE IF EXISTS schema_migrations");
             s.execute("CREATE TABLE schema_migrations(version varchar(80) PRIMARY KEY,applied_at timestamp DEFAULT CURRENT_TIMESTAMP)");
             s.execute("INSERT INTO users(id,name,email,password,role,is_active,large_font,auth_version) VALUES(901,'Synthetic safety account','community@example.invalid','synthetic','TEACHER',true,false,0)");
@@ -39,6 +39,8 @@ class CommunitySafetyMigrationTest {
             assertEquals("1",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM content_reports"));
             assertEquals("OPEN",EventReadMigrationTest.scalar(c,"SELECT status FROM content_reports"));
             assertEquals("Preserve shared notes",EventReadMigrationTest.scalar(c,"SELECT special_notes FROM daily_reports WHERE id=901"));
+            s.execute("INSERT INTO schema_migrations(version) VALUES('V010__account_deletion_requests')");
+            s.execute(Files.readString(Path.of("db/migrations/V013__content_moderation.sql")));
         }
         try(var app=application(url,user,password,"validate")) { assertTrue(app.isActive()); }
     }

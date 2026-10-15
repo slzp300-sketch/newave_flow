@@ -11,6 +11,8 @@ import AdminPasswordReset from '../components/AdminPasswordReset'
 import ViewModeToggle, { useViewMode, DetailTable } from '../components/common/ViewModeToggle'
 import { usersApi } from '../api/users'
 import useAuthStore from '../store/authStore'
+import { Link } from 'react-router-dom'
+import AccountStatusHistory from '../components/AccountStatusHistory'
 
 export default function AdminTeacherManagePage() {
   const [search, setSearch] = useState('')
@@ -70,6 +72,7 @@ export default function AdminTeacherManagePage() {
       <div className="px-4 py-6">
         <div className="mb-5 flex flex-col gap-4">
           <AdminIntro title="교사 권한을 한눈에" description="교사를 검색하고 이름을 눌러 권한과 계정 정보를 관리하세요." />
+          <Link to="/admin/pending-users?tab=suspended" className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-primary-700">이용 정지 계정·복구 이력 확인하기 →</Link>
           <SearchField label="교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
         </div>
 
@@ -250,6 +253,7 @@ const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpda
           )}
         </div>
         {actor?.role === 'ADMIN' && <AdminPasswordReset key={user.id} user={user} />}
+        <AccountStatusHistory key={`history-${user.id}`} userId={user.id} />
       </Card>
     </motion.div>
   )

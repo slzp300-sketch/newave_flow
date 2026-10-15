@@ -47,6 +47,7 @@ const PrivacyPage = lazy(() => import('../pages/PrivacyPage'))
 const CommunityPolicyPage = lazy(() => import('../pages/CommunityPolicyPage'))
 const ContentReportPage = lazy(() => import('../pages/ContentReportPage'))
 const ContentReportsAdminPage = lazy(() => import('../pages/ContentReportsAdminPage'))
+const ContentPhotosAdminPage = lazy(() => import('../pages/ContentPhotosAdminPage'))
 
 // JWT payload의 exp(초 단위)를 보고 만료됐거나 bufferMs 이내에 만료되는지 확인
 function isTokenExpiredOrExpiring(token, bufferMs = 5 * 60 * 1000) {
@@ -236,6 +237,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
             children: [
               { path: '/admin',             element: <AdminDashboard /> },
               { path: '/admin/content-reports', element: <ContentReportsAdminPage /> },
+              { path: '/admin/content-photos', element: <ContentPhotosAdminPage /> },
               { path: '/admin/teachers',    element: <AdminTeacherManagePage /> },
               { path: '/admin/calendar',    element: <CalendarAdminPage /> },
               { path: '/admin/evangelism',  element: <EvangelismAdminPage /> },

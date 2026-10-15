@@ -1,0 +1,111 @@
+name: iOS signed build and optional TestFlight upload
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Exact main commit SHA (40 characters, all checks must be green)'
+        required: true
+        type: string
+      version:
+        description: 'App Store version, for example 1.0.0'
+        default: '1.0.0'
+        required: true
+        type: string
+      build_number:
+        description: 'Unused increasing build number, 1 to 9999'
+        required: true
+        type: string
+      apple_login:
+        description: 'Enable Apple login only after backend, V011, capability and real-account setup'
+        default: false
+        required: true
+        type: boolean
+      upload:
+        description: 'Upload to App Store Connect (does not publish or invite testers)'
+        default: false
+        required: true
+        type: boolean
+      upload_confirmation:
+        description: 'For upload only, type UPLOAD TO TESTFLIGHT'
+        default: ''
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+env:
+  IOS_RELEASE_CONFIGURED: ${{ vars.IOS_RELEASE_CONFIGURED }}
+  RELEASE_SHA: ${{ inputs.commit_sha }}
+  RELEASE_VERSION: ${{ inputs.version }}
+  RELEASE_BUILD: ${{ inputs.build_number }}
+  APPLE_LOGIN: ${{ inputs.apple_login }}
+  UPLOAD: ${{ inputs.upload }}
+  UPLOAD_CONFIRMATION: ${{ inputs.upload_confirmation }}
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail unless the protected environment and explicit release inputs are ready
+        run: python3 tools/ios/release-preflight.py
+      - name: Test release validation without credentials
+        run: python3 -B -m unittest discover -s tools/ios -p 'test_*.py'
+  signed:
+    needs: preflight
+    runs-on: macos-15
+    timeout-minutes: 40
+    # Create this environment with required reviewer(s) and main-only deployment before enabling.
+    # Environment secrets are unavailable until its configured approval gate passes.
+    environment: ios-testflight
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Select an installed supported Xcode
+        run: python3 tools/ios/select-xcode.py
+      - name: Build and check web/native resources before exposing signing secrets
+        working-directory: frontend
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm test
+          npm run ios:sync
+          npm run ios:verify
+      - name: Sign, inspect and export with the installed distribution profile
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+        run: python3 tools/ios/release.py sign
+      - name: Validate and upload the exact exported IPA only when explicitly requested
+        if: ${{ inputs.upload }}
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: python3 tools/ios/release.py upload
+      - name: Keep a non-secret release receipt
+        run: |
+          mkdir -p frontend/.verification/ios-release
+          cp "$RUNNER_TEMP/newave-ios-release/summary.json" frontend/.verification/ios-release/summary.json
+          echo 'Signing/export completed. Check the receipt and App Store Connect processing separately.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Save only the public-safe release receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-receipt
+          path: frontend/.verification/ios-release/summary.json
+          retention-days: 5
+          if-no-files-found: error
+      - name: Remove this run's keys, profile, archive and IPA
+        if: always()
+        run: python3 tools/ios/release.py cleanup

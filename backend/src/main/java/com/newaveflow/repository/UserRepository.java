@@ -24,6 +24,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRoleAndIsActiveTrue(User.Role role);
     List<User> findByIsActiveTrue();
     List<User> findByIsActiveFalse();
+    List<User> findByIsActiveFalseAndIsSuspendedFalse();
+    List<User> findByIsSuspendedTrueOrderBySuspendedAtDescIdDesc();
+
+    // Administrative account/role transitions are rare. One ordered lock set prevents
+    // two administrators from concurrently disabling or demoting one another.
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u ORDER BY u.id")
+    List<User> lockAllForStatusChange();
     
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE u.isActive = true")
     List<User> findAllActiveWithClasses();

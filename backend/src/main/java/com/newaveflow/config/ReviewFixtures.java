@@ -81,7 +81,7 @@ public class ReviewFixtures implements ApplicationRunner {
                 .role(role).password(passwords.encode(password)).isActive(true).build());
         if (!passwords.matches(password, user.getPassword())) user.updatePassword(passwords.encode(password));
         user.updateRole(role);
-        user.approve();
+        if (!user.isSuspended()) user.approve();
         return users.save(user);
     }
 

@@ -37,6 +37,7 @@ public class StudentService {
     private final StudentMemoRepository studentMemoRepository;
     private final ClassGroupRepository classGroupRepository;
     private final ClassAccessService classAccessService;
+    private final PhotoModerationService photos;
 
     public StudentDto getStudentById(Long id) {
         Student student = studentRepository.findById(id)
@@ -84,9 +85,12 @@ public class StudentService {
     // 학생 정보 수정
     @Transactional
     public StudentDto updateStudent(Long id, StudentUpdateRequest request, com.newaveflow.entity.User actor) {
-        Student student = studentRepository.findById(id)
+        Student student = studentRepository.lockById(id)
                 .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
         classAccessService.requireStudent(actor, student);
+        ContentTextFilter.check(request.name(),request.school(),request.fatherName(),request.motherName(),request.address());
+        String approvedImage=photos.submit(com.newaveflow.entity.ModeratedPhoto.TargetType.STUDENT,id,
+            student.getProfileImage(),request.profileImage(),actor.getId());
 
         LocalDate birthDate = null;
         if (request.birthDate() != null && !request.birthDate().isBlank()) {
@@ -98,7 +102,7 @@ public class StudentService {
                 request.school(), request.phone(), request.baptism(),
                 request.fatherName(), request.fatherPhone(),
                 request.motherName(), request.motherPhone(),
-                request.address(), request.profileImage()
+                request.address(), approvedImage
         );
         return StudentDto.from(studentRepository.save(student));
     }
@@ -117,7 +121,8 @@ public class StudentService {
 
     // 관리자: 학생 신규 등록
     @Transactional
-    public AdminStudentDto createStudent(StudentCreateRequest request) {
+    public AdminStudentDto createStudent(StudentCreateRequest request, com.newaveflow.entity.User actor) {
+        ContentTextFilter.check(request.name(),request.school(),request.fatherName(),request.motherName(),request.address());
         ClassGroup classGroup = classGroupRepository.findById(request.classGroupId())
                 .orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
 
@@ -140,10 +145,10 @@ public class StudentService {
                 .motherName(request.motherName())
                 .motherPhone(request.motherPhone())
                 .address(request.address())
-                .profileImage(request.profileImage())
                 .build();
-
-        return AdminStudentDto.from(studentRepository.save(student));
+        studentRepository.saveAndFlush(student);
+        photos.submit(com.newaveflow.entity.ModeratedPhoto.TargetType.STUDENT,student.getId(),null,request.profileImage(),actor.getId());
+        return AdminStudentDto.from(student);
     }
 
     // 관리자: 학생 반 배정 변경
@@ -159,8 +164,9 @@ public class StudentService {
 
     // 관리자: 학생 정보 수정 (AdminStudentDto 반환)
     @Transactional
-    public AdminStudentDto updateStudentAdmin(Long id, StudentCreateRequest request) {
-        Student student = studentRepository.findById(id)
+    public AdminStudentDto updateStudentAdmin(Long id, StudentCreateRequest request, com.newaveflow.entity.User actor) {
+        ContentTextFilter.check(request.name(),request.school(),request.fatherName(),request.motherName(),request.address());
+        Student student = studentRepository.lockById(id)
                 .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
 
         LocalDate birthDate = null;
@@ -168,12 +174,14 @@ public class StudentService {
             birthDate = LocalDate.parse(request.birthDate());
         }
 
+        String approvedImage=photos.submit(com.newaveflow.entity.ModeratedPhoto.TargetType.STUDENT,id,
+            student.getProfileImage(),request.profileImage(),actor.getId());
         student.update(
                 request.name(), request.gender(), birthDate,
                 request.school(), request.phone(), request.baptism(),
                 request.fatherName(), request.fatherPhone(),
                 request.motherName(), request.motherPhone(),
-                request.address(), request.profileImage()
+                request.address(), approvedImage
         );
 
         if (request.grade() != null) {

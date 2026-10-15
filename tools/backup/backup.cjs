@@ -51,6 +51,8 @@ async function connectProduction(){
   return {client,env};
 }
 async function fingerprints(client){
+  // timestamptz JSON must be identical on the cloud UTC database and a Korean PC restore.
+  await client.query("SET TIME ZONE 'UTC'");
   const tables=(await client.query("select tablename from pg_tables where schemaname='public' order by tablename")).rows.map(r=>r.tablename);
   const result={};
   if(!tables.length)return result;

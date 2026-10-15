@@ -1,3 +1,5 @@
+import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
+import { readProfilePhoto } from '../utils/profilePhoto'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { AdminIntro } from '../components/common/AdminTools'
@@ -694,6 +696,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
   })
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
+  const [photoError, setPhotoError] = useState('')
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -751,14 +754,13 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
                   <ImageIcon size={16} />
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png"
+                    aria-label="학생 사진 선택"
                     className="hidden"
                     onChange={e => {
                       const file = e.target.files[0]
                       if (file) {
-                        const reader = new FileReader()
-                        reader.onloadend = () => set('profileImage', reader.result)
-                        reader.readAsDataURL(file)
+                        readProfilePhoto(file).then(image => { set('profileImage', image); setPhotoError('') }).catch(error => setPhotoError(error.message))
                       }
                     }}
                   />
@@ -772,7 +774,8 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
                   </button>
                 )}
               </div>
-              <p className="text-xs font-bold text-gray-300">JPG, PNG 파일 지원</p>
+              {photoError && <p role="alert" className="text-sm text-red-700">{photoError}</p>}
+              <PhotoReviewStatus targetType="STUDENT" targetId={student?.id} onRemoved={() => set('profileImage', '')} />
             </section>
 
             {/* 필수 정보 */}

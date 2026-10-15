@@ -54,6 +54,14 @@ public class User {
     private boolean isActive = true;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean isSuspended = false;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private LocalDateTime suspendedAt;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(nullable = false, columnDefinition = "bigint default 0")
     @Builder.Default
     private long authVersion = 0;
@@ -95,12 +103,23 @@ public class User {
     public void revokeSessions() { this.authVersion++; }
 
     public void approve() {
+        if (this.isSuspended) throw new IllegalStateException("Suspended accounts require an explicit restoration");
         if (!this.isActive) revokeSessions();
         this.isActive = true;
     }
 
     public void suspend() {
+        this.isSuspended = true;
+        this.suspendedAt = LocalDateTime.now();
         this.isActive = false;
+        revokeSessions();
+    }
+
+    public void restore() {
+        if (!this.isSuspended) throw new IllegalStateException("Only suspended accounts can be restored");
+        this.isSuspended = false;
+        this.suspendedAt = null;
+        this.isActive = true;
         revokeSessions();
     }
 

@@ -37,6 +37,8 @@ jobs:
         run: |
           xcodebuild -version
           python3 tools/ios/select-simulator.py
+      - name: Test release guards with synthetic profiles and app bundles
+        run: python3 -B -m unittest discover -s tools/ios -p 'test_*.py'
       - name: Install the locked dependencies
         working-directory: frontend
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -59,6 +61,8 @@ jobs:
           codesign --verify --deep --strict .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
           codesign --display --entitlements - .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
             > .verification/ios/simulator-entitlements.plist
+          python3 ../tools/ios/verify-bundle.py .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
+            > .verification/ios/bundle-inspection.json
       - name: Test Keychain on the iPhone simulator
         working-directory: frontend
         run: |
@@ -102,6 +106,7 @@ jobs:
             frontend/.verification/ios/*.log
             frontend/.verification/ios/*.png
             frontend/.verification/ios/*.plist
+            frontend/.verification/ios/bundle-inspection.json
             frontend/.verification/ios/*.xcresult
           if-no-files-found: ignore
           retention-days: 5

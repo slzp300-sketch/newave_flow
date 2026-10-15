@@ -10,7 +10,7 @@ public record LoginResponse(
     public record UserInfo(
             Long id, String name, String email, String role, String grade,
             boolean isActive, boolean largeFont,
-            String phone, String birthDate, String churchPosition
+            String phone, String birthDate, String churchPosition, String accountStatus
     ) {
         public static UserInfo from(User u, String grade) {
             return new UserInfo(
@@ -18,7 +18,8 @@ public record LoginResponse(
                     grade, u.isActive(), u.isLargeFont(),
                     u.getPhone(),
                     u.getBirthDate() != null ? u.getBirthDate().toString() : null,
-                    u.getChurchPosition()
+                    u.getChurchPosition(),
+                    u.isSuspended() ? "SUSPENDED" : u.isActive() ? "ACTIVE" : "PENDING"
             );
         }
     }

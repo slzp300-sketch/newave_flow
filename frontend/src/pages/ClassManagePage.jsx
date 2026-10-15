@@ -1,3 +1,5 @@
+import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
+import { readProfilePhoto } from '../utils/profilePhoto'
 import { useState } from 'react'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -474,6 +476,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
     mutationFn: (data) => studentsApi.update(student.id, data),
     onSuccess: onSaved,
   })
+  const [photoError, setPhotoError] = useState('')
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
 
@@ -519,14 +522,13 @@ function EditStudentSheet({ student, onClose, onSaved }) {
                   <ImageIcon size={16} />
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png"
+                    aria-label="학생 사진 선택"
                     className="hidden"
                     onChange={e => {
                       const file = e.target.files[0]
                       if (file) {
-                        const reader = new FileReader()
-                        reader.onloadend = () => set('profileImage', reader.result)
-                        reader.readAsDataURL(file)
+                        readProfilePhoto(file).then(image => { set('profileImage', image); setPhotoError('') }).catch(error => setPhotoError(error.message))
                       }
                     }}
                   />
@@ -540,7 +542,8 @@ function EditStudentSheet({ student, onClose, onSaved }) {
                   </button>
                 )}
               </div>
-              <p className="text-xs font-bold text-gray-300">학생 사진 (JPG, PNG)</p>
+              {photoError && <p role="alert" className="text-sm text-red-700">{photoError}</p>}
+              <PhotoReviewStatus targetType="STUDENT" targetId={student.id} onRemoved={() => set('profileImage', '')} />
             </div>
 
           <div className="grid grid-cols-2 gap-3">

@@ -27,6 +27,8 @@ public class UserController {
     private final TeacherClassRepository teacherClassRepository;
     private final UserTagRepository userTagRepository;
     private final AuthService authService;
+    private final com.newaveflow.service.PhotoModerationService photos;
+    private final com.newaveflow.service.AdminUserService adminUsers;
 
     private String resolveGrade(User u) {
         String g = u.getGrade();
@@ -122,13 +124,16 @@ public class UserController {
             @AuthenticationPrincipal User currentUser,
             @RequestBody ProfileRequest request) {
         if (currentUser == null) return ResponseEntity.status(401).build();
-        User user = userRepository.findById(currentUser.getId())
+        User user = userRepository.lockById(currentUser.getId())
             .orElseThrow(() -> com.newaveflow.exception.AppException.notFound("사용자를 찾을 수 없습니다."));
         LocalDate birthDate = null;
         if (request.birthDate() != null && !request.birthDate().isBlank()) {
             birthDate = LocalDate.parse(request.birthDate());
         }
-        user.updateProfile(request.name(), request.phone(), birthDate, request.profileImage(), request.churchPosition());
+        com.newaveflow.service.ContentTextFilter.check(request.name(),request.churchPosition());
+        String approvedImage=photos.submit(com.newaveflow.entity.ModeratedPhoto.TargetType.USER,user.getId(),
+            user.getProfileImage(),request.profileImage(),currentUser.getId());
+        user.updateProfile(request.name(), request.phone(), birthDate, approvedImage, request.churchPosition());
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
@@ -163,28 +168,12 @@ public class UserController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id,
             @RequestBody RoleRequest request) {
-        User user = userRepository.lockById(id)
-                .orElseThrow(() -> com.newaveflow.exception.AppException.notFound("사용자를 찾을 수 없습니다."));
-        User.Role newRole = User.Role.valueOf(request.role());
-
-        // 최종관리자 권한 부여/변경은 최종관리자만 가능
-        boolean callerIsAdmin = currentUser != null && currentUser.getRole() == User.Role.ADMIN;
-        if (!callerIsAdmin && (newRole == User.Role.ADMIN || user.getRole() == User.Role.ADMIN)) {
-            throw com.newaveflow.exception.AppException.forbidden("최종관리자 권한은 최종관리자만 변경할 수 있습니다.");
+        User.Role role;
+        try { role=User.Role.valueOf(request.role()); }
+        catch (IllegalArgumentException|NullPointerException e) {
+            throw com.newaveflow.exception.AppException.badRequest("권한을 확인해주세요.");
         }
-
-        if (newRole == User.Role.PASTOR || newRole == User.Role.ADMIN) {
-            long count = userRepository.findByIsActiveTrue().stream()
-                .filter(u -> u.getRole() == User.Role.PASTOR || u.getRole() == User.Role.ADMIN)
-                .count();
-            boolean isAlreadyPastorOrAdmin = user.getRole() == User.Role.PASTOR || user.getRole() == User.Role.ADMIN;
-            if (!isAlreadyPastorOrAdmin && count >= 2) {
-                throw com.newaveflow.exception.AppException.badRequest("최종관리자 및 목사님 권한은 최대 2명까지만 설정할 수 있습니다.");
-            }
-        }
-
-        user.updateRole(newRole);
-        userRepository.save(user);
+        adminUsers.updateRole(currentUser,id,role);
         return ResponseEntity.ok().build();
     }
 

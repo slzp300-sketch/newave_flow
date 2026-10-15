@@ -1,6 +1,7 @@
 export const eventRangeKey = (from, to) => ['events', from, to]
 
 const rules = [
+  [/^\/safety/, ['safety-summary', 'content-report-', 'my-content-reports', 'report-target', 'photo-review-', 'my-profile', 'student', 'students', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'teachers', 'teacher-roster', 'meeting-minutes', 'admin-minute', 'events', 'event', 'weekly-events', 'attendance-required-events', 'report-', 'weekly-status', 'pending-users', 'suspended-users', 'admin-teachers']],
   [/^\/(admin\/)?students|^\/classes|^\/admin\/classes|deactivation-requests/, ['student', 'students', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'teachers', 'teacher-roster', 'my-classes', 'attendance', 'admin-attendance', 'admin-weekly-attendance', 'admin-absent', 'report-', 'weekly-status', 'deactivation-']],
   [/^\/events/, ['event', 'events', 'weekly-events', 'attendance-required-events', 'attendance-summary', 'teacher-attendance-summary']],
   [/^\/attendance|^\/reports/, ['attendance', 'admin-attendance', 'admin-weekly-attendance', 'admin-absent', 'report-', 'student-history', 'weekly-status']],

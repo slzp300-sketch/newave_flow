@@ -55,6 +55,7 @@ public class MeetingMinuteController {
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping
     public ResponseEntity<MeetingMinute> create(@RequestBody MeetingMinuteCreateRequest request) {
+        com.newaveflow.service.ContentTextFilter.check(request.title(),request.content());
         MeetingMinute minutes = MeetingMinute.builder()
             .title(request.title())
             .content(request.content())
@@ -78,6 +79,7 @@ public class MeetingMinuteController {
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/{id}")
     public ResponseEntity<MeetingMinute> update(@PathVariable Long id, @RequestBody MeetingMinuteCreateRequest request) {
+        com.newaveflow.service.ContentTextFilter.check(request.title(),request.content());
         MeetingMinute minutes = meetingMinuteRepository.findById(id).orElseThrow();
         minutes.setTitle(request.title());
         minutes.setContent(request.content());

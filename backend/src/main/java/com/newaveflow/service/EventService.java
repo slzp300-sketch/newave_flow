@@ -82,6 +82,7 @@ public class EventService {
     }
 
     private Event buildEvent(EventDto.EventCreateRequest request) {
+        ContentTextFilter.check(request.title(),request.description());
         InputRules.eventDates(request.title(), request.eventDate(), request.endDate());
         LocalDate deadline = attendanceDeadline(request);
         LocalDate start = deadline == null ? null : EventAttendanceWindow.start(request.attendanceStartDate(), deadline);
@@ -110,6 +111,7 @@ public class EventService {
 
     @Transactional
     public EventDto.EventResponse updateEvent(Long id, EventDto.EventCreateRequest request) {
+        ContentTextFilter.check(request.title(),request.description());
         InputRules.eventDates(request.title(), request.eventDate(), request.endDate());
         Event event = eventRepository.lockById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
@@ -166,6 +168,7 @@ public class EventService {
                 .collect(Collectors.toSet());
 
         for (EventDto.StudentAttendanceItem item : items) {
+            ContentTextFilter.check(item.absenceReason(),item.partialNote());
             InputRules.eventAttendance(event, item.status(), item.absenceReason(), item.partialFromDate());
             Student student = studentRepository.findById(item.studentId())
                     .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
@@ -208,6 +211,7 @@ public class EventService {
     @Transactional
     public void saveTeacherAttendance(Long eventId, Long teacherId,
                                       String status, java.time.LocalDate partialFromDate, String partialNote, String absenceReason) {
+        ContentTextFilter.check(partialNote,absenceReason);
         Event event = eventRepository.lockById(eventId)
                 .orElseThrow(() -> AppException.notFound("행사를 찾을 수 없습니다."));
         EventAttendanceWindow.assertOpen(event, EventAttendanceWindow.today());

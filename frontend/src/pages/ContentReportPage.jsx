@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/layout/Header'
 import useAuthStore from '../store/authStore'
 import { safetyApi } from '../api/safety'
-import { REPORT_REASONS, REPORT_STATUS, reportTarget, reportSubmission } from '../utils/communitySafety'
+import { REPORT_REASONS, REPORT_STATUS, CONTENT_LABELS, reportTarget, reportSubmission } from '../utils/communitySafety'
 
 const fieldClass = 'mt-2 min-h-12 w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base'
 export default function ContentReportPage() {
@@ -16,6 +16,7 @@ export default function ContentReportPage() {
   const [subject, setSubject] = useState(location.state?.subject || '')
   const [reason, setReason] = useState('')
   const [details, setDetails] = useState('')
+  const [urgent, setUrgent] = useState(false)
   const [success, setSuccess] = useState(null)
   const [page, setPage] = useState(0)
   const submission = useRef(null)
@@ -27,7 +28,7 @@ export default function ContentReportPage() {
   } })
   const submit = e => {
     e.preventDefault(); setSuccess(null)
-    const payload = { ...target, subject: subject.trim(), reason, details: details.trim() }
+    const payload = { ...target, subject: subject.trim(), reason, details: details.trim(), urgent }
     submission.current = reportSubmission(submission.current, payload, () => crypto.randomUUID())
     send.mutate({ ...payload, requestId: submission.current.id })
   }
@@ -48,7 +49,7 @@ export default function ContentReportPage() {
           {people.isError && <span role="alert" className="block text-red-700">사용자를 불러오지 못했습니다. <button type="button" onClick={() => people.refetch()} className="min-h-11 underline">다시 시도</button></span>}
         </label> : target.contentType === 'OTHER' ? <label className="block text-sm font-semibold">문제가 있는 화면·콘텐츠
           <input aria-label="문제가 있는 화면·콘텐츠" required maxLength={200} className={fieldClass} value={subject} onChange={e => setSubject(e.target.value)} placeholder="예: 교적부의 프로필 사진, 출결보고 내용" />
-        </label> : <div className="rounded-xl bg-gray-50 p-3 text-sm">{target.contentType === 'MEETING_MINUTE' ? '선택한 회의록을 신고합니다.' : '선택한 출결보고를 신고합니다.'}
+        </label> : <div className="rounded-xl bg-gray-50 p-3 text-sm">선택한 {CONTENT_LABELS[target.contentType]} 신고
           <button type="button" className="ml-2 min-h-11 text-primary-700 underline" onClick={() => setTarget({ targetType: 'CONTENT', contentType: 'OTHER', targetId: null })}>대상 변경</button></div>}
         <label className="block text-sm font-semibold">신고 사유
           <select aria-label="신고 사유" required className={fieldClass} value={reason} onChange={e => setReason(e.target.value)}>
@@ -58,6 +59,7 @@ export default function ContentReportPage() {
         <label className="block text-sm font-semibold">상세 내용
           <textarea aria-label="상세 내용" required maxLength={2000} rows={5} className={fieldClass} value={details} onChange={e => setDetails(e.target.value)} placeholder="어떤 문제가 있는지, 관리자가 확인할 위치를 알려주세요." />
         </label>
+        <label className="flex min-h-11 items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm leading-6"><input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" /><span>현재 위협이나 개인정보 노출 등 빠른 확인이 필요합니다. 실제 긴급 상황에는 앱 신고와 별도로 담당자에게 즉시 알려주세요.</span></label>
         {send.isError && <p role="alert" className="text-sm text-red-700">{send.error.response?.data?.message || '접수 결과를 확인하지 못했습니다. 같은 내용으로 다시 시도할 수 있습니다.'}</p>}
         <button disabled={send.isPending || !details.trim() || !reason || (target.targetType === 'USER' && !target.targetId)}
           className="min-h-12 w-full rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white disabled:opacity-40">{send.isPending ? '접수 중…' : '신고 접수하기'}</button>

@@ -3,7 +3,7 @@
 DO $$
 DECLARE
   req record; target record; item record; col record; legacy record;
-  hits bigint; changed bigint; current_digest text; apple_subject text;
+  hits bigint; changed bigint; current_digest text; apple_subject text; image_filter text;
 BEGIN
   IF (SELECT count(*) FROM privacy_request) <> 1 THEN RAISE EXCEPTION 'Exactly one reviewed request is required'; END IF;
   SELECT * INTO req FROM privacy_request;
@@ -19,7 +19,7 @@ BEGIN
     'evangelism_groups','evangelism_group_members','evangelism_schedules','tts_answers','tts_data_entry','tts_item',
     'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','apple_accounts','apple_auth_flows',
     'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
-    'apple_notification_receipts','schema_migrations')) THEN
+    'apple_notification_receipts','user_status_events','moderated_photos','schema_migrations')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -34,7 +34,41 @@ BEGIN
         'meeting_minute_confirms','checklist_records','prayer_votes','meeting_attendances','evangelism_assignments',
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
         'deactivation_requests','event_student_attendances','kakao_auth_flows','apple_accounts','apple_auth_flows',
-        'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
+        'user_status_events','moderated_photos'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+  -- New lifecycle/photo tables are optional when replaying an older backup. New columns
+  -- or edges in these reviewed tables must not silently bypass account erasure.
+  IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND (
+    (table_name='user_status_events' AND column_name NOT IN ('id','user_id','actor_id','action','reason','report_id','created_at')) OR
+    (table_name='moderated_photos' AND column_name NOT IN ('id','revision','target_type','target_id','pending_image','submitted_by','submitted_at','status','reviewed_by','reviewed_at','review_note')))) THEN
+    RAISE EXCEPTION 'Unreviewed safety lifecycle column';
+  END IF;
+  IF (to_regclass('public.moderated_photos') IS NULL) <> (NOT EXISTS(
+      SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='content_reports' AND column_name='assigned_to_id')) THEN
+    RAISE EXCEPTION 'Incomplete photo moderation privacy schema';
+  END IF;
+  IF EXISTS(SELECT 1 FROM pg_constraint fk JOIN pg_class src ON src.oid=fk.conrelid
+    JOIN pg_namespace ns ON ns.oid=src.relnamespace
+    WHERE fk.contype='f' AND (
+      fk.confrelid IN (to_regclass('public.user_status_events'),to_regclass('public.moderated_photos')) OR
+      (fk.confrelid=to_regclass('public.content_reports') AND NOT (
+        ns.nspname='public' AND src.relname='user_status_events' AND fk.confdeltype='n'
+        AND fk.conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='report_id')]::smallint[]
+        AND fk.confkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[])) OR
+      (ns.nspname='public' AND src.relname IN ('user_status_events','moderated_photos','content_reports') AND NOT (
+        (fk.confrelid='public.users'::regclass
+          AND fk.confkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[]
+          AND EXISTS(SELECT 1 FROM (VALUES
+            ('user_status_events','user_id','c'),('user_status_events','actor_id','n'),
+            ('moderated_photos','submitted_by','n'),('moderated_photos','reviewed_by','n'),
+            ('content_reports','reporter_id','c'),('content_reports','moderator_id','n'),('content_reports','assigned_to_id','n')
+          ) expected(tbl,col,del) WHERE src.relname=expected.tbl AND fk.confdeltype::text=expected.del
+            AND fk.conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname=expected.col)]::smallint[])) OR
+        (src.relname='user_status_events' AND fk.confrelid=to_regclass('public.content_reports') AND fk.confdeltype='n'
+          AND fk.conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='report_id')]::smallint[]
+          AND fk.confkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[]))))) THEN
+    RAISE EXCEPTION 'Unreviewed safety lifecycle foreign key';
+  END IF;
   -- V011 is optional. When present, only its reviewed owner and receipt edges may cascade.
   IF (to_regclass('public.apple_notification_subjects') IS NULL) <>
      (to_regclass('public.apple_notification_receipts') IS NULL) THEN
@@ -126,8 +160,28 @@ BEGIN
   END IF;
   IF to_regclass('public.content_reports') IS NOT NULL THEN
     -- Account-linked safety records contain no shared attendance/TTS outcomes.
-    DELETE FROM content_reports WHERE reporter_id=req.user_id OR (target_type='USER' AND target_id=req.user_id);
+    IF to_regclass('public.user_status_events') IS NOT NULL THEN
+      UPDATE user_status_events SET report_id=NULL WHERE report_id IN (SELECT id FROM content_reports
+        WHERE reporter_id=req.user_id OR (target_type='USER' AND target_id=req.user_id)
+          OR (target_type='CONTENT' AND content_type='USER_PROFILE_PHOTO' AND target_id=req.user_id));
+    END IF;
+    DELETE FROM content_reports WHERE reporter_id=req.user_id OR (target_type='USER' AND target_id=req.user_id)
+      OR (target_type='CONTENT' AND content_type='USER_PROFILE_PHOTO' AND target_id=req.user_id);
     UPDATE content_reports SET moderator_id=NULL WHERE moderator_id=req.user_id;
+    IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='content_reports' AND column_name='assigned_to_id') THEN
+      UPDATE content_reports SET assigned_to_id=NULL WHERE assigned_to_id=req.user_id;
+    END IF;
+  END IF;
+  IF to_regclass('public.user_status_events') IS NOT NULL THEN
+    DELETE FROM user_status_events WHERE user_id=req.user_id;
+    UPDATE user_status_events SET actor_id=NULL WHERE actor_id=req.user_id;
+  END IF;
+  IF to_regclass('public.moderated_photos') IS NOT NULL THEN
+    -- Cancelling this author's pending upload never changes the other target's approved photo.
+    DELETE FROM moderated_photos WHERE (target_type='USER' AND target_id=req.user_id)
+      OR (status='PENDING' AND submitted_by=req.user_id);
+    UPDATE moderated_photos SET submitted_by=NULL WHERE submitted_by=req.user_id;
+    UPDATE moderated_photos SET reviewed_by=NULL WHERE reviewed_by=req.user_id;
   END IF;
   FOR item IN SELECT * FROM (VALUES
     ('teacher_classes','teacher_id'),('user_tags','user_id'),('event_reads','user_id'),
@@ -171,11 +225,25 @@ BEGIN
       IF hits>0 THEN RAISE EXCEPTION 'Invalid Apple notification hash in %.%',col.table_name,col.column_name; END IF;
       CONTINUE;
     END IF;
+    image_filter := '';
+    IF (col.table_name,col.column_name) IN (('users','profile_image'),('students','profile_image'),('moderated_photos','pending_image')) THEN
+      -- Only canonical bounded PNG/JPEG data URLs with binary start/end markers are opaque.
+      -- Ordinary URLs, malformed data, image notes and every future text field still get scanned.
+      -- This avoids treating a name fragment in base64 as plaintext; visual/metadata ownership
+      -- remains part of the reviewed handover and external-copies decision above.
+      image_filter := format($photo$ AND NOT (CASE WHEN length(t.%1$I)<=2800000
+        AND t.%1$I ~ '^data:image/(png|jpeg);base64,([A-Za-z0-9+/]{4})+([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$'
+        THEN replace(encode(decode(split_part(t.%1$I,',',2),'base64'),'base64'),E'\n','')=split_part(t.%1$I,',',2)
+          AND ((t.%1$I LIKE 'data:image/png;%%' AND encode(substring(decode(split_part(t.%1$I,',',2),'base64') FROM 1 FOR 8),'hex')='89504e470d0a1a0a'
+            AND right(encode(decode(split_part(t.%1$I,',',2),'base64'),'hex'),24)='0000000049454e44ae426082')
+          OR (t.%1$I LIKE 'data:image/jpeg;%%' AND encode(substring(decode(split_part(t.%1$I,',',2),'base64') FROM 1 FOR 3),'hex')='ffd8ff'
+            AND right(encode(decode(split_part(t.%1$I,',',2),'base64'),'hex'),4)='ffd9')) ELSE false END)$photo$,col.column_name);
+    END IF;
     IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name=col.table_name AND column_name='id') THEN
       EXECUTE format('SELECT count(*) FROM public.%I t WHERE EXISTS(SELECT 1 FROM privacy_identifiers p WHERE strpos(lower(t.%I::text),lower(p.value))>0)',col.table_name,col.column_name) INTO hits;
     ELSE
       EXECUTE format('SELECT count(*) FROM public.%I t WHERE EXISTS(SELECT 1 FROM privacy_identifiers p WHERE strpos(lower(t.%I::text),lower(p.value))>0)
-        AND NOT EXISTS(SELECT 1 FROM privacy_exceptions e WHERE e.table_name=$1 AND e.column_name=$2 AND e.row_id::text=t.id::text AND e.before_md5=md5(coalesce(t.%I::text,'''')))',col.table_name,col.column_name,col.column_name)
+        AND NOT EXISTS(SELECT 1 FROM privacy_exceptions e WHERE e.table_name=$1 AND e.column_name=$2 AND e.row_id::text=t.id::text AND e.before_md5=md5(coalesce(t.%I::text,'''')))',col.table_name,col.column_name,col.column_name)||image_filter
         INTO hits USING col.table_name,col.column_name;
     END IF;
     IF hits>0 THEN RAISE EXCEPTION 'Retained text needs review in %.% (% rows)',col.table_name,col.column_name,hits; END IF;

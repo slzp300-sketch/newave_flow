@@ -21,6 +21,11 @@ public class CommunitySafetyService {
     private final MeetingMinuteRepository minutes;
     private final DailyReportRepository dailyReports;
     private final ClassAccessService access;
+    private final StudentRepository students;
+    private final EventRepository events;
+    private final ClassGroupRepository classes;
+    private final PhotoModerationService photos;
+    private final AdminUserService adminUsers;
 
     public record PolicySection(String title, String text) {}
     public record Policy(String version, String title, List<PolicySection> sections) {}
@@ -61,19 +66,23 @@ public class CommunitySafetyService {
         @Positive Long targetId, @Size(max = 200) String subject,
         @NotNull ContentReport.Reason reason,
         @NotBlank(message = "신고 내용을 입력해주세요.") @Size(max = 2000) String details,
-        @NotBlank @Pattern(regexp = "[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") String requestId) {}
+        @NotBlank @Pattern(regexp = "[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") String requestId,
+        boolean urgent) {}
     public record ResolveRequest(@NotNull ContentReport.Status status, @NotNull ContentReport.Action action,
         @NotBlank(message = "검토 결과와 조치 내용을 입력해주세요.") @Size(max = 2000) String note,
         @NotNull @PositiveOrZero Long expectedRevision) {}
     public record ReportView(Long id, long revision, ContentReport.TargetType targetType,
         ContentReport.ContentType contentType, Long targetId, String subject, ContentReport.Reason reason,
         String details, ContentReport.Status status, ContentReport.Action action, String resolutionNote,
-        String reporterName, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt) {}
+        String reporterName, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime resolvedAt,
+        Long assignedToId,String assignedToName,LocalDateTime dueAt,boolean urgent,boolean overdue) {}
     private ReportView view(ContentReport r) {
         String reporter = users.findById(r.getReporterId()).map(User::getName).orElse("삭제된 계정");
         return new ReportView(r.getId(), r.getRevision(), r.getTargetType(), r.getContentType(), r.getTargetId(),
             r.getSubject(), r.getReason(), r.getDetails(), r.getStatus(), r.getAction(), r.getResolutionNote(),
-            reporter, r.getCreatedAt(), r.getUpdatedAt(), r.getResolvedAt());
+            reporter, r.getCreatedAt(), r.getUpdatedAt(), r.getResolvedAt(),r.getAssignedToId(),
+            r.getAssignedToId()==null?null:users.findById(r.getAssignedToId()).map(User::getName).orElse("삭제된 계정"),
+            r.getDueAt(),r.isUrgent(),r.getResolvedAt()==null&&r.getDueAt().isBefore(LocalDateTime.now()));
     }
     public List<Map<String, Object>> reportableUsers() {
         return users.findByIsActiveTrue().stream().map(u -> Map.<String, Object>of("id", u.getId(), "name", u.getName())).toList();
@@ -110,6 +119,25 @@ public class CommunitySafetyService {
                     access.requireClass(actor, report.getClassGroup().getId());
                     yield report.getReportDate() + " " + report.getClassGroup().getName() + " 출결보고";
                 }
+                case EVENT -> {
+                    if(request.targetId()==null) throw AppException.badRequest("일정을 선택해주세요.");
+                    yield events.findById(request.targetId()).orElseThrow(()->AppException.notFound("일정을 찾을 수 없습니다.")).getTitle();
+                }
+                case USER_PROFILE_PHOTO -> {
+                    if(request.targetId()==null) throw AppException.badRequest("사진의 사용자를 선택해주세요.");
+                    var target=users.findById(request.targetId()).filter(User::isActive)
+                        .filter(u->u.getRole()!=User.Role.ADMIN || u.getId().equals(actor.getId()) || isModerator(actor))
+                        .filter(u->u.getProfileImage()!=null&&!u.getProfileImage().isBlank())
+                        .orElseThrow(()->AppException.notFound("사진을 찾을 수 없습니다."));
+                    yield target.getName()+" 프로필 사진";
+                }
+                case STUDENT_PHOTO -> {
+                    if(request.targetId()==null) throw AppException.badRequest("사진의 학생을 선택해주세요.");
+                    var target=students.findById(request.targetId()).orElseThrow(()->AppException.notFound("사진을 찾을 수 없습니다."));
+                    access.requireStudent(actor,target);
+                    if(target.getProfileImage()==null||target.getProfileImage().isBlank()) throw AppException.notFound("사진을 찾을 수 없습니다.");
+                    yield target.getName()+" 학생 사진";
+                }
                 case OTHER -> {
                     if (request.targetId() != null || request.subject() == null || request.subject().isBlank())
                         throw AppException.badRequest("문제가 있는 화면이나 콘텐츠를 적어주세요.");
@@ -119,7 +147,8 @@ public class CommunitySafetyService {
         }
         return view(reports.saveAndFlush(ContentReport.builder().reporterId(actor.getId()).requestId(request.requestId())
             .targetType(request.targetType()).contentType(request.contentType()).targetId(request.targetId())
-            .subject(subject).reason(request.reason()).details(request.details().trim()).build()));
+            .subject(subject).reason(request.reason()).details(request.details().trim()).urgent(request.urgent())
+            .dueAt(LocalDateTime.now().plusHours(request.urgent()?4:24)).build()));
     }
     public Page<ReportView> list(User actor, boolean management, ContentReport.Status status, int page) {
         if (page < 0 || page > 10000) throw AppException.badRequest("페이지 번호가 올바르지 않습니다.");
@@ -137,21 +166,72 @@ public class CommunitySafetyService {
             (request.status() != ContentReport.Status.RESOLVED && request.action() != ContentReport.Action.NONE) ||
             (request.status() == ContentReport.Status.RESOLVED && request.action() == ContentReport.Action.NONE))
             throw AppException.badRequest("검토 상태와 조치를 확인해주세요.");
+        if(request.action()==ContentReport.Action.REVIEWED && report.getContentType()!=ContentReport.ContentType.OTHER)
+            throw AppException.badRequest("대상에 맞는 실제 보호 조치를 선택하거나 조치 불필요로 처리해주세요.");
         if (request.action() == ContentReport.Action.HIDE_MINUTE) {
             if (report.getTargetType() != ContentReport.TargetType.CONTENT || report.getContentType() != ContentReport.ContentType.MEETING_MINUTE)
                 throw AppException.badRequest("회의록 신고에서만 비공개 처리할 수 있습니다.");
             minutes.findById(report.getTargetId()).orElseThrow(() -> AppException.notFound("회의록을 찾을 수 없습니다.")).setActive(false);
+        } else if(request.action()==ContentReport.Action.HIDE_REPORT_NOTES) {
+            requireTarget(report,ContentReport.ContentType.DAILY_REPORT);
+            var daily=dailyReports.findById(report.getTargetId()).orElseThrow(()->AppException.notFound("보고서를 찾을 수 없습니다."));
+            classes.lockById(daily.getClassGroup().getId()).orElseThrow();
+            daily.hideNotes();
+        } else if(request.action()==ContentReport.Action.HIDE_PHOTO) {
+            if(report.getTargetType()!=ContentReport.TargetType.CONTENT ||
+                (report.getContentType()!=ContentReport.ContentType.USER_PROFILE_PHOTO&&report.getContentType()!=ContentReport.ContentType.STUDENT_PHOTO))
+                throw AppException.badRequest("사진 신고에서만 사진을 숨길 수 있습니다.");
+            photos.hide(actor,report.getContentType()==ContentReport.ContentType.USER_PROFILE_PHOTO?ModeratedPhoto.TargetType.USER:ModeratedPhoto.TargetType.STUDENT,
+                report.getTargetId(),request.note().trim());
+        } else if(request.action()==ContentReport.Action.REDACT_EVENT) {
+            requireTarget(report,ContentReport.ContentType.EVENT);
+            var event=events.lockById(report.getTargetId()).orElseThrow(()->AppException.notFound("일정을 찾을 수 없습니다."));
+            event.setTitle("검토로 숨긴 일정"); event.setDescription(null);
         } else if (request.action() == ContentReport.Action.SUSPEND_USER) {
             if (report.getTargetType() != ContentReport.TargetType.USER || report.getTargetId() == null)
                 throw AppException.badRequest("사용자 신고에서만 이용을 제한할 수 있습니다.");
-            User target = users.lockById(report.getTargetId()).orElseThrow(() -> AppException.notFound("사용자를 찾을 수 없습니다."));
-            if (target.getId().equals(actor.getId()) ||
-                ((target.getRole() == User.Role.ADMIN || target.getRole() == User.Role.PASTOR) && actor.getRole() != User.Role.ADMIN))
-                throw AppException.forbidden("본인 계정은 제한할 수 없으며 관리자·목사 계정 제한은 최종 관리자만 가능합니다.");
-            target.suspend();
+            adminUsers.suspendUser(actor,report.getTargetId(),request.note().trim(),report.getId());
         }
         report.resolve(request.status(), request.action(), request.note().trim(), actor.getId());
         reports.flush();
         return view(report);
+    }
+    private void requireTarget(ContentReport report,ContentReport.ContentType type) {
+        if(report.getTargetType()!=ContentReport.TargetType.CONTENT||report.getContentType()!=type||report.getTargetId()==null)
+            throw AppException.badRequest("신고 대상에 맞는 조치를 선택해주세요.");
+    }
+    public record AssignmentRequest(@NotNull @PositiveOrZero Long expectedRevision,boolean urgent) {}
+    @Transactional public ReportView assign(User actor,Long id,AssignmentRequest request) {
+        if(!isModerator(actor)) throw AppException.forbidden("관리자만 신고를 담당할 수 있습니다.");
+        var report=reports.lockById(id).orElseThrow(()->AppException.notFound("신고를 찾을 수 없습니다."));
+        if(report.getResolvedAt()!=null||report.getRevision()!=request.expectedRevision()) throw AppException.conflict("신고가 변경되었습니다. 다시 확인해주세요.");
+        report.assign(actor.getId(),request.urgent()); reports.flush(); return view(report);
+    }
+    public record QueueSummary(long openCount,long reviewingCount,long overdueCount,long urgentCount,long pendingPhotoCount) {}
+    public record TargetView(boolean available,ContentReport.ContentType contentType,String title,String text,String image) {}
+    public TargetView target(User actor,Long id) {
+        if(!isModerator(actor)) throw AppException.forbidden("관리자만 신고 대상을 확인할 수 있습니다.");
+        var r=reports.findById(id).orElseThrow(()->AppException.notFound("신고를 찾을 수 없습니다."));
+        if(r.getTargetType()==ContentReport.TargetType.USER) return users.findById(r.getTargetId())
+            .map(u->new TargetView(true,null,u.getName(),u.isActive()?"활성 계정":"비활성 계정",null))
+            .orElse(new TargetView(false,null,r.getSubject(),null,null));
+        return switch(r.getContentType()) {
+            case MEETING_MINUTE -> minutes.findById(r.getTargetId()).map(m->new TargetView(true,r.getContentType(),m.getTitle(),m.getContent(),null))
+                .orElse(new TargetView(false,r.getContentType(),r.getSubject(),null,null));
+            case DAILY_REPORT -> dailyReports.findById(r.getTargetId()).map(d->new TargetView(true,r.getContentType(),r.getSubject(),d.getModerationNotes(),null))
+                .orElse(new TargetView(false,r.getContentType(),r.getSubject(),null,null));
+            case EVENT -> events.findById(r.getTargetId()).map(e->new TargetView(true,r.getContentType(),e.getTitle(),e.getDescription(),null))
+                .orElse(new TargetView(false,r.getContentType(),r.getSubject(),null,null));
+            case USER_PROFILE_PHOTO -> users.findById(r.getTargetId()).map(u->new TargetView(u.getProfileImage()!=null,r.getContentType(),r.getSubject(),null,u.getProfileImage()))
+                .orElse(new TargetView(false,r.getContentType(),r.getSubject(),null,null));
+            case STUDENT_PHOTO -> students.findById(r.getTargetId()).map(s->new TargetView(s.getProfileImage()!=null,r.getContentType(),r.getSubject(),null,s.getProfileImage()))
+                .orElse(new TargetView(false,r.getContentType(),r.getSubject(),null,null));
+            case OTHER -> new TargetView(false,r.getContentType(),r.getSubject(),null,null);
+        };
+    }
+    public QueueSummary summary(User actor) {
+        if(!isModerator(actor)) throw AppException.forbidden("관리자만 현황을 확인할 수 있습니다.");
+        return new QueueSummary(reports.countByStatus(ContentReport.Status.OPEN),reports.countByStatus(ContentReport.Status.REVIEWING),
+            reports.countByResolvedAtIsNullAndDueAtBefore(LocalDateTime.now()),reports.countByResolvedAtIsNullAndUrgentTrue(),photos.pendingCount());
     }
 }

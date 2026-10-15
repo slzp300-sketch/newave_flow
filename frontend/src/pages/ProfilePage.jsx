@@ -1,3 +1,5 @@
+import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
+import { readProfilePhoto } from '../utils/profilePhoto'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query'
@@ -84,6 +86,8 @@ export default function ProfilePage() {
     onSuccess: () => {
       updateUserSettings({ name: form.name, phone: form.phone, birthDate: form.birthDate, churchPosition: form.churchPosition })
       queryClient.invalidateQueries({ queryKey: ['my-profile'] })
+      queryClient.invalidateQueries({ queryKey: ['photo-review-status'] })
+      queryClient.invalidateQueries({ queryKey: ['safety-summary'] })
       setProfileResult({ ok: true, msg: '프로필이 저장되었습니다.' })
       setProfileForm(null)
       setTimeout(() => setProfileResult(null), 2500)
@@ -224,14 +228,14 @@ export default function ProfilePage() {
                         <ImageIcon size={14} />
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png"
+                          aria-label="내 프로필 사진 선택"
                           className="hidden"
                           onChange={e => {
                             const file = e.target.files[0]
                             if (file) {
-                              const reader = new FileReader()
-                              reader.onloadend = () => setForm('profileImage', reader.result)
-                              reader.readAsDataURL(file)
+                              readProfilePhoto(file).then(image => { setForm('profileImage', image); setProfileResult(null) })
+                                .catch(error => setProfileResult({ ok: false, msg: error.message }))
                             }
                           }}
                         />
@@ -245,7 +249,7 @@ export default function ProfilePage() {
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400">JPG, PNG 파일 지원</p>
+                    <PhotoReviewStatus targetType="USER" targetId={user?.id} onRemoved={() => setForm('profileImage', '')} />
                   </div>
 
                   {/* 이름 */}

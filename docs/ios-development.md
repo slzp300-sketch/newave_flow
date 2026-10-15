@@ -30,6 +30,8 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App \
 
 `ios:verify`는 네이티브 파일 연결·테스트 대상·아이콘·출처·개인정보 manifest 등 잘못된 빌드 구성을 검사한다. Swift 컴파일·시뮬레이터 검사나 실제 iPhone 검수를 대신하지 않는다. 시뮬레이터용 앱은 실제 iPhone에 설치할 수 없다. 실제 설치는 개발자 가입·서명 후 TestFlight로 진행한다.
 
+`ios-check.yml`은 이제 최종 `App.app`에도 `tools/ios/verify-bundle.py`를 실행해 자체·Capacitor·Cordova 개인정보 manifest, 동봉 웹/방침, iPhone 설정과 원격 개발 서버·브리지 로그·개인 키 혼입을 검사한다. 새로운 네이티브 SDK/manifest가 추가되면 허용 목록 검토 없이 통과하지 않는다. 서명·TestFlight는 별도 `ios-testflight.yml`의 수동 실행으로 준비했다. 정확한 main SHA·보호 환경·자격증명이 있어야 서명하며 업로드는 기본 꺼짐이다. 실제 서명·Apple 업로드 성공은 아직 검증하지 않았다. 설정·비밀값 이름·검수 기록표·스크린샷 준비·계정 활성화 후 순서는 [TestFlight 운영 절차](ios-testflight-runbook.md)에 정리했다.
+
 ## 보안 저장과 카카오 인증
 
 `NewaveSecureStoragePlugin`은 `newave-auth`, `newave-kakao-pending`, `newave-deletion-receipt`만 허용한다. Swift 저장소는 Keychain에서 로그인·OAuth 증명·삭제 접수증을 별개 항목으로 저장하고 다른 앱·장치 백업과 공유하지 않는다. 로그아웃해도 삭제 처리 결과를 확인할 수 있도록 접수증은 유지한다. 읽기·쓰기 실패 시 평문으로 대체하지 않는다. Keychain이 앱 제거 후 남을 수 있어 새 설치 시 이전 항목을 정리한다. 설치 여부만 자체 UserDefaults에 저장하며 그 API 사유를 `PrivacyInfo.xcprivacy`에 선언했다. 개인정보 수집 항목 전체는 App Store 등록 단계에서 별도로 작성한다.
@@ -48,6 +50,6 @@ Apple 로그인·기존 계정 연결·승인 대기 가입과 외부 인증 철
 
 등록 대기 중에 Apple 서버 알림의 서명·중복·순서 검증과 인증 철회, 계정 삭제 시 알림 기록 제거를 추가했다. V011은 선택적 사전 준비이며 운영에는 적용하지 않는다. 로그인과 알림은 기본 비활성이고 활성화 전에는 PostgreSQL V011 적용·실제 Apple 수신 주소 등록과 수신 검증이 필요하다. [App Store 입력 초안](ios-app-store-submission.md)과 [콘텐츠 안전 점검](ios-content-safety-audit.md)도 준비했으며, 회의록 관리 현황과 비공개 확인 요청의 권한 누락을 수정했다.
 
-실제 iPhone에서는 사진 선택·카메라 권한·키보드·여백·카카오 복귀·로그인 재시작·이용수칙·신고·Apple 인증·삭제 접수증을 TestFlight로 확인한다. Apple 계정 설정·실제 알림 수신 검증, 남은 콘텐츠 안전 보완, App Store 개인정보·등급의 최종 답변·화면 자료와 정식 심사가 남아 있다. 코드와 시뮬레이터 검증을 App Store 제출 완료로 표시하지 않는다.
+실제 iPhone에서는 사진 선택·카메라 권한·키보드·여백·카카오 복귀·로그인 재시작·이용수칙·신고·Apple 인증·삭제 접수증을 TestFlight로 확인한다. Apple 계정 설정·실제 알림 수신 검증, 콘텐츠 안전 기능의 실제 기기 검수, App Store 개인정보·등급의 최종 답변·화면 자료와 정식 심사가 남아 있다. 코드와 시뮬레이터 검증을 App Store 제출 완료로 표시하지 않는다.
 
 사용자 보고 기준 개인 개발자 가입은 등록 대기 중이며 결제·멤버십 활성화는 별도 확인하지 않았다. 학생·종교 관련 수집 항목이 있는 이 앱의 개인 명의 제출 적합성은 가입 승인과 별도로 확인한다. 인증서 발급·TestFlight 업로드는 기본 컴파일 검증과 별도 절차다. 상세 범위와 일정은 [iOS 개발과 출시 계획](ios-release-plan-2026-10-15.md)을 따른다.

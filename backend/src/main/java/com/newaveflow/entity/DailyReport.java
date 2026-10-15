@@ -50,6 +50,13 @@ public class DailyReport {
     @Column(columnDefinition = "TEXT")
     private String specialNotes;
 
+    @org.hibernate.annotations.ColumnDefault("false") @Builder.Default @Column(nullable=false) private boolean notesHidden=false;
+
+    /** Hidden notes never leave the server, including responses used by older clients. */
+    public String getSpecialNotes() { return notesHidden?null:specialNotes; }
+    public void hideNotes() { this.notesHidden=true; }
+    @JsonIgnore public String getModerationNotes() { return specialNotes; }
+
     private LocalDateTime submittedAt;
 
     @CreatedDate
@@ -73,6 +80,9 @@ public class DailyReport {
         this.presentCount  = present;
         this.absentCount   = absent;
         this.lateCount     = late;
-        this.specialNotes  = notes;
+        if(!notesHidden || (notes!=null && !notes.isBlank() && !java.util.Objects.equals(notes,specialNotes))) {
+            this.specialNotes=notes;
+            this.notesHidden=false;
+        }
     }
 }

@@ -1,3 +1,4 @@
+import ReportLink from '../components/common/ReportLink'
 import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import { eventToday, isEventEnded, validateAttendanceWindow } from '../utils/eventAttendance'
@@ -488,6 +489,7 @@ export default function CalendarPage() {
                   {isEventEnded(e, today) ? <p className="mb-2 text-xs font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
                   {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
                   <EventAttendanceStatus event={e} today={today} />
+                  <ReportLink contentType="EVENT" targetId={e.id} label="일정 신고" />
                 </Card>
               </motion.div>
             ))
@@ -553,6 +555,7 @@ export default function CalendarPage() {
                         </span>
                       )}
                       <EventAttendanceStatus event={e} today={today} />
+                      <ReportLink contentType="EVENT" targetId={e.id} label="일정 신고" />
                     </div>
                   </Card>
                 ))}

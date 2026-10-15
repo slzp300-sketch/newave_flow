@@ -21,6 +21,7 @@ import java.time.LocalDate;
 public class ReportController {
 
     private final ReportService reportService;
+    private final com.newaveflow.service.ClassAccessService access;
 
     @PostMapping
     public ResponseEntity<DailyReport> saveReport(
@@ -39,7 +40,9 @@ public class ReportController {
     @GetMapping("/status")
     public ResponseEntity<DailyReport> getStatus(
             @RequestParam Long classId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @AuthenticationPrincipal User currentUser) {
+        access.requireClass(currentUser,classId);
         return ResponseEntity.ok(reportService.getByClassAndDate(classId, date));
     }
 

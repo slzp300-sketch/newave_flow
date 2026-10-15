@@ -14,6 +14,7 @@ import java.util.*;
 @RestController @RequestMapping("/api/safety") @RequiredArgsConstructor
 public class CommunitySafetyController {
     private final CommunitySafetyService safety;
+    private final com.newaveflow.service.PhotoModerationService photos;
     @GetMapping("/policy") public CommunitySafetyService.Policy policy() { return safety.policy(); }
     @GetMapping("/agreement") public CommunitySafetyService.AgreementView agreement(@AuthenticationPrincipal User user) { return safety.agreement(user.getId()); }
     public record AcceptRequest(@NotBlank String version, boolean accepted) {}
@@ -32,4 +33,28 @@ public class CommunitySafetyController {
     @PatchMapping("/admin/reports/{id}") @PreAuthorize("hasAnyRole('ADMIN','PASTOR','EXECUTIVE')")
     public CommunitySafetyService.ReportView resolve(@AuthenticationPrincipal User user, @PathVariable Long id,
         @Valid @RequestBody CommunitySafetyService.ResolveRequest request) { return safety.resolve(user, id, request); }
+    @GetMapping("/admin/summary") @PreAuthorize("hasAnyRole('ADMIN','PASTOR','EXECUTIVE')")
+    public CommunitySafetyService.QueueSummary summary(@AuthenticationPrincipal User user) { return safety.summary(user); }
+    @PatchMapping("/admin/reports/{id}/assignment") @PreAuthorize("hasAnyRole('ADMIN','PASTOR','EXECUTIVE')")
+    public CommunitySafetyService.ReportView assign(@AuthenticationPrincipal User user,@PathVariable Long id,
+        @Valid @RequestBody CommunitySafetyService.AssignmentRequest request) { return safety.assign(user,id,request); }
+    @GetMapping("/admin/reports/{id}/target") @PreAuthorize("hasAnyRole('ADMIN','PASTOR','EXECUTIVE')")
+    public CommunitySafetyService.TargetView target(@AuthenticationPrincipal User user,@PathVariable Long id) { return safety.target(user,id); }
+    @GetMapping("/admin/photos") @PreAuthorize("hasAnyRole('ADMIN','PASTOR','EXECUTIVE')")
+    public Page<com.newaveflow.service.PhotoModerationService.PhotoView> photos(@AuthenticationPrincipal User user,
+        @RequestParam(defaultValue="PENDING") ModeratedPhoto.Status status,@RequestParam(defaultValue="0") int page) { return photos.list(user,status,page); }
+    @GetMapping("/admin/photos/{id}/image") @PreAuthorize("hasAnyRole('ADMIN','PASTOR','EXECUTIVE')")
+    public Map<String,Object> photoImage(@AuthenticationPrincipal User user,@PathVariable Long id) { return photos.image(user,id); }
+    @PatchMapping("/admin/photos/{id}") @PreAuthorize("hasAnyRole('ADMIN','PASTOR','EXECUTIVE')")
+    public com.newaveflow.service.PhotoModerationService.PhotoView reviewPhoto(@AuthenticationPrincipal User user,@PathVariable Long id,
+        @Valid @RequestBody com.newaveflow.service.PhotoModerationService.ReviewRequest request) { return photos.review(user,id,request); }
+    @GetMapping("/photos/status") public org.springframework.http.ResponseEntity<com.newaveflow.service.PhotoModerationService.PhotoView> photoStatus(
+        @AuthenticationPrincipal User user,@RequestParam ModeratedPhoto.TargetType targetType,@RequestParam Long targetId) {
+        var result=photos.status(user,targetType,targetId);
+        return result==null?org.springframework.http.ResponseEntity.noContent().build():org.springframework.http.ResponseEntity.ok(result);
+    }
+    @DeleteMapping("/photos") public org.springframework.http.ResponseEntity<Void> removePhoto(@AuthenticationPrincipal User user,
+        @RequestParam ModeratedPhoto.TargetType targetType,@RequestParam Long targetId) {
+        photos.remove(user,targetType,targetId); return org.springframework.http.ResponseEntity.noContent().build();
+    }
 }
