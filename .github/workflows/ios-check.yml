@@ -46,7 +46,7 @@ jobs:
           npm test
           npm run ios:sync
           npm run ios:verify
-      - name: Compile the iOS Release app without distribution signing
+      - name: Compile the iOS Release app with simulator ad-hoc signing
         working-directory: frontend
         run: |
           set -o pipefail
@@ -55,16 +55,20 @@ jobs:
             -configuration Release -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath .verification/ios/DerivedData \
-            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee .verification/ios/release-build.log
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES build 2>&1 | tee .verification/ios/release-build.log
+          codesign --verify --deep --strict .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app
+          codesign --display --entitlements - .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
+            > .verification/ios/simulator-entitlements.plist
       - name: Test Keychain on the iPhone simulator
         working-directory: frontend
         run: |
           set -o pipefail
           xcodebuild -project ios/App/App.xcodeproj -scheme App \
             -configuration Debug -destination "id=$IOS_SIMULATOR_ID" \
+            -parallel-testing-enabled NO \
             -derivedDataPath .verification/ios/DerivedData \
             -resultBundlePath .verification/ios/native-tests.xcresult \
-            CODE_SIGNING_ALLOWED=NO test 2>&1 | tee .verification/ios/native-tests.log
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES test 2>&1 | tee .verification/ios/native-tests.log
       - name: Launch the Release app and capture its initial screen
         working-directory: frontend
         run: |
@@ -81,6 +85,7 @@ jobs:
           path: |
             frontend/.verification/ios/*.log
             frontend/.verification/ios/*.png
+            frontend/.verification/ios/*.plist
             frontend/.verification/ios/*.xcresult
           if-no-files-found: ignore
           retention-days: 5

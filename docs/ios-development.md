@@ -14,17 +14,18 @@ npm run ios:sync
 npm run ios:verify
 ```
 
-Windows에서도 웹 파일 생성과 iOS 동기화·구조 검사를 할 수 있다. Xcode 컴파일과 iPhone 시뮬레이터 검사는 macOS의 `.github/workflows/ios-check.yml`에서 진행한다. 기본 GitHub macOS 실행 환경을 사용하며 Apple 개인 키나 운영 DB 인증이 필요하지 않다.
+Windows에서도 웹 파일 생성과 iOS 동기화·구조 검사를 할 수 있다. Xcode 컴파일과 iPhone 시뮬레이터 검사는 macOS의 `.github/workflows/ios-check.yml`에서 진행한다. 기본 GitHub macOS 실행 환경을 사용하며 Apple 개인 키나 운영 DB 인증이 필요하지 않다. 시뮬레이터에서도 Keychain 권한을 확인하므로 임시 ad-hoc 서명을 사용한다. `CODE_SIGNING_ALLOWED=NO`는 컴파일에 성공해도 실행 시 Keychain 오류 -34018을 일으킨다. 이 임시 서명은 개발자 계정·배포 인증서가 필요한 TestFlight 서명과 별개다.
 
 ```sh
 xcodebuild -project ios/App/App.xcodeproj -scheme App \
   -configuration Release -sdk iphonesimulator \
   -destination 'generic/platform=iOS Simulator' \
-  CODE_SIGNING_ALLOWED=NO build
+  CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES build
 
 xcodebuild -project ios/App/App.xcodeproj -scheme App \
   -destination 'platform=iOS Simulator,name=<설치된 iPhone 이름>' \
-  CODE_SIGNING_ALLOWED=NO test
+  -parallel-testing-enabled NO \
+  CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES test
 ```
 
 `ios:verify`는 네이티브 파일 연결·테스트 대상·아이콘·출처·개인정보 manifest 등 잘못된 빌드 구성을 검사한다. Swift 컴파일·시뮬레이터 검사나 실제 iPhone 검수를 대신하지 않는다. 시뮬레이터용 앱은 실제 iPhone에 설치할 수 없다. 실제 설치는 개발자 가입·서명 후 TestFlight로 진행한다.

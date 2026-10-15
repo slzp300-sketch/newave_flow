@@ -25,6 +25,12 @@ Google Play는 개인 개발자 계정으로 진행했다. Apple의 개인 계�
 
 교회·학생 관련 기록에는 민감정보가 포함될 수 있다. Apple은 민감정보를 요구하는 앱의 법인 제출 기준을 두고 있고, 개인정보 분류에 종교적 신념을 포함한다. 이 앱의 수집 항목과 운영 주체를 대조해 개인 명의 제출 적합성 또는 교회·법인 명의 요건을 **가입·결제 전에 확인한다**. 개인 명의로 가능한 것으로 미리 확정하지 않는다. [심사 기준 5.1.1](https://developer.apple.com/app-store/review/guidelines/#privacy), [민감정보 분류](https://developer.apple.com/app-store/app-privacy-details/)
 
+10월 15일 사용자는 교회·법인 정보를 구할 수는 있지만 절차 부담 때문에 **개인 명의를 우선 희망**한다고 답했다. 이 선호를 기준으로 준비하되 개인 명의 제출 적합성이나 유료 가입 완료로 기록하지 않는다. 현재 앱의 학생 명단·출석·종교 활동 기록이 5.1.1(ix)에 해당할 가능성이 있어 가입·결제 전에 Apple에 확인할 내용은 다음과 같다. 실제 자료나 로그인 비밀값을 문의에 첨부하지 않는다.
+
+> 교회 내부의 승인된 교사들이 학생 명단, 출석과 종교 활동 기록을 관리하는 앱을 개발하고 있습니다. 학생이 직접 가입하는 앱은 아니며 접근 권한을 제한합니다. 이 앱을 개인 개발자 명의로 제출할 수 있는지, 심사 기준 5.1.1(ix)에 따라 서비스를 제공하는 교회·법인 명의가 필요한지 확인하고 싶습니다. 필요한 운영 주체 증빙도 안내 부탁드립니다.
+
+위 내용은 문의 초안이며 실제 발송이나 Apple의 적합성 확인은 아직 없다. 개인 계정 가입 자체는 iPhone의 Apple Developer 앱에서 할 수 있지만, 가입 가능 여부와 이 앱의 심사 적합성은 별도로 확인한다. [iPhone 가입 절차](https://developer.apple.com/help/account/membership/enrolling-in-the-app/)
+
 Capacitor 8은 macOS와 Xcode 26 이상을 사용하고 iOS 15 이상을 지원한다. App Store Connect 제출도 현재 Xcode 26 이상의 iOS 26 SDK 빌드가 필요하다. 빌드에 쓰는 SDK와 사용자의 최소 iOS 버전은 별도 설정이다. [Capacitor 환경](https://capacitorjs.com/docs/getting-started/environment-setup), [iOS 지원 버전](https://capacitorjs.com/docs/updating/8-0), [Apple 제출 기준](https://developer.apple.com/news/upcoming-requirements/?id=04282026a)
 
 먼저 macOS 자동 빌드에서 서명 없는 시뮬레이터 빌드를 확인한다. 성공하면 개발자 계정의 앱 식별자·서명 인증서·배포 권한과 업로드 인증을 연결한다. 인증서와 개인 키는 보호된 CI 설정에 저장하고 로그·앱·일반 빌드 산출물에 포함하지 않는다. 초기 네이티브 오류를 CI 로그로 해결하기 어려울 때는 원격 Mac을 잠깐 사용할 수 있는 경로를 별도 검토한다. [GitHub iOS 서명 안내](https://docs.github.com/en/actions/how-tos/deploy/deploy-to-third-party-platforms/sign-xcode-applications)
