@@ -72,6 +72,6 @@ V011의 `apple_notification_subjects`는 앱 ID와 Apple 사용자 식별자를 
 
 TestFlight 단계에서는 최초 동의, 다음 로그인에서 네이티브 이름·이메일 누락, 서버 검증 이메일과 이메일 가리기 유지, 취소, 기존 계정 연결, 비밀번호 없는 신규 가입 승인 대기, Apple 재인증 삭제 접수와 연결 철회, 접수증 확인을 실제 iPhone과 가상 앱 계정으로 확인해야 한다. 로그인 화면에서 인증 후 가입 선택 화면까지만 확인하는 검수와 실제 계정 생성·연결·삭제 검수를 구분한다. 실제 학생·교사 자료로 인증·삭제 검수를 진행하지 않는다. 가상 심사 서버에는 Apple 기능을 켜지 않는다.
 
-실제 Apple 기능을 활성화하기 전에는 Apple 사용자 식별자·암호화된 갱신 토큰의 처리 목적·보관·철회, Apple의 외부 인증 처리를 개인정보처리방침과 App Store 개인정보 신고에 반영한다. 현재 비활성 상태의 코드 준비를 실제 Apple 개인정보 수집·스토어 출시 완료로 표시하지 않는다.
+실제 Apple 기능을 활성화하기 전에는 Apple 사용자 식별자·암호화된 갱신 토큰의 처리 목적·보관·철회, Apple의 외부 인증 처리를 개인정보처리방침과 App Store 개인정보 신고에 반영한다. 2026-10-16 공개 방침 배포와 운영 서버의 Apple 로그인·알림 활성화는 확인했다. App Privacy 최종 확인과 새 TestFlight 빌드의 실제 Apple 인증·동의 철회·계정 삭제 검수는 남아 있으며, 운영 활성화를 실기기 검수·스토어 출시 완료로 표시하지 않는다.
 
 근거: [Apple nonce API](https://developer.apple.com/documentation/authenticationservices/asauthorizationopenidrequest/nonce), [Apple 로그인 버튼 지침](https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple), [인증 상태 변화 처리](https://developer.apple.com/documentation/signinwithapple/processing-changes-for-sign-in-with-apple-accounts), [공식 문서 Markdown](https://developer.apple.com/documentation/signinwithapple/processing-changes-for-sign-in-with-apple-accounts.md), [서버 간 알림 주소 등록](https://developer.apple.com/help/account/capabilities/enabling-server-to-server-notifications).

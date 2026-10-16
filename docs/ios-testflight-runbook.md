@@ -1,12 +1,12 @@
 # iOS 서명·TestFlight 준비와 iPhone 검수
 
-기준일: 2026-10-15. 현재 개인 개발자 가입은 사용자 보고 기준 등록 대기다. **아래 자동화와 가상 검증은 준비됐지만 배포 인증서·서명된 IPA·Apple 업로드·TestFlight 설치가 완료된 것은 아니다.** 이 문서에는 비밀번호, Apple ID, 개인 키, 인증서 소유자 정보, 실제 학생·교사 자료를 넣지 않는다.
+기준일: 2026-10-16. 개인 개발자 등록, 배포 인증서·서명 설정, 첫 IPA의 Apple 업로드·처리와 TestFlight 1.0.0(1) 설치·기본 동작 확인은 완료했다. 공개 개인정보처리방침 배포, V011·V014 운영 적용 및 운영 서버의 Apple 로그인·알림 활성화도 확인했다. **Apple 로그인 지원 새 TestFlight 빌드와 실제 iPhone의 Apple 인증·동의 철회·계정 삭제 검수는 아직 완료하지 않았다.** 이 문서에는 비밀번호, Apple ID, 개인 키, 인증서 소유자 정보, 실제 학생·교사 자료를 넣지 않는다.
 
 ## 등록 대기 중 준비한 범위
 
 - `ios-check.yml`: Xcode 26 이상 Release 시뮬레이터 빌드, Keychain·브리지·화면 검사와 최종 App.app의 개인정보 manifest·정적 웹 파일·HTTPS 설정 검사.
 - `tools/ios/verify-bundle.py`: 앱 Bundle ID·버전·지원 기기·콜백·사진 권한 안내, 자체 UserDefaults 사유, Capacitor/Cordova의 manifest 실제 포함 여부를 검사한다. 광고 추적 선언·원격 개발 서버·네이티브 응답 로그·웹 번들의 개인 키/소스맵이 들어오면 실패한다. App Privacy 신고나 실제 네트워크 분석을 대신하지 않는다.
-- `ios-testflight.yml`: main에서만 직접 실행하는 서명·IPA 내보내기와 선택 업로드 경로. 자동 push/PR 실행은 없고, 업로드 기본값은 `false`다. 2026-10-15 `ios-testflight` 보호 환경을 만들고 `main` 브랜치 하나, 필수 검토자 `slzp300-sketch`, 관리자 우회 금지를 실제 API로 확인했다. 단독 운영자의 본인 요청 승인은 허용한다. Apple 비밀값은 0개이고 `IOS_RELEASE_CONFIGURED`는 아직 설정하지 않았다.
+- `ios-testflight.yml`: main에서만 직접 실행하는 서명·IPA 내보내기와 선택 업로드 경로. 자동 push/PR 실행은 없고, 업로드 기본값은 `false`다. 2026-10-15 `ios-testflight` 보호 환경을 만들고 `main` 브랜치 하나, 필수 검토자 `slzp300-sketch`, 관리자 우회 금지를 실제 API로 확인했다. 단독 운영자의 본인 요청 승인은 허용한다. 2026-10-15 당시 Apple 비밀값은 0개이고 `IOS_RELEASE_CONFIGURED`는 미설정이었다. 2026-10-16 현재 필요한 비밀값 저장과 `IOS_RELEASE_CONFIGURED=true` 설정을 마치고 첫 TestFlight 업로드에 사용했다.
 - `test_release_tools.py`: 가상 프로파일·앱 번들로 잘못된 팀, wildcard/개발/Ad Hoc/기업 배포, 만료, Apple 권한 누락, 입력 변조, 추적 선언, 최종 SDK manifest 누락 등을 거절하는지 검사한다.
 - `release-readiness.py`: GitHub 읽기 전용 API로 선택한 SHA가 현재 main인지, 그 SHA의 최신 회귀·iOS 실행과 필수 작업이 전부 성공했는지 검사한다. 이전 커밋/이전 성공 실행·PR·다른 저장소 결과와 건너뛴 작업으로 통과시키지 않는다. 환경 승인 대기와 웹 빌드 후, Apple 서명 도구 실행 직전에도 다시 확인한다. API를 확인할 수 없으면 서명 단계로 넘어가지 않는다.
 
@@ -35,7 +35,7 @@ Capacitor와 Cordova는 Apple의 개인정보 manifest 필수 SDK 목록에 있�
 | `ASC_API_ISSUER_ID` | 위 팀 API 키의 Issuer ID | `upload=true`인 단계만 |
 | `ASC_API_KEY_BASE64` | 위 API 키 `.p8`의 한 줄 Base64 | `upload=true`인 단계만 |
 
-현재 업로드 어댑터는 Issuer ID가 있는 **팀 API 키**로 확정했다. 개인 개발자 멤버십과 API 키의 '팀/개인' 유형은 별개다. Apple의 팀 키 발급 요건은 Account Holder 또는 Admin이며 개인 멤버십을 제외하지 않는다. 따라서 개인 개발자라는 이유만으로 개인 API 키 어댑터가 필요한 것은 아니다. 실제 계정의 API 접근이 허용됐는지는 활성화 후 확인한다. [계정 역할](https://developer.apple.com/help/app-store-connect/manage-your-team/overview-of-accounts-and-roles/), [API 키 유형](https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api)
+현재 업로드 어댑터는 Issuer ID가 있는 **팀 API 키**로 확정했다. 개인 개발자 멤버십과 API 키의 '팀/개인' 유형은 별개다. Apple의 팀 키 발급 요건은 Account Holder 또는 Admin이며 개인 멤버십을 제외하지 않는다. 따라서 개인 개발자라는 이유만으로 개인 API 키 어댑터가 필요한 것은 아니다. 2026-10-16 현재 실제 계정의 API 접근 승인을 받고 Developer 역할 팀 키로 첫 TestFlight 업로드를 완료했다. [계정 역할](https://developer.apple.com/help/app-store-connect/manage-your-team/overview-of-accounts-and-roles/), [API 키 유형](https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api)
 
 계정 활성화 후 Account Holder가 **Users and Access → Integrations → App Store Connect API → Request Access**에서 API 접근을 신청한다. Apple가 개별 검토하므로 개발자 가입 승인과 API 접근 승인을 같은 것으로 취급하지 않는다. 허용되면 **Team Keys**에서 업로드 전용 키를 **Developer 역할**로 발급한다. 앱 업로드에는 Developer 역할이 허용되므로 이 작업만을 위해 Admin 키를 만들지 않는다. 팀 키는 역할 범위 내 모든 앱에 적용되며 특정 앱 하나로 제한할 수 없다는 점을 확인한다. [API 접근·팀 키 발급](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api), [업로드 역할](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
 
@@ -92,11 +92,11 @@ macOS 시뮬레이터에 해당 빌드와 가상 자료 화면을 준비했을 �
 xcrun simctl io <검수용-simulator-UUID> screenshot --type=png <비공개-작업폴더>/01-home.png
 ```
 
-## 계정 활성화 또는 운영자 확인이 필요한 잔여 항목
+## 2026-10-16 현재 완료 항목과 잔여 확인
 
-- Apple 멤버십 활성화·서비스 제공 주체/개인 명의 적합성·정확한 권리자 표기. 사용 허락 의사와 비공개 심사 연락처는 사용자가 제공했으며, [제출 주체·권리·한국 배포 준비 자료](ios-enrollment-dossier.md)의 실제 권한 확인과 대한민국 연락처 인증이 남음.
-- App ID·Sign in with Apple capability·카카오 iOS 설정 대조·인증서/프로파일·App Store Connect API 접근 승인과 업로드용 팀 키. GitHub 보호 환경은 설정했고 Apple 비밀값 입력·활성화는 남음.
-- V011·V014 운영 적용 전 백업 복원 검증, Apple 실제 알림 수신 주소 등록·가상 앱 계정의 동의 철회/앱 삭제 검수 및 로그인 활성화. 사용자의 실제 Apple 계정을 영구 삭제하는 검수는 수행하지 않는다.
-- App Store Connect 앱 레코드, 실제 서명·IPA/Apple 처리 결과, iPhone TestFlight 검수와 최종 스크린샷.
+- Apple 멤버십 활성화와 대한민국 공개 연락처 인증은 완료했다. 사용 허락 의사·권리자 표기·비공개 심사 연락처는 사용자가 제공했다. 서비스 제공 주체/개인 명의 적합성과 [제출 주체·권리·한국 배포 준비 자료](ios-enrollment-dossier.md)의 권한 근거는 최종 제출 때 대조한다.
+- App ID·인증서/프로파일·App Store Connect API 접근 승인·업로드용 팀 키·GitHub 보호 환경 비밀값과 배포 설정은 준비해 첫 TestFlight 업로드에 사용했다. 새 Apple 로그인 지원 빌드의 capability·entitlement·프로파일 일치와 카카오 iOS 최종 동작을 확인한다.
+- 백업 복원 검증 후 V011·V014 운영 적용, 기존 행 보존, 운영 서버의 Apple 로그인·알림 활성화까지 완료했다. 실제 Apple 알림 전달과 가상 앱 계정의 동의 철회/앱 삭제 검수는 남았다. 사용자의 실제 Apple 계정을 영구 삭제하는 검수는 수행하지 않는다.
+- App Store Connect 앱 레코드와 첫 서명·IPA/Apple 처리·TestFlight 기본 동작 확인은 완료했다. 새 Apple 로그인 지원 빌드의 서명·IPA/Apple 처리 결과, iPhone의 실제 Apple 인증 검수와 최종 스크린샷 대조는 남았다.
 - 실제 운영 동의·신고 담당·보존 절차, 최종 App Privacy·연령·암호화·접근성 답변, 유효한 가상 심사 계정.
 - 베타/정식 심사 제출과 승인 후 공개 출시. 이 문서와 자동 검사의 성공은 Apple 승인이나 위 외부 작업 완료를 뜻하지 않는다.
