@@ -1,9 +1,21 @@
 """Bound each simulator operation and keep timings without weakening the login-screen check."""
 import argparse
 import json
+import os
 from pathlib import Path
+import re
 import subprocess
+import tempfile
 import time
+
+
+def simulator_application():
+    developer = Path(os.environ.get('DEVELOPER_DIR', ''))
+    application = developer / 'Applications/Simulator.app'
+    if (not developer.is_absolute() or not application.is_dir()
+            or not (application / 'Contents/MacOS/Simulator').is_file()):
+        raise ValueError('DEVELOPER_DIR must select an installed Xcode containing Applications/Simulator.app')
+    return application
 
 
 class LaunchCheck:
@@ -12,12 +24,13 @@ class LaunchCheck:
         self.output.mkdir(parents=True, exist_ok=True)
         self.family = family
         self.started = time.monotonic()
+        self.wall_started = time.time()
         # Leave 30 seconds for shutdown/reporting within the workflow's nine-minute limit.
         self.deadline = self.started + 510
         self.records = []
         self.log = self.output / f'{family}-release-launch.log'
 
-    def run(self, label, args, limit, *, allowed=(0,), deadline=None):
+    def run(self, label, args, limit, *, allowed=(0,), deadline=None, output_limit=None):
         remaining = (self.deadline if deadline is None else deadline) - time.monotonic()
         if remaining <= 0:
             raise ValueError(f'{self.family}: time budget exhausted before {label}')
@@ -25,16 +38,33 @@ class LaunchCheck:
         started = time.monotonic()
         record = {'phase': label, 'timeoutSeconds': round(timeout, 2)}
         print(f'{self.family}: {label} (limit {timeout:.0f}s)', flush=True)
+        output = ''
         try:
-            result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                    text=True, timeout=timeout, check=False)
+            if output_limit is None:
+                result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                        text=True, timeout=timeout, check=False)
+                output = result.stdout or ''
+            else:
+                # A transient file keeps even verbose diagnostic output out of memory.
+                # Only its bounded tail is retained, and the file closes/deletes on every outcome.
+                with tempfile.TemporaryFile() as captured:
+                    try:
+                        result = subprocess.run(args, stdout=captured, stderr=subprocess.STDOUT,
+                                                text=True, timeout=timeout, check=False)
+                    finally:
+                        size = captured.seek(0, os.SEEK_END)
+                        captured.seek(max(0, size - output_limit))
+                        output = captured.read(output_limit).decode('utf-8', errors='replace')
+                        if size > output_limit:
+                            record['outputTruncated'] = True
+                            output = '[earlier diagnostic output truncated]\n' + output
             record['returnCode'] = result.returncode
-            output = result.stdout or ''
         except subprocess.TimeoutExpired as error:
             record['timedOut'] = True
-            output = error.stdout or ''
-            if isinstance(output, bytes):
-                output = output.decode('utf-8', errors='replace')
+            if output_limit is None:
+                output = error.stdout or ''
+                if isinstance(output, bytes):
+                    output = output.decode('utf-8', errors='replace')
         finally:
             record['elapsedSeconds'] = round(time.monotonic() - started, 2)
             self.records.append(record)
@@ -70,6 +100,13 @@ class LaunchCheck:
              ['xcrun', 'simctl', 'io', simulator, 'screenshot', str(screenshot)], 20),
             ('failure-diagnostic-simulator-status',
              ['xcrun', 'simctl', 'list', 'devices', 'booted'], 5),
+            ('failure-diagnostic-launch-log',
+             ['xcrun', 'simctl', 'spawn', simulator, 'log', 'show', '--style', 'compact',
+              '--last', '8m', '--predicate',
+              '(process == "runningboardd" OR process == "SpringBoard" OR process == "App") AND '
+              '(eventMessage CONTAINS[c] "app.newaveflow.mobile") AND '
+              '(eventMessage CONTAINS[c] "launch" OR eventMessage CONTAINS[c] "watchdog" OR '
+              'eventMessage CONTAINS[c] "terminate" OR eventMessage CONTAINS[c] "exit")'], 5),
         ]
         for label, args, limit in operations:
             if time.monotonic() >= deadline:
@@ -78,15 +115,82 @@ class LaunchCheck:
             try:
                 if label == 'failure-diagnostic-capture':
                     screenshot.unlink(missing_ok=True)
-                self.run(label, args, limit, deadline=deadline)
+                options = {'output_limit': 32_768} if label == 'failure-diagnostic-launch-log' else {}
+                self.run(label, args, limit, deadline=deadline, **options)
             except (OSError, ValueError) as failure:
                 # Preserve the original check failure even if diagnostics cannot be collected.
                 self.records.append({'phase': label, 'diagnosticError': str(failure)})
+        self.capture_crash_summaries(simulator, deadline)
+
+    def capture_crash_summaries(self, simulator, deadline):
+        label = 'failure-diagnostic-crash-summaries'
+        if time.monotonic() >= deadline:
+            self.records.append({'phase': label, 'skipped': 'diagnostic time budget exhausted'})
+            return
+        started = time.monotonic()
+        deadline = min(deadline, started + 2)
+        directories = [Path.home() / 'Library/Logs/DiagnosticReports']
+        if re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', simulator):
+            directories.append(Path.home() / 'Library/Developer/CoreSimulator/Devices' / simulator
+                               / 'data/Library/Logs/CrashReporter')
+        reports = []
+        inspected = 0
+        try:
+            for directory in directories:
+                if not directory.is_dir():
+                    continue
+                for path in directory.glob('App*.ips'):
+                    if time.monotonic() >= deadline or inspected >= 20 or len(reports) >= 3:
+                        break
+                    inspected += 1
+                    if path.is_symlink() or path.stat().st_mtime < self.wall_started:
+                        continue
+                    # IPS can contain environment, arguments and application data: never copy it.
+                    with path.open('rb') as source:
+                        raw = source.read(1_048_577)
+                    if len(raw) > 1_048_576:
+                        continue
+                    try:
+                        text = raw.decode('utf-8')
+                        header, offset = json.JSONDecoder().raw_decode(text)
+                        body = json.loads(text[offset:]) if text[offset:].strip() else header
+                        if not isinstance(header, dict) or not isinstance(body, dict):
+                            continue
+                        bundle = body.get('bundleInfo', {})
+                        bundle_id = bundle.get('CFBundleIdentifier') if isinstance(bundle, dict) else None
+                        if (bundle_id or header.get('bundleID')) != 'app.newaveflow.mobile':
+                            continue
+                        if (body.get('procName') or header.get('app_name')) != 'App':
+                            continue
+                        summary = {'file': path.name}
+                        for key in ('captureTime', 'procName', 'pid'):
+                            value = body.get(key)
+                            if isinstance(value, (str, int)):
+                                summary[key] = str(value)[:160] if isinstance(value, str) else value
+                        for section, keys in (('exception', ('type', 'signal', 'codes')),
+                                              ('termination', ('namespace', 'code', 'indicator'))):
+                            data = body.get(section, {})
+                            if isinstance(data, dict):
+                                summary[section] = {key: str(data[key])[:160] for key in keys
+                                                    if isinstance(data.get(key), (str, int))}
+                        reports.append(summary)
+                    except (UnicodeError, ValueError, RecursionError):
+                        continue
+            (self.output / f'{self.family}-failure-crash-summaries.json').write_text(
+                json.dumps({'reports': reports}, indent=2) + '\n', encoding='utf-8')
+            self.records.append({'phase': label, 'reports': len(reports),
+                                 'elapsedSeconds': round(time.monotonic() - started, 2)})
+        except OSError:
+            self.records.append({'phase': label, 'diagnosticError': 'App crash summary unavailable'})
 
     def check(self, simulator, app, checker):
+        # Validate before any simulator command; do not fall back to another installed Xcode.
+        application = simulator_application()
         name = 'iphone-launch.png' if self.family == 'iphone' else 'ipad-compatibility-launch.png'
         error = None
         try:
+            self.run('prepare-simulator-gui', ['open', '-g', '-a', str(application), '--args',
+                                             '-CurrentDeviceUDID', simulator], 15)
             self.run('boot', ['xcrun', 'simctl', 'bootstatus', simulator, '-b'], 120)
             self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 90)
             # Installation follows the native tests; no second terminate-and-relaunch operation is needed.
