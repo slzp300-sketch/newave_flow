@@ -17,7 +17,7 @@ export default function AccountHelpPage({ deletion = false }) {
       </div>
       {deletion && <>
         <Card><h3 className="font-bold mb-3">삭제되는 정보와 남는 기록</h3>
-          <p className="text-sm leading-6 text-gray-700">계정의 로그인 정보, 이름·연락처·프로필, 개인 TTS 기록은 삭제 대상입니다. 반 공동 출석·보고서는 요청자를 식별할 수 없게 처리한 뒤 보존합니다.</p>
+          <p className="text-sm leading-6 text-gray-700">계정의 로그인 정보, 이름·연락처·프로필, 개인 TTS와 본인의 개인 학생 메모를 삭제합니다. 공유 문서에서도 본인이 작성한 내용을 삭제하고, 다른 사람의 내용과 섞여 있으면 본인 작성 부분과 개인정보를 제거합니다. 학생 원장·공동 출석·다른 작성자의 자료는 확인 후 보존하며 요청자와의 연결을 제거합니다.</p>
           <p className="mt-3 text-sm leading-6 text-gray-600">공동 문서와 과거 명단에 남은 개인정보도 확인합니다. 본인 확인 후 지체 없이 처리하며, 7일 이내 완료를 목표로 합니다. 지연되면 사유와 예정일을 안내합니다.</p>
           <p className="mt-3 text-sm leading-6 text-gray-600">암호화 백업의 보관 기간은 생성 후 30일입니다. 보관 PC가 켜져 있을 때 만료본을 정리하며, 꺼져 있었다면 다음 실행 때 삭제합니다. 백업을 복원할 때는 삭제한 정보를 다시 제거하고 확인한 뒤 사용합니다.</p>
         </Card>
