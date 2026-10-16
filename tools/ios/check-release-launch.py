@@ -61,6 +61,28 @@ class LaunchCheck:
             time.sleep(min(5, max(0, deadline - time.monotonic())))
         raise ValueError(f'{self.family}: Release login screen was not visible within 90 seconds')
 
+    def capture_failure_diagnostics(self, simulator):
+        # Evidence only: neither a diagnostic image nor a status result can pass this check.
+        deadline = min(self.deadline, time.monotonic() + 25)
+        screenshot = self.output / f'{self.family}-failure-diagnostic.png'
+        operations = [
+            ('failure-diagnostic-capture',
+             ['xcrun', 'simctl', 'io', simulator, 'screenshot', str(screenshot)], 20),
+            ('failure-diagnostic-simulator-status',
+             ['xcrun', 'simctl', 'list', 'devices', 'booted'], 5),
+        ]
+        for label, args, limit in operations:
+            if time.monotonic() >= deadline:
+                self.records.append({'phase': label, 'skipped': 'diagnostic time budget exhausted'})
+                continue
+            try:
+                if label == 'failure-diagnostic-capture':
+                    screenshot.unlink(missing_ok=True)
+                self.run(label, args, limit, deadline=deadline)
+            except (OSError, ValueError) as failure:
+                # Preserve the original check failure even if diagnostics cannot be collected.
+                self.records.append({'phase': label, 'diagnosticError': str(failure)})
+
     def check(self, simulator, app, checker):
         name = 'iphone-launch.png' if self.family == 'iphone' else 'ipad-compatibility-launch.png'
         error = None
@@ -72,6 +94,7 @@ class LaunchCheck:
             self.wait_for_screen(simulator, self.output / name, checker)
         except (OSError, ValueError) as failure:
             error = str(failure)
+            self.capture_failure_diagnostics(simulator)
         finally:
             try:
                 self.run('shutdown', ['xcrun', 'simctl', 'shutdown', simulator], 20,

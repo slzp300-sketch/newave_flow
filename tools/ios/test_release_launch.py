@@ -49,13 +49,54 @@ class ReleaseLaunch(unittest.TestCase):
         self.assertEqual(command.call_count, 1)
 
     def test_launch_failure_still_shuts_down_and_writes_failed_report(self):
-        with patch.object(self.check, 'run', side_effect=[0, 0, ValueError('launch failed'), 0]) as command:
+        with patch.object(self.check, 'run', side_effect=[0, 0, ValueError('launch failed'), 0, 0, 0]) as command, \
+                patch.object(self.check, 'wait_for_screen') as screen:
             with self.assertRaisesRegex(ValueError, 'launch failed'):
                 self.check.check('synthetic-device', Path('App.app'), Path('checker'))
-        self.assertEqual(command.call_args_list[-1].args[0], 'shutdown')
+        screen.assert_not_called()
+        self.assertEqual([call.args[0] for call in command.call_args_list],
+                         ['boot', 'install-release', 'launch-release', 'failure-diagnostic-capture',
+                          'failure-diagnostic-simulator-status', 'shutdown'])
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
         self.assertFalse(report['loginScreenVerified'])
         self.assertEqual(report['error'], 'launch failed')
+
+    def test_diagnostic_failures_preserve_first_error_and_shutdown(self):
+        stale = self.output / 'iphone-failure-diagnostic.png'
+        stale.write_bytes(b'stale diagnostic')
+        with patch.object(self.check, 'run', side_effect=[
+                0, 0, ValueError('original launch timeout'), ValueError('capture timeout'),
+                OSError('status unavailable'), 0]) as command:
+            with self.assertRaisesRegex(ValueError, 'original launch timeout'):
+                self.check.check('synthetic-device', Path('App.app'), Path('checker'))
+        self.assertFalse(stale.exists())
+        self.assertEqual(command.call_args_list[-1].args[0], 'shutdown')
+        report = json.loads((self.output / 'iphone-release-launch.json').read_text())
+        self.assertFalse(report['loginScreenVerified'])
+        self.assertEqual(report['error'], 'original launch timeout')
+        self.assertEqual([phase['diagnosticError'] for phase in report['phases']],
+                         ['capture timeout', 'status unavailable'])
+
+    def test_diagnostics_share_25_seconds_and_never_extend_device_budget(self):
+        for device_deadline, expected_deadline in ((1000, 125), (110, 110)):
+            with self.subTest(device_deadline=device_deadline):
+                self.check.deadline = device_deadline
+                with patch('time.monotonic', return_value=100), \
+                        patch.object(self.check, 'run', return_value=0) as command:
+                    self.check.capture_failure_diagnostics('synthetic-device')
+                self.assertEqual([call.args[2] for call in command.call_args_list], [20, 5])
+                self.assertEqual([call.kwargs['deadline'] for call in command.call_args_list],
+                                 [expected_deadline, expected_deadline])
+
+    def test_exhausted_budget_skips_diagnostics_and_still_shuts_down(self):
+        self.check.deadline = 0
+        with patch.object(self.check, 'run', side_effect=[ValueError('boot budget exhausted'), 0]) as command:
+            with self.assertRaisesRegex(ValueError, 'boot budget exhausted'):
+                self.check.check('synthetic-device', Path('App.app'), Path('checker'))
+        self.assertEqual([call.args[0] for call in command.call_args_list], ['boot', 'shutdown'])
+        report = json.loads((self.output / 'iphone-release-launch.json').read_text())
+        self.assertFalse(report['loginScreenVerified'])
+        self.assertEqual(len([phase for phase in report['phases'] if 'skipped' in phase]), 2)
 
     def test_success_still_requires_native_ocr_and_shutdown(self):
         with patch.object(self.check, 'run', return_value=0) as command, \
