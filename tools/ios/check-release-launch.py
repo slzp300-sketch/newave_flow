@@ -190,7 +190,10 @@ class LaunchCheck:
         error = None
         try:
             # Complete boot before GUI startup can asynchronously boot the same device.
-            self.run('boot', ['xcrun', 'simctl', 'bootstatus', simulator, '-b'], 120)
+            # A fresh iPad runtime migrates its system data before our app is installed.
+            # This preparation remains inside the same 510-second total budget.
+            self.run('boot', ['xcrun', 'simctl', 'bootstatus', simulator, '-b'],
+                     240 if self.family == 'ipad' else 120)
             self.run('prepare-simulator-gui', ['open', '-g', '-a', str(application), '--args',
                                              '-CurrentDeviceUDID', simulator], 15)
             self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 90)
