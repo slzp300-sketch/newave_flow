@@ -40,7 +40,8 @@ class LocalStorageGuards(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
-        self.local = Path(self.temporary.name)
+        # macOS temporary paths may start at /var, a system symlink to /private/var.
+        self.local = Path(self.temporary.name).resolve()
         self.directory = self.local / 'NewaveFlow/iOS/synthetic'
         self.environment = patch.dict(os.environ, {'LOCALAPPDATA': str(self.local), 'OneDrive': '',
                                                    'OneDriveConsumer': '', 'OneDriveCommercial': ''})
