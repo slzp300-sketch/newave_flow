@@ -44,7 +44,9 @@ public class AppleAuthService {
     public Map<String, String> start(AppleStartRequest request, User actor, Purpose purpose) {
         requireEnabled();
         User owner = null;
-        if (purpose != Purpose.LOGIN) {
+        // An unbound DELETE flow proves identity directly with Apple, without granting app access.
+        // This is also available to pending/suspended users who cannot obtain a normal session.
+        if (purpose == Purpose.LINK || (purpose == Purpose.DELETE && actor != null)) {
             if (actor == null) throw AppException.unauthorized("로그인 후 Apple 계정을 연결해 주세요.");
             owner = users.lockById(actor.getId()).orElseThrow(() -> AppException.unauthorized("다시 로그인해 주세요."));
             requireEligible(owner);
@@ -72,7 +74,8 @@ public class AppleAuthService {
         requireEnabled();
         var flow = verified(request.flowId(), request.verifier(), Stage.STARTED);
         if (!AppleClient.constantEquals(flow.getStateHash(), AppleClient.sha256(request.state()))) throw invalid();
-        if (flow.getPurpose() != Purpose.LOGIN) {
+        boolean unboundDeletion = flow.getPurpose() == Purpose.DELETE && flow.getUser() == null;
+        if (flow.getPurpose() != Purpose.LOGIN && !unboundDeletion) {
             if (actor == null || flow.getUser() == null || !flow.getUser().getId().equals(actor.getId())) throw AppException.forbidden("연결을 시작한 계정으로 다시 로그인해 주세요.");
             requireEligible(actor);
             if (actor.getAuthVersion() != flow.getAuthVersion()) throw AppException.unauthorized("계정 상태가 변경됐어요. 연결을 다시 시작해 주세요.");
@@ -82,7 +85,7 @@ public class AppleAuthService {
         var notificationState = notificationStates.lock(subject);
         notificationStates.requireFreshGrant(notificationState, grantStarted(flow));
         User owner = null;
-        if (flow.getPurpose() != Purpose.LOGIN) {
+        if (flow.getPurpose() != Purpose.LOGIN && !unboundDeletion) {
             if (actor == null || flow.getUser() == null || !flow.getUser().getId().equals(actor.getId())) throw AppException.forbidden("연결을 시작한 계정으로 다시 로그인해 주세요.");
             owner = users.lockById(actor.getId()).orElseThrow(() -> AppException.unauthorized("다시 로그인해 주세요."));
             requireEligible(owner);
@@ -92,9 +95,13 @@ public class AppleAuthService {
         Long existingOwner = accounts.findUserIdBySubject(subject).orElse(null);
         AppleAccount existingAccount = null;
         if (flow.getPurpose() == Purpose.DELETE) {
+            if (unboundDeletion) {
+                if (existingOwner == null) throw AppException.badRequest("이 Apple 계정에 연결된 앱 계정을 확인할 수 없습니다.");
+                owner = users.lockById(existingOwner).orElseThrow(AppleAuthService::invalid);
+            }
             if (existingOwner == null || !existingOwner.equals(owner.getId())) throw AppException.forbidden("삭제할 계정에 연결된 Apple 계정으로 인증해 주세요.");
             existingAccount = accounts.lockByUserId(owner.getId()).orElseThrow(AppleAuthService::invalid);
-            if (existingAccount.getRevokedAt() != null || !subject.equals(existingAccount.getSubject())) throw invalid();
+            if ((!unboundDeletion && existingAccount.getRevokedAt() != null) || !subject.equals(existingAccount.getSubject())) throw invalid();
         } else if (flow.getPurpose() == Purpose.LINK) {
             if (existingOwner != null && !existingOwner.equals(owner.getId())) throw AppException.conflict("이 Apple 계정은 다른 회원에게 연결되어 있어요.");
             existingAccount = accounts.lockByUserId(owner.getId()).orElse(null);
@@ -114,8 +121,10 @@ public class AppleAuthService {
         if (flow.getPurpose() == Purpose.DELETE) {
             // Keep the newly verified grant revocable, and bind the one-time proof to this exact owner/session.
             existingAccount.setRefreshTokenCiphertext(protectedToken);
+            existingAccount.setRevokedAt(null);
             notificationStates.grant(notificationState, owner.getId(), grantStarted(flow));
             String ticket = randomToken();
+            flow.setUser(owner); flow.setAuthVersion(owner.getAuthVersion());
             flow.setSubject(subject); flow.setTicketHash(AppleClient.sha256(ticket)); flow.setStage(Stage.DELETE_READY);
             return Map.of("status", "REAUTHENTICATED", "flowId", flow.getId(), "ticket", ticket);
         }
@@ -146,6 +155,7 @@ public class AppleAuthService {
 
     @Transactional
     public void register(AppleRegisterRequest request) {
+        RegistrationEligibility.requireConfirmed(request.getEligibilityConfirmed());
         requireEnabled();
         var flow = verified(request.getFlowId(), request.getVerifier(), Stage.REGISTERING);
         if (!AppleClient.constantEquals(flow.getTicketHash(), AppleClient.sha256(request.getTicket())) || flow.getPurpose() != Purpose.LOGIN || flow.getSubject() == null) throw invalid();
@@ -171,13 +181,13 @@ public class AppleAuthService {
     public User consumeDeletionProof(User actor, String flowId, String ticket, String verifier) {
         if (flowId == null || ticket == null || verifier == null) throw AppException.badRequest("Apple 계정으로 다시 인증해 주세요.");
         var flow = verified(flowId, verifier, Stage.DELETE_READY);
-        if (flow.getPurpose() != Purpose.DELETE || flow.getUser() == null || !flow.getUser().getId().equals(actor.getId())
-                || flow.getAuthVersion() == null || flow.getAuthVersion() != actor.getAuthVersion()
+        if (flow.getPurpose() != Purpose.DELETE || flow.getUser() == null || flow.getAuthVersion() == null
+                || (actor != null && (!flow.getUser().getId().equals(actor.getId()) || flow.getAuthVersion() != actor.getAuthVersion()))
                 || !AppleClient.constantEquals(flow.getTicketHash(), AppleClient.sha256(ticket))) throw invalid();
         var state = notificationStates.lock(flow.getSubject());
         notificationStates.requireFreshGrant(state, grantStarted(flow));
-        var owner = users.lockById(actor.getId()).orElseThrow(AppleAuthService::invalid);
-        requireEligible(owner);
+        var owner = users.lockById(flow.getUser().getId()).orElseThrow(AppleAuthService::invalid);
+        if (actor != null) requireEligible(owner);
         if (owner.getAuthVersion() != flow.getAuthVersion()) throw invalid();
         var account = accounts.lockByUserId(owner.getId()).orElseThrow(AppleAuthService::invalid);
         if (account.getRevokedAt() != null || !account.getSubject().equals(flow.getSubject())) throw invalid();

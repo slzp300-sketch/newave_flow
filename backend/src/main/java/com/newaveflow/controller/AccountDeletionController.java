@@ -21,6 +21,11 @@ public class AccountDeletionController {
             @Valid @RequestBody AccountDeletionService.SubmitRequest input) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(deletion.submit(user, input));
     }
+    @PostMapping("/api/auth/account-deletion")
+    public ResponseEntity<AccountDeletionService.Receipt> submitWithoutSession(
+            @Valid @RequestBody AccountDeletionService.PublicSubmitRequest input) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(deletion.submitWithoutSession(input));
+    }
     // A receipt is a 256-bit capability sent in the body, never in URLs, referrers, or server access logs.
     @PostMapping("/api/auth/account-deletion/status")
     public ResponseEntity<AccountDeletionService.View> status(@Valid @RequestBody AccountDeletionService.StatusRequest input) {

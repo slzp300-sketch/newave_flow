@@ -2,6 +2,7 @@ import { Browser } from '@capacitor/browser'
 import { isNativeApp, nativePlatform, secureAuthStorage } from '../native/platform'
 import { authApi } from '../api/auth'
 import { parseKakaoCallback, validatePending } from './kakaoFlow'
+import { requireSignupEligibility } from './signupEligibility'
 
 const KEY = 'newave-kakao-pending'
 const inFlight = new Map()
@@ -50,6 +51,7 @@ export function completeKakao(hash) {
 }
 
 export async function registerWithKakao(form) {
+  requireSignupEligibility(form?.eligibilityConfirmed)
   const pending = await readKakaoPending()
   if (!pending?.registrationTicket) throw new Error('카카오 인증 시간이 지났어요. 다시 시작해 주세요.')
   await authApi.registerKakao({ ...form, flowId: pending.flowId, ticket: pending.registrationTicket, verifier: pending.verifier })

@@ -14,9 +14,10 @@ public class ClassAccessService {
 
     public void requireClass(User user, Long classId) {
         if (user == null || !user.isActive()) throw AppException.unauthorized("로그인이 필요합니다.");
-        if (user.getRole() != User.Role.TEACHER) return;
-        if (classId == null || assignments.findByClassGroup_IdAndTeacher_Id(classId, user.getId()).isEmpty()) {
-            throw AppException.forbidden("담당 반만 수정할 수 있습니다.");
+        if (user.getRole() == User.Role.ADMIN || user.getRole() == User.Role.PASTOR || user.getRole() == User.Role.EXECUTIVE) return;
+        if (user.getRole() != User.Role.TEACHER || user.getId() == null || classId == null
+                || assignments.findByClassGroup_IdAndTeacher_Id(classId, user.getId()).isEmpty()) {
+            throw AppException.forbidden("담당 반만 접근할 수 있습니다.");
         }
     }
 

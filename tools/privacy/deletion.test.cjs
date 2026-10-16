@@ -1,6 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {runDeletion,replayLedger,verifyErased}=require('./deletion.cjs');
-const plan={requestId:'11111111-1111-4111-8111-111111111111',userId:1,expectedCreatedAt:'2026-10-01',identityVerified:true,handoverReviewed:true,externalCopiesReviewed:true,freeTextReviewed:true,legacyDecisions:[],redactions:[],identifiers:['가상 대상'],exceptions:[]};
+const {collectContentReview,validateContentReview}=require('./content-review.cjs');
+const plan={requestId:'11111111-1111-4111-8111-111111111111',userId:1,expectedCreatedAt:'2026-10-01',identityVerified:true,handoverReviewed:true,externalCopiesReviewed:true,freeTextReviewed:true,legacyDecisions:[],redactions:[],identifiers:['가상 대상'],exceptions:[],contentReviewVersion:1,sharedContentReview:[],ownedStudentMemos:[]};
 function fake(fail=false){const calls=[];return {calls,query:async(sql)=>{calls.push(sql);if(fail&&sql.startsWith('-- Must run'))throw Error('Changed since review');return{rowCount:1,rows:[{id:1}]};}};}
 test('execution records durable intent before commit; intent failure rolls everything back',async()=>{
  const c=fake();await runDeletion(c,plan,{commit:true,beforeCommit:async()=>c.calls.push('DURABLE INTENT')});
@@ -8,6 +9,16 @@ test('execution records durable intent before commit; intent failure rolls every
  const rejected=fake();await assert.rejects(runDeletion(rejected,plan,{commit:true,beforeCommit:async()=>{throw Error('Disk full');}}));
  assert.equal(rejected.calls.at(-1),'ROLLBACK');assert.ok(!rejected.calls.includes('COMMIT'));
  await assert.rejects(runDeletion(fake(),{...plan,identityVerified:false}),/Review/);
+});
+
+test('content ownership decisions cannot be replaced by a blanket review flag or an old ledger',async()=>{
+ await assert.rejects(runDeletion(fake(),{...plan,contentReviewVersion:undefined}),/older plans/);
+ const row={table:'events',column:'description',id:1,beforeMd5:'a'.repeat(32),decision:null,reason:null};
+ assert.throws(()=>validateContentReview({...plan,sharedContentReview:[row]}),/decision/);
+ assert.throws(()=>validateContentReview({...plan,sharedContentReview:[{...row,decision:'retain_own',reason:'Synthetic ownership evidence'}]}),/decision/);
+ const decided={...row,decision:'retain_other',reason:'Synthetic institution-owned material'};
+ assert.throws(()=>validateContentReview({...plan,sharedContentReview:[decided,decided]}),/Invalid/);
+ assert.throws(()=>validateContentReview({...plan,sharedContentReview:[{...decided,decision:'redact'}]}),/replacement/);
 });
 
 test('missing-account residual audit runs on an isolated PostgreSQL database', {skip:!process.env.PRIVACY_AUDIT_PG_MODULE}, async()=>{
@@ -73,6 +84,31 @@ test('missing-account residual audit runs on an isolated PostgreSQL database', {
   await assert.rejects(verifyErased(c,collisionPlan),/Invalid restored Apple notification hash/);
   await c.query("UPDATE apple_notification_receipts SET payload_hash=repeat('7',61)||'ada'");
   await verifyErased(c,collisionPlan);
+  // Authorless and name-free bodies must enter the plan, not just identifier search hits.
+  await c.query(`CREATE TABLE student_memos(id bigint PRIMARY KEY,teacher_id bigint,sketch text);
+    INSERT INTO student_memos VALUES(1,1,'Anonymous personal prayer'),(2,2,'Other teacher prayer'),(3,NULL,'Old orphan personal memo');
+    CREATE TABLE events(id bigint PRIMARY KEY,title text,description text);
+    INSERT INTO events VALUES(1,'Institutional event','Anonymous personal description');
+    CREATE TABLE meeting_minutes(id bigint PRIMARY KEY,title text,content text);
+    INSERT INTO meeting_minutes VALUES(1,'Institutional minutes','Personal paragraph / other author decision')`);
+  const draft=await collectContentReview(c,1);
+  assert.equal(draft.ownedStudentMemos.length,1);
+  assert.equal(draft.sharedContentReview.length,5);
+  assert.ok(draft.sharedContentReview.every(r=>r.decision===null&&r.reason===null));
+  const reviewed={...plan,...draft,sharedContentReview:draft.sharedContentReview.map(r=>({...r,decision:r.column==='description'||r.table==='student_memos'?'erase':r.column==='content'?'redact':'retain_other',reason:'Synthetic provenance checked for this field'}))};
+  const minute=reviewed.sharedContentReview.find(r=>r.column==='content');
+  reviewed.redactions=[{...minute,replacement:'other author decision'}];
+  await c.query('UPDATE student_memos SET teacher_id=NULL WHERE id=1');
+  await assert.rejects(verifyErased(c,reviewed),/personal memo/,'An anonymous restored memo still has to be erased');
+  await c.query('DELETE FROM student_memos WHERE id=1');
+  await assert.rejects(verifyErased(c,reviewed),/authored content/);
+  await c.query("UPDATE events SET description=''; UPDATE meeting_minutes SET content='other author decision'; UPDATE student_memos SET sketch='' WHERE id=3");
+  await verifyErased(c,reviewed);
+  assert.equal((await c.query('SELECT sketch FROM student_memos WHERE id=2')).rows[0].sketch,'Other teacher prayer');
+  await c.query("UPDATE meeting_minutes SET content='Personal paragraph / other author decision'");
+  await assert.rejects(verifyErased(c,reviewed),/authored content/,'The missing user and absence of identifiers do not hide resurrected authored text');
+  await c.query("UPDATE meeting_minutes SET content='other author decision'; UPDATE events SET title='Unidentified changed author title'");
+  await assert.rejects(verifyErased(c,reviewed),/retained content ownership/,'A retain-other decision applies only to the exact reviewed body');
  }finally{await c.query('ROLLBACK');await c.end();}
 });
 test('rehearsal never commits, and database rejection rolls back',async()=>{

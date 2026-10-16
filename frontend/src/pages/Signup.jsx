@@ -5,8 +5,12 @@ import { authApi } from '../api/auth'
 import Button from '../components/common/Button'
 import Header from '../components/layout/Header'
 import EmailInput from '../components/common/EmailInput'
+import SignupEligibility from '../components/common/SignupEligibility'
+import { signupPayload } from '../auth/signupEligibility'
 import { readKakaoPending, registerWithKakao } from '../auth/kakao'
-import { readAppleRegistration, registerWithApple } from '../auth/apple'
+import { clearApplePending, readAppleRegistration, registerWithApple } from '../auth/apple'
+
+const appleExpiredMessage = 'Apple 인증이 만료됐거나 앱을 다시 시작해 인증 정보가 없어졌어요. 로그인 화면에서 Apple로 다시 인증해 주세요.'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -14,9 +18,10 @@ export default function Signup() {
   const isKakao = params.get('kakao') === '1'
   const isApple = params.get('apple') === '1' && !isKakao
   const isSocial = isKakao || isApple
+  const signupMethod = isApple ? 'APPLE' : isKakao ? 'KAKAO' : 'EMAIL'
   const socialName = isApple ? 'Apple' : '카카오'
   const [kakaoReady, setKakaoReady] = useState(false)
-  const [appleReady, setAppleReady] = useState(false)
+  const [appleReady, setAppleReady] = useState(null)
   const [appleProfile, setAppleProfile] = useState(null)
 
   useEffect(() => {
@@ -30,6 +35,18 @@ export default function Signup() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState(false)
+  const [confirmedSignupMethod, setConfirmedSignupMethod] = useState(null)
+  const eligibilityConfirmed = confirmedSignupMethod === signupMethod
+  useEffect(() => { setConfirmedSignupMethod(null) }, [signupMethod])
+  const expireAppleRegistration = () => {
+    setAppleReady(false)
+    setAppleProfile(null)
+    setError(appleExpiredMessage)
+  }
+  const restartAppleRegistration = () => {
+    clearApplePending()
+    navigate('/login', { replace: true })
+  }
   useEffect(() => {
     if (!isKakao) return
     let disposed = false
@@ -46,8 +63,20 @@ export default function Signup() {
     setAppleProfile(profile)
     setAppleReady(!!profile)
     if (profile) setForm(value => ({ ...value, name: value.name || profile.name }))
-    else setError('Apple 인증 시간이 지났어요. 로그인 화면에서 다시 시작해 주세요.')
+    else setError(appleExpiredMessage)
   }, [isApple])
+  useEffect(() => {
+    if (!isApple || loading || success) return
+    const checkRegistration = () => {
+      if (!document.hidden && !readAppleRegistration()) expireAppleRegistration()
+    }
+    window.addEventListener('focus', checkRegistration)
+    document.addEventListener('visibilitychange', checkRegistration)
+    return () => {
+      window.removeEventListener('focus', checkRegistration)
+      document.removeEventListener('visibilitychange', checkRegistration)
+    }
+  }, [isApple, loading, success])
 
   const [nameStatus, setNameStatus]   = useState('idle') // idle, loading, available, duplicate
   const [emailStatus, setEmailStatus] = useState('idle')
@@ -58,7 +87,7 @@ export default function Signup() {
 
   // 이름 중복 체크 (디바운스)
   useEffect(() => {
-    if (!form.name.trim()) {
+    if (!eligibilityConfirmed || !form.name.trim()) {
       setNameStatus('idle')
       return
     }
@@ -72,11 +101,11 @@ export default function Signup() {
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [form.name])
+  }, [form.name, eligibilityConfirmed])
 
   // 이메일 중복 체크 (디바운스)
   useEffect(() => {
-    if (isApple) { setEmailStatus('idle'); return }
+    if (!eligibilityConfirmed || isApple) { setEmailStatus('idle'); return }
     if (!form.email.trim()) {
       setEmailStatus('idle')
       return
@@ -97,11 +126,11 @@ export default function Signup() {
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [form.email, isApple])
+  }, [form.email, isApple, eligibilityConfirmed])
 
   const pwMatch = confirmPw === '' ? null : form.password === confirmPw
 
-  const isSubmitDisabled = loading || (isKakao && !kakaoReady) || (isApple && !appleReady) ||
+  const isSubmitDisabled = !eligibilityConfirmed || loading || (isKakao && !kakaoReady) || (isApple && !appleReady) ||
                            nameStatus === 'duplicate' || 
                            nameStatus === 'loading' || 
                            (!isApple && (emailStatus === 'duplicate' || emailStatus === 'loading' ||
@@ -109,10 +138,15 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading || !eligibilityConfirmed) return
+    if (isApple && !readAppleRegistration()) {
+      expireAppleRegistration()
+      return
+    }
     setError('')
     setLoading(true)
 
-    const payload = { ...form }
+    const payload = signupPayload(form, eligibilityConfirmed)
     const rawPhone = phone1 + phone2
     if (rawPhone) {
       if (rawPhone.length !== 8) {
@@ -131,10 +165,23 @@ export default function Signup() {
       else await authApi.register(payload)
       setSuccess(true)
     } catch (err) {
-      setError(err.response?.data?.message ?? '회원가입에 실패했습니다.')
+      if (isApple && !readAppleRegistration()) expireAppleRegistration()
+      else setError(err.response?.data?.message || err.message || '회원가입에 실패했습니다.')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (isApple && appleReady === false && !success) {
+    return <div className="min-h-screen bg-gray-50">
+      <Header title="회원가입" showBack />
+      <main className="px-6 py-8">
+        <h2 className="text-xl font-bold text-gray-900">Apple 인증을 다시 진행해 주세요</h2>
+        <p role="alert" className="mt-4 text-sm leading-6 text-gray-600">{error || appleExpiredMessage}</p>
+        <Button onClick={restartAppleRegistration} className="mt-6 w-full">로그인 화면에서 다시 인증하기</Button>
+        <Link to="/privacy" className="mt-4 flex min-h-11 items-center justify-center text-xs text-gray-500 underline">개인정보처리방침 보기</Link>
+      </main>
+    </div>
   }
 
   if (success) {
@@ -148,8 +195,21 @@ export default function Signup() {
         <Button onClick={() => navigate('/login')} className="w-full max-w-xs">
           로그인 화면으로
         </Button>
+        <Link to="/account-deletion" className="mt-4 flex min-h-11 items-center justify-center text-sm text-gray-600 underline">가입 신청 취소·계정 삭제</Link>
       </div>
     )
+  }
+
+  if (!eligibilityConfirmed) {
+    return <div className="min-h-screen bg-gray-50">
+      <Header title="회원가입" showBack />
+      <SignupEligibility key={isApple ? 'apple' : isKakao ? 'kakao' : 'email'} error={error}
+        disabled={(isApple && !appleReady) || (isKakao && !kakaoReady)}
+        onConfirm={() => {
+          if (isApple && !readAppleRegistration()) { expireAppleRegistration(); return }
+          setConfirmedSignupMethod(signupMethod)
+        }} />
+    </div>
   }
 
   return (
@@ -291,8 +351,9 @@ export default function Signup() {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-[13px] font-bold px-4 py-3 rounded-xl mt-2">
+            <div role="alert" className="bg-red-50 text-red-600 text-[13px] font-bold px-4 py-3 rounded-xl mt-2">
               {error}
+              {isApple && <button type="button" onClick={restartAppleRegistration} className="mt-2 block min-h-11 underline">Apple 인증 다시 시작하기</button>}
             </div>
           )}
 

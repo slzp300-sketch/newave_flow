@@ -2,6 +2,7 @@ const fs=require('node:fs'),path=require('node:path');
 const sqlRoot=path.resolve(__dirname,'../../backend/db/privacy');
 const inputs=fs.readFileSync(path.join(sqlRoot,'request-tables.sql'),'utf8');
 const deletion=fs.readFileSync(path.join(sqlRoot,'delete-account.sql'),'utf8');
+const {scopeSql,validateContentReview,verifyContentErased}=require('./content-review.cjs');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const appleNotificationHashes=new Set([
  'apple_notification_subjects.subject_hash',
@@ -24,6 +25,7 @@ function validate(plan){
  if(!UUID.test(plan.requestId)||!Number.isSafeInteger(plan.userId)||plan.userId<=0||!plan.expectedCreatedAt)throw Error('Invalid reviewed request');
  for(const k of ['identityVerified','handoverReviewed','externalCopiesReviewed','freeTextReviewed'])if(plan[k]!==true)throw Error('Review incomplete');
  for(const k of ['legacyDecisions','redactions','identifiers','exceptions'])if(!Array.isArray(plan[k]))throw Error('Missing review inputs');
+ validateContentReview(plan);
 }
 async function runDeletion(client,plan,{commit=false,beforeCommit}={}){
  validate(plan);
@@ -31,12 +33,22 @@ async function runDeletion(client,plan,{commit=false,beforeCommit}={}){
  await client.query('BEGIN');
  try{
   await client.query("SET LOCAL lock_timeout='10s'; SET LOCAL statement_timeout='60s'");
+  // Stabilize the inventory before deriving its columns, including concurrent DDL.
+  // delete-account.sql repeats these guards for direct SQL rehearsals as well.
+  await client.query(`DO $privacy_lock$ DECLARE t record; BEGIN
+   PERFORM pg_advisory_xact_lock(hashtext('newave_flow_schema'));
+   FOR t IN SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename LOOP
+    EXECUTE format('LOCK TABLE public.%I IN SHARE ROW EXCLUSIVE MODE',t.tablename);
+   END LOOP; END $privacy_lock$`);
   await client.query(inputs);
+  await client.query('CREATE TEMP TABLE privacy_content_scope ON COMMIT DROP AS '+scopeSql);
   await client.query('INSERT INTO privacy_request VALUES($1,$2,$3,$4,$5,$6,$7)',[plan.requestId,plan.userId,plan.expectedCreatedAt,true,true,true,true]);
   for(const r of plan.legacyDecisions)await client.query('INSERT INTO privacy_legacy_decisions VALUES($1,$2)',[r.id,r.remove]);
   for(const r of plan.redactions)await client.query('INSERT INTO privacy_redactions VALUES($1,$2,$3,$4,$5)',[r.table,r.column,r.id,r.beforeMd5,r.replacement]);
   for(const value of plan.identifiers)await client.query('INSERT INTO privacy_identifiers VALUES($1) ON CONFLICT DO NOTHING',[value]);
   for(const r of plan.exceptions)await client.query('INSERT INTO privacy_exceptions VALUES($1,$2,$3,$4,$5)',[r.table,r.column,r.id,r.beforeMd5,r.reason]);
+  for(const r of plan.sharedContentReview)await client.query('INSERT INTO privacy_content_review VALUES($1,$2,$3,$4,$5,$6)',[r.table,r.column,r.id,r.beforeMd5,r.decision,r.reason]);
+  for(const r of plan.ownedStudentMemos)await client.query('INSERT INTO privacy_owned_student_memos VALUES($1,$2)',[r.id,r.beforeMd5]);
   await client.query(deletion);
   if(commit){await beforeCommit();await client.query('COMMIT');}else await client.query('ROLLBACK');
   return {requestId:plan.requestId,mode:commit?'executed':'rehearsed-and-rolled-back'};
@@ -46,6 +58,7 @@ async function runDeletion(client,plan,{commit=false,beforeCommit}={}){
 // A backup made after deletion has no user row. Still reject re-imported legacy rows,
 // orphaned numeric references and unreviewed text; absence of the account is not proof of erasure.
 async function verifyErased(client,plan){
+ await verifyContentErased(client,plan);
  const quote=s=>'"'+s.replaceAll('"','""')+'"';
  const columns=(await client.query("SELECT table_name,column_name,data_type FROM information_schema.columns WHERE table_schema='public'")).rows;
  for(const col of columns){

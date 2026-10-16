@@ -83,6 +83,15 @@ class ReviewIsolationHttpTest {
             String teacher = session.get("accessToken").asText();
             http.postForObject(base + "/safety/agreement", request(Map.of("version", CommunitySafetyService.POLICY_VERSION, "accepted", true), teacher), String.class);
             String admin = login(http, base, ReviewFixtures.ADMIN_EMAIL).get("accessToken").asText();
+            JsonNode deletionAccount = login(http, base, ReviewFixtures.DELETION_EMAIL);
+            assertNotEquals(session.at("/user/id"), deletionAccount.at("/user/id"));
+            JsonNode deletionReceipt = json.readTree(http.postForObject(base + "/auth/account-deletion",
+                request(Map.of("email", ReviewFixtures.DELETION_EMAIL, "password", PASSWORD, "confirmed", true), null), String.class));
+            assertEquals("REQUESTED", deletionReceipt.path("status").asText());
+            assertFalse(deletionReceipt.has("accessToken"));
+            assertTrue(review.getBean(AccountDeletionRequestRepository.class).findByUserId(deletionAccount.at("/user/id").asLong()).isPresent());
+            assertTrue(review.getBean(AccountDeletionRequestRepository.class).findByUserId(session.at("/user/id").asLong()).isEmpty());
+            assertNotNull(login(http, base, ReviewFixtures.TEACHER_EMAIL).get("accessToken"));
             assertTrue(http.exchange(base + "/students/my-class", HttpMethod.GET, request(null, teacher), String.class).getBody().contains("가상학생"));
             assertThrows(HttpClientErrorException.Unauthorized.class, () -> http.getForObject(base + "/students/1", String.class));
             assertEquals(200, http.exchange(base + "/users/me/profile", HttpMethod.PUT, request(Map.of("name", "가상 교사 수정"), teacher), String.class).getStatusCode().value());

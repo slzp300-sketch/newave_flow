@@ -83,6 +83,7 @@ public class AuthService {
 
     @Transactional
     public void register(com.newaveflow.dto.auth.RegisterRequest request) {
+        RegistrationEligibility.requireConfirmed(request.getEligibilityConfirmed());
         String normalizedEmail = request.getEmail().trim().toLowerCase();
         if (!reviewMode && isReviewEmail(normalizedEmail)) {
             throw AppException.badRequest("심사용 이메일은 일반 회원가입에 사용할 수 없습니다.");

@@ -1,6 +1,7 @@
 // Operator-only erasure CLI: HTTP accepts requests but never performs the reviewed deletion.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto'),tls=require('node:tls');
 const {runDeletion}=require('./deletion.cjs');
+const {collectContentReview}=require('./content-review.cjs');
 const root=path.resolve(__dirname,'../..'),privateRoot=process.env.NEWAVE_BACKUP_DIRECTORY
  ? path.resolve(process.env.NEWAVE_BACKUP_DIRECTORY) : path.join(root,'.backups');
 const config=JSON.parse(fs.readFileSync(path.join(privateRoot,'config.json'),'utf8'));
@@ -72,9 +73,10 @@ let client;
    const found=await client.query(`SELECT id,md5(coalesce(${quote(col.column_name)}::text,'')) AS digest FROM public.${quote(col.table_name)} WHERE EXISTS(SELECT 1 FROM unnest($1::text[]) p(value) WHERE strpos(lower(${quote(col.column_name)}::text),lower(p.value))>0)`,[plan.identifiers]);
    for(const row of found.rows)plan.reviewCandidates.push({table:col.table_name,column:col.column_name,id:Number(row.id),beforeMd5:row.digest});
   }
+  Object.assign(plan,await collectContentReview(client,id));
   // ACL inherits the restricted .backups directory. This review file must be removed after processing.
   const file=path.join(folder,requestId+'.review.json');fs.writeFileSync(file,JSON.stringify(plan,null,2),{flag:'wx',mode:0o600});
-  console.log(JSON.stringify({requestId,reviewFile:file,legacyRows:legacy.rowCount,reviewRequired:true}));return;
+  console.log(JSON.stringify({requestId,reviewFile:file,legacyRows:legacy.rowCount,sharedFields:plan.sharedContentReview.length,personalMemos:plan.ownedStudentMemos.length,reviewRequired:true}));return;
  }
  const file=path.resolve(arg||'');
  if(path.dirname(file)!==folder||!file.endsWith('.review.json')||fs.lstatSync(file).isSymbolicLink())throw Error('Review must be inside the protected privacy directory');

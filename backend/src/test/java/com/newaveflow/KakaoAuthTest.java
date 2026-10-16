@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.*;
 import com.newaveflow.config.KakaoProperties;
 import com.newaveflow.dto.auth.*;
 import com.newaveflow.entity.*;
+import com.newaveflow.exception.AppException;
 import com.newaveflow.repository.*;
 import com.newaveflow.security.JwtTokenProvider;
 import com.newaveflow.service.*;
@@ -39,6 +40,7 @@ class KakaoAuthTest {
     @Autowired JwtTokenProvider tokens;
     @Autowired PasswordEncoder encoder;
     @Autowired KakaoProperties config;
+    @Autowired KakaoAuthService service;
     @MockBean KakaoClient kakao;
     static final String PASSWORD = "Synthetic!2026";
     static final String VERIFIER = "v".repeat(43);
@@ -115,6 +117,29 @@ class KakaoAuthTest {
         assertEquals(saved.getId(), login.path("session").path("user").path("id").asLong());
         assertFalse(json.writeValueAsString(saved).contains("kakaoId"));
         complete(proof, teacher, 400); // Link handoff cannot be replayed.
+    }
+
+    @Test void signupRequiresEligibilityBeforeCreatingAnAccountOrConsumingTheKakaoProof() throws Exception {
+        var proof = authorize(null, "9014", false);
+        var request = registrationRequest(proof, complete(proof, null, 200), "eligibility@example.invalid");
+        for (Boolean confirmed : Arrays.asList(null, false)) {
+            request.setEligibilityConfirmed(confirmed);
+            var failure = assertThrows(AppException.class, () -> service.register(request));
+            assertEquals(400, failure.getStatus().value());
+            assertEquals(RegistrationEligibility.REQUIRED_MESSAGE, failure.getMessage());
+            var body = (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(request);
+            if (confirmed == null) body.remove("eligibilityConfirmed");
+            http.perform(post("/api/auth/kakao/register").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(RegistrationEligibility.REQUIRED_MESSAGE));
+            assertEquals(0, users.count());
+            assertEquals(KakaoAuthFlow.Stage.REGISTERING, flows.findById(proof.flowId()).orElseThrow().getStage());
+        }
+        request.setEligibilityConfirmed(true);
+        http.perform(post("/api/auth/kakao/register").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request)))
+            .andExpect(status().isCreated());
+        var created = users.findByEmailIgnoreCase("eligibility@example.invalid").orElseThrow();
+        assertFalse(created.isActive()); assertEquals(User.Role.TEACHER, created.getRole());
+        assertEquals("9014", created.getKakaoId()); assertFalse(flows.existsById(proof.flowId()));
     }
 
     @Test void signupNeverIssuesSessionAndApprovalIsRequiredForBothLoginMethods() throws Exception {
@@ -214,6 +239,6 @@ class KakaoAuthTest {
     }
     KakaoRegisterRequest registrationRequest(KakaoCompleteRequest proof, JsonNode registration, String email) {
         var request = new KakaoRegisterRequest(); request.setFlowId(proof.flowId()); request.setTicket(registration.path("ticket").asText()); request.setVerifier(VERIFIER);
-        request.setName("신규 검수 교사"); request.setEmail(email); request.setPassword(PASSWORD); return request;
+        request.setName("신규 검수 교사"); request.setEmail(email); request.setPassword(PASSWORD); request.setEligibilityConfirmed(true); return request;
     }
 }

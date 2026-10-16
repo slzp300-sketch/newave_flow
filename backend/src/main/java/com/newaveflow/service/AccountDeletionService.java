@@ -24,10 +24,14 @@ public class AccountDeletionService {
     private final AccountDeletionRequestRepository requests;
     private final PasswordEncoder passwords;
     private final AppleAuthService apple;
+    @org.springframework.beans.factory.annotation.Value("${app.review.mode:false}")
+    private boolean reviewMode;
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final String REQUESTED_MESSAGE = "계정 삭제 요청이 접수되었습니다. 담당자가 개인 자료 삭제와 공동 기록 익명화를 확인해 7일 이내 처리를 목표로 진행합니다. 현재 로그인은 종료되며 Apple 연결이 있으면 함께 해제됩니다. 저장한 접수증으로 처리 상태를 확인해 주세요.";
+    private static final String REQUESTED_MESSAGE = "계정 삭제 요청이 접수되었습니다. 담당자가 개인 자료·본인 작성 내용의 삭제와 공동 기록 처리를 확인해 7일 이내 처리를 목표로 진행합니다. 현재 로그인은 종료되며 Apple 연결이 있으면 함께 해제됩니다. 저장한 접수증으로 처리 상태를 확인해 주세요.";
 
     public record SubmitRequest(@Size(max = 200) String password, boolean confirmed,
+        @Size(max = 36) String appleFlowId, @Size(max = 43) String appleTicket, @Size(max = 43) String appleVerifier) {}
+    public record PublicSubmitRequest(@Size(max = 100) String email, @Size(max = 200) String password, boolean confirmed,
         @Size(max = 36) String appleFlowId, @Size(max = 43) String appleTicket, @Size(max = 43) String appleVerifier) {}
     public record StatusRequest(@NotBlank @Size(min = 43, max = 43) String receiptToken) {}
     public record View(String requestId, String status, Instant requestedAt, Instant targetAt, Instant completedAt,
@@ -54,6 +58,34 @@ public class AccountDeletionService {
         if (!appleProof && (!owner.isPasswordLoginEnabled() || input.password() == null || input.password().length() > 200 || !passwords.matches(input.password(), owner.getPassword()))) {
             throw AppException.badRequest("현재 비밀번호가 올바르지 않습니다.");
         }
+        return accept(owner);
+    }
+
+    /** Credential proof permits deletion only; it never approves an account or issues a login token. */
+    @Transactional
+    public Receipt submitWithoutSession(PublicSubmitRequest input) {
+        if (!input.confirmed()) throw AppException.badRequest("계정과 개인 자료 삭제 안내를 확인해 주세요.");
+        boolean appleProof = input.appleFlowId() != null || input.appleTicket() != null || input.appleVerifier() != null;
+        User owner;
+        if (appleProof) {
+            if (input.email() != null || input.password() != null) throw AppException.badRequest("본인 확인 방법을 하나만 선택해 주세요.");
+            owner = apple.consumeDeletionProof(null, input.appleFlowId(), input.appleTicket(), input.appleVerifier());
+        } else {
+            String email = input.email() == null ? "" : input.email().trim().toLowerCase(Locale.ROOT);
+            if (email.isEmpty() || input.password() == null || input.password().isEmpty()
+                || (!reviewMode && email.endsWith("@review.newaveflow.invalid"))) throw invalidCredentials();
+            var found = users.findByEmailIgnoreCase(email).orElseThrow(AccountDeletionService::invalidCredentials);
+            owner = users.lockById(found.getId()).orElseThrow(AccountDeletionService::invalidCredentials);
+            // Check the locked current credentials, including after password changes or suspension.
+            if (!owner.getEmail().equalsIgnoreCase(email) || !owner.isPasswordLoginEnabled()
+                || !passwords.matches(input.password(), owner.getPassword())) throw invalidCredentials();
+        }
+        return accept(owner);
+    }
+
+    private static AppException invalidCredentials() { return AppException.unauthorized("이메일 또는 비밀번호를 확인해 주세요."); }
+
+    private Receipt accept(User owner) {
         if (owner.getCreatedAt() == null) throw AppException.conflict("계정 확인에 필요한 정보가 없습니다. 담당자에게 문의해 주세요.");
         // Provider revocation must succeed before the request is acknowledged. It is idempotent.
         long authenticatedVersion = owner.getAuthVersion();
@@ -94,7 +126,7 @@ public class AccountDeletionService {
     private View view(AccountDeletionRequest request) {
         boolean complete = request.getStatus() == AccountDeletionRequest.Status.COMPLETED;
         String message = complete
-            ? "계정과 개인 자료 삭제 및 공동 기록 익명화가 완료되었습니다. 보관 중인 암호화 백업은 생성 후 30일 이내 만료되며, 복원 시 삭제를 다시 적용합니다. 접수증은 완료 후 30일 동안 확인할 수 있습니다."
+            ? "계정·개인 자료·본인 작성 내용의 삭제와 공동 기록 처리가 완료되었습니다. 보관 중인 암호화 백업은 생성 후 30일 이내 만료되며, 복원 시 삭제를 다시 적용합니다. 접수증은 완료 후 30일 동안 확인할 수 있습니다."
             : REQUESTED_MESSAGE + (request.isHandoverRequired() ? " 마지막 관리자 계정이므로 운영 권한 인계를 확인한 뒤 완료합니다." : "");
         return new View(request.getId(), request.getStatus().name(), request.getRequestedAt(), request.getTargetAt(),
             request.getCompletedAt(), message, request.isHandoverRequired(), request.getUser() == null ? null : request.getUser().isPasswordLoginEnabled() ? "PASSWORD" : "APPLE");

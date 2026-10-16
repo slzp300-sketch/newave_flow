@@ -1,4 +1,5 @@
 import { validAppleSubject } from './authIdentity.js'
+import { requireSignupEligibility } from './signupEligibility.js'
 
 const encode = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const validOpaque = value => typeof value === 'string' && /^[A-Za-z0-9_-]{32,128}$/.test(value)
@@ -13,7 +14,7 @@ export function createAppleFlow({ api, native, platform, cryptoProvider = global
     async begin(mode = 'LOGIN', currentPassword) {
       if (platform !== 'ios') throw new Error('Apple 로그인은 iPhone 앱에서 이용할 수 있습니다.')
       if (busy) throw new Error('진행 중인 Apple 인증을 먼저 완료해 주세요.')
-      if (!['LOGIN', 'LINK', 'DELETE'].includes(mode)) throw new Error('Apple 인증 요청을 확인하지 못했습니다.')
+      if (!['LOGIN', 'LINK', 'DELETE', 'DELETE_PUBLIC'].includes(mode)) throw new Error('Apple 인증 요청을 확인하지 못했습니다.')
       busy = true
       pending = null
       try {
@@ -30,14 +31,14 @@ export function createAppleFlow({ api, native, platform, cryptoProvider = global
         const { data } = await api.complete({
           flowId: start.flowId, state: start.state, verifier,
           identityToken: credential.identityToken, authorizationCode: credential.authorizationCode,
-        })
+        }, mode)
         if (data.status === 'REGISTRATION_REQUIRED' && mode === 'LOGIN' && typeof data.ticket === 'string' && data.ticket) {
           if (!validEmail(data.email)) throw new Error('Apple 이메일을 확인하지 못했습니다. Apple 로그인을 다시 시작해 주세요.')
           const name = [credential.familyName, credential.givenName]
             .filter(value => typeof value === 'string' && value.trim()).map(value => value.trim()).join(' ').slice(0, 100)
           pending = { flowId: start.flowId, ticket: data.ticket, verifier, expiresAt: now() + 5 * 60 * 1000,
             profile: { email: data.email, emailPrivate: data.emailPrivate === true, name } }
-        } else if (data.status === 'REAUTHENTICATED' && mode === 'DELETE'
+        } else if (data.status === 'REAUTHENTICATED' && ['DELETE', 'DELETE_PUBLIC'].includes(mode)
           && data.flowId === start.flowId && typeof data.ticket === 'string' && data.ticket) {
           // This proof is returned only to the requesting deletion form and is never persisted.
           return { appleFlowId: start.flowId, appleTicket: data.ticket, appleVerifier: verifier }
@@ -63,11 +64,12 @@ export function createAppleFlow({ api, native, platform, cryptoProvider = global
         pending = null
         throw new Error('Apple 인증 시간이 지났어요. 로그인 화면에서 다시 시작해 주세요.')
       }
+      requireSignupEligibility(form?.eligibilityConfirmed)
       if (busy) throw new Error('가입 신청을 처리하고 있습니다.')
       busy = true
       try {
         // The server keeps the verified Apple email. Never accept a replacement email or password here.
-        await api.register({ name: form.name, phone: form.phone || '', flowId: pending.flowId, ticket: pending.ticket, verifier: pending.verifier })
+        await api.register({ name: form.name, phone: form.phone || '', eligibilityConfirmed: true, flowId: pending.flowId, ticket: pending.ticket, verifier: pending.verifier })
         pending = null
       } finally { busy = false }
     },

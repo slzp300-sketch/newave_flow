@@ -28,6 +28,7 @@ public class ClassService {
     private final StudentRepository studentRepository;
     private final TeacherClassRepository teacherClassRepository;
     private final UserRepository userRepository;
+    private final ClassAccessService classAccessService;
 
     public List<ClassDto> getAllRosterData() {
         List<ClassGroup> classes = classGroupRepository.findAllOrderByName();
@@ -74,7 +75,8 @@ public class ClassService {
                 .toList();
     }
 
-    public List<StudentDto> getStudentsInClass(Long classGroupId) {
+    public List<StudentDto> getStudentsInClass(Long classGroupId, User actor) {
+        classAccessService.requireClass(actor, classGroupId);
         return studentRepository.findByClassGroupIdAndIsActiveTrue(classGroupId)
                 .stream()
                 .map(StudentDto::from)

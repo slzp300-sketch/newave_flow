@@ -79,10 +79,31 @@ class AppleAuthTest {
     }
     AppleRegisterRequest registration(AppleCompleteRequest proof, JsonNode result) {
         var request = new AppleRegisterRequest(); request.setFlowId(proof.flowId()); request.setTicket(result.path("ticket").asText()); request.setVerifier(VERIFIER);
-        request.setName("가상 신규 교사"); return request;
+        request.setName("가상 신규 교사"); request.setEligibilityConfirmed(true); return request;
     }
     void register(AppleRegisterRequest request, int statusCode) throws Exception {
         http.perform(post("/api/auth/apple/register").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request))).andExpect(status().is(statusCode));
+    }
+    @Test void signupRequiresEligibilityBeforeCreatingAnAccountOrConsumingTheAppleProof() throws Exception {
+        var proof = start(null, "eligibility-subject");
+        var request = registration(proof, complete(proof, null, 200));
+        for (Boolean confirmed : Arrays.asList(null, false)) {
+            request.setEligibilityConfirmed(confirmed);
+            var failure = assertThrows(AppException.class, () -> service.register(request));
+            assertEquals(400, failure.getStatus().value());
+            assertEquals(RegistrationEligibility.REQUIRED_MESSAGE, failure.getMessage());
+            var body = (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(request);
+            if (confirmed == null) body.remove("eligibilityConfirmed"); // Older installed clients omit this field.
+            http.perform(post("/api/auth/apple/register").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(RegistrationEligibility.REQUIRED_MESSAGE));
+            assertEquals(0, users.count()); assertEquals(0, accounts.count());
+            assertEquals(AppleAuthFlow.Stage.REGISTERING, flows.findById(proof.flowId()).orElseThrow().getStage());
+        }
+        request.setEligibilityConfirmed(true);
+        register(request, 201);
+        var created = users.findByEmailIgnoreCase("eligibility-subject@example.invalid").orElseThrow();
+        assertFalse(created.isActive()); assertEquals(User.Role.TEACHER, created.getRole());
+        assertNull(created.getPassword()); assertFalse(flows.existsById(proof.flowId()));
     }
     @Test void existingConnectionKeepsAccountAndRequiresSingleUseOriginalDeviceProof() throws Exception {
         var owner = account("owner@example.invalid", null, true);
@@ -225,5 +246,62 @@ class AppleAuthTest {
         assertEquals(1, deletions.count()); assertFalse(flows.existsById(proof.flowId())); assertNotNull(accounts.findById(owner.getId()).orElseThrow().getRevokedAt());
         assertThrows(AppException.class, () -> service.consumeDeletionProof(owner, proof.flowId(), verified.path("ticket").asText(), VERIFIER));
         http.perform(post("/api/account-deletion").header("Authorization", access(owner)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload))).andExpect(status().isUnauthorized());
+    }
+
+    AppleCompleteRequest publicDeletionStart(String subject) throws Exception {
+        var started = json.readTree(http.perform(post("/api/auth/apple/deletion/start").contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(new AppleStartRequest(AppleAuthService.challenge(VERIFIER), "ios", null))))
+            .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store")).andReturn().getResponse().getContentAsString());
+        when(apple.verifiedSubject(eq("public-delete-identity"), anyString())).thenReturn(subject);
+        when(apple.identify(eq("public-delete-identity"), eq("public-delete-code"), anyString()))
+            .thenReturn(new AppleClient.Credential(subject, "public-delete-refresh", null, false));
+        return new AppleCompleteRequest(started.path("flowId").asText(), started.path("state").asText(), VERIFIER, "public-delete-identity", "public-delete-code");
+    }
+    Map<String, Object> publicDeletePayload(AppleCompleteRequest proof, JsonNode verified) {
+        return Map.of("confirmed", true, "appleFlowId", proof.flowId(), "appleTicket", verified.path("ticket").asText(), "appleVerifier", VERIFIER);
+    }
+    JsonNode publicDelete(Map<String, Object> payload, int expected) throws Exception {
+        return json.readTree(http.perform(post("/api/auth/account-deletion").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload)))
+            .andExpect(status().is(expected)).andReturn().getResponse().getContentAsString());
+    }
+
+    @Test void pendingAppleSignupCanDeleteWithFreshAppleProofWithoutApprovalOrAppAccess() throws Exception {
+        var signup = start(null, "pending-apple-delete");
+        register(registration(signup, complete(signup, null, 200)), 201);
+        var owner = users.findByEmailIgnoreCase("pending-apple-delete@example.invalid").orElseThrow();
+        assertFalse(owner.isActive()); assertNull(owner.getPassword());
+        var proof = publicDeletionStart("pending-apple-delete");
+        var verified = complete(proof, null, 200);
+        assertEquals("REAUTHENTICATED", verified.path("status").asText()); assertFalse(verified.has("session"));
+        var payload = publicDeletePayload(proof, verified);
+        var wrong = new HashMap<String, Object>(payload); wrong.put("appleVerifier", "w".repeat(43)); publicDelete(wrong, 400);
+        doThrow(AppException.conflict("synthetic revoke failure")).when(apple).revoke("public-delete-refresh");
+        publicDelete(payload, 409); assertEquals(0, deletions.count()); assertTrue(flows.existsById(proof.flowId()));
+        doNothing().when(apple).revoke("public-delete-refresh");
+        var receipt = publicDelete(payload, 200);
+        assertEquals("REQUESTED", receipt.path("status").asText()); assertFalse(receipt.has("session"));
+        assertTrue(deletions.findByUserId(owner.getId()).isPresent()); assertFalse(users.findById(owner.getId()).orElseThrow().isActive());
+        assertNotNull(accounts.findById(owner.getId()).orElseThrow().getRevokedAt()); assertNull(accounts.findById(owner.getId()).orElseThrow().getRefreshTokenCiphertext());
+        publicDelete(payload, 400);
+        http.perform(get("/api/users/me").header("Authorization", access(owner))).andExpect(status().isUnauthorized());
+        complete(start(null, "pending-apple-delete"), null, 401);
+        // Lost response/receipt can be recovered only with a new Apple authorization, without resetting the deadline.
+        var retryProof = publicDeletionStart("pending-apple-delete");
+        var retry = publicDelete(publicDeletePayload(retryProof, complete(retryProof, null, 200)), 200);
+        assertEquals(receipt.path("requestId"), retry.path("requestId")); assertEquals(receipt.path("targetAt"), retry.path("targetAt"));
+        assertNotEquals(receipt.path("receiptToken"), retry.path("receiptToken")); assertEquals(1, deletions.count());
+    }
+
+    @Test void publicAppleDeletionRejectsUnknownIdentityAndStaleProofWithoutGrantingAccess() throws Exception {
+        var unknown = publicDeletionStart("unknown-delete"); complete(unknown, null, 400);
+        verify(apple, never()).identify(anyString(), anyString(), anyString());
+        var owner = account("suspended-delete@example.invalid", "suspended-delete", false);
+        var proof = publicDeletionStart("suspended-delete"); var result = complete(proof, null, 200);
+        owner.revokeSessions(); users.saveAndFlush(owner);
+        publicDelete(publicDeletePayload(proof, result), 400); assertEquals(0, deletions.count());
+        var expired = publicDeletionStart("suspended-delete"); var expiredResult = complete(expired, null, 200);
+        var flow = flows.findById(expired.flowId()).orElseThrow(); flow.setExpiresAt(Instant.now().minusSeconds(1)); flows.saveAndFlush(flow);
+        publicDelete(publicDeletePayload(expired, expiredResult), 400); assertEquals(0, deletions.count());
+        verify(apple, never()).revoke(anyString());
     }
 }

@@ -18,3 +18,15 @@ CREATE TEMP TABLE privacy_exceptions (
   reason text NOT NULL CHECK(length(trim(reason)) >= 10),
   PRIMARY KEY(table_name,column_name,row_id)
 ) ON COMMIT DROP;
+-- Explicit author-content decisions are independent of identifier search exceptions.
+CREATE TEMP TABLE privacy_content_review (
+  table_name text NOT NULL,column_name text NOT NULL,row_id bigint NOT NULL,before_md5 text NOT NULL,
+  decision text NOT NULL CHECK(decision IN ('erase','redact','retain_other')),
+  reason text NOT NULL CHECK(length(trim(reason))>=10),
+  PRIMARY KEY(table_name,column_name,row_id)
+) ON COMMIT DROP;
+CREATE TEMP TABLE privacy_owned_student_memos (id bigint PRIMARY KEY,before_md5 text NOT NULL) ON COMMIT DROP;
+CREATE TEMP TABLE privacy_content_candidates (
+  table_name text NOT NULL,column_name text NOT NULL,row_id bigint NOT NULL,before_md5 text NOT NULL,
+  PRIMARY KEY(table_name,column_name,row_id)
+) ON COMMIT DROP;

@@ -36,9 +36,12 @@ class PrivacyDeletionTest {
                 INSERT INTO daily_reports(id,teacher_id,class_group_id,report_date,status,total_students,present_count,absent_count,late_count,special_notes)
                   VALUES(1,1,1,'2026-10-11','SUBMITTED',1,1,0,0,'삭제대상가상 연락 완료 / 학생 기록 보존');
                 CREATE TABLE daily_reports_before_class_merge AS TABLE daily_reports;
-                INSERT INTO student_memos(id,teacher_id,student_id,sketch) VALUES(1,1,1,'학생 관찰 보존');
+                INSERT INTO student_memos(id,teacher_id,student_id,sketch) VALUES(1,1,1,'이름 없는 개인 관찰 삭제'),(2,2,1,'다른 교사의 개인 관찰 보존');
                 INSERT INTO deactivation_requests(id,student_id,teacher_id,reason,status) VALUES(1,1,1,'학생 전출 확인','PENDING');
                 INSERT INTO events(id,title,event_date,event_type,attendance_required,attendance_target) VALUES(1,'가상 행사','2026-10-11','SPECIAL',true,'BOTH');
+                UPDATE events SET description='이름 없는 요청자 행사 작성 내용' WHERE id=1;
+                INSERT INTO meeting_minutes(id,title,content,meeting_date,is_active,created_at)
+                  VALUES(1,'기관 회의록','요청자 개인 문단 / 다른 사람 회의 결정','2026-10-11',true,CURRENT_TIMESTAMP);
                 INSERT INTO event_attendances(id,event_id,teacher_id,status) VALUES(1,1,1,'PRESENT');
                 INSERT INTO event_student_attendances(id,event_id,student_id,teacher_id,status) VALUES(1,1,1,1,'PRESENT');
                 INSERT INTO event_participants(id,event_id,kind,person_id,name,captured_at) VALUES(1,1,'TEACHER',1,'삭제대상가상','2026-10-01'),(2,1,'STUDENT',1,'가상 학생','2026-10-01');
@@ -78,6 +81,7 @@ class PrivacyDeletionTest {
             s.execute("ROLLBACK"); assertEquals(before,EventReadMigrationTest.fingerprints(c));
             s.execute(migration);
             var afterMigration=EventReadMigrationTest.fingerprints(c); afterMigration.remove("schema_migrations");before.remove("schema_migrations");assertEquals(before,afterMigration);
+            s.execute("INSERT INTO student_memos(id,teacher_id,student_id,sketch) VALUES(3,NULL,1,'가상 원본에서 요청자 작성으로 확인한 과거 익명 메모')");
             // Exercise the production V012/V013 foreign-key actions, absent from Hibernate's scalar IDs.
             s.execute("""
                 ALTER TABLE user_status_events ADD FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE;
@@ -101,14 +105,16 @@ class PrivacyDeletionTest {
                   (4,0,'STUDENT',2,NULL,1,CURRENT_TIMESTAMP,'APPROVED',1,CURRENT_TIMESTAMP,'Approved synthetic photograph');
                 """);
 
-            String inputs=Files.readString(Path.of("db/privacy/request-tables.sql"));
+            String inputs=Files.readString(Path.of("db/privacy/request-tables.sql"))
+                +"CREATE TEMP TABLE privacy_content_scope ON COMMIT DROP AS "+Files.readString(Path.of("db/privacy/content-scope.sql"))+";";
             String deletion=Files.readString(Path.of("db/privacy/delete-account.sql"));
             String review="""
                 INSERT INTO privacy_request VALUES('11111111-1111-4111-8111-111111111111',1,'2026-10-01',true,true,true,true);
                 INSERT INTO privacy_legacy_decisions VALUES(1,true);
                 INSERT INTO privacy_redactions SELECT 'daily_reports','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports;
                 INSERT INTO privacy_redactions SELECT 'daily_reports_before_class_merge','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports_before_class_merge;
-                """;
+                INSERT INTO privacy_redactions SELECT 'meeting_minutes','content',id,md5(content),'다른 사람 회의 결정' FROM meeting_minutes;
+                """+syntheticContentReview()+"UPDATE privacy_content_review SET decision='erase',reason='요청자 단독 작성 내용임을 가상 원본으로 확인함' WHERE (table_name='events' AND column_name='description') OR table_name='student_memos';";
             var original=EventReadMigrationTest.fingerprints(c);
             for(String unsafe:List.of(
                 review+"UPDATE privacy_request SET identity_verified=false;",
@@ -116,6 +122,12 @@ class PrivacyDeletionTest {
                 review+"UPDATE privacy_request SET request_id='22222222-2222-4222-8222-222222222222';",
                 review+"UPDATE apple_accounts SET revoked_at=NULL,refresh_token_ciphertext='synthetic-unrevoked' WHERE user_id=1;",
                 review+"DELETE FROM privacy_legacy_decisions;",
+                review+"DELETE FROM privacy_owned_student_memos;",
+                review+"UPDATE student_memos SET sketch='검토 이후 변경' WHERE id=1;",
+                review+"DELETE FROM privacy_content_review WHERE table_name='meeting_minutes' AND column_name='content';",
+                review+"UPDATE events SET description='검토 이후 새 작성 내용' WHERE id=1;",
+                review+"INSERT INTO meeting_minutes(id,title,content,meeting_date,is_active,created_at) VALUES(2,'새 회의','이름 없는 신규 내용','2026-10-12',true,CURRENT_TIMESTAMP);",
+                review+"UPDATE privacy_content_review SET decision='retain_other' WHERE table_name='meeting_minutes' AND column_name='content';",
                 review+"DELETE FROM privacy_redactions;",
                 review+"UPDATE privacy_redactions SET before_md5='stale';")) {
                 c.setAutoCommit(false);
@@ -201,7 +213,7 @@ class PrivacyDeletionTest {
                 INSERT INTO apple_notification_receipts(jti_hash,subject_hash,payload_hash,received_at)
                   VALUES(repeat('9',64),repeat('e',64),repeat('a',64),CURRENT_TIMESTAMP);
                 """);
-            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true); INSERT INTO privacy_identifiers VALUES('iVB');";
+            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true); INSERT INTO privacy_identifiers VALUES('iVB');"+syntheticContentReview();
             // Excluding reviewed hash fields must not exclude a future plaintext field in the same table.
             assertRejectedDeletionRestoresAllRows(c,inputs,collisionReview,deletion,
                 "ALTER TABLE apple_notification_subjects ADD COLUMN unreviewed_note text; UPDATE apple_notification_subjects SET unreviewed_note='Ada retained plaintext' WHERE user_id=2;",
@@ -222,7 +234,7 @@ class PrivacyDeletionTest {
             } finally {c.rollback();c.setAutoCommit(true);}
             // A retained-text error happens after notification removal and must roll everything back.
             assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
-                "UPDATE student_memos SET sketch='subject@example.invalid must be reviewed' WHERE id=1;",
+                "UPDATE student_memos SET sketch='subject@example.invalid must be reviewed' WHERE id=2;",
                 "Retained text needs review");
             // Even a previously reviewed table may not gain a new cascade into shared data.
             for(String unsafeNotificationForeignKey:List.of(
@@ -241,6 +253,7 @@ class PrivacyDeletionTest {
             String preservedNotificationReceiptsSql="SELECT jsonb_agg(to_jsonb(t) ORDER BY jti_hash)::text FROM apple_notification_receipts t WHERE subject_hash IN (SELECT subject_hash FROM apple_notification_subjects WHERE user_id IS DISTINCT FROM 1)";
             String preservedNotificationSubjects=scalar(c,preservedNotificationSubjectsSql);
             String preservedNotificationReceipts=scalar(c,preservedNotificationReceiptsSql);
+            String preservedOtherMemo=scalar(c,"SELECT to_jsonb(m)::text FROM student_memos m WHERE id=2");
             var userRepo=app.getBean(UserRepository.class);
             assertTrue(userRepo.findById(1L).isPresent());
             var tokens=app.getBean(JwtTokenProvider.class);
@@ -266,6 +279,12 @@ class PrivacyDeletionTest {
             assertEquals("SUBMITTED",scalar(c,"SELECT status FROM daily_reports WHERE teacher_id IS NULL"));
             assertEquals("1",scalar(c,"SELECT present_count FROM daily_reports"));
             assertEquals("학생 기록 보존",scalar(c,"SELECT special_notes FROM daily_reports_before_class_merge"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM student_memos WHERE id=1"),"Personal author-owned text must be removed even without any identifying string");
+            assertEquals(preservedOtherMemo,scalar(c,"SELECT to_jsonb(m)::text FROM student_memos m WHERE id=2"));
+            assertEquals("",scalar(c,"SELECT sketch FROM student_memos WHERE id=3"),"An orphaned old memo requires an explicit body decision");
+            assertEquals("",scalar(c,"SELECT description FROM events WHERE id=1"));
+            assertEquals("가상 행사",scalar(c,"SELECT title FROM events WHERE id=1"));
+            assertEquals("다른 사람 회의 결정",scalar(c,"SELECT content FROM meeting_minutes WHERE id=1"));
             assertEquals(1,app.getBean(DailyReportRepository.class).findByDateWithDetails(java.time.LocalDate.of(2026,10,11)).size());
             assertEquals("삭제된 계정",app.getBean(com.newaveflow.service.DeactivationRequestService.class).getPendingRequests().get(0).teacherName());
             assertEquals("2",scalar(c,"SELECT count(*) FROM students"));
@@ -295,6 +314,25 @@ class PrivacyDeletionTest {
             System.out.println("Privacy deletion PASS: verified review, stale/unknown inputs rollback, optional Apple notification schema and cascade guards, shared records, personal history, missing-user authentication, archived authors");
             s.execute("DROP TABLE apple_notification_receipts; DROP TABLE apple_notification_subjects; DROP TABLE daily_reports_before_class_merge; DROP TABLE schema_migrations");
         }
+    }
+    /** The fixture author knows the provenance of every synthetic field. Production plans
+     * start with null decisions and never apply this automatic fixture-only classification. */
+    private static String syntheticContentReview() {
+        return """
+            INSERT INTO privacy_owned_student_memos
+              SELECT m.id,md5(to_jsonb(m)::text) FROM student_memos m,privacy_request r WHERE m.teacher_id=r.user_id;
+            DO $fixture$
+            DECLARE col record;
+            BEGIN
+              FOR col IN SELECT * FROM privacy_content_scope LOOP
+                EXECUTE format('INSERT INTO privacy_content_review SELECT %L,%L,id,md5(%I::text),''retain_other'',''Synthetic provenance confirms another author or institutional record'' FROM public.%I WHERE length(trim(%I::text))>0%s',
+                  col.table_name,col.column_name,col.column_name,col.table_name,col.column_name,
+                  CASE WHEN col.table_name='student_memos' THEN ' AND teacher_id IS NULL' ELSE '' END);
+              END LOOP;
+            END $fixture$;
+            UPDATE privacy_content_review c SET decision='redact',reason='Synthetic provenance confirms this exact mixed-content replacement'
+              FROM privacy_redactions r WHERE c.table_name=r.table_name AND c.column_name=r.column_name AND c.row_id=r.row_id;
+            """;
     }
     private static void assertRejectedDeletionRestoresAllRows(Connection c,String inputs,String reviewed,String deletion,String unsafe,String expectedMessage)throws SQLException {
         var before=EventReadMigrationTest.fingerprints(c);

@@ -31,14 +31,28 @@ test('Apple registration preserves the verified relay email and omits client ema
   const displayProfile = flow.readRegistration()
   displayProfile.email = 'changed@example.invalid'
   assert.equal(flow.readRegistration().email, 'verified@privaterelay.appleid.com')
-  await flow.register({ name: '가상 교사', email: 'chosen@example.invalid', password: 'synthetic-only', phone: '' })
+  await flow.register({ name: '가상 교사', email: 'chosen@example.invalid', password: 'synthetic-only', phone: '', eligibilityConfirmed: true })
   assert.equal(calls.at(-1)[1].email, undefined)
   assert.equal(calls.at(-1)[1].password, undefined)
   assert.equal(calls.at(-1)[1].name, '가상 교사')
+  assert.equal(calls.at(-1)[1].eligibilityConfirmed, true)
   assert.equal(calls.at(-1)[1].verifier, request.verifier)
   assert.equal(flow.readPending(), false)
   assert.equal(flow.readRegistration(), null)
   await assert.rejects(flow.register({}), /인증 시간이/)
+})
+
+test('Apple cannot send a registration before explicit eligibility confirmation and can continue after confirmation', async () => {
+  const { flow, calls } = setup()
+  await flow.begin()
+  for (const eligibilityConfirmed of [undefined, false, 'true', 1]) {
+    await assert.rejects(flow.register({ name: '가상 교사', eligibilityConfirmed }), /가입 대상/)
+    assert.equal(calls.some(call => call[0] === 'register'), false)
+    assert.equal(flow.readPending(), true)
+  }
+  await flow.register({ name: '가상 교사', eligibilityConfirmed: true })
+  assert.equal(calls.filter(call => call[0] === 'register').length, 1)
+  assert.equal(calls.at(-1)[1].eligibilityConfirmed, true)
 })
 
 test('Apple registration supports a later consent without a name but rejects missing server-verified email', async () => {
@@ -71,6 +85,27 @@ test('Apple deletion returns only fresh flow-bound proof and never creates a reg
   }
 })
 
+test('Public deletion carries its unauthenticated mode through completion and accepts only deletion proof', async () => {
+  const completions = []
+  const { flow, calls } = setup({ api: { complete: async (data, mode) => {
+    completions.push({ data, mode })
+    return { data: { status: 'REAUTHENTICATED', flowId: 'synthetic-flow', ticket: 'public-deletion-proof' } }
+  } } })
+  const proof = await flow.begin('DELETE_PUBLIC')
+  assert.equal(calls[0][1], 'DELETE_PUBLIC')
+  assert.equal(calls[0][2].platform, 'ios')
+  assert.equal(calls[0][2].currentPassword, undefined)
+  assert.equal(completions[0].mode, 'DELETE_PUBLIC')
+  assert.equal(proof.appleTicket, 'public-deletion-proof')
+  assert.equal(proof.appleVerifier, completions[0].data.verifier)
+  assert.equal(flow.readRegistration(), null)
+  for (const response of [
+    { status: 'REAUTHENTICATED', flowId: 'other-flow', ticket: 'ticket' },
+    { status: 'SIGNED_IN', session: {}, appleSubject: 'subject' },
+    { status: 'REGISTRATION_REQUIRED', ticket: 'ticket', email: 'synthetic@example.invalid' },
+  ]) await assert.rejects(setup({ api: { complete: async () => ({ data: response }) } }).flow.begin('DELETE_PUBLIC'), /인증을 완료/)
+})
+
 test('Apple wrong state or absent authorization code never reaches server completion', async () => {
   for (const response of [{ state: 'different', identityToken: 'token', authorizationCode: 'code' }, { state: 's'.repeat(43), identityToken: 'token' }]) {
     const { flow, calls } = setup({ native: { signIn: async () => response } })
@@ -101,6 +136,20 @@ test('Apple registration expires and a new flow clears an earlier registration t
   await flow.begin()
   flow.clearPending()
   assert.equal(flow.readPending(), false)
+})
+
+test('A form opened before Apple registration expires cannot submit after expiry or an app restart', async () => {
+  let now = 100
+  const { flow, calls } = setup({ now: () => now })
+  await flow.begin()
+  assert.equal(flow.readRegistration().emailPrivate, true)
+  now += 300001
+  await assert.rejects(flow.register({ name: '가상 교사', eligibilityConfirmed: true }), /인증 시간이/)
+  assert.equal(calls.some(call => call[0] === 'register'), false)
+  const restarted = setup()
+  assert.equal(restarted.flow.readRegistration(), null)
+  await assert.rejects(restarted.flow.register({ name: '가상 교사', eligibilityConfirmed: true }), /인증 시간이/)
+  assert.equal(restarted.calls.length, 0)
 })
 
 test('Cancelling a new authorization discards an older registration draft', async () => {

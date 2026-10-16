@@ -39,9 +39,10 @@ public class StudentService {
     private final ClassAccessService classAccessService;
     private final PhotoModerationService photos;
 
-    public StudentDto getStudentById(Long id) {
+    public StudentDto getStudentById(Long id, com.newaveflow.entity.User actor) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
+        classAccessService.requireStudent(actor, student);
         return StudentDto.from(student);
     }
 

@@ -21,6 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class ReviewFixtures implements ApplicationRunner {
     public static final String TEACHER_EMAIL = "play.teacher@review.newaveflow.invalid";
     public static final String ADMIN_EMAIL = "play.admin@review.newaveflow.invalid";
+    public static final String DELETION_EMAIL = "play.deletion@review.newaveflow.invalid";
     private final UserRepository users;
     private final ClassGroupRepository classes;
     private final StudentRepository students;
@@ -46,6 +47,8 @@ public class ReviewFixtures implements ApplicationRunner {
         boolean first = users.count() == 0;
         User teacher = account(TEACHER_EMAIL, "가상 교사", User.Role.TEACHER, teacherPassword);
         account(ADMIN_EMAIL, "가상 관리자", User.Role.ADMIN, adminPassword);
+        // A separate disposable account keeps deletion review independent of normal tester logins.
+        account(DELETION_EMAIL, "가상 삭제 검수", User.Role.TEACHER, teacherPassword);
         if (first) {
             User colleague = account("play.colleague@review.newaveflow.invalid", "가상 동료교사", User.Role.TEACHER, teacherPassword);
             users.save(User.builder().name("가상 승인대기 교사").email("pending@review.newaveflow.invalid")

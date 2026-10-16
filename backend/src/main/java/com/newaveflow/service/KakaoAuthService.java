@@ -109,6 +109,7 @@ public class KakaoAuthService {
 
     @Transactional
     public void register(KakaoRegisterRequest request) {
+        RegistrationEligibility.requireConfirmed(request.getEligibilityConfirmed());
         requireEnabled();
         var flow = verified(request.getFlowId(), request.getTicket(), request.getVerifier(), Stage.REGISTERING);
         if (flow.getPurpose() != Purpose.LOGIN || flow.getKakaoId() == null) throw AppException.badRequest("카카오 인증을 다시 시작해 주세요.");

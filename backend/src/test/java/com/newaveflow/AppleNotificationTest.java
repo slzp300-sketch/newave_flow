@@ -49,6 +49,7 @@ class AppleNotificationTest {
     @Autowired PasswordEncoder passwords;
     @Autowired AppleProperties config;
     @Autowired AppleAuthService auth;
+    @Autowired AccountDeletionService deletionService;
     @Autowired AppleNotificationService notifications;
     @Autowired PlatformTransactionManager tx;
     @Autowired JdbcTemplate db;
@@ -97,7 +98,17 @@ class AppleNotificationTest {
     AppleRegisterRequest pending(String subject) {
         var proof=start(null,subject); var result=auth.complete(proof,null);
         var r=new AppleRegisterRequest(); r.setFlowId(proof.flowId()); r.setVerifier(VERIFIER); r.setTicket((String)result.get("ticket"));
-        r.setName("Synthetic pending"); return r;
+        r.setName("Synthetic pending"); r.setEligibilityConfirmed(true); return r;
+    }
+    AppleCompleteRequest publicDeletion(String subject) {
+        var result=auth.start(new AppleStartRequest(AppleAuthService.challenge(VERIFIER),"ios",null),null,AppleAuthFlow.Purpose.DELETE);
+        when(apple.verifiedSubject(eq("synthetic-delete-id"),anyString())).thenReturn(subject);
+        when(apple.identify(eq("synthetic-delete-id"),eq("synthetic-delete-code"),anyString()))
+            .thenReturn(new AppleClient.Credential(subject,"synthetic-delete-refresh",null,false));
+        return new AppleCompleteRequest(result.get("flowId"),result.get("state"),VERIFIER,"synthetic-delete-id","synthetic-delete-code");
+    }
+    AccountDeletionService.PublicSubmitRequest deletionInput(AppleCompleteRequest proof,Map<String,Object> result) {
+        return new AccountDeletionService.PublicSubmitRequest(null,null,true,proof.flowId(),(String)result.get("ticket"),proof.verifier());
     }
     @Test void authenticRevocationInvalidatesSessionsWithoutDeletingApplicationData() throws Exception {
         var user=owner("subject1"); var record=records.saveAndFlush(TtsRecord.builder().teacher(user).infoYear(2026).weekNum(42).isSubmitted(true).build());
@@ -161,6 +172,64 @@ class AppleNotificationTest {
         deletions.saveAndFlush(AccountDeletionRequest.builder().id(UUID.randomUUID().toString()).user(user).userCreatedAt(user.getCreatedAt()).receiptTokenHash("a".repeat(64)).status(AccountDeletionRequest.Status.REQUESTED).requestedAt(Instant.now()).targetAt(Instant.now().plusSeconds(604800)).build());
         User finalUser=user; assertThrows(AppException.class,()->start(finalUser,"deleting-subject"));
         assertEquals(1,deletions.count()); assertEquals(1,users.count());
+    }
+    @Test void revocationBetweenPublicDeletionStartCompletionAndConsumptionRejectsTheProof() throws Exception {
+        for(boolean beforeCompletion:List.of(true,false)) {
+            String subject="public-delete-boundary-"+beforeCompletion;
+            var user=owner(subject); user.updatePassword(null); user.suspend(); users.saveAndFlush(user);
+            var proof=publicDeletion(subject);
+            var flow=flows.findById(proof.flowId()).orElseThrow();
+            // Model an earlier start without sleeps or changing the signed notification clock.
+            flow.setExpiresAt(Instant.now().plusSeconds(280)); flows.saveAndFlush(flow);
+            long started=flow.getExpiresAt().minusSeconds(300).getEpochSecond();
+            Map<String,Object> ready=beforeCompletion?null:auth.complete(proof,null);
+            clearInvocations(apple);
+            deliver(notification("public-delete-boundary-event-"+beforeCompletion,"consent-revoked",subject,started),200);
+            if(beforeCompletion) {
+                assertThrows(AppException.class,()->auth.complete(proof,null));
+                verify(apple,never()).identify(anyString(),anyString(),anyString());
+            } else {
+                assertEquals("REAUTHENTICATED",ready.get("status")); assertFalse(ready.containsKey("session"));
+                assertThrows(AppException.class,()->deletionService.submitWithoutSession(deletionInput(proof,ready)));
+            }
+            verify(apple,never()).revoke(anyString());
+            assertTrue(flows.existsById(proof.flowId())); assertEquals(0,deletions.count());
+            var saved=users.findById(user.getId()).orElseThrow();
+            assertFalse(saved.isActive()); assertTrue(saved.isSuspended()); assertNull(saved.getPassword());
+            assertNotNull(accounts.findById(user.getId()).orElseThrow().getRevokedAt());
+            assertNull(accounts.findById(user.getId()).orElseThrow().getRefreshTokenCiphertext());
+            http.perform(get("/api/users/me").header("Authorization",access(saved))).andExpect(status().isUnauthorized());
+        }
+    }
+    @Test void freshPublicDeletionRetrySurvivesLateRevocationWithoutRestoringAccessOrReplayingProof() throws Exception {
+        String subject="public-delete-retry";
+        var user=owner(subject); user.updatePassword(null); user.suspend(); users.saveAndFlush(user);
+        var oldProof=publicDeletion(subject);
+        var oldFlow=flows.findById(oldProof.flowId()).orElseThrow();
+        oldFlow.setExpiresAt(Instant.now().plusSeconds(270)); flows.saveAndFlush(oldFlow);
+        long oldEventTime=oldFlow.getExpiresAt().minusSeconds(299).getEpochSecond();
+        var first=deletionService.submitWithoutSession(deletionInput(oldProof,auth.complete(oldProof,null)));
+        long firstVersion=users.findById(user.getId()).orElseThrow().getAuthVersion();
+        var freshProof=publicDeletion(subject); var ready=auth.complete(freshProof,null);
+        assertEquals("REAUTHENTICATED",ready.get("status")); assertFalse(ready.containsKey("session"));
+        assertFalse(ready.containsKey("accessToken")); assertFalse(ready.containsKey("refreshToken"));
+        String late=notification("public-delete-late-event","consent-revoked",subject,oldEventTime);
+        deliver(late,200); deliver(late,200);
+        assertNull(accounts.findById(user.getId()).orElseThrow().getRevokedAt());
+        assertEquals(firstVersion,users.findById(user.getId()).orElseThrow().getAuthVersion());
+        assertEquals("REQUESTED",deletionService.status(first.receiptToken()).status());
+        var input=deletionInput(freshProof,ready); var renewed=deletionService.submitWithoutSession(input);
+        assertEquals(first.requestId(),renewed.requestId()); assertEquals(first.requestedAt(),renewed.requestedAt());
+        assertEquals(first.targetAt(),renewed.targetAt()); assertNotEquals(first.receiptToken(),renewed.receiptToken());
+        assertThrows(AppException.class,()->deletionService.status(first.receiptToken()));
+        assertThrows(AppException.class,()->deletionService.submitWithoutSession(input));
+        assertFalse(flows.existsById(freshProof.flowId())); assertEquals(1,deletions.count());
+        verify(apple,times(2)).revoke("synthetic-delete-refresh");
+        var saved=users.findById(user.getId()).orElseThrow();
+        assertFalse(saved.isActive()); assertTrue(saved.isSuspended()); assertNull(saved.getPassword());
+        assertNotNull(accounts.findById(user.getId()).orElseThrow().getRevokedAt());
+        assertNull(accounts.findById(user.getId()).orElseThrow().getRefreshTokenCiphertext());
+        http.perform(get("/api/users/me").header("Authorization",access(saved))).andExpect(status().isUnauthorized());
     }
     @Test void notificationOnlyModeWorksAndDisabledModeDoesNotTouchOptionalTables() throws Exception {
         var user=owner("paused-subject"); config.setEnabled(false);

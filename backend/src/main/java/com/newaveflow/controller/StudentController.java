@@ -20,8 +20,8 @@ public class StudentController {
     private final StudentService studentService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<StudentDto> getStudent(@PathVariable Long id) {
-        return ResponseEntity.ok(studentService.getStudentById(id));
+    public ResponseEntity<StudentDto> getStudent(@PathVariable Long id, @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(studentService.getStudentById(id, currentUser));
     }
 
     // 교사: 내 반 학생 전체 조회 (제적 포함)

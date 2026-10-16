@@ -123,6 +123,42 @@ BEGIN
     RAISE EXCEPTION 'Legacy decision is stale or outside the reviewed identities';
   END IF;
 
+  -- A name search cannot establish authorship. Inventory every nonempty shared field,
+  -- including authorless events/minutes, and require the exact reviewed row/hash set.
+  FOR col IN SELECT * FROM privacy_content_scope LOOP
+    EXECUTE format('INSERT INTO privacy_content_candidates SELECT %L,%L,id,md5(%I::text)
+      FROM public.%I WHERE length(trim(%I::text))>0%s',col.table_name,col.column_name,
+      col.column_name,col.table_name,col.column_name,
+      CASE WHEN col.table_name='student_memos' THEN ' AND teacher_id IS NULL' ELSE '' END);
+  END LOOP;
+  IF EXISTS(SELECT 1 FROM privacy_content_candidates c FULL JOIN privacy_content_review r
+    USING(table_name,column_name,row_id)
+    WHERE c.before_md5 IS DISTINCT FROM r.before_md5) THEN
+    RAISE EXCEPTION 'Shared content ownership review is missing or changed';
+  END IF;
+  IF EXISTS(SELECT 1 FROM (SELECT id,md5(to_jsonb(m)::text) AS digest FROM student_memos m WHERE teacher_id=req.user_id) actual
+    FULL JOIN privacy_owned_student_memos reviewed USING(id)
+    WHERE actual.digest IS DISTINCT FROM reviewed.before_md5) THEN
+    RAISE EXCEPTION 'Personal memo review is missing or changed';
+  END IF;
+  FOR item IN SELECT * FROM privacy_content_review LOOP
+    IF item.decision='redact' THEN
+      IF NOT EXISTS(SELECT 1 FROM privacy_redactions r WHERE r.table_name=item.table_name
+        AND r.column_name=item.column_name AND r.row_id=item.row_id AND r.before_md5=item.before_md5
+        AND r.replacement IS NOT NULL AND md5(r.replacement)<>item.before_md5) THEN
+        RAISE EXCEPTION 'Authored content replacement is missing or unchanged';
+      END IF;
+    ELSIF EXISTS(SELECT 1 FROM privacy_redactions r WHERE r.table_name=item.table_name
+      AND r.column_name=item.column_name AND r.row_id=item.row_id) THEN
+      RAISE EXCEPTION 'Conflicting content review actions';
+    END IF;
+    -- An empty string also works for NOT NULL institutional-record fields. The row,
+    -- student status and attendance counts are preserved; no last-editor inference.
+    IF item.decision='erase' THEN
+      EXECUTE format('UPDATE public.%I SET %I='''' WHERE id=$1',item.table_name,item.column_name) USING item.row_id;
+    END IF;
+  END LOOP;
+
   FOR item IN SELECT * FROM privacy_redactions LOOP
     IF item.table_name IN ('users','schema_migrations') OR NOT EXISTS(
       SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name=item.table_name
@@ -138,6 +174,8 @@ BEGIN
 
   DELETE FROM tts_answers WHERE record_id IN (SELECT id FROM tts_data_entry WHERE teacher_id=req.user_id);
   DELETE FROM tts_data_entry WHERE teacher_id=req.user_id;
+  -- These are per-teacher personal prayer/sketch notes, not shared student outcomes.
+  DELETE FROM student_memos WHERE teacher_id=req.user_id;
   DELETE FROM tts_legacy_score WHERE id IN (SELECT id FROM privacy_legacy_decisions WHERE remove);
   IF to_regclass('public.kakao_auth_flows') IS NOT NULL THEN
     DELETE FROM kakao_auth_flows WHERE user_id=req.user_id OR kakao_id=to_jsonb(target)->>'kakao_id';
@@ -193,7 +231,7 @@ BEGIN
   END LOOP;
   DELETE FROM event_participants WHERE kind='TEACHER' AND person_id=req.user_id;
   -- Shared student outcomes are preserved. No anonymous login account is created.
-  FOR item IN SELECT unnest(ARRAY['attendances','daily_reports','student_memos','deactivation_requests',
+  FOR item IN SELECT unnest(ARRAY['attendances','daily_reports','deactivation_requests',
     'event_student_attendances','daily_reports_before_class_merge']) AS tbl LOOP
     IF to_regclass('public.'||item.tbl) IS NOT NULL THEN
       EXECUTE format('UPDATE public.%I SET teacher_id=NULL WHERE teacher_id=$1',item.tbl) USING req.user_id;
@@ -207,6 +245,18 @@ BEGIN
   DELETE FROM users WHERE id=req.user_id;
   GET DIAGNOSTICS changed=ROW_COUNT;
   IF changed<>1 THEN RAISE EXCEPTION 'Account delete count mismatch'; END IF;
+
+  IF EXISTS(SELECT 1 FROM student_memos WHERE id IN (SELECT id FROM privacy_owned_student_memos)) THEN
+    RAISE EXCEPTION 'Personal memo erasure is incomplete';
+  END IF;
+  FOR item IN SELECT * FROM privacy_content_review WHERE decision<>'retain_other' LOOP
+    SELECT CASE WHEN item.decision='erase' THEN '' ELSE replacement END INTO current_digest
+      FROM (SELECT 1) one LEFT JOIN privacy_redactions r ON r.table_name=item.table_name
+      AND r.column_name=item.column_name AND r.row_id=item.row_id;
+    EXECUTE format('SELECT count(*) FROM public.%I WHERE id=$1 AND coalesce(%I::text,'''') IS DISTINCT FROM $2',item.table_name,item.column_name)
+      INTO hits USING item.row_id,current_digest;
+    IF hits>0 THEN RAISE EXCEPTION 'Authored content erasure is incomplete'; END IF;
+  END LOOP;
 
   -- Search ALL retained text columns, including legacy copies and future tables. Never print values.
   FOR col IN SELECT c.table_name,c.column_name FROM information_schema.columns c

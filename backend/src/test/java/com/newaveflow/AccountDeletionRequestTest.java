@@ -145,4 +145,52 @@ class AccountDeletionRequestTest {
         deletion.cleanupCompletedReceipts();
         assertEquals(1, requests.count()); statusOf(pendingReceipt.path("receiptToken").asText(), 200);
     }
+
+    @Test void inactiveAccountCanRequestDeletionWithoutObtainingAnAppSession() throws Exception {
+        User owner = user("pending-delete@example.invalid", User.Role.TEACHER);
+        jdbc.update("UPDATE users SET is_active=false WHERE id=?", owner.getId());
+        var payload = new HashMap<String, Object>(Map.of("email", owner.getEmail().toUpperCase(), "password", PASSWORD, "confirmed", true));
+        payload.put("userId", 987654321); // Ownership can only come from the verified credentials.
+        String body = http.perform(post("/api/auth/account-deletion").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload)))
+            .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.status").value("REQUESTED")).andReturn().getResponse().getContentAsString();
+        JsonNode receipt = json.readTree(body);
+        assertFalse(body.contains("accessToken")); assertFalse(body.contains("refreshToken")); assertFalse(body.contains(owner.getEmail()));
+        assertFalse(users.findById(owner.getId()).orElseThrow().isActive());
+        assertTrue(requests.findByUserId(owner.getId()).isPresent());
+        http.perform(get("/api/users/me").header("Authorization", access(owner))).andExpect(status().isUnauthorized());
+        http.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("email", owner.getEmail(), "password", PASSWORD)))).andExpect(status().isUnauthorized());
+        statusOf(receipt.path("receiptToken").asText(), 200);
+        var again = json.readTree(http.perform(post("/api/auth/account-deletion").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload)))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertEquals(receipt.path("requestId"), again.path("requestId")); assertEquals(receipt.path("targetAt"), again.path("targetAt"));
+        statusOf(receipt.path("receiptToken").asText(), 404);
+        statusOf(again.path("receiptToken").asText(), 200);
+    }
+
+    @Test void publicDeletionRejectsUnconfirmedWrongMissingMixedAndPasswordlessCredentials() throws Exception {
+        User owner = user("public-proof@example.invalid", User.Role.TEACHER);
+        for (var input : List.of(
+            Map.of("email", owner.getEmail(), "password", PASSWORD, "confirmed", false),
+            Map.of("email", owner.getEmail(), "password", PASSWORD, "confirmed", true, "appleFlowId", "mixed"))) {
+            http.perform(post("/api/auth/account-deletion").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(input))).andExpect(status().isBadRequest());
+        }
+        for (String email : List.of(owner.getEmail(), "absent@example.invalid", "tester@review.newaveflow.invalid")) {
+            http.perform(post("/api/auth/account-deletion").contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("email", email, "password", "wrong", "confirmed", true)))).andExpect(status().isUnauthorized());
+        }
+        owner.updatePassword(null); users.saveAndFlush(owner);
+        http.perform(post("/api/auth/account-deletion").contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("email", owner.getEmail(), "password", PASSWORD, "confirmed", true)))).andExpect(status().isUnauthorized());
+        assertEquals(0, requests.count()); verifyNoInteractions(apple);
+    }
+
+    @Test void publicDeletionProviderFailureRollsBackWithoutReceiptOrSessionMutation() throws Exception {
+        User owner = user("public-provider@example.invalid", User.Role.TEACHER);
+        doThrow(AppException.conflict("가상 제공자 장애")).when(apple).revokeForDeletion(owner.getId());
+        http.perform(post("/api/auth/account-deletion").contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of("email", owner.getEmail(), "password", PASSWORD, "confirmed", true)))).andExpect(status().isConflict());
+        assertEquals(0, requests.count()); assertEquals(owner.getAuthVersion(), users.findById(owner.getId()).orElseThrow().getAuthVersion());
+    }
 }
