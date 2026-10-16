@@ -68,7 +68,7 @@ class AppleAuthTest {
         String id = result.path("flowId").asText();
         assertEquals(43, result.path("nonce").asText().length()); assertEquals(43, result.path("state").asText().length());
         assertNotEquals(result.path("nonce").asText(), flows.findById(id).orElseThrow().getNonceHash());
-        when(apple.identify(eq("synthetic-identity"), eq("synthetic-code"), anyString())).thenReturn(new AppleClient.Credential(subject, "synthetic-refresh"));
+        when(apple.identify(eq("synthetic-identity"), eq("synthetic-code"), anyString())).thenReturn(new AppleClient.Credential(subject, "synthetic-refresh", subject + "@example.invalid", false));
         when(apple.verifiedSubject(eq("synthetic-identity"), anyString())).thenReturn(subject);
         return new AppleCompleteRequest(id, result.path("state").asText(), VERIFIER, "synthetic-identity", "synthetic-code");
     }
@@ -77,9 +77,9 @@ class AppleAuthTest {
         if (user != null) call.header("Authorization", access(user));
         return json.readTree(http.perform(call).andExpect(status().is(statusCode)).andReturn().getResponse().getContentAsString());
     }
-    AppleRegisterRequest registration(AppleCompleteRequest proof, JsonNode result, String email) {
+    AppleRegisterRequest registration(AppleCompleteRequest proof, JsonNode result) {
         var request = new AppleRegisterRequest(); request.setFlowId(proof.flowId()); request.setTicket(result.path("ticket").asText()); request.setVerifier(VERIFIER);
-        request.setName("가상 신규 교사"); request.setEmail(email); request.setPassword(PASSWORD); return request;
+        request.setName("가상 신규 교사"); return request;
     }
     void register(AppleRegisterRequest request, int statusCode) throws Exception {
         http.perform(post("/api/auth/apple/register").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(request))).andExpect(status().is(statusCode));
@@ -105,17 +105,28 @@ class AppleAuthTest {
     }
     @Test void newSignupNeverBypassesApprovalAndEmailIsNeverAutomaticallyMerged() throws Exception {
         var original = account("same@example.invalid", null, true);
-        var proof = start(null, "new-subject"); var result = complete(proof, null, 200);
-        assertEquals("REGISTRATION_REQUIRED", result.path("status").asText()); assertFalse(result.has("session"));
-        register(registration(proof, result, original.getEmail()), 409);
+        var conflictingProof = start(null, "conflicting-subject");
+        when(apple.identify(anyString(), anyString(), anyString())).thenReturn(new AppleClient.Credential("conflicting-subject", "synthetic-refresh", original.getEmail(), false));
+        var conflictingResult = complete(conflictingProof, null, 200);
+        register(registration(conflictingProof, conflictingResult), 409);
         assertFalse(accounts.existsById(original.getId())); assertEquals(1, users.count());
-        var request = registration(proof, result, "new@example.invalid"); register(request, 201);
-        var created = users.findByEmailIgnoreCase("new@example.invalid").orElseThrow();
+        var proof = start(null, "new-subject");
+        when(apple.identify(anyString(), anyString(), anyString())).thenReturn(new AppleClient.Credential("new-subject", "synthetic-refresh", "relay@privaterelay.appleid.com", true));
+        var result = complete(proof, null, 200);
+        assertEquals("REGISTRATION_REQUIRED", result.path("status").asText()); assertFalse(result.has("session"));
+        assertEquals("relay@privaterelay.appleid.com", result.path("email").asText()); assertTrue(result.path("emailPrivate").asBoolean());
+        var request = registration(proof, result);
+        var tampered = json.valueToTree(request); ((com.fasterxml.jackson.databind.node.ObjectNode)tampered).put("email", original.getEmail()).put("password", PASSWORD);
+        http.perform(post("/api/auth/apple/register").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(tampered))).andExpect(status().isCreated());
+        var created = users.findByEmailIgnoreCase("relay@privaterelay.appleid.com").orElseThrow();
+        assertNull(created.getPassword()); assertFalse(created.isPasswordLoginEnabled());
         assertFalse(created.isActive()); assertEquals(User.Role.TEACHER, created.getRole());
         complete(start(null, "new-subject"), null, 401);
         http.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(new LoginRequest(created.getEmail(), PASSWORD)))).andExpect(status().isUnauthorized());
         created.approve(); users.saveAndFlush(created);
-        assertEquals("SIGNED_IN", complete(start(null, "new-subject"), null, 200).path("status").asText());
+        var signed = complete(start(null, "new-subject"), null, 200);
+        assertEquals("SIGNED_IN", signed.path("status").asText()); assertFalse(signed.path("session").path("user").path("passwordLoginEnabled").asBoolean());
+        http.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(new LoginRequest(created.getEmail(), PASSWORD)))).andExpect(status().isUnauthorized());
         register(request, 400);
     }
     @Test void linkRequiresPasswordSameActorAndUnchangedSession() throws Exception {
@@ -177,10 +188,42 @@ class AppleAuthTest {
             .content(json.writeValueAsString(new AppleStartRequest(AppleAuthService.challenge(VERIFIER), "ios", PASSWORD)))).andExpect(status().isForbidden());
         assertEquals(0, accounts.count()); verifyNoInteractions(apple);
     }
-    @Test void registrationRejectsOversizedPasswordAndReviewAddress() throws Exception {
-        var proof = start(null, "signup-subject"); var result = complete(proof, null, 200);
-        var request = registration(proof, result, "signup@example.invalid"); request.setPassword("한".repeat(25)); register(request, 400);
-        request.setPassword(PASSWORD); request.setEmail("synthetic@review.newaveflow.invalid"); register(request, 400);
+    @Test void registrationRejectsMissingVerifiedEmailAndReviewAddress() throws Exception {
+        var proof = start(null, "signup-subject");
+        when(apple.identify(anyString(), anyString(), anyString())).thenReturn(new AppleClient.Credential("signup-subject", "synthetic-refresh", null, false));
+        complete(proof, null, 400);
+        when(apple.identify(anyString(), anyString(), anyString())).thenReturn(new AppleClient.Credential("signup-subject", "synthetic-refresh", "synthetic@review.newaveflow.invalid", false));
+        complete(proof, null, 400);
         assertEquals(0, users.count()); assertEquals(0, accounts.count());
+    }
+
+    @Test void passwordlessDeletionRequiresFreshSameAccountSingleUseAppleProofAndProviderRevocation() throws Exception {
+        var owner = account("delete-apple@example.invalid", "apple-only", true); owner.updatePassword(null); users.saveAndFlush(owner);
+        var other = account("other-apple@example.invalid", "other-subject", true);
+        http.perform(get("/api/account-deletion").header("Authorization", access(owner))).andExpect(status().isOk()).andExpect(jsonPath("$.reauthenticationMethod").value("APPLE"));
+        http.perform(post("/api/account-deletion").header("Authorization", access(owner)).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"confirmed\":true,\"password\":\"anything\"}")).andExpect(status().isBadRequest());
+        var started = json.readTree(http.perform(post("/api/users/me/apple/deletion/start").header("Authorization", access(owner)).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(new AppleStartRequest(AppleAuthService.challenge(VERIFIER), "ios", null))))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        var proof = new AppleCompleteRequest(started.path("flowId").asText(), started.path("state").asText(), VERIFIER, "delete-identity", "delete-code");
+        when(apple.verifiedSubject(eq("delete-identity"), anyString())).thenReturn("other-subject");
+        complete(proof, owner, 403); verify(apple, never()).identify(anyString(), anyString(), anyString());
+        when(apple.verifiedSubject(eq("delete-identity"), anyString())).thenReturn("apple-only");
+        when(apple.identify(eq("delete-identity"), eq("delete-code"), anyString())).thenReturn(new AppleClient.Credential("apple-only", "fresh-delete-refresh", null, false));
+        var verified = complete(proof, owner, 200); assertEquals("REAUTHENTICATED", verified.path("status").asText());
+        var payload = Map.of("confirmed", true, "appleFlowId", proof.flowId(), "appleTicket", verified.path("ticket").asText(), "appleVerifier", VERIFIER);
+        http.perform(post("/api/account-deletion").header("Authorization", access(other)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload))).andExpect(status().isBadRequest());
+        var wrong = new HashMap<String,Object>(payload); wrong.put("appleVerifier", "x".repeat(43));
+        http.perform(post("/api/account-deletion").header("Authorization", access(owner)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(wrong))).andExpect(status().isBadRequest());
+        doThrow(AppException.badRequest("synthetic provider failure")).when(apple).revoke("fresh-delete-refresh");
+        http.perform(post("/api/account-deletion").header("Authorization", access(owner)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload))).andExpect(status().isBadRequest());
+        assertEquals(0, deletions.count()); assertTrue(flows.existsById(proof.flowId())); assertNull(accounts.findById(owner.getId()).orElseThrow().getRevokedAt());
+        doNothing().when(apple).revoke("fresh-delete-refresh");
+        http.perform(post("/api/account-deletion").header("Authorization", access(owner)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.receiptToken").isString());
+        assertEquals(1, deletions.count()); assertFalse(flows.existsById(proof.flowId())); assertNotNull(accounts.findById(owner.getId()).orElseThrow().getRevokedAt());
+        assertThrows(AppException.class, () -> service.consumeDeletionProof(owner, proof.flowId(), verified.path("ticket").asText(), VERIFIER));
+        http.perform(post("/api/account-deletion").header("Authorization", access(owner)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(payload))).andExpect(status().isUnauthorized());
     }
 }

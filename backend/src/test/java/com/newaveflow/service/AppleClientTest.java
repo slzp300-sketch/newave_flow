@@ -44,6 +44,28 @@ class AppleClientTest {
             .signWith(key, Jwts.SIG.RS256).compact();
     }
     String valid(String subject) { return token(subject, NONCE, config.getClientId(), Instant.now(), Instant.now().plusSeconds(300), rsa.getPrivate()); }
+    String withEmail(String email, Object verified, Object relay) {
+        return Jwts.builder().header().keyId("synthetic-kid").and().issuer("https://appleid.apple.com").subject("email-subject")
+            .audience().add(config.getClientId()).and().issuedAt(new Date()).expiration(Date.from(Instant.now().plusSeconds(300)))
+            .claim("nonce", NONCE).claim("email", email).claim("email_verified", verified).claim("is_private_email", relay)
+            .signWith(rsa.getPrivate(), Jwts.SIG.RS256).compact();
+    }
+    @Test void emailComesOnlyFromVerifiedClaimsAndPreservesPrivateRelayWithoutAskingAgain() {
+        for (Object verified : List.of(true, "true")) {
+            String token = withEmail("Relay@privaterelay.appleid.com", verified, "true");
+            when(transport.exchange(anyString(), anyString())).thenReturn(json.createObjectNode().put("id_token", token).put("refresh_token", "synthetic-refresh"));
+            var identity = client.identify(token, "synthetic-code", AppleClient.sha256(NONCE));
+            assertEquals("relay@privaterelay.appleid.com", identity.verifiedEmail()); assertTrue(identity.emailPrivate());
+        }
+        for (Object unverified : List.of(false, "false", "TRUE", 1)) {
+            String token = withEmail("unverified@example.invalid", unverified, false);
+            when(transport.exchange(anyString(), anyString())).thenReturn(json.createObjectNode().put("id_token", token).put("refresh_token", "synthetic-refresh"));
+            assertNull(client.identify(token, "synthetic-code", AppleClient.sha256(NONCE)).verifiedEmail());
+        }
+        String nativeToken = withEmail("native@example.invalid", true, false);
+        when(transport.exchange(anyString(), anyString())).thenReturn(json.createObjectNode().put("id_token", withEmail("different@example.invalid", true, false)).put("refresh_token", "synthetic-refresh"));
+        assertThrows(AppException.class, () -> client.identify(nativeToken, "synthetic-code", AppleClient.sha256(NONCE)));
+    }
     @Test void verifiesNativeAndExchangedTokensAndGeneratesShortLivedClientSecret() {
         when(transport.exchange(eq("synthetic-code"), anyString())).thenReturn(json.createObjectNode().put("id_token", valid("subject1")).put("refresh_token", "synthetic-refresh"));
         var identity = client.identify(valid("subject1"), "synthetic-code", AppleClient.sha256(NONCE));

@@ -9,7 +9,7 @@ const storage = isNativeApp ? createSecureStorage(registerPlugin('NewaveSecureSt
 export const deletionReceiptStore = createDeletionReceiptStore(storage)
 export const accountDeletionApi = {
   current: () => client.get('/account-deletion').then(r => r.data),
-  submit: password => client.post('/account-deletion', { password, confirmed: true }).then(r => r.data),
+  submit: credentials => client.post('/account-deletion', { ...credentials, confirmed: true }).then(r => r.data),
   status: receipt => client.post('/auth/account-deletion/status', { receiptToken: receipt.receiptToken },
     { skipAuth: true, apiEnvironment: receipt.apiEnvironment }).then(r => r.data),
 }

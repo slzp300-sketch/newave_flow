@@ -7,6 +7,7 @@ export const appleNative = registerPlugin('NewaveAppleSignIn')
 const flow = createAppleFlow({ api: appleApi, native: appleNative, platform: nativePlatform })
 export const beginApple = (mode, password) => flow.begin(mode, password)
 export const readApplePending = () => flow.readPending()
+export const readAppleRegistration = () => flow.readRegistration()
 export const clearApplePending = () => flow.clearPending()
 export const registerWithApple = form => flow.register(form)
 export const isAppleCancellation = error => error?.code === 'APPLE_CANCELLED'

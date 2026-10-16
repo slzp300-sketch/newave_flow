@@ -177,6 +177,7 @@ export default function ProfilePage() {
           <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">계정 정보</p>
           <InfoRow icon={User}   label="이름"  value={user?.name} />
           <InfoRow icon={Mail}   label="이메일" value={user?.email}   divider />
+          {user?.passwordLoginEnabled === false && <InfoRow icon={Lock} label="로그인 방법" value="Apple로 로그인" divider />}
           <InfoRow icon={Shield} label="권한"  value={roleCfg.label} divider />
         </Card>
 
@@ -352,7 +353,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* 비밀번호 변경 */}
-        <Card className="!p-0 overflow-hidden">
+        {user?.passwordLoginEnabled !== false && <Card className="!p-0 overflow-hidden">
           <button
             onClick={() => { setPwOpen(v => !v); setPwResult(null) }}
             className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
@@ -403,7 +404,7 @@ export default function ProfilePage() {
               </motion.div>
             )}
           </AnimatePresence>
-        </Card>
+        </Card>}
 
         {/* 화면 설정 */}
         <Card className="!p-0 overflow-hidden">
@@ -490,7 +491,7 @@ function InfoRow({ icon: Icon, label, value, divider = false }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-        <p className="text-sm font-semibold text-gray-800 truncate">{value ?? '-'}</p>
+        <p className="text-sm font-semibold text-gray-800 break-all">{value ?? '-'}</p>
       </div>
     </div>
   )

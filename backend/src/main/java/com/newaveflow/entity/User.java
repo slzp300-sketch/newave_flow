@@ -30,8 +30,11 @@ public class User {
     private String email;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
-    @Column(nullable = false)
+    @Column
     private String password;
+
+    /** Apple-only accounts have no local password; never synthesize an unknown password. */
+    public boolean isPasswordLoginEnabled() { return password != null && !password.isBlank(); }
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "kakao_id", unique = true, length = 100)

@@ -38,7 +38,7 @@ public class KakaoAuthService {
             if (actor == null) throw AppException.unauthorized("로그인 후 카카오 계정을 연결해 주세요.");
             owner = users.lockById(actor.getId()).orElseThrow(() -> AppException.unauthorized("다시 로그인해 주세요."));
             if (!owner.isActive() || owner.getAuthVersion() != actor.getAuthVersion()) throw AppException.unauthorized("다시 로그인해 주세요.");
-            if (request.currentPassword() == null || !passwords.matches(request.currentPassword(), owner.getPassword())) {
+            if (!owner.isPasswordLoginEnabled() || request.currentPassword() == null || !passwords.matches(request.currentPassword(), owner.getPassword())) {
                 throw AppException.badRequest("현재 비밀번호가 올바르지 않습니다.");
             }
             if (owner.getKakaoId() != null) throw AppException.conflict("이미 카카오 계정이 연결되어 있어요.");

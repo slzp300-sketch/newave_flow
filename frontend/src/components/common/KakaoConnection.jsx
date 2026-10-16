@@ -5,14 +5,16 @@ import { authApi } from '../../api/auth'
 import { beginKakao } from '../../auth/kakao'
 import Card from './Card'
 import KakaoButton from './KakaoButton'
+import useAuthStore from '../../store/authStore'
 
 export default function KakaoConnection() {
+  const passwordLoginEnabled = useAuthStore(state => state.user?.passwordLoginEnabled !== false)
   const [params] = useSearchParams()
   const { data } = useQuery({ queryKey: ['kakao-connection'], queryFn: () => authApi.kakaoConnection().then(r => r.data), retry: false })
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  if (!data || (!data.enabled && !data.connected)) return null
+  if (!passwordLoginEnabled || !data || (!data.enabled && !data.connected)) return null
   const connect = async () => {
     setLoading(true); setError('')
     try { await beginKakao('LINK', password); setPassword('') }

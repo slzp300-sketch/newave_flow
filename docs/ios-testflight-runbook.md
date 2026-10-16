@@ -45,7 +45,7 @@ Capacitor와 Cordova는 Apple의 개인정보 manifest 필수 SDK 목록에 있�
 
 1. 같은 main 커밋의 `Regression checks` 5개 작업과 `iOS native checks`가 성공해야 한다. 문서·백업 도구만 바뀌어 iOS 자동 실행이 생략된 커밋도, 서명하려면 Actions에서 `iOS native checks`를 main으로 직접 실행한다. workflow 이름만 같거나 이전 SHA가 성공한 것은 인정하지 않는다. 자동 검사 API가 실패하거나 최신 실행이 진행 중/실패/취소 상태면 먼저 해결한다. 검사 증거는 각 workflow의 같은 실행 시도에서 모두 성공해야 하므로, 실패 후에는 `Re-run all jobs`로 전체 작업을 다시 실행한다. 실패한 작업만 재실행하면 이전 시도의 성공 작업은 인정하지 않아 서명이 차단된다.
 2. Actions의 `iOS signed build and optional TestFlight upload`를 main에서 실행한다. `commit_sha`는 현재 main의 전체 40자리 SHA, `version`은 예를 들어 `1.0.0`, `build_number`는 App Store Connect에서 아직 사용하지 않은 증가 번호를 입력한다. workflow가 원격의 번호 중복을 예약·조회하지는 않는다. 처음에는 `upload=false`로 서명·내보내기를 확인한다.
-3. `apple_login=false`는 기본 UI/이메일 흐름의 내부 검수용이다. 최종 App Store 제출 준비 완료를 뜻하지 않는다. `true`는 서버 V011·Apple 설정·실제 수신 주소·능력 활성화·기기 검증 준비가 끝난 뒤 선택한다. 이 경우 프로파일과 최종 앱의 Apple 로그인 entitlement가 모두 일치해야 한다.
+3. `apple_login=false`는 기본 UI/이메일 흐름의 내부 검수용이다. 최종 App Store 제출 준비 완료를 뜻하지 않는다. `true`는 서버 V011 알림 스키마·V014 비밀번호 없는 가입/삭제 스키마·Apple 설정·실제 수신 주소·능력 활성화·기기 검증 준비가 끝난 뒤 선택한다. 이번 서버 코드에는 Apple 기능이 꺼져 있어도 V014가 필요하다. 이 경우 프로파일과 최종 앱의 Apple 로그인 entitlement가 모두 일치해야 한다.
 4. Environment 승인 화면에서 SHA·버전·번호·Apple 로그인·업로드 선택을 확인하고 승인한다. 대기 중 main이 바뀌거나 최신 검사 결과가 바뀌면 서명 직전 검사에서 멈춘다. `upload=true`에는 추가로 `UPLOAD TO TESTFLIGHT` 문구가 필요하다. 이는 Apple 계정에 해당 IPA를 보내는 동작이다. 테스터 초대·외부 베타 심사·정식 심사 제출·공개 출시는 실행하지 않는다.
 5. 프로파일의 앱·팀·배포 유형·만료와 인증서 일치를 검사하고 임시 Keychain에서 서명한다. Archive와 내보낸 IPA 모두 Bundle ID·버전·개인정보 파일·서명·권한을 다시 확인한다. 배포용 인증서·프로파일은 24시간 이상 유효해야 한다.
 6. 선택 업로드는 먼저 Apple의 바이너리 검증을 호출하고, 같은 SHA256의 IPA를 전송한다. 업로드 명령 성공 후에도 App Store Connect의 처리 결과·경고·TestFlight 빌드 표시를 직접 확인한다. 중단/시간 초과일 때는 중복 업로드 전에 해당 버전·빌드가 이미 들어갔는지 먼저 확인한다. [Apple 빌드 업로드와 처리](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
@@ -96,7 +96,7 @@ xcrun simctl io <검수용-simulator-UUID> screenshot --type=png <비공개-작�
 
 - Apple 멤버십 활성화·서비스 제공 주체/개인 명의 적합성·정확한 권리자 표기. 사용 허락 의사와 비공개 심사 연락처는 사용자가 제공했으며, [제출 주체·권리·한국 배포 준비 자료](ios-enrollment-dossier.md)의 실제 권한 확인과 대한민국 연락처 인증이 남음.
 - App ID·Sign in with Apple capability·카카오 iOS 설정 대조·인증서/프로파일·App Store Connect API 접근 승인과 업로드용 팀 키. GitHub 보호 환경은 설정했고 Apple 비밀값 입력·활성화는 남음.
-- V011 운영 적용 전 백업 복원 검증, Apple 실제 알림 수신 주소 등록·실제 계정 철회/삭제 검수 및 로그인 활성화.
+- V011·V014 운영 적용 전 백업 복원 검증, Apple 실제 알림 수신 주소 등록·가상 앱 계정의 동의 철회/앱 삭제 검수 및 로그인 활성화. 사용자의 실제 Apple 계정을 영구 삭제하는 검수는 수행하지 않는다.
 - App Store Connect 앱 레코드, 실제 서명·IPA/Apple 처리 결과, iPhone TestFlight 검수와 최종 스크린샷.
 - 실제 운영 동의·신고 담당·보존 절차, 최종 App Privacy·연령·암호화·접근성 답변, 유효한 가상 심사 계정.
 - 베타/정식 심사 제출과 승인 후 공개 출시. 이 문서와 자동 검사의 성공은 Apple 승인이나 위 외부 작업 완료를 뜻하지 않는다.

@@ -39,7 +39,7 @@ public class AuthService {
             throw AppException.unauthorized("승인 대기 중이거나 비활성화된 계정입니다. 관리자에게 문의해주세요.");
         }
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (!user.isPasswordLoginEnabled() || !passwordEncoder.matches(request.password(), user.getPassword())) {
             throw AppException.unauthorized("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
@@ -157,7 +157,7 @@ public class AuthService {
         User user = userRepository.lockById(userId)
                 .orElseThrow(() -> AppException.badRequest("사용자를 찾을 수 없습니다."));
 
-        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+        if (!user.isPasswordLoginEnabled() || currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
             throw AppException.badRequest("현재 비밀번호가 올바르지 않습니다.");
         }
 

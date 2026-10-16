@@ -6,7 +6,7 @@ import Button from '../components/common/Button'
 import Header from '../components/layout/Header'
 import EmailInput from '../components/common/EmailInput'
 import { readKakaoPending, registerWithKakao } from '../auth/kakao'
-import { readApplePending, registerWithApple } from '../auth/apple'
+import { readAppleRegistration, registerWithApple } from '../auth/apple'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -17,6 +17,7 @@ export default function Signup() {
   const socialName = isApple ? 'Apple' : '카카오'
   const [kakaoReady, setKakaoReady] = useState(false)
   const [appleReady, setAppleReady] = useState(false)
+  const [appleProfile, setAppleProfile] = useState(null)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -41,9 +42,11 @@ export default function Signup() {
   }, [isKakao])
   useEffect(() => {
     if (!isApple) return
-    const ready = readApplePending()
-    setAppleReady(ready)
-    if (!ready) setError('Apple 인증 시간이 지났어요. 로그인 화면에서 다시 시작해 주세요.')
+    const profile = readAppleRegistration()
+    setAppleProfile(profile)
+    setAppleReady(!!profile)
+    if (profile) setForm(value => ({ ...value, name: value.name || profile.name }))
+    else setError('Apple 인증 시간이 지났어요. 로그인 화면에서 다시 시작해 주세요.')
   }, [isApple])
 
   const [nameStatus, setNameStatus]   = useState('idle') // idle, loading, available, duplicate
@@ -73,6 +76,7 @@ export default function Signup() {
 
   // 이메일 중복 체크 (디바운스)
   useEffect(() => {
+    if (isApple) { setEmailStatus('idle'); return }
     if (!form.email.trim()) {
       setEmailStatus('idle')
       return
@@ -93,17 +97,15 @@ export default function Signup() {
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [form.email])
+  }, [form.email, isApple])
 
   const pwMatch = confirmPw === '' ? null : form.password === confirmPw
 
   const isSubmitDisabled = loading || (isKakao && !kakaoReady) || (isApple && !appleReady) ||
                            nameStatus === 'duplicate' || 
-                           emailStatus === 'duplicate' || 
                            nameStatus === 'loading' || 
-                           emailStatus === 'loading' ||
-                           !form.password ||
-                           pwMatch === false
+                           (!isApple && (emailStatus === 'duplicate' || emailStatus === 'loading' ||
+                             !form.password || pwMatch === false))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -157,13 +159,17 @@ export default function Signup() {
       <div className="px-6 pt-6 pb-10">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">환영합니다!</h2>
         <p className="text-gray-500 text-sm mb-8">{isSocial ? `${socialName} 인증을 완료했어요. 가입 신청 후 관리자 승인을 기다려 주세요.` : '새로운 웨이브에 합류하세요'}</p>
-        {isSocial && <p className="mb-5 rounded-xl border border-secondary-200 bg-secondary-50 p-3 text-sm leading-relaxed text-secondary-800">이메일로도 로그인할 수 있도록 이메일과 비밀번호를 함께 설정해 주세요. 이미 가입했다면 새로 신청하지 말고 기존 계정에서 {socialName} 계정을 연결해 주세요.</p>}
+        {isSocial && <p className="mb-5 rounded-xl border border-secondary-200 bg-secondary-50 p-3 text-sm leading-relaxed text-secondary-800">{isApple
+          ? 'Apple이 확인한 이메일로 가입합니다. 별도 비밀번호 없이 Apple로 로그인할 수 있어요. 관리자에게 표시할 교사 이름을 확인해 주세요.'
+          : '이메일로도 로그인할 수 있도록 이메일과 비밀번호를 함께 설정해 주세요.'} 이미 가입했다면 새로 신청하지 말고 기존 계정에서 {socialName} 계정을 연결해 주세요.</p>}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1.5">이름</label>
+            <label htmlFor="signup-name" className="block text-sm font-bold text-gray-700 mb-1.5">{isApple ? '교사 이름' : '이름'}</label>
             <input
+              id="signup-name"
               type="text"
+              autoComplete="name"
               value={form.name}
               onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="실명을 입력하세요"
@@ -178,7 +184,11 @@ export default function Signup() {
             {nameStatus === 'loading' && <p className="text-gray-400 text-xs font-bold mt-1.5 px-1">확인 중...</p>}
           </div>
 
-          <div>
+          {isApple ? <div>
+            <p className="text-sm font-bold text-gray-700 mb-1.5">Apple에서 확인한 이메일</p>
+            <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm break-all">{appleProfile?.email || 'Apple 인증을 다시 진행해 주세요.'}</p>
+            {appleProfile?.emailPrivate && <p className="mt-2 text-xs leading-5 text-gray-500">이메일 가리기로 만든 주소입니다. 이 주소를 그대로 사용하며 개인 이메일은 추가로 받지 않습니다.</p>}
+          </div> : <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">이메일 (아이디)</label>
             <EmailInput
               onChange={(email) => setForm(f => ({ ...f, email }))}
@@ -187,9 +197,9 @@ export default function Signup() {
             {emailStatus === 'duplicate' && <p className="text-red-500 text-xs font-bold mt-1.5 px-1">이미 사용 중인 이메일입니다.</p>}
             {emailStatus === 'available' && <p className="text-secondary-700 text-xs font-bold mt-1.5 px-1">사용 가능한 이메일입니다.</p>}
             {emailStatus === 'loading' && <p className="text-gray-400 text-xs font-bold mt-1.5 px-1">확인 중...</p>}
-          </div>
+          </div>}
 
-          <div>
+          {!isApple && <><div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">비밀번호</label>
             <div className="relative">
               <input
@@ -245,10 +255,10 @@ export default function Signup() {
                 <CheckCircle2 size={12} /> 비밀번호가 일치합니다.
               </p>
             )}
-          </div>
+          </div></>}
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1.5">전화번호</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">전화번호 <span className="text-gray-500 font-normal">(선택)</span></label>
             <div className="flex items-center gap-2">
               <div className="flex-[3] px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 select-none text-center">
                 010

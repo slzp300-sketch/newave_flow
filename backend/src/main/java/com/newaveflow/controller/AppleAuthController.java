@@ -26,6 +26,8 @@ public class AppleAuthController {
     public ResponseEntity<Map<String, String>> login(@Valid @RequestBody AppleStartRequest request) { return ok(service.start(request, null, Purpose.LOGIN)); }
     @PostMapping("/api/users/me/apple/start")
     public ResponseEntity<Map<String, String>> link(@Valid @RequestBody AppleStartRequest request, @AuthenticationPrincipal User user) { return ok(service.start(request, user, Purpose.LINK)); }
+    @PostMapping("/api/users/me/apple/deletion/start")
+    public ResponseEntity<Map<String, String>> deletion(@Valid @RequestBody AppleStartRequest request, @AuthenticationPrincipal User user) { return ok(service.start(request, user, Purpose.DELETE)); }
     @PostMapping("/api/auth/apple/complete")
     public ResponseEntity<Map<String, Object>> complete(@Valid @RequestBody AppleCompleteRequest request, @AuthenticationPrincipal User user) {
         try { return ok(service.complete(request, user)); }

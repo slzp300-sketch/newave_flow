@@ -91,13 +91,13 @@ class AppleNotificationTest {
     AppleCompleteRequest start(User owner,String subject) {
         var result=auth.start(new AppleStartRequest(AppleAuthService.challenge(VERIFIER),"ios",owner==null?null:PASSWORD),owner,owner==null?AppleAuthFlow.Purpose.LOGIN:AppleAuthFlow.Purpose.LINK);
         when(apple.verifiedSubject(eq("synthetic-id"),anyString())).thenReturn(subject);
-        when(apple.identify(eq("synthetic-id"),eq("synthetic-code"),anyString())).thenReturn(new AppleClient.Credential(subject,"synthetic-refresh"));
+        when(apple.identify(eq("synthetic-id"),eq("synthetic-code"),anyString())).thenReturn(new AppleClient.Credential(subject,"synthetic-refresh",subject+"@example.invalid",false));
         return new AppleCompleteRequest(result.get("flowId"),result.get("state"),VERIFIER,"synthetic-id","synthetic-code");
     }
     AppleRegisterRequest pending(String subject) {
         var proof=start(null,subject); var result=auth.complete(proof,null);
         var r=new AppleRegisterRequest(); r.setFlowId(proof.flowId()); r.setVerifier(VERIFIER); r.setTicket((String)result.get("ticket"));
-        r.setName("Synthetic pending"); r.setEmail(UUID.randomUUID()+"@example.invalid"); r.setPassword(PASSWORD); return r;
+        r.setName("Synthetic pending"); return r;
     }
     @Test void authenticRevocationInvalidatesSessionsWithoutDeletingApplicationData() throws Exception {
         var user=owner("subject1"); var record=records.saveAndFlush(TtsRecord.builder().teacher(user).infoYear(2026).weekNum(42).isSubmitted(true).build());
@@ -134,6 +134,19 @@ class AppleNotificationTest {
         long started=flows.findById(proof.flowId()).orElseThrow().getExpiresAt().minusSeconds(300).getEpochSecond();
         deliver(notification("boundary","consent-revoked","boundary-subject",started),200);
         assertThrows(AppException.class,()->auth.complete(proof,user)); verify(apple,never()).identify(anyString(),anyString(),anyString()); assertFalse(accounts.existsById(user.getId()));
+    }
+    @Test void appleOnlyAccountCanReconnectWithFreshSameAppleIdentityButNotAfterDeletion() throws Exception {
+        var user = owner("apple-only-reconnect"); user.updatePassword(null); users.saveAndFlush(user);
+        long time = now()-10;
+        deliver(notification("apple-only-revoked", "consent-revoked", "apple-only-reconnect", time), 200);
+        var result = auth.complete(start(null, "apple-only-reconnect"), null);
+        assertEquals("SIGNED_IN", result.get("status")); assertNull(accounts.findById(user.getId()).orElseThrow().getRevokedAt());
+        assertNull(users.findById(user.getId()).orElseThrow().getPassword());
+        deliver(notification("apple-only-late", "consent-revoked", "apple-only-reconnect", time), 200);
+        assertNull(accounts.findById(user.getId()).orElseThrow().getRevokedAt());
+        deliver(notification("apple-only-deleted", "account-deleted", "apple-only-reconnect", now()-1), 200);
+        assertThrows(AppException.class, () -> auth.complete(start(null, "apple-only-reconnect"), null));
+        assertEquals(1, users.count()); assertEquals(0, deletions.count());
     }
     @Test void unknownSubjectRevocationPreventsAnAlreadyIssuedSignupAndAppleDeletionRemainsTerminal() throws Exception {
         var request=pending("pending-subject"); deliver(notification("pending","consent-revoked","pending-subject",now()),200);
@@ -184,8 +197,8 @@ class AppleNotificationTest {
                 assertTrue(firstLocked.await(5,TimeUnit.SECONDS));
                 var second=pool.submit(()->{Thread.currentThread().setName("second-apple-operation"); if(registrationFirst)notifications.receive(event);else assertThrows(AppException.class,()->auth.register(request));});
                 assertTrue(secondAttempted.await(5,TimeUnit.SECONDS)); release.countDown(); first.get(10,TimeUnit.SECONDS); second.get(10,TimeUnit.SECONDS);
-                if(registrationFirst) { var user=users.findByEmailIgnoreCase(request.getEmail()).orElseThrow(); assertNotNull(accounts.findById(user.getId()).orElseThrow().getRevokedAt()); assertEquals(1,user.getAuthVersion()); }
-                else assertFalse(users.existsByEmailIgnoreCase(request.getEmail()));
+                if(registrationFirst) { var user=users.findByEmailIgnoreCase(subject+"@example.invalid").orElseThrow(); assertNotNull(accounts.findById(user.getId()).orElseThrow().getRevokedAt()); assertEquals(1,user.getAuthVersion()); }
+                else assertFalse(users.existsByEmailIgnoreCase(subject+"@example.invalid"));
             } finally { release.countDown(); pool.shutdownNow(); doCallRealMethod().when(states).lock(subject); }
         }
     }

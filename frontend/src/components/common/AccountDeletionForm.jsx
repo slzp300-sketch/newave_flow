@@ -4,9 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Card from './Card'
 import Button from './Button'
 import useAuthStore from '../../store/authStore'
-import { flushAuthStorage } from '../../native/platform'
+import { flushAuthStorage, nativePlatform } from '../../native/platform'
 import { clearKakaoPending } from '../../auth/kakao'
-import { clearApplePending } from '../../auth/apple'
+import { beginApple, clearApplePending, isAppleCancellation } from '../../auth/apple'
+import { deletionCredentials } from '../../auth/accountDeletionProof'
 import { accountDeletionApi, deletionReceiptStore } from '../../api/accountDeletion'
 import { deletionStatusLabel, parseDeletionReceipt } from '../../auth/deletionReceipt'
 
@@ -29,6 +30,9 @@ export default function AccountDeletionForm() {
   const [copied, setCopied] = useState(false)
   const current = useQuery({ queryKey: ['account-deletion', apiEnvironment, user?.id],
     queryFn: accountDeletionApi.current, enabled: !!user, retry: false })
+  const reauthenticationMethod = current.data?.reauthenticationMethod || (user?.passwordLoginEnabled === false ? 'APPLE' : 'PASSWORD')
+  const usesApple = reauthenticationMethod === 'APPLE'
+  const canReauthenticate = usesApple ? nativePlatform === 'ios' : !!password
   const status = useQuery({ queryKey: ['deletion-receipt', receipt?.apiEnvironment, receipt?.requestId, receipt?.savedAt],
     queryFn: () => accountDeletionApi.status(receipt), enabled: !!receipt, retry: false })
   useEffect(() => {
@@ -45,17 +49,23 @@ export default function AccountDeletionForm() {
   }
   const submit = async event => {
     event.preventDefault()
-    if (!loaded || !confirmed || !password || busy || current.isError || current.isPending) return
+    if (!loaded || !confirmed || !canReauthenticate || busy || current.isError || current.isPending) return
     setBusy(true); setError(''); setWarning('')
     setAppleCheckPaused(true)
     let accepted = false
+    let submitted = false
     try {
-      const data = await accountDeletionApi.submit(password)
+      const credentials = await deletionCredentials(reauthenticationMethod, { password, beginApple })
+      submitted = true
+      const data = await accountDeletionApi.submit(credentials)
       accepted = true
       const saved = parseDeletionReceipt({ ...data, apiEnvironment, savedAt: Date.now() })
-      if (!saved) throw new Error('접수는 완료됐지만 조회 코드를 받지 못했습니다. 다시 로그인하면 신청 상태를 확인할 수 있습니다.')
+      if (!saved) throw new Error('접수는 완료됐지만 조회 코드를 받지 못했습니다. 아래 고객지원으로 처리 상태를 확인해 주세요.')
       await remember(saved)
-    } catch (err) { setError(!err.response && !accepted ? '응답을 받지 못해 접수 여부를 확인할 수 없습니다. 다시 로그인한 뒤 이 화면에서 신청 상태를 확인해 주세요.' : errorLabel(err)) }
+    } catch (err) {
+      if (!isAppleCancellation(err)) setError(!err.response && !accepted && submitted
+        ? '응답을 받지 못해 접수 여부를 확인할 수 없습니다. 저장된 접수증이나 아래 고객지원으로 신청 상태를 확인해 주세요.' : errorLabel(err))
+    }
     finally {
       setPassword('')
       try {
@@ -132,16 +142,20 @@ export default function AccountDeletionForm() {
       {current.isError && <div className="mt-3"><p role="alert" className="text-sm text-red-700">{errorLabel(current.error)}</p><button type="button" onClick={() => current.refetch()} className="min-h-11 text-primary-700">다시 확인</button></div>}
       {currentRequest && <p className="mt-3 text-sm leading-6">{current.data.message}<br />처리 목표일: {dateLabel(current.data.targetAt)}</p>}
       {!current.isPending && !current.isError && <form onSubmit={submit} className="mt-4 space-y-4">
-        <p className="text-sm leading-6 text-gray-600">{currentRequest ? '조회 코드를 분실했다면 비밀번호를 확인하고 접수증을 다시 저장할 수 있습니다. 기존 조회 코드는 더 이상 사용할 수 없습니다.' : '본인 확인 후 요청이 접수됩니다. 공동 문서의 개인정보까지 확인한 뒤 삭제하며, 처리 완료를 이 화면에서 확인할 수 있습니다.'}</p>
-        <label className="block text-sm font-semibold" htmlFor="deletion-password">현재 앱 비밀번호</label>
-        <input id="deletion-password" type="password" autoComplete="current-password" className="input-field" maxLength={200} required value={password} onChange={e => setPassword(e.target.value)} disabled={busy} />
+        <p className="text-sm leading-6 text-gray-600">{currentRequest ? '조회 코드를 분실했다면 본인 확인 후 접수증을 다시 저장할 수 있습니다. 기존 조회 코드는 더 이상 사용할 수 없습니다.' : '본인 확인 후 요청이 접수됩니다. 공동 문서의 개인정보까지 확인한 뒤 삭제하며, 처리 완료를 이 화면에서 확인할 수 있습니다.'}</p>
+        {usesApple ? <p className="rounded-xl bg-gray-50 px-4 py-3 text-sm leading-6">{nativePlatform === 'ios'
+          ? '아래 버튼을 누르면 Apple로 본인을 확인한 뒤 삭제 요청을 접수합니다. 별도 앱 비밀번호는 필요하지 않습니다.'
+          : 'Apple로 가입한 계정입니다. iPhone 앱에서 Apple로 본인을 확인하고 삭제를 신청해 주세요. 앱을 이용할 수 없다면 아래 고객지원으로 요청할 수 있습니다.'}</p> : <>
+          <label className="block text-sm font-semibold" htmlFor="deletion-password">현재 앱 비밀번호</label>
+          <input id="deletion-password" type="password" autoComplete="current-password" className="input-field" maxLength={200} required value={password} onChange={e => setPassword(e.target.value)} disabled={busy} />
+        </>}
         <label className="flex items-start gap-3 text-sm leading-6"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} disabled={busy} className="mt-1 size-5 shrink-0" />
           <span>계정·개인 자료 삭제와 공동 기록 익명화를 요청합니다. 신청 후 로그아웃되며, 연결된 Apple 로그인도 해제됩니다. 삭제가 완료되면 복구할 수 없음을 확인했습니다.</span></label>
-        <Button type="submit" className="w-full" loading={busy} disabled={!loaded || !password || !confirmed}>{currentRequest ? '접수증 다시 저장' : '계정 삭제 요청 접수'}</Button>
-        <p className="text-xs leading-5 text-gray-500">접수 시 바로 삭제되는 것은 아닙니다. 완료 전에는 이메일·비밀번호로 다시 로그인할 수 있습니다.</p>
+        <Button type="submit" className="w-full" loading={busy} disabled={!loaded || !canReauthenticate || !confirmed}>{currentRequest ? '접수증 다시 저장' : usesApple ? 'Apple로 확인하고 삭제 요청' : '계정 삭제 요청 접수'}</Button>
+        <p className="text-xs leading-5 text-gray-500">접수 시 바로 삭제되는 것은 아닙니다. {usesApple ? 'Apple 연결이 해제되므로 접수증으로 처리 상태를 확인해 주세요.' : '완료 전에는 이메일·비밀번호로 다시 로그인할 수 있습니다.'}</p>
       </form>}
     </Card> : !receipt && loaded && <Card><h3 className="font-bold">앱에서 삭제 요청하기</h3>
-      <p className="mt-3 text-sm leading-6 text-gray-600">로그인한 뒤 이 화면에서 비밀번호를 확인하고 계정 삭제를 신청할 수 있습니다.</p>
+      <p className="mt-3 text-sm leading-6 text-gray-600">로그인한 뒤 이 화면에서 본인을 확인하고 계정 삭제를 신청할 수 있습니다.</p>
       <Link to="/login" className="brand-action mt-4 flex min-h-12 items-center justify-center rounded-xl font-semibold">로그인하기</Link></Card>}
     <Card><details><summary className="min-h-11 py-2 cursor-pointer text-sm font-semibold">보관한 조회 코드로 확인하기</summary>
       <form onSubmit={importReceipt} className="space-y-3 mt-3"><label htmlFor="saved-deletion-code" className="text-sm">계정 삭제 조회 코드</label>

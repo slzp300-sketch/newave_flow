@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       apple_login:
-        description: 'Enable Apple login only after backend, V011, capability and real-account setup'
+        description: 'Enable Apple login only after backend, V011/V014, capability and real-account setup'
         default: false
         required: true
         type: boolean

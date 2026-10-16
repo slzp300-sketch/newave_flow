@@ -20,7 +20,7 @@ public class AppleClient {
     private final ObjectMapper json;
     private static final String ISSUER = "https://appleid.apple.com";
 
-    public record Credential(String subject, String refreshToken) {}
+    public record Credential(String subject, String refreshToken, String verifiedEmail, boolean emailPrivate) {}
 
     public String verifiedSubject(String identityToken, String nonceHash) { return verify(identityToken, nonceHash).getSubject(); }
 
@@ -32,11 +32,25 @@ public class AppleClient {
             if (!nativeClaims.getSubject().equals(exchangedClaims.getSubject())) throw new IllegalArgumentException();
             String refresh = response.path("refresh_token").asText();
             if (refresh.isBlank() || refresh.length() > 16384) throw new IllegalArgumentException();
-            return new Credential(nativeClaims.getSubject(), refresh);
+            String nativeEmail = verifiedEmail(nativeClaims), exchangedEmail = verifiedEmail(exchangedClaims);
+            if (nativeEmail != null && exchangedEmail != null && !nativeEmail.equals(exchangedEmail)) throw new IllegalArgumentException();
+            String email = exchangedEmail != null ? exchangedEmail : nativeEmail;
+            Claims emailSource = exchangedEmail != null ? exchangedClaims : nativeClaims;
+            return new Credential(nativeClaims.getSubject(), refresh, email, isTrue(emailSource.get("is_private_email")));
         } catch (Exception e) { throw invalid(); }
     }
 
     public void revoke(String refreshToken) { transport.revoke(refreshToken, clientSecret()); }
+
+    private static boolean isTrue(Object claim) { return Boolean.TRUE.equals(claim) || "true".equals(claim); }
+    private static String verifiedEmail(Claims claims) {
+        if (!isTrue(claims.get("email_verified"))) return null;
+        Object value = claims.get("email");
+        if (!(value instanceof String email)) return null;
+        email = email.trim().toLowerCase(Locale.ROOT);
+        if (email.length() > 100 || !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) return null;
+        return email;
+    }
 
     Claims verify(String token, String nonceHash) {
         try {

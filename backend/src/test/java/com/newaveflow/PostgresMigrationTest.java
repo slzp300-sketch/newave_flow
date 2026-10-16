@@ -114,6 +114,7 @@ class PostgresMigrationTest {
         execute(Files.readString(Path.of("db/migrations/V010__account_deletion_requests.sql")));
         execute(Files.readString(Path.of("db/migrations/V012__user_suspension.sql")));
         execute(Files.readString(Path.of("db/migrations/V013__content_moderation.sql")));
+        execute(Files.readString(Path.of("db/migrations/V014__apple_passwordless.sql")));
         assertEquals(0, count("SELECT count(*) FROM schema_migrations WHERE version LIKE 'V011%'"),
                 "The current app must validate without enabling optional Apple notifications");
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(

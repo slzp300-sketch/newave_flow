@@ -21,6 +21,8 @@ public class AppleAuthFlow {
     @Column(length = 64) private String ticketHash;
     @Column(length = 255) private String subject;
     @Column(columnDefinition = "TEXT") private String refreshTokenCiphertext;
-    public enum Purpose { LOGIN, LINK }
-    public enum Stage { STARTED, REGISTERING }
+    @Column(length = 100) private String verifiedEmail;
+    private Boolean emailPrivate;
+    public enum Purpose { LOGIN, LINK, DELETE }
+    public enum Stage { STARTED, REGISTERING, DELETE_READY }
 }

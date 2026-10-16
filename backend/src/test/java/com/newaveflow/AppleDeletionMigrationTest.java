@@ -61,9 +61,29 @@ class AppleDeletionMigrationTest {
             assertThrows(SQLException.class, () -> sql.execute("DELETE FROM users WHERE id=901"));
             assertEquals("unchanged-password", EventReadMigrationTest.scalar(connection, "SELECT password FROM users WHERE id=901"));
             assertEquals("false", EventReadMigrationTest.scalar(connection, "SELECT is_active::text FROM users WHERE id=902"));
+            // Exercise the actual legacy V009 checks, rather than only Hibernate's current schema.
+            sql.execute("ALTER TABLE users ALTER COLUMN password SET NOT NULL; INSERT INTO schema_migrations(version) VALUES('V013__content_moderation')");
+            sql.execute("INSERT INTO apple_auth_flows(id,state_hash,nonce_hash,challenge,purpose,stage,expires_at,user_id) VALUES('22222222-2222-4222-8222-222222222222',repeat('a',64),repeat('b',64),repeat('c',43),'LINK','STARTED',CURRENT_TIMESTAMP+interval '1 day',902)");
+            String passwordless = Files.readString(Path.of("db/migrations/V014__apple_passwordless.sql"));
+            var beforePasswordless = EventReadMigrationTest.fingerprints(connection);
+            try { assertThrows(SQLException.class, () -> sql.execute(passwordless.replace("INSERT INTO schema_migrations", "SELECT 1/0; INSERT INTO schema_migrations"))); }
+            finally { sql.execute("ROLLBACK"); }
+            assertEquals(beforePasswordless, EventReadMigrationTest.fingerprints(connection));
+            assertEquals("NO", EventReadMigrationTest.scalar(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_name='users' AND column_name='password'"));
+            sql.execute(passwordless);
+            var afterPasswordless = EventReadMigrationTest.fingerprints(connection);
+            beforePasswordless.remove("schema_migrations"); afterPasswordless.remove("schema_migrations");
+            beforePasswordless.remove("apple_auth_flows"); afterPasswordless.remove("apple_auth_flows");
+            assertEquals(beforePasswordless, afterPasswordless, "Password optionality must not modify existing rows");
+            assertEquals("LINK:STARTED:true:true", EventReadMigrationTest.scalar(connection, "SELECT concat(purpose,':',stage,':',(verified_email IS NULL)::text,':',(email_private IS NULL)::text) FROM apple_auth_flows"));
+            try { assertThrows(SQLException.class, () -> sql.execute(passwordless)); } finally { sql.execute("ROLLBACK"); }
+            sql.execute("INSERT INTO users(id,name,email,password,role,is_active,large_font,auth_version) VALUES(903,'Synthetic Apple only','relay@privaterelay.appleid.com',NULL,'TEACHER',false,false,0)");
+            sql.execute("UPDATE apple_auth_flows SET purpose='DELETE',stage='DELETE_READY',verified_email='relay@privaterelay.appleid.com',email_private=true WHERE user_id=902");
+            assertThrows(SQLException.class, () -> sql.execute("UPDATE apple_auth_flows SET purpose='ATTACKER'"));
+            assertThrows(SQLException.class, () -> sql.execute("UPDATE apple_auth_flows SET stage='ATTACKER'"));
         }
         try (var app = application(url, user, password, "validate")) { assertTrue(app.isActive()); }
-        System.out.println("V009/V010 PASS: rollback, additive account/record preservation, unique Apple ownership, revocation state, receipt constraints, production schema validation");
+        System.out.println("V009/V010/V014 PASS: rollback, account/record preservation, unique Apple ownership, receipt constraints, passwordless Apple accounts, deletion proof states, production schema validation");
     }
     private org.springframework.context.ConfigurableApplicationContext application(String url, String user, String password, String ddl) {
         return new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(

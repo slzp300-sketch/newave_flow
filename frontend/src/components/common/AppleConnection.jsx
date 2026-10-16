@@ -5,8 +5,10 @@ import { appleAvailability, beginApple, isAppleCancellation } from '../../auth/a
 import { nativePlatform } from '../../native/platform'
 import AppleButton from './AppleButton'
 import Card from './Card'
+import useAuthStore from '../../store/authStore'
 
 export default function AppleConnection() {
+  const passwordLoginEnabled = useAuthStore(state => state.user?.passwordLoginEnabled !== false)
   const queryClient = useQueryClient()
   const { data: available } = useQuery({ queryKey: ['apple-availability'], queryFn: appleAvailability, enabled: nativePlatform === 'ios', retry: false, staleTime: 60000 })
   const { data } = useQuery({ queryKey: ['apple-connection'], queryFn: () => appleApi.connection().then(r => r.data), enabled: nativePlatform === 'ios' && available === true, retry: false })
@@ -26,7 +28,8 @@ export default function AppleConnection() {
   }
   return <Card>
     <h2 className="brand-section-title text-sm font-semibold">Apple 계정 연결</h2>
-    {data.connected ? <p role="status" className="mt-3 text-sm text-secondary-800">Apple 계정이 연결되어 있어요. 기존 기록으로 Apple 로그인을 이용할 수 있어요.</p> : <>
+    {data.connected ? <p role="status" className="mt-3 text-sm text-secondary-800">Apple 계정이 연결되어 있어요. 기존 기록으로 Apple 로그인을 이용할 수 있어요.</p>
+      : !passwordLoginEnabled ? <p className="mt-3 text-sm leading-relaxed text-gray-500">Apple로 가입한 계정입니다. 다시 로그인할 때 같은 Apple 계정으로 인증해 주세요.</p> : <>
       <p className="mt-3 text-sm leading-relaxed text-gray-500">현재 계정에 Apple 로그인을 추가해요. 반 배정과 출석·TTS 기록이 그대로 유지됩니다.</p>
       <label htmlFor="apple-link-password" className="mt-4 block text-xs font-semibold">본인 확인 · 현재 비밀번호</label>
       <input id="apple-link-password" type="password" autoComplete="current-password" value={password} maxLength={200} onChange={e => setPassword(e.target.value)} className="input-field mt-2" />
