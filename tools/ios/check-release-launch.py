@@ -189,9 +189,10 @@ class LaunchCheck:
         name = 'iphone-launch.png' if self.family == 'iphone' else 'ipad-compatibility-launch.png'
         error = None
         try:
+            # Complete boot before GUI startup can asynchronously boot the same device.
+            self.run('boot', ['xcrun', 'simctl', 'bootstatus', simulator, '-b'], 120)
             self.run('prepare-simulator-gui', ['open', '-g', '-a', str(application), '--args',
                                              '-CurrentDeviceUDID', simulator], 15)
-            self.run('boot', ['xcrun', 'simctl', 'bootstatus', simulator, '-b'], 120)
             self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 90)
             # Installation follows the native tests; no second terminate-and-relaunch operation is needed.
             self.run('launch-release', ['xcrun', 'simctl', 'launch', simulator, 'app.newaveflow.mobile'], 360)

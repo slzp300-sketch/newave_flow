@@ -75,7 +75,7 @@ class ReleaseLaunch(unittest.TestCase):
                 self.check.check('synthetic-device', Path('App.app'), Path('checker'))
         screen.assert_not_called()
         self.assertEqual([call.args[0] for call in command.call_args_list],
-                         ['prepare-simulator-gui', 'boot', 'install-release', 'launch-release',
+                         ['boot', 'prepare-simulator-gui', 'install-release', 'launch-release',
                           'failure-diagnostic-capture', 'failure-diagnostic-simulator-status',
                           'failure-diagnostic-launch-log', 'shutdown'])
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
@@ -114,10 +114,10 @@ class ReleaseLaunch(unittest.TestCase):
 
     def test_exhausted_budget_skips_diagnostics_and_still_shuts_down(self):
         self.check.deadline = 0
-        with patch.object(self.check, 'run', side_effect=[ValueError('prepare budget exhausted'), 0]) as command:
-            with self.assertRaisesRegex(ValueError, 'prepare budget exhausted'):
+        with patch.object(self.check, 'run', side_effect=[ValueError('boot budget exhausted'), 0]) as command:
+            with self.assertRaisesRegex(ValueError, 'boot budget exhausted'):
                 self.check.check('synthetic-device', Path('App.app'), Path('checker'))
-        self.assertEqual([call.args[0] for call in command.call_args_list], ['prepare-simulator-gui', 'shutdown'])
+        self.assertEqual([call.args[0] for call in command.call_args_list], ['boot', 'shutdown'])
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
         self.assertFalse(report['loginScreenVerified'])
         self.assertEqual(len([phase for phase in report['phases'] if 'skipped' in phase]), 4)
@@ -128,15 +128,15 @@ class ReleaseLaunch(unittest.TestCase):
             self.check.check('synthetic-device', Path('App.app'), Path('checker'))
         screen.assert_called_once()
         self.assertEqual([call.args[0] for call in command.call_args_list],
-                         ['prepare-simulator-gui', 'boot', 'install-release', 'launch-release', 'shutdown'])
-        self.assertEqual(command.call_args_list[0].args,
+                         ['boot', 'prepare-simulator-gui', 'install-release', 'launch-release', 'shutdown'])
+        self.assertEqual(command.call_args_list[1].args,
                          ('prepare-simulator-gui', ['open', '-g', '-a', str(self.simulator_app),
                                                    '--args', '-CurrentDeviceUDID', 'synthetic-device'], 15))
         self.assertEqual(command.call_args_list[3].args[2], 360)
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
         self.assertTrue(report['loginScreenVerified'])
 
-    def test_gui_timeout_cannot_fall_through_to_boot_or_accept_screen(self):
+    def test_gui_timeout_cannot_fall_through_to_install_or_accept_screen(self):
         def run(label, *args, **kwargs):
             if label == 'prepare-simulator-gui':
                 raise ValueError('Simulator GUI timed out')
@@ -145,7 +145,8 @@ class ReleaseLaunch(unittest.TestCase):
                 patch.object(self.check, 'wait_for_screen') as screen:
             with self.assertRaisesRegex(ValueError, 'Simulator GUI timed out'):
                 self.check.check('synthetic-device', Path('App.app'), Path('checker'))
-        self.assertNotIn('boot', [call.args[0] for call in command.call_args_list])
+        self.assertEqual(command.call_args_list[0].args[0], 'boot')
+        self.assertNotIn('install-release', [call.args[0] for call in command.call_args_list])
         screen.assert_not_called()
         self.assertEqual(command.call_args_list[-1].args[0], 'shutdown')
 
