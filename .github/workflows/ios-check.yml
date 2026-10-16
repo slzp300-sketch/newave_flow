@@ -19,7 +19,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   ios:
-    runs-on: macos-15
+    # Keep simulator checks on the 14 GB standard Intel host; signing still uses Apple Silicon.
+    runs-on: macos-15-intel
     timeout-minutes: 30
     defaults:
       run:
