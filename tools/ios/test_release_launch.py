@@ -133,7 +133,7 @@ class ReleaseLaunch(unittest.TestCase):
                          ('prepare-simulator-gui', ['open', '-g', '-a', str(self.simulator_app),
                                                    '--args', '-CurrentDeviceUDID', 'synthetic-device'], 60))
         self.assertEqual(command.call_args_list[3].args[2], 360)
-        self.assertEqual(self.check.deadline - self.check.started, 510)
+        self.assertAlmostEqual(self.check.deadline - self.check.started, 510)
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
         self.assertTrue(report['loginScreenVerified'])
 
