@@ -54,6 +54,7 @@ jobs:
           npm run ios:sync
           npm run ios:verify
       - name: Compile the iOS Release app with simulator ad-hoc signing
+        id: release-build
         working-directory: frontend
         run: |
           set -o pipefail
@@ -79,12 +80,15 @@ jobs:
             -resultBundlePath .verification/ios/native-tests.xcresult \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES test 2>&1 | tee .verification/ios/native-tests.log
       - name: Prepare the Release login screen verifier
+        id: screen-verifier
+        if: ${{ !cancelled() && steps.release-build.outcome == 'success' }}
         timeout-minutes: 2
         working-directory: frontend
         run: |
           xcrun swiftc ../tools/ios/check-launch-screen.swift -o .verification/ios/check-launch-screen
           .verification/ios/check-launch-screen --self-test
       - name: Check the Release login screen on iPhone
+        if: ${{ !cancelled() && steps.screen-verifier.outcome == 'success' }}
         timeout-minutes: 9
         working-directory: frontend
         run: |
@@ -92,6 +96,7 @@ jobs:
             --app .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
             --checker .verification/ios/check-launch-screen --output .verification/ios
       - name: Check the Release login screen in iPad compatibility mode
+        if: ${{ !cancelled() && steps.screen-verifier.outcome == 'success' }}
         timeout-minutes: 9
         working-directory: frontend
         run: |

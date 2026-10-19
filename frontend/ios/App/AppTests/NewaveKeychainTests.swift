@@ -135,7 +135,14 @@ final class NewaveKeychainTests: XCTestCase {
             const loginReady = () => document.querySelector('#root form #login-password')
                 && document.querySelector('#root form button[type="submit"]')?.textContent.includes('로그인');
             while (!loginReady() && Date.now() < readyBy) await new Promise(resolve => setTimeout(resolve, 100));
-            if (!loginReady()) throw new Error('The packaged React login screen did not render after native storage hydration');
+            if (!loginReady()) throw new Error('The packaged React login screen did not render after native storage hydration: ' + JSON.stringify({
+                readyState: document.readyState,
+                rootChildren: document.querySelector('#root')?.childElementCount,
+                passwordField: !!document.querySelector('#login-password'),
+                storageErrorScreen: document.body.textContent.includes('로그인 정보를 불러오지 못했습니다'),
+                routerErrorScreen: document.body.textContent.includes('Unexpected Application Error'),
+                heading: document.querySelector('h1,h2')?.textContent?.slice(0, 160)
+            }));
             const storage = (method, options) => Capacitor.nativePromise('NewaveSecureStorage', method, options);
             const apple = (method, options = {}) => Capacitor.nativePromise('NewaveAppleSignIn', method, options);
             const availability = await apple('getAvailability');
