@@ -3,20 +3,22 @@ import assert from 'node:assert/strict'
 import { navigationSection, parentPath, filterMenuGroups } from '../src/utils/navigation.js'
 
 test('nested pages and aliases highlight exactly the corresponding navigation section', () => {
-  for (const path of ['/attendance', '/tts', '/meeting/sat', '/event-attendance/12', '/minutes']) assert.equal(navigationSection(path), '/checklist')
+  for (const path of ['/attendance', '/tts', '/meeting/sat', '/event-attendance/12', '/minutes', '/menu', '/checklist']) assert.equal(navigationSection(path), '/')
   assert.equal(navigationSection('/events'), '/calendar')
-  assert.equal(navigationSection('/admin/tts'), '/menu')
-  assert.equal(navigationSection('/students/12'), '/menu')
+  assert.equal(navigationSection('/admin/tts'), '/')
+  assert.equal(navigationSection('/students/12'), '/')
   assert.equal(navigationSection('/profile'), '/profile')
   assert.equal(navigationSection('/'), '/')
-  assert.equal(navigationSection('/tts-other'), '/menu')
+  assert.equal(navigationSection('/tts-other'), '/')
+  for (const path of ['/profile/connections', '/safety/report', '/community-guidelines']) assert.equal(navigationSection(path), '/profile')
 })
 
 test('direct detail entry has a useful parent fallback', () => {
   assert.equal(parentPath('/students/12'), '/roster')
   assert.equal(parentPath('/event-attendance/12'), '/event-attendance')
   assert.equal(parentPath('/admin/tts'), '/admin')
-  assert.equal(parentPath('/tts'), '/checklist')
+  assert.equal(parentPath('/tts'), '/')
+  assert.equal(parentPath('/safety/report'), '/profile')
   assert.equal(parentPath('/profile'), '/')
   assert.equal(parentPath('/privacy'), '/login')
 })

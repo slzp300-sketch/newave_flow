@@ -5,12 +5,10 @@ import { LayoutGroup, motion } from 'framer-motion'
 import { useMotionPreference } from '../common/Motion'
 import FeatureIcon from '../common/FeatureIcon'
 
-// 모든 권한 공통 하단 탭 (관리 화면은 '전체' 탭 안에 카드로 들어 있음)
+// All roles share three tabs; feature and management menus live on Home.
 const navItems = [
   { to: '/',         label: '홈' },
-  { to: '/checklist', label: '체크' },
   { to: '/calendar', label: '일정' },
-  { to: '/menu',     label: '전체' },
   { to: '/profile',  label: '내 정보' },
 ]
 

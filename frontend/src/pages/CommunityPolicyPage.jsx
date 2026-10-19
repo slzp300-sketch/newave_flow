@@ -65,7 +65,7 @@ export default function CommunityPolicyPage({ required = false }) {
       <Link className="inline-flex min-h-11 items-center" to="/privacy">개인정보처리방침</Link>
       <Link className="inline-flex min-h-11 items-center" to="/support">지원 문의</Link>
       {user && required && <button disabled={busy} onClick={logout} className="min-h-11 text-gray-600">로그아웃</button>}
-      {!required && <Link className="inline-flex min-h-11 items-center" to={user ? '/menu' : '/login'}>돌아가기</Link>}
+      {!required && <Link className="inline-flex min-h-11 items-center" to={user ? '/profile' : '/login'}>돌아가기</Link>}
     </div>
   </div>
 }

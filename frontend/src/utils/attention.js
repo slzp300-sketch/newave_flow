@@ -1,4 +1,47 @@
+import { addDays, format, startOfWeek } from 'date-fns'
+
 export const TTS_DAYS = ['월', '화', '수', '목', '금', '토']
+
+// Home tracks this week's actionable gaps, not future days or linked attendance.
+// Weekly manual questions have no occurrence date; their server-provided Saturday
+// attribution is the conservative due date, rather than guessing from the title.
+export function weeklyTtsChecks(questions, week, today) {
+  if (!week || week.importedPeriod || week.closedQuarter) return []
+  const sunday = startOfWeek(new Date(today + 'T12:00:00'), { weekStartsOn: 0 })
+  const start = format(sunday, 'yyyy-MM-dd')
+  if (week.weekStart && week.weekStart !== start) return []
+  const quarterStart = `${today.slice(0, 4)}-${String(Math.floor((Number(today.slice(5, 7)) - 1) / 3) * 3 + 1).padStart(2, '0')}-01`
+  const eligibleDays = TTS_DAYS.filter((day, i) => {
+    const date = format(addDays(sunday, i + 1), 'yyyy-MM-dd')
+    return date <= today && date >= quarterStart && week.editableDays?.includes(day)
+  })
+  return questions.filter(q => q.active !== false && (!q.linkType || q.linkType === 'NONE')).flatMap(q => {
+    let value
+    try { value = JSON.parse(week.answers?.find(a => a.questionId === q.id)?.answerData || 'null') } catch { value = null }
+    if (q.type === 'DAYS') return eligibleDays.map(day => ({ q, day, checked: value?.[day] === true }))
+    if (q.type === 'ATTEND' && week.attendanceEditable === true && week.attendanceDate
+      && week.attendanceDate >= quarterStart && week.attendanceDate <= today) {
+      return [{ q, day: null, checked: value === true }]
+    }
+    return []
+  })
+}
+
+export function minutesTaskState(meeting, weekly) {
+  if (!knownRead(meeting)) return 'unknown'
+  if (meeting.data?.status !== 'ABSENT') return 'none'
+  if (!knownRead(weekly)) return 'unknown'
+  if (!weekly.data?.currentWeekMinutesExists) return 'none'
+  return weekly.data.currentWeekMinutesConfirmed ? 'done' : 'pending'
+}
+
+export function hasRotationThisWeek(schedules, today) {
+  const start = startOfWeek(new Date(today + 'T12:00:00'), { weekStartsOn: 1 })
+  const from = format(start, 'yyyy-MM-dd')
+  const to = format(addDays(start, 6), 'yyyy-MM-dd')
+  return schedules.some(s => ['SCHEDULED', 'ACTIVE'].includes(s.status)
+    && s.scheduledDate >= from && s.scheduledDate <= to)
+}
 
 // Home reminders follow today's editable fields, never future days or linked records.
 export function todayTtsChecks(questions, week, today) {

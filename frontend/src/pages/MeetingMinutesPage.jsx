@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FileText, Play, CheckCircle2, Calendar, 
@@ -17,6 +17,7 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
 export default function MeetingMinutesPage() {
+  const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = useState(null)
   const { user, apiEnvironment } = useAuthStore()
   const query = useQuery({
@@ -28,7 +29,10 @@ export default function MeetingMinutesPage() {
   const selected = minutes.find(minute => minute.id === selectedId) ?? null
   const confirm = useMutation({
     mutationFn: id => client.post(`/minutes/${id}/confirm`),
-    onSuccess: () => query.refetch(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weekly-status'] })
+      return query.refetch()
+    },
     onError: () => { setSelectedId(null); query.refetch() },
   })
 
