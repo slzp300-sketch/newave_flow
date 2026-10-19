@@ -19,8 +19,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   ios:
-    # Keep simulator checks on the 14 GB standard Intel host; signing still uses Apple Silicon.
-    runs-on: macos-15-intel
+    # Use the standard Apple Silicon host: Intel WebKit GPU repeatedly stalled before JS tests.
+    # This job uses simulator ad-hoc signing only; distribution signing/upload is a separate workflow.
+    runs-on: macos-15
     timeout-minutes: 30
     defaults:
       run:
