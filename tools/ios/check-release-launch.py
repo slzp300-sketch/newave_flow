@@ -78,18 +78,21 @@ class LaunchCheck:
         return result.returncode
 
     def wait_for_screen(self, simulator, screenshot, checker):
-        deadline = min(self.deadline, time.monotonic() + 90)
+        # Cold simulator capture and Vision initialization exceeded 30s on the hosted
+        # Apple Silicon runner even though the saved screen was fully rendered.
+        # Share one bounded allowance, still within the original 510s device budget.
+        deadline = min(self.deadline, time.monotonic() + 150)
         while time.monotonic() < deadline:
             # Never accept an image from an earlier attempt when capture fails.
             screenshot.unlink(missing_ok=True)
             self.run('capture', ['xcrun', 'simctl', 'io', simulator, 'screenshot', str(screenshot)],
-                     30, deadline=deadline)
+                     60, deadline=deadline)
             code = self.run('login-screen-ocr', [str(checker), str(screenshot)],
-                            30, allowed=(0, 2), deadline=deadline)
+                            60, allowed=(0, 2), deadline=deadline)
             if code == 0:
                 return
             time.sleep(min(5, max(0, deadline - time.monotonic())))
-        raise ValueError(f'{self.family}: Release login screen was not visible within 90 seconds')
+        raise ValueError(f'{self.family}: Release login screen was not verified within the remaining screen/device budget')
 
     def capture_failure_diagnostics(self, simulator):
         # Evidence only: neither a diagnostic image nor a status result can pass this check.

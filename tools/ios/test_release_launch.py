@@ -82,6 +82,23 @@ class ReleaseLaunch(unittest.TestCase):
         self.assertFalse(report['loginScreenVerified'])
         self.assertEqual(report['error'], 'launch failed')
 
+    def test_slow_capture_leaves_only_remaining_device_budget_for_ocr(self):
+        now = [100.0]
+        self.check.deadline = 170.0
+        screenshot = self.output / 'current.png'
+        def execute(args, **kwargs):
+            if args[0] == 'xcrun':
+                self.assertEqual(kwargs['timeout'], 60)
+                now[0] += 55
+                screenshot.write_bytes(b'synthetic current capture')
+            else:
+                self.assertEqual(kwargs['timeout'], 15)
+            return Mock(returncode=0, stdout='synthetic check')
+        with patch('time.monotonic', side_effect=lambda: now[0]), patch('subprocess.run', side_effect=execute):
+            self.check.wait_for_screen('synthetic-device', screenshot, Path('synthetic-checker'))
+        self.assertEqual(self.check.deadline, 170)
+        self.assertEqual([r['timeoutSeconds'] for r in self.check.records], [60, 15])
+
     def test_diagnostic_failures_preserve_first_error_and_shutdown(self):
         stale = self.output / 'iphone-failure-diagnostic.png'
         stale.write_bytes(b'stale diagnostic')
