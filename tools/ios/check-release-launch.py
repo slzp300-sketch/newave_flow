@@ -201,7 +201,9 @@ class LaunchCheck:
             # run() still clamps this allowance to the remaining device budget.
             self.run('prepare-simulator-gui', ['open', '-g', '-a', str(application), '--args',
                                              '-CurrentDeviceUDID', simulator], 60)
-            self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 90)
+            # Cold installcoordinationd can exceed 90s on a 7 GB hosted Mac.
+            # This allowance is clamped to the same overall device deadline.
+            self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 180)
             # Installation follows the native tests; no second terminate-and-relaunch operation is needed.
             self.run('launch-release', ['xcrun', 'simctl', 'launch', simulator, 'app.newaveflow.mobile'], 360)
             self.wait_for_screen(simulator, self.output / name, checker)
