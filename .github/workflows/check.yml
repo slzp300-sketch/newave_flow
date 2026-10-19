@@ -69,6 +69,7 @@ jobs:
     name: postgres-migration (PostgreSQL ${{ matrix.postgresql }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         postgresql: ['17', '18']
     defaults:
@@ -194,3 +195,12 @@ jobs:
           RUN_POST_RELEASE_MIGRATION: 'true'
           POST_RELEASE_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_post_release_ci
         run: bash gradlew test --tests com.newaveflow.PostReleaseMigrationTest --no-daemon
+      - name: Save synthetic migration test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-${{ matrix.postgresql }}-test-evidence
+          path: |
+            backend/build/test-results/test/
+            backend/build/reports/tests/test/
+          retention-days: 5

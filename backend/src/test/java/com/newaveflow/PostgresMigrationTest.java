@@ -11,11 +11,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.test.util.ReflectionTestUtils;
 import java.nio.file.*;
 import java.sql.*;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /** Opt-in destructive rehearsal, restricted to a named local disposable database. */
 @EnabledIfEnvironmentVariable(named="RUN_POSTGRES_MIGRATION", matches="true")
@@ -115,6 +119,19 @@ class PostgresMigrationTest {
         execute(Files.readString(Path.of("db/migrations/V012__user_suspension.sql")));
         execute(Files.readString(Path.of("db/migrations/V013__content_moderation.sql")));
         execute(Files.readString(Path.of("db/migrations/V014__apple_passwordless.sql")));
+        // Current entities require the additive push and calendar-quarter tables, even with delivery disabled.
+        for (String name : List.of("V015__notifications_push", "V016__tts_calendar_quarters")) {
+            String sql=Files.readString(Path.of("db/migrations/"+name+".sql"));
+            Map<String,String> before;
+            try(var c=connect()) { before=EventReadMigrationTest.fingerprints(c); }
+            assertThrows(SQLException.class,()->execute(sql.replace("INSERT INTO schema_migrations(version)",
+                    "SELECT 1/0;\nINSERT INTO schema_migrations(version)")));
+            try(var c=connect()) { assertEquals(before,EventReadMigrationTest.fingerprints(c),name+" must roll back all changes"); }
+            execute(sql);
+            assertThrows(SQLException.class,()->execute(sql));
+            assertEquals(1,count("SELECT count(*) FROM schema_migrations WHERE version='"+name+"'"));
+            for(var entry:unchanged.entrySet()) assertEquals(entry.getValue(),checksum(entry.getKey()),name+": "+entry.getKey()+" must remain unchanged");
+        }
         assertEquals(0, count("SELECT count(*) FROM schema_migrations WHERE version LIKE 'V011%'"),
                 "The current app must validate without enabling optional Apple notifications");
         try(var app=new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run(
@@ -157,20 +174,41 @@ class PostgresMigrationTest {
         assertTrue(readService.getReads(2L).isEmpty());
         var tts=app.getBean(TtsService.class); var events=app.getBean(EventService.class);
         LocalDate day=LocalDate.of(2026,1,4);
-        assertEquals(15,tts.getWeek(teacher,day).getScore());
-        var questions=app.getBean(TtsQuestionRepository.class).findAll(); questions.forEach(q->q.setPoints(50));
-        tts.updateQuestions(questions);
-        assertEquals(15,tts.getWeek(teacher,day).getScore());
-        // Earlier quarters remain readable, while new TTS writes start in 2026 Q4.
-        String originalAnswers=checksum("tts_answers");
-        assertThrows(AppException.class,()->tts.saveAnswer(teacher,new TtsAnswerRequest(day,1L,"{\"월\":true,\"화\":true}")));
-        assertEquals(originalAnswers,checksum("tts_answers"));
-        assertEquals(15,tts.getWeek(teacher,day).getScore());
-        LocalDate managedWeek=LocalDate.of(2026,9,27);
-        tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"월\":true,\"화\":true}"));
-        assertEquals(10,tts.getWeek(teacher,managedWeek).getScore());
-        tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"월\":true,\"화\":true,\"수\":true}"));
-        assertEquals(15,tts.getWeek(teacher,managedWeek).getScore());
+        Clock originalClock=(Clock)ReflectionTestUtils.getField(tts,"clock");
+        Clock octoberClock=Clock.fixed(Instant.parse("2026-10-02T03:00:00Z"),TtsPeriod.ZONE);
+        ReflectionTestUtils.setField(tts,"clock",octoberClock);
+        // The policy's next-week effective date must use the same fixed Korean date as the write guard.
+        try(var periodClock=mockStatic(TtsPeriod.class,CALLS_REAL_METHODS)) {
+            periodClock.when(TtsPeriod::today).thenReturn(LocalDate.of(2026,10,2));
+            assertEquals(15,tts.getWeek(teacher,day).getScore());
+            var questions=app.getBean(TtsQuestionRepository.class).findAll(); questions.forEach(q->q.setPoints(50));
+            tts.updateQuestions(questions);
+            assertEquals(15,tts.getWeek(teacher,day).getScore());
+            // Earlier quarters remain readable, while new TTS writes start in 2026 Q4.
+            String originalAnswers=checksum("tts_answers");
+            assertThrows(AppException.class,()->tts.saveAnswer(teacher,new TtsAnswerRequest(day,1L,"{\"월\":true,\"화\":true}")));
+            assertEquals(originalAnswers,checksum("tts_answers"));
+            assertEquals(15,tts.getWeek(teacher,day).getScore());
+
+            // This boundary week keeps its original key, but September days are already closed.
+            LocalDate managedWeek=LocalDate.of(2026,9,27);
+            assertEquals(List.of("목","금"),tts.getWeek(teacher,managedWeek).getEditableDays());
+            assertThrows(AppException.class,()->tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"월\":true,\"화\":true}")));
+            assertEquals(originalAnswers,checksum("tts_answers"));
+            tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"목\":true}"));
+            assertEquals(5,tts.getWeek(teacher,managedWeek).getScore());
+            tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"목\":true,\"금\":true}"));
+            assertEquals(10,tts.getWeek(teacher,managedWeek).getScore());
+            String currentAnswers=checksum("tts_answers");
+            assertThrows(AppException.class,()->tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{\"목\":true,\"금\":true,\"토\":true}")));
+            assertEquals(currentAnswers,checksum("tts_answers"),"Future-day rejection must not alter saved checks");
+            ReflectionTestUtils.setField(tts,"clock",Clock.fixed(Instant.parse("2026-12-31T15:00:00Z"),TtsPeriod.ZONE));
+            assertThrows(AppException.class,()->tts.saveAnswer(teacher,new TtsAnswerRequest(managedWeek,1L,"{}")));
+            assertEquals(currentAnswers,checksum("tts_answers"),"The next quarter must reject changes without modifying records");
+            assertTrue(tts.getWeek(teacher,managedWeek).isClosedQuarter());
+            assertEquals(10,tts.getWeek(teacher,managedWeek).getScore());
+            assertEquals(15,tts.getWeek(teacher,day).getScore());
+        } finally { ReflectionTestUtils.setField(tts,"clock",originalClock); }
         String snapshot=checksum("event_participants");
         execute("UPDATE students SET class_group_id=2,is_active=false WHERE id=1");
         assertEquals(snapshot,checksum("event_participants"));
