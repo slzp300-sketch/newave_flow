@@ -65,9 +65,9 @@ export default function TTSPage() {
       <Header title="TTS" showBack />
       <div className="px-4 pt-3">
         <SegmentedControl label="TTS 보기" value={tab} onChange={setTab}
-          options={[{ value: 'check', label: '내 체크' }, { value: 'stats', label: '통계 · 상세' }]} />
+          options={[{ value: 'check', label: '내 체크' }, { value: 'stats', label: '분기 순위' }]} />
       </div>
-      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats initialView={params.get('view') === 'mine' ? 'mine' : 'weekly'} />}</div>
+      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats />}</div>
     </div>
   )
 }
@@ -255,7 +255,7 @@ export function CheckTab({ embedded = false }) {
                 className={`brand-action flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border px-2 text-xs ${showEditor ? 'border-secondary-300 bg-secondary-50 text-secondary-800' : 'border-primary-200'}`}>
                 {showEditor ? '이번 주 기록 닫기' : '이번 주 기록 수정'}<ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${showEditor ? 'rotate-180' : ''}`} />
               </button>
-              <button type="button" onClick={() => navigate('/tts?tab=stats&view=mine')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">내 상세 통계</button>
+              <button type="button" onClick={() => navigate('/tts?tab=stats')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">분기 순위</button>
             </div>
           </section> : <ScoreCard
             compact={embedded}
