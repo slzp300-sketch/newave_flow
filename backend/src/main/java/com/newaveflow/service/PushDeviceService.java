@@ -16,6 +16,7 @@ public class PushDeviceService {
     private final PushDeliveryRepository deliveries;
     private final NotificationPreferenceRepository preferences;
     private final PushTransport transport;
+    private final jakarta.persistence.EntityManager entityManager;
     @org.springframework.beans.factory.annotation.Value("${PUSH_ENABLED:false}") private boolean pushAvailable;
     @org.springframework.beans.factory.annotation.Value("${NOTIFICATIONS_ENABLED:false}") private boolean notificationsEnabled;
     public record Registration(String platform, String token, String appVersion) {}
@@ -35,7 +36,7 @@ public class PushDeviceService {
         preferences.save(new NotificationPreference(userId,enabled));
         return preference(userId);
     }
-    public void register(Long userId, String id, Registration request) {
+    public void register(Long userId, long expectedAuthVersion, String id, Registration request) {
         validateId(id);
         if (request == null || !Set.of("IOS","ANDROID").contains(Objects.toString(request.platform(),""))
                 || request.token()==null || request.token().length()<16 || request.token().length()>4096
@@ -44,7 +45,12 @@ public class PushDeviceService {
                 || request.appVersion()!=null && request.appVersion().length()>50) {
             throw AppException.badRequest("기기 등록 정보를 확인해주세요.");
         }
-        users.lockById(userId).orElseThrow(() -> AppException.unauthorized("계정을 확인해주세요."));
+        var user=users.lockById(userId).orElseThrow(() -> AppException.unauthorized("계정을 확인해주세요."));
+        // Authentication may have happened before a concurrent logout/status change.
+        // Refresh under the same lock, including when the request already cached this user.
+        entityManager.refresh(user,jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        if(!user.isActive() || user.isSuspended() || user.getAuthVersion()!=expectedAuthVersion)
+            throw AppException.unauthorized("로그인 상태가 변경되었습니다. 다시 로그인해주세요.");
         String token = "IOS".equals(request.platform()) ? request.token().toLowerCase(Locale.ROOT) : request.token();
         String hash = AppleClient.sha256(request.platform()+":"+token);
         devices.findByTokenHash(hash).filter(d -> !d.getInstallationId().equals(id)).ifPresent(d -> {

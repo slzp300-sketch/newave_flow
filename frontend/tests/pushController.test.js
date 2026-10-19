@@ -117,6 +117,116 @@ test('token rotation is registered only for the enabled current account', async 
   f.controller.stop()
 })
 
+test('late account A token rotation finishes before detach and account B registration', async () => {
+  const f = fixture({ prefs: { pushEnabled: true } }), late = deferred()
+  let owner = null
+  f.api.registerDevice = async (session, id, data) => {
+    f.calls.push(['device-start', session.scope, data.token])
+    if (data.token === 'late-A-token') await late.promise
+    owner = session.scope
+    f.calls.push(['device-finish', session.scope, data.token])
+  }
+  f.api.deleteDevice = async session => {
+    f.calls.push(['delete-owner', session.scope])
+    if (owner === session.scope) owner = null
+  }
+  f.setSession({ scope: 'production:1:session1' })
+  await f.controller.start()
+  f.calls.length = 0
+  f.handlers.get('registration')({ value: 'late-A-token' })
+  await tick()
+  const detach = f.controller.detach()
+  f.setSession({ scope: 'production:2:session2' })
+  const refreshB = f.controller.refresh()
+  await tick()
+  assert.equal(f.calls.some(c => c[0] === 'delete-owner'), false)
+  assert.equal(f.calls.some(c => c[0] === 'device-start' && c[1] === 'production:2:session2'), false)
+  late.resolve()
+  await detach; await refreshB
+  assert.equal(owner, 'production:2:session2')
+  assert.ok(f.calls.findIndex(c => c[0] === 'delete-owner' && c[1] === 'production:1:session1')
+    < f.calls.findIndex(c => c[0] === 'device-start' && c[1] === 'production:2:session2'))
+  f.controller.stop()
+})
+
+test('disable drains a late rotation before deleting and ignores rotations while disabling', async () => {
+  const f = fixture({ prefs: { pushEnabled: true } }), late = deferred()
+  let registered = false
+  f.api.registerDevice = async (session, id, data) => {
+    if (data.token === 'late-token') await late.promise
+    registered = true
+    f.calls.push(['device-saved', data.token])
+  }
+  f.api.deleteDevice = async () => { registered = false; f.calls.push(['device-deleted']) }
+  await f.controller.start()
+  f.calls.length = 0
+  f.handlers.get('registration')({ value: 'late-token' })
+  await tick()
+  const disable = f.controller.disable()
+  f.handlers.get('registration')({ value: 'during-disable-token' })
+  await tick()
+  assert.equal(f.calls.some(c => c[0] === 'device-deleted'), false)
+  late.resolve()
+  await disable
+  assert.equal(registered, false)
+  assert.equal(f.prefs.pushEnabled, false)
+  assert.equal(f.calls.some(c => c[1] === 'during-disable-token'), false)
+  assert.ok(f.calls.findIndex(c => c[0] === 'device-saved') < f.calls.findIndex(c => c[0] === 'device-deleted'))
+  f.controller.stop()
+})
+
+test('uncertain registration stays closed until a deletion successfully reconciles it', async () => {
+  const f = fixture({ prefs: { pushEnabled: true } })
+  await f.controller.start()
+  f.api.registerDevice = async () => { throw new Error('synthetic uncertain transport result') }
+  f.handlers.get('registration')({ value: 'uncertain-token' })
+  await tick()
+  const registrations = []
+  f.api.registerDevice = async (session, id, data) => { registrations.push(data.token) }
+  f.api.deleteDevice = async () => { throw new Error('synthetic reconciliation failure') }
+  await f.controller.refresh()
+  assert.deepEqual(registrations, [])
+  f.api.deleteDevice = async () => { f.calls.push(['reconciled']) }
+  await f.controller.refresh()
+  assert.deepEqual(registrations, ['synthetic-device-token'])
+  assert.equal(f.controller.getSnapshot().error, '')
+  f.controller.stop()
+})
+
+test('bounded detach leaves a pending transport barrier in place for the next account', async () => {
+  const f = fixture({ prefs: { pushEnabled: true }, controller: { deviceWriteTimeout: 20 } }), late = deferred()
+  let owner = null
+  f.api.registerDevice = async (session, id, data) => {
+    if (data.token === 'blocked-token') await late.promise
+    owner = session.scope
+  }
+  f.api.deleteDevice = async session => { if (owner === session.scope) owner = null }
+  f.setSession({ scope: 'production:1:session1' })
+  await f.controller.start()
+  f.handlers.get('registration')({ value: 'blocked-token' })
+  await tick()
+  await f.controller.detach()
+  assert.equal(f.controller.getSnapshot().busy, false)
+  f.setSession({ scope: 'production:2:session2' })
+  const refreshB = f.controller.refresh()
+  await tick()
+  assert.equal(owner, 'production:1:session1')
+  late.resolve()
+  await refreshB
+  assert.equal(owner, 'production:2:session2')
+  f.controller.stop()
+})
+
+test('an unresponsive OS cleanup cannot keep logout busy indefinitely', async () => {
+  const f = fixture({ controller: { nativeCleanupTimeout: 5 } })
+  await f.controller.enable()
+  f.plugin.unregister = () => new Promise(() => {})
+  await f.controller.detach()
+  assert.equal(f.controller.getSnapshot().busy, false)
+  assert.equal(f.controller.getSnapshot().enabled, false)
+  f.controller.stop()
+})
+
 test('push tap verifies ownership and uses stored target instead of payload URL', async () => {
   const f = fixture({ rows: [{ id: 3, read: false, targetPath: '/tts' }] })
   await f.controller.start()

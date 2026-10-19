@@ -21,7 +21,7 @@ public class NotificationController {
     @PutMapping("/devices/{installationId}")
     public ResponseEntity<Void> registerDevice(@PathVariable String installationId,
             @RequestBody com.newaveflow.service.PushDeviceService.Registration body, @AuthenticationPrincipal User user) {
-        devices.register(user.getId(), installationId, body); return ResponseEntity.noContent().build();
+        devices.register(user.getId(), user.getAuthVersion(), installationId, body); return ResponseEntity.noContent().build();
     }
     @DeleteMapping("/devices/{installationId}")
     public ResponseEntity<Void> unregisterDevice(@PathVariable String installationId, @AuthenticationPrincipal User user) {

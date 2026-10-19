@@ -13,14 +13,47 @@ export function safeNotificationPath(value) {
 }
 
 export function createPushController({ plugin, api, getSession, installationId, platform,
-  appVersion = '', navigate = () => {}, refreshNotifications = () => {}, registrationTimeout = 15000 }) {
+  appVersion = '', navigate = () => {}, refreshNotifications = () => {}, registrationTimeout = 15000,
+  deviceWriteTimeout = 60000, nativeCleanupTimeout = 5000 }) {
   let state = { available: false, enabled: false, permission: 'prompt', busy: false, error: '' }
   let generation = 0, listenerGeneration = 0, sessionScope = null, pendingRegistration = null, pendingNotificationId = null
   let handles = [], starting = null, refreshPromise = null, nativeCleanup = Promise.resolve()
+  let deviceWriteTail = Promise.resolve(), deviceWriteUncertain = false
   const subscribers = new Set()
   const update = change => { state = { ...state, ...change }; subscribers.forEach(fn => fn()) }
   const current = (session, epoch) => !!session && getSession()?.scope === session.scope && generation === epoch
   const assertCurrent = (session, epoch) => { if (!current(session, epoch)) throw new Error('로그인 상태가 변경되었습니다.') }
+  const bounded = (task, limit, message, onTimeout = () => {}) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { onTimeout(); reject(new Error(message)) }, limit)
+    Promise.resolve(task).then(value => { clearTimeout(timer); resolve(value) }, error => { clearTimeout(timer); reject(error) })
+  })
+  const enqueueDeviceWrite = operation => {
+    const task = deviceWriteTail.then(operation)
+    // A caller's timeout must not release this barrier while the transport is still pending.
+    deviceWriteTail = task.catch(() => {})
+    return task
+  }
+  const removeDevice = session => bounded(enqueueDeviceWrite(async () => {
+    try {
+      await api.deleteDevice(session, installationId())
+      deviceWriteUncertain = false
+    } catch (error) { deviceWriteUncertain = true; throw error }
+  }), deviceWriteTimeout, '알림 해제를 확인하지 못했습니다. 다시 시도해 주세요.')
+  const saveDevice = (session, epoch, token) => {
+    let expired = false, started = false
+    const task = enqueueDeviceWrite(async () => {
+      if (expired) throw new Error('알림 연결 시간이 초과되었습니다. 다시 시도해 주세요.')
+      assertCurrent(session, epoch)
+      if (deviceWriteUncertain) throw new Error('이전 알림 연결 상태를 확인해야 합니다. 다시 확인해 주세요.')
+      started = true
+      try { await api.registerDevice(session, installationId(), { platform, token, appVersion }) }
+      catch (error) { deviceWriteUncertain = true; throw error }
+    })
+    return bounded(task, deviceWriteTimeout, '알림 연결 시간이 초과되었습니다. 다시 시도해 주세요.', () => {
+      expired = true
+      if (started) deviceWriteUncertain = true
+    })
+  }
   const cancelRegistration = () => {
     pendingRegistration?.reject(new Error('알림 등록이 취소되었습니다.'))
     pendingRegistration = null
@@ -32,6 +65,7 @@ export function createPushController({ plugin, api, getSession, installationId, 
     })
     return nativeCleanup
   }
+  const waitForNativeCleanup = task => bounded(task, nativeCleanupTimeout, '휴대폰 알림 해제를 확인하지 못했습니다.')
   const openNotification = async id => {
     const session = getSession(), epoch = generation
     if (!session) { pendingNotificationId = id; return }
@@ -51,8 +85,8 @@ export function createPushController({ plugin, api, getSession, installationId, 
     if (typeof value !== 'string' || !value) return
     if (pendingRegistration) { pendingRegistration.resolve(value); return }
     const session = getSession(), epoch = generation
-    if (!session || !state.available || !state.enabled) return
-    void api.registerDevice(session, installationId(), { platform, token: value, appVersion })
+    if (!session || !state.available || !state.enabled || state.busy) return
+    void saveDevice(session, epoch, value)
       .catch(() => { if (current(session, epoch)) update({ error: '알림 연결을 갱신하지 못했습니다. 다시 시도해 주세요.' }) })
   }
   const ensureListeners = () => {
@@ -83,8 +117,10 @@ export function createPushController({ plugin, api, getSession, installationId, 
     return starting
   }
   const register = async (session, epoch) => {
-    await nativeCleanup
+    await waitForNativeCleanup(nativeCleanup)
     await ensureListeners()
+    assertCurrent(session, epoch)
+    if (deviceWriteUncertain) await removeDevice(session)
     assertCurrent(session, epoch)
     if (platform === 'ANDROID') await plugin.createChannel({ id: 'newave-reminders', name: '뉴웨이브 알림', importance: 3, visibility: 0 })
     assertCurrent(session, epoch)
@@ -102,7 +138,7 @@ export function createPushController({ plugin, api, getSession, installationId, 
       Promise.resolve().then(() => plugin.register()).catch(request.reject)
     })
     assertCurrent(session, epoch)
-    await api.registerDevice(session, installationId(), { platform, token, appVersion })
+    await saveDevice(session, epoch, token)
     assertCurrent(session, epoch)
   }
   const refresh = () => {
@@ -118,8 +154,8 @@ export function createPushController({ plugin, api, getSession, installationId, 
         update({ available: prefs.available === true, enabled: prefs.pushEnabled === true, permission, error: '' })
         if (prefs.available && prefs.pushEnabled && permission === 'granted') await register(session, epoch)
         else if (!prefs.available || !prefs.pushEnabled || permission === 'denied') {
-          await api.deleteDevice(session, installationId()).catch(() => {})
-          if (current(session, epoch)) await clearNative()
+          await removeDevice(session).catch(() => {})
+          if (current(session, epoch)) await waitForNativeCleanup(clearNative())
         }
         if (current(session, epoch) && pendingNotificationId) {
           const id = pendingNotificationId; pendingNotificationId = null; void openNotification(id)
@@ -166,8 +202,8 @@ export function createPushController({ plugin, api, getSession, installationId, 
         update({ enabled: true, available: true })
       } catch (error) {
         if (current(session, epoch)) {
-          await api.deleteDevice(session, installationId()).catch(() => {})
-          if (current(session, epoch)) await clearNative()
+          await removeDevice(session).catch(() => {})
+          if (current(session, epoch)) await waitForNativeCleanup(clearNative()).catch(() => {})
           if (current(session, epoch)) update({ enabled: false, error: error.message || '알림을 연결하지 못했습니다.' })
         }
       } finally { if (current(session, epoch)) update({ busy: false }) }
@@ -181,21 +217,24 @@ export function createPushController({ plugin, api, getSession, installationId, 
         await api.setPreferences(session, { pushEnabled: false })
         assertCurrent(session, epoch)
         update({ enabled: false })
-        await api.deleteDevice(session, installationId())
+        await removeDevice(session)
         assertCurrent(session, epoch)
         update({ enabled: false })
       } catch {
         if (current(session, epoch)) update({ error: '알림 설정을 저장하지 못했습니다. 다시 시도해 주세요.' })
       } finally {
-        if (current(session, epoch)) { await clearNative(); if (current(session, epoch)) update({ busy: false }) }
+        if (current(session, epoch)) { await waitForNativeCleanup(clearNative()).catch(() => {}); if (current(session, epoch)) update({ busy: false }) }
       }
     },
     detach: async () => {
       const session = getSession(), epoch = ++generation
       cancelRegistration()
-      try { if (session) await api.deleteDevice(session, installationId()) } catch { /* Logout must work offline too. */ }
+      update({ enabled: false, busy: true })
+      // Logout waits at most 60s for ordered server cleanup and 5s for the OS.
+      // Timed-out writes stay queued; only confirmed deletion reconciles uncertainty.
+      try { if (session) await removeDevice(session) } catch { /* Logout must work offline too. */ }
       if (!session || current(session, epoch)) {
-        await clearNative()
+        await waitForNativeCleanup(clearNative()).catch(() => {})
         if (generation === epoch) update({ enabled: false, busy: false })
       }
     },
