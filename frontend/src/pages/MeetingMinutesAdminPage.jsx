@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { AdminIntro, FilterResults } from '../components/common/AdminTools'
@@ -319,7 +320,7 @@ export default function MeetingMinutesAdminPage() {
 
                       <AnimatePresence>
                         {selectedStatus?.id === m.id && (
-                          <motion.div 
+                          <CollapsePanel
                             initial={{ opacity: 0, height: 0 }} 
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
@@ -390,7 +391,7 @@ export default function MeetingMinutesAdminPage() {
                               })()}
                               </MinuteStatusViews>
                             </div>
-                          </motion.div>
+                          </CollapsePanel>
                         )}
                       </AnimatePresence>
                     </Card>

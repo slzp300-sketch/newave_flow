@@ -4,6 +4,7 @@ import { Upload } from 'lucide-react'
 import Card from '../common/Card'
 import Button from '../common/Button'
 import { ttsApi } from '../../api/tts'
+import { Disclosure } from '../common/Motion'
 
 export default function LegacyImportCard() {
   const queryClient = useQueryClient()
@@ -56,20 +57,17 @@ export default function LegacyImportCard() {
           <p>0점 기록 {preview.zeroRows}건 · 빈칸 {preview.blankCells}칸 · 범위 밖 주차 열 {preview.excludedColumns}개 제외</p>
           <p>선택한 주차의 기존 시트 기록 {preview.replacedRows}건을 위 내용으로 교체합니다. 빈칸은 기록 없음으로 유지합니다.</p>
           <p>앱과 다른 점수 {preview.conflicts.length}건은 시트 값으로 집계합니다.</p>
-          {preview.conflicts.length > 0 && <details>
-            <summary className="font-bold cursor-pointer">점수 차이 확인</summary>
+          {preview.conflicts.length > 0 && <Disclosure title="점수 차이 확인">
             {preview.conflicts.map((c,i) => <p key={i} className="mt-1">{c.name} · {c.weekNum}주차: 앱 {c.appScore} → 시트 {c.sheetScore}점</p>)}
-          </details>}
-          {preview.appOnly.length > 0 && <details>
-            <summary className="font-bold cursor-pointer">시트에 없는 앱 점수 {preview.appOnly.length}건 확인</summary>
+          </Disclosure>}
+          {preview.appOnly.length > 0 && <Disclosure title={`시트에 없는 앱 점수 ${preview.appOnly.length}건 확인`}>
             <p className="mt-1">이 주차는 시트가 기준이므로 아래 점수는 집계에서 제외합니다. 원래 앱 기록은 보존합니다.</p>
             {preview.appOnly.map((c,i) => <p key={i} className="mt-1">{c.name} · {c.weekNum}주차 · {c.appScore}점</p>)}
-          </details>}
-          {(preview.unmatchedNames.length > 0 || preview.ambiguousNames.length > 0) && <details>
-            <summary className="font-bold cursor-pointer">계정 연결 확인</summary>
+          </Disclosure>}
+          {(preview.unmatchedNames.length > 0 || preview.ambiguousNames.length > 0) && <Disclosure title="계정 연결 확인">
             <p className="mt-1">미가입 {preview.unmatchedNames.length}명과 동명이인 {preview.ambiguousNames.length}명은 시트 이름으로 따로 보존하며, 계정을 자동 생성하거나 임의 연결하지 않습니다.</p>
             <p className="mt-1 break-words">{[...preview.unmatchedNames, ...preview.ambiguousNames].join(', ')}</p>
-          </details>}
+          </Disclosure>}
           {confirming ? (
             <div role="group" aria-label="시트 점수 최종 확인" className="flex flex-col gap-2 border-t border-gray-200 pt-3">
               <p>2026년 {preview.fromWeek}~{preview.toWeek}주차 {preview.rows}건, {preview.total.toLocaleString()}점을 반영할까요?</p>

@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import { useId } from 'react'
@@ -232,7 +233,7 @@ export default function EventAttendancePage() {
                   <>
                     <div className={`grid gap-2 ${isMultiDay ? 'grid-cols-3' : 'grid-cols-2'}`}>
                       {(isMultiDay ? ['PRESENT','PARTIAL','ABSENT'] : ['PRESENT','ABSENT']).map(key => (
-                        <button aria-pressed={pendingTeacherStatus === key} key={key} onClick={() => setPendingTeacherStatus(key)}
+                        <button data-tone={key === 'ABSENT' ? 'absence' : undefined} aria-pressed={pendingTeacherStatus === key} key={key} onClick={() => setPendingTeacherStatus(key)}
                           className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center gap-1 active:scale-[0.98] transition-all ${
                             pendingTeacherStatus === key
                               ? key === 'PRESENT' ? 'border-secondary-400 bg-secondary-50 text-secondary-700'
@@ -249,7 +250,7 @@ export default function EventAttendancePage() {
                     </div>
 
                     {pendingTeacherStatus === 'PARTIAL' && (
-                      <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
+                      <CollapsePanel initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
                         <div>
                           <label htmlFor={`${fieldId}-teacher-date`} className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1 block"><span className="sr-only">내 </span>참석 시작일 (필수)</label>
                           <input id={`${fieldId}-teacher-date`} required type="date" value={partialFromDate} min={event?.eventDate} max={event?.endDate}
@@ -262,18 +263,18 @@ export default function EventAttendancePage() {
                             placeholder="예: 오후 2시부터 참석 가능합니다"
                             className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200" />
                         </div>
-                      </motion.div>
+                      </CollapsePanel>
                     )}
 
                     {pendingTeacherStatus === 'ABSENT' && (
-                      <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
+                      <CollapsePanel initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="flex flex-col gap-2">
                         <div>
                           <label htmlFor={`${fieldId}-teacher-reason`} className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1 block"><span className="sr-only">내 </span>불참 사유 (필수)</label>
                           <input id={`${fieldId}-teacher-reason`} required type="text" value={teacherAbsenceReason} onChange={e => setTeacherAbsenceReason(e.target.value)}
                             placeholder="불참 사유를 입력해 주세요"
                             className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-sm font-medium outline-none focus:ring-2 focus:ring-red-300" />
                         </div>
-                      </motion.div>
+                      </CollapsePanel>
                     )}
 
                     <Button size="lg" onClick={() => teacherAttendanceMutation.mutate()}
@@ -414,7 +415,7 @@ export default function EventAttendancePage() {
                             </button>
                           )}
                           <button
-                            aria-label={`${student.studentName} 행사 결석`} aria-pressed={status === 'ABSENT'}
+                            data-tone="absence" aria-label={`${student.studentName} 행사 결석`} aria-pressed={status === 'ABSENT'}
                             onClick={() => setStudentStatus(student.studentId, 'ABSENT')}
                             className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                               status === 'ABSENT'
@@ -444,7 +445,7 @@ export default function EventAttendancePage() {
                     {/* 결석 사유 */}
                     <AnimatePresence>
                       {status === 'ABSENT' && (
-                        <motion.div
+                        <CollapsePanel
                           key="absent-reason"
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
@@ -464,14 +465,14 @@ export default function EventAttendancePage() {
                                 : 'bg-gray-50 border-gray-100 text-gray-400'
                             }`}
                           />
-                        </motion.div>
+                        </CollapsePanel>
                       )}
                     </AnimatePresence>
 
                     {/* 부분참석 정보 입력 */}
                     <AnimatePresence>
                       {status === 'PARTIAL' && (
-                        <motion.div
+                        <CollapsePanel
                           key="partial-info"
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
@@ -517,7 +518,7 @@ export default function EventAttendancePage() {
                               }`}
                             />
                           </div>
-                        </motion.div>
+                        </CollapsePanel>
                       )}
                     </AnimatePresence>
 

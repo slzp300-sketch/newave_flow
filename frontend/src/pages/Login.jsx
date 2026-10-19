@@ -55,7 +55,7 @@ export default function Login() {
   }
   if (appleRegistration) return <div className="safe-page-top min-h-screen max-w-mobile mx-auto bg-white px-6 pb-10" style={{ '--safe-page-space': '2.5rem' }}>
     <h1 className="text-xl font-semibold">계정 연결 또는 가입 신청</h1>
-    <p className="mt-4 text-sm leading-relaxed text-gray-600">Apple 인증을 완료했어요. 기존 회원은 이메일로 로그인한 뒤 ‘내 정보 → Apple 계정 연결’을 이용해 주세요.</p>
+    <p className="mt-4 text-sm leading-relaxed text-gray-600">Apple 인증을 완료했어요. 기존 회원은 이메일로 로그인한 뒤 ‘내 정보 → 계정 연결 관리 → Apple 계정 연결’을 이용해 주세요.</p>
     <p className="mt-3 text-xs leading-relaxed text-gray-500">이메일이 같더라도 기존 계정과 자동으로 연결하지 않습니다. 반 배정과 기록을 이어가려면 기존 계정에서 연결해 주세요.</p>
     <button className="mt-6 min-h-12 w-full rounded-xl border border-gray-200 px-4 text-sm font-semibold" onClick={() => { clearApplePending(); setAppleRegistration(false) }}>기존 이메일 계정으로 로그인</button>
     <Link to="/signup?apple=1" className="brand-action mt-4 flex min-h-12 items-center justify-center rounded-xl px-4 text-sm font-semibold">처음이에요 · 가입 신청</Link>

@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -172,7 +173,7 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMic
 
       <AnimatePresence>
         {(prayer.status === 'TUE' || prayer.status === 'THU') && isMicTurn && (
-          <motion.div key="mic-section" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-col gap-3 pt-2 border-t border-gray-50">
+          <CollapsePanel key="mic-section" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-col gap-3 pt-2 border-t border-gray-50">
             <div className="flex items-center gap-2">
               <Mic2 size={14} className="text-primary-500" />
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">마이크 가능 여부</p>
@@ -187,20 +188,20 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMic
             </div>
             <AnimatePresence>
               {prayer.micAvailable === false && (
-                <motion.div key="mic-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                <CollapsePanel key="mic-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
                   <ReasonInput value={prayer.micReason} onChange={v => update({ micReason: v })} placeholder="마이크를 켜기 어려운 사유를 입력해 주세요" required />
-                </motion.div>
+                </CollapsePanel>
               )}
             </AnimatePresence>
-          </motion.div>
+          </CollapsePanel>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {prayer.status === 'ABSENT' && (
-          <motion.div key="absent-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="pt-2 border-t border-gray-50">
+          <CollapsePanel key="absent-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="pt-2 border-t border-gray-50">
             <ReasonInput value={prayer.reason} onChange={v => update({ reason: v })} placeholder="불참 사유를 입력해 주세요" required />
-          </motion.div>
+          </CollapsePanel>
         )}
       </AnimatePresence>
 
@@ -223,7 +224,7 @@ function VoteButton({ active, onClick, label, sub, color }) {
     red:    active ? 'border-red-400 bg-red-50 text-red-600'         : 'border-gray-100 bg-gray-50/50 text-gray-400',
   }
   return (
-    <button aria-pressed={active} onClick={onClick} className={`flex flex-col items-center justify-center gap-0.5 py-4 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
+    <button data-tone={color === 'red' ? 'absence' : undefined} aria-pressed={active} onClick={onClick} className={`flex flex-col items-center justify-center gap-0.5 py-4 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
       <span className="text-sm font-bold">{label}</span>
       <span className="text-xs font-bold opacity-60">{sub}</span>
       {active && <CheckCircle2 size={14} className="mt-1" />}

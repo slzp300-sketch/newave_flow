@@ -4,10 +4,9 @@ import { AdminIntro, AdminEmpty, FilterResults } from '../components/common/Admi
 import { filterMenuGroups } from '../utils/navigation'
 import { Reveal } from '../components/common/Motion'
 import { Link } from 'react-router-dom'
-import { FileText, CheckSquare, UserCog } from 'lucide-react'
+import { FileText, CheckSquare, UserCog, ShieldCheck } from 'lucide-react'
 import Header from '../components/layout/Header'
 import FeatureIcon from '../components/common/FeatureIcon'
-import SafetySummary from '../components/common/SafetySummary'
 
 export const MENU_GROUPS = [
   {
@@ -17,8 +16,6 @@ export const MENU_GROUPS = [
     bg: 'bg-primary-50',
     desc: '신규가입, 권한, 반 배정, 제적 관리',
     items: [
-      { to: '/admin/content-reports', title: '신고 관리', desc: '콘텐츠·사용자 신고 검토와 보호 조치' },
-      { to: '/admin/content-photos', title: '사진 게시 검토', desc: '새 사진의 게시 승인·거절' },
       { to: '/admin/pending-users', title: '가입 승인·이용 정지', desc: '신규 가입 승인과 정지 계정 확인' },
       { to: '/admin/teachers', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
       { to: '/admin/class-assignment', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
@@ -51,6 +48,15 @@ export const MENU_GROUPS = [
       { to: '/admin/tts', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
       { to: '/admin/evangelism', title: '전도 관리', desc: '전도 조 편성 및 일정 관리' },
     ]
+  },
+  {
+    title: '안전한 이용 관리', icon: ShieldCheck,
+    color: 'text-primary-600', bg: 'bg-primary-50',
+    desc: '신고와 사진 게시 검토',
+    items: [
+      { to: '/admin/content-reports', title: '신고 관리', desc: '신고 검토와 보호 조치' },
+      { to: '/admin/content-photos', title: '사진 게시 검토', desc: '사진의 게시 승인·거절' },
+    ],
   }
 ]
 
@@ -62,7 +68,6 @@ export default function AdminDashboard() {
     <Header title="관리자 메뉴" showBack />
     <div className="flex flex-col gap-5 px-4 py-5">
       <AdminIntro title="관리할 업무를 찾아보세요" description="회원과 반 배정부터 출석·활동 기록까지 한곳에서 관리합니다." />
-      <SafetySummary />
       <SearchField label="관리자 메뉴 검색" value={search} onChange={setSearch} placeholder="교사, 출석, TTS 등 메뉴 검색" />
       {search.trim() && <FilterResults count={count} total={MENU_GROUPS.reduce((n, group) => n + group.items.length, 0)} unit="개" filtered onReset={() => setSearch('')} />}
       {!count && <AdminEmpty />}

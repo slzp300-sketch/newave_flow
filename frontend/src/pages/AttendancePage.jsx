@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -293,7 +294,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
             </button>
             <button
               onClick={() => onChange({ status: 'ABSENT' })}
-              aria-pressed={data.status === 'ABSENT'} aria-label={student.name + ' 불참'}
+              data-tone="absence" aria-pressed={data.status === 'ABSENT'} aria-label={student.name + ' 불참'}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 data.status === 'ABSENT'
                   ? 'bg-red-50 text-danger border border-red-200'
@@ -307,7 +308,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
 
         <AnimatePresence>
           {data.status === 'ABSENT' && (
-            <motion.div
+            <CollapsePanel
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -322,7 +323,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
                 onChange={(e) => onChange({ absentReason: e.target.value })}
                 className="w-full px-3 py-2 bg-gray-50 rounded-xl text-base font-normal border border-gray-200 focus:ring-1 focus:ring-red-200 placeholder:text-gray-400"
               />
-            </motion.div>
+            </CollapsePanel>
           )}
         </AnimatePresence>
 
@@ -339,7 +340,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
 
           <AnimatePresence>
             {isNoteOpen && (
-              <motion.div
+              <CollapsePanel
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
@@ -352,7 +353,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
                   onChange={(e) => onChange({ note: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 rounded-xl text-base font-normal border border-gray-200 focus:ring-1 focus:ring-primary-100 placeholder:text-gray-400 min-h-[60px]"
                 />
-              </motion.div>
+              </CollapsePanel>
             )}
           </AnimatePresence>
         </div>

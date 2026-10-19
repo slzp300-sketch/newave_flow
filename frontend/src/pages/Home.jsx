@@ -17,7 +17,6 @@ import client from '../api/client'
 import Header from '../components/layout/Header'
 import FeatureIcon from '../components/common/FeatureIcon'
 import Card from '../components/common/Card'
-import SafetySummary from '../components/common/SafetySummary'
 import Badge from '../components/common/Badge'
 import HomeWeekly from '../components/layout/HomeWeekly'
 import HomeSchedule from '../components/layout/HomeSchedule'
@@ -189,7 +188,6 @@ function AdminView({ navigate, today }) {
         <ChevronRight size={18} className="shrink-0 text-gray-400" />
       </button>
       <SectionLabel>관리 요약</SectionLabel>
-      <SafetySummary />
 
       {/* 승인 대기 알림 (옵션) */}
       {pendingUsers.length > 0 && (

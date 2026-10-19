@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { AdminIntro, AdminEmpty } from '../components/common/AdminTools'
@@ -19,7 +20,7 @@ import { getWeekStartByOffset, formatUpdatedAt, weekLabels, weekLabelsByNum } fr
 import { addDays, format, getWeek } from 'date-fns'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState } from '../utils/queryReadState'
-import { ttsYear, ttsYears, defaultQuarter, quartersForYear, quarterDateLabel, firstTtsOffset } from '../utils/ttsPeriod'
+import { ttsYear, ttsYears, defaultQuarter, quartersForYear, quarterDateLabel, firstTtsOffset, weekReference } from '../utils/ttsPeriod'
 
 export default function TtsAdminPage() {
   const [activeTab, setActiveTab] = useState('summary') // 'summary' | 'scores' | 'questions'
@@ -219,9 +220,9 @@ function ScoresTab() {
                   </Card>
                   <AnimatePresence>
                     {isExpanded && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-1">
+                      <CollapsePanel initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-1">
                         <WeeklyScoreDetail year={year} scores={t.weeklyScores} total={t.totalScore} />
-                      </motion.div>
+                      </CollapsePanel>
                     )}
                   </AnimatePresence>
                 </div>
@@ -276,7 +277,7 @@ function WeeklyScoreDetail({ year, scores, total }) {
       ) : (
         scores.map(ws => (
           <div key={ws.weekNum} className="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-0">
-            <span className="text-sm font-bold text-gray-600">{weekLabelsByNum(year, ws.weekNum).monthWeek}</span>
+            <span className="text-sm font-bold text-gray-600">{weekLabelsByNum(weekReference(year, ws.weekNum).year, weekReference(year, ws.weekNum).weekNum).monthWeek}</span>
             <span className="font-bold text-gray-700 text-sm">{ws.score}점</span>
           </div>
         ))
@@ -415,7 +416,7 @@ function SummaryTab({ offset, onOffsetChange }) {
 
                   <AnimatePresence>
                     {isExpanded && (
-                      <motion.div
+                      <CollapsePanel
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -440,7 +441,7 @@ function SummaryTab({ offset, onOffsetChange }) {
                             </Badge>
                           </div>
                         ))}
-                      </motion.div>
+                      </CollapsePanel>
                     )}
                   </AnimatePresence>
                 </div>

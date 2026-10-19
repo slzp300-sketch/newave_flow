@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Disclosure } from './Motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Card from './Card'
 import Button from './Button'
@@ -133,7 +134,7 @@ export default function AccountDeletionForm() {
         {record.status === 'REQUESTED' && new Date(record.targetAt) < new Date() && <p className="mt-3 text-sm text-amber-800">목표일이 지났습니다. 아래 고객지원에서 접수 번호로 진행 상황을 문의할 수 있습니다.</p>}
       </>}
       <Button className="mt-4 w-full" variant="secondary" onClick={() => status.refetch()} loading={status.isFetching}>처리 상태 새로고침</Button>
-      <details className="mt-4 text-sm"><summary className="cursor-pointer min-h-11 py-3 font-semibold">접수증 보관·조회 코드</summary>
+      <Disclosure className="mt-4 text-sm" title="접수증 보관·조회 코드">
         <p className="text-xs leading-5 text-gray-500">로그인 없이 완료 여부를 확인하는 코드입니다. 앱을 삭제하거나 기기를 바꾸기 전에 보관하고 다른 사람에게 공유하지 마세요.</p>
         <label htmlFor="deletion-receipt-code" className="sr-only">계정 삭제 조회 코드</label>
         <input id="deletion-receipt-code" className="input-field mt-3 font-mono text-xs" type={showCode ? 'text' : 'password'} value={receipt.receiptToken} readOnly />
@@ -143,7 +144,7 @@ export default function AccountDeletionForm() {
           <button type="button" onClick={forgetReceipt} className="mt-2 min-h-11 text-gray-500 underline">이 기기에서 접수증 지우기</button>
           <p className="text-xs leading-5 text-gray-500">기기에 저장된 조회 코드만 지웁니다. 삭제 요청의 처리 상태는 바뀌지 않습니다.</p>
         </>}
-      </details>
+      </Disclosure>
     </Card>}
     {(user || loaded) && <Card>
       <h3 className="font-bold">{currentRequest ? '신청한 삭제 요청' : user ? '앱에서 계정 삭제 신청' : '로그인하지 않고 계정 삭제 신청'}</h3>
@@ -176,11 +177,11 @@ export default function AccountDeletionForm() {
         <p className="text-xs leading-5 text-gray-500">접수 시 바로 삭제되는 것은 아닙니다. {usesApple ? 'Apple 연결이 해제된 뒤에도 접수증으로 처리 상태를 확인할 수 있습니다. 조회 코드를 분실했다면 같은 Apple 계정으로 다시 본인을 확인해 접수증을 받아 주세요.' : '조회 코드를 분실했다면 같은 이메일·비밀번호로 다시 본인을 확인해 접수증을 받을 수 있습니다.'}</p>
       </form>}
     </Card>}
-    <Card><details><summary className="min-h-11 py-2 cursor-pointer text-sm font-semibold">보관한 조회 코드로 확인하기</summary>
+    <Card><Disclosure title="보관한 조회 코드로 확인하기">
       <form onSubmit={importReceipt} className="space-y-3 mt-3"><label htmlFor="saved-deletion-code" className="text-sm">계정 삭제 조회 코드</label>
         <input id="saved-deletion-code" autoComplete="off" spellCheck={false} className="input-field font-mono text-xs" value={manualToken} onChange={e => setManualToken(e.target.value)} maxLength={64} required />
         <label className="flex items-center gap-2 text-xs leading-5"><input type="checkbox" checked={manualReview} onChange={e => setManualReview(e.target.checked)} />가상 테스트 계정으로 신청한 접수증</label>
         <Button type="submit" variant="secondary" className="w-full" disabled={!loaded || !manualToken.trim()} loading={busy}>접수증 확인</Button>
-      </form></details></Card>
+      </form></Disclosure></Card>
   </>
 }

@@ -5,18 +5,25 @@ import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import { useNavigate } from 'react-router-dom'
+import { safeNotificationPath } from '../native/pushController'
 
 const ICON_MAP = {
   EVENT: { icon: Calendar, color: 'text-primary-500', bg: 'bg-primary-50' },
   MINUTE: { icon: FileText, color: 'text-primary-500', bg: 'bg-primary-50' },
   SYSTEM: { icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100' },
   ATTENDANCE: { icon: ClipboardList, color: 'text-secondary-700', bg: 'bg-secondary-50' },
+  EVENT_DEADLINE: { icon: Calendar, color: 'text-primary-500', bg: 'bg-primary-50' },
+  TTS: { icon: CheckCircle2, color: 'text-secondary-700', bg: 'bg-secondary-50' },
+  MEETING_VOTE: { icon: ClipboardList, color: 'text-primary-500', bg: 'bg-primary-50' },
+  EVANGELISM: { icon: Calendar, color: 'text-secondary-700', bg: 'bg-secondary-50' },
 }
 
 export default function NotificationPage() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
 
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationApi.getAll().then(r => r.data)
   })
@@ -62,7 +69,12 @@ export default function NotificationPage() {
       />
       
       <div className="px-4 py-4 flex flex-col gap-3">
-        {notifications.length === 0 ? (
+        {isError ? (
+          <div className="py-12 text-center text-sm text-gray-600" role="alert">
+            <p>알림을 불러오지 못했습니다.</p>
+            <button onClick={() => refetch()} className="mt-3 font-bold text-primary-600">다시 시도</button>
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <Bell size={24} className="text-gray-300" />
@@ -80,6 +92,8 @@ export default function NotificationPage() {
                 className={`p-4 flex gap-4 transition-all cursor-pointer ${!noti.read ? 'opacity-100 bg-white' : 'opacity-60 bg-gray-50/50 hover:opacity-100'}`}
                 onClick={() => {
                   if (!noti.read) markAsRead(noti.id)
+                  const path = safeNotificationPath(noti.targetPath)
+                  if (path) navigate(path)
                 }}
               >
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${config.bg}`}>

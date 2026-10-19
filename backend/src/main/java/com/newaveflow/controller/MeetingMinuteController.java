@@ -54,6 +54,7 @@ public class MeetingMinuteController {
 
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PostMapping
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<MeetingMinute> create(@RequestBody MeetingMinuteCreateRequest request) {
         com.newaveflow.service.ContentTextFilter.check(request.title(),request.content());
         MeetingMinute minutes = MeetingMinute.builder()
@@ -65,27 +66,23 @@ public class MeetingMinuteController {
             .build();
         MeetingMinute saved = meetingMinuteRepository.save(minutes);
         
-        if (saved.isActive()) {
-            List<Long> activeUserIds = userRepository.findByIsActiveTrue().stream().map(User::getId).toList();
-            notificationService.createNotificationForUsers(activeUserIds, 
-                "새로운 회의록", 
-                "새로운 교사 회의록이 등록되었습니다.", 
-                Notification.NotificationType.MINUTE);
-        }
+        notifyFirstPublication(saved);
 
         return ResponseEntity.ok(saved);
     }
 
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     @PutMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<MeetingMinute> update(@PathVariable Long id, @RequestBody MeetingMinuteCreateRequest request) {
         com.newaveflow.service.ContentTextFilter.check(request.title(),request.content());
-        MeetingMinute minutes = meetingMinuteRepository.findById(id).orElseThrow();
+        MeetingMinute minutes = meetingMinuteRepository.lockById(id).orElseThrow();
         minutes.setTitle(request.title());
         minutes.setContent(request.content());
         minutes.setVideoLink(request.videoLink());
         minutes.setMeetingDate(request.meetingDate());
         minutes.setActive(request.isActive());
+        notifyFirstPublication(minutes);
         return ResponseEntity.ok(meetingMinuteRepository.save(minutes));
     }
 
@@ -147,6 +144,15 @@ public class MeetingMinuteController {
         }).toList();
         
         return ResponseEntity.ok(result);
+    }
+
+    private void notifyFirstPublication(MeetingMinute minute) {
+        if(!minute.isActive() || minute.isNotificationPublished()) return;
+        minute.setNotificationPublished(true);
+        meetingAttendanceRepository.findByMeetingDate(minute.getMeetingDate()).stream()
+                .filter(a -> "ABSENT".equals(a.getStatus())).map(a -> a.getTeacher()).filter(User::isActive)
+                .forEach(u -> notificationService.enqueue(u.getId(),"minute-published:"+minute.getId(),"교사회의 회의록 안내",
+                        "불참한 교사회의의 회의록이 등록되었습니다. 내용을 확인해주세요.",Notification.NotificationType.MINUTE,"/minutes"));
     }
 
     private static boolean canManage(User user) {

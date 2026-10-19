@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -117,9 +118,9 @@ function SatForm({ sat, update, onSubmit, onCancel, valid, saving, satDateLabel 
 
       <AnimatePresence>
         {sat.status === 'ABSENT' && (
-          <motion.div key="sat-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+          <CollapsePanel key="sat-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
             <ReasonInput value={sat.reason} onChange={v => update({ reason: v })} placeholder="불참 사유를 입력해 주세요" required />
-          </motion.div>
+          </CollapsePanel>
         )}
       </AnimatePresence>
 
@@ -161,7 +162,7 @@ function AttendButton({ active, onClick, color, label }) {
   const colors    = { blue: active ? 'border-primary-400 bg-primary-50' : 'border-gray-100 bg-gray-50/50', red: active ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-gray-50/50' }
   const textColors = { blue: active ? 'text-primary-700' : 'text-gray-400', red: active ? 'text-red-600' : 'text-gray-400' }
   return (
-    <button aria-pressed={active} onClick={onClick} className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
+    <button data-tone={color === 'red' ? 'absence' : undefined} aria-pressed={active} onClick={onClick} className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
       {active ? <CheckCircle2 size={22} className={textColors[color]} /> : <div className="w-[22px] h-[22px] rounded-full border-2 border-gray-200" />}
       <span className={`font-bold text-sm ${textColors[color]}`}>{label}</span>
     </button>

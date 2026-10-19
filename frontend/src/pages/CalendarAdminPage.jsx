@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
 import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
@@ -258,7 +259,7 @@ export default function CalendarAdminPage() {
 
                 <AnimatePresence initial={false}>
                   {!formData.allDay && (
-                    <motion.div
+                    <CollapsePanel
                       key="time-fields"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -295,7 +296,7 @@ export default function CalendarAdminPage() {
                           />
                         </div>
                       </div>
-                    </motion.div>
+                    </CollapsePanel>
                   )}
                 </AnimatePresence>
 

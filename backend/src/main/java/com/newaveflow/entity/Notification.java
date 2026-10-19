@@ -8,7 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "dedupe_key"}))
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,6 +34,9 @@ public class Notification {
     @Column(nullable = false, length = 20)
     private NotificationType type;
 
+    @Column(length = 180) private String dedupeKey;
+    @Column(length = 200) private String targetPath;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean isRead = false;
@@ -47,6 +50,6 @@ public class Notification {
     }
 
     public enum NotificationType {
-        EVENT, MINUTE, SYSTEM, ATTENDANCE
+        EVENT, MINUTE, SYSTEM, ATTENDANCE, EVENT_DEADLINE, TTS, MEETING_VOTE, EVANGELISM
     }
 }

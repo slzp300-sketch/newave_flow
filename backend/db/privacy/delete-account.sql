@@ -19,7 +19,8 @@ BEGIN
     'evangelism_groups','evangelism_group_members','evangelism_schedules','tts_answers','tts_data_entry','tts_item',
     'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','apple_accounts','apple_auth_flows',
     'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
-    'apple_notification_receipts','user_status_events','moderated_photos','schema_migrations')) THEN
+    'apple_notification_receipts','user_status_events','moderated_photos','schema_migrations',
+    'notification_preferences','push_devices','push_deliveries','tts_linked_snapshots')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -35,7 +36,7 @@ BEGIN
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
         'deactivation_requests','event_student_attendances','kakao_auth_flows','apple_accounts','apple_auth_flows',
         'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
-        'user_status_events','moderated_photos'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'user_status_events','moderated_photos','notification_preferences','push_devices','tts_linked_snapshots'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
   -- New lifecycle/photo tables are optional when replaying an older backup. New columns
   -- or edges in these reviewed tables must not silently bypass account erasure.
   IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND (
@@ -87,6 +88,21 @@ BEGIN
         OR fk.conkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='user_id')]::smallint[]
         OR fk.confkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[])))) THEN
     RAISE EXCEPTION 'Unreviewed Apple notification foreign key';
+  END IF;
+  -- New notification storage is optional on older backups; unknown edges are never cascaded.
+  IF EXISTS(SELECT 1 FROM pg_constraint fk JOIN pg_class src ON src.oid=fk.conrelid
+    JOIN pg_namespace ns ON ns.oid=src.relnamespace
+    WHERE fk.contype='f' AND (
+      fk.confrelid IN (to_regclass('public.push_deliveries'),to_regclass('public.notification_preferences'),to_regclass('public.tts_linked_snapshots')) OR
+      (fk.confrelid IN (to_regclass('public.push_devices'),to_regclass('public.notifications')) AND NOT (
+        ns.nspname='public' AND src.relname='push_deliveries' AND fk.confdeltype='c' AND (
+          (fk.confrelid=to_regclass('public.push_devices') AND
+            fk.conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='installation_id')]::smallint[] AND
+            fk.confkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='installation_id')]::smallint[]) OR
+          (fk.confrelid=to_regclass('public.notifications') AND
+            fk.conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='notification_id')]::smallint[] AND
+            fk.confkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[])))))) THEN
+    RAISE EXCEPTION 'Unreviewed push lifecycle foreign key';
   END IF;
   SELECT * INTO target FROM users WHERE id=req.user_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Target account is absent; reconcile the receipt before retry'; END IF;
@@ -221,6 +237,15 @@ BEGIN
     UPDATE moderated_photos SET submitted_by=NULL WHERE submitted_by=req.user_id;
     UPDATE moderated_photos SET reviewed_by=NULL WHERE reviewed_by=req.user_id;
   END IF;
+  IF to_regclass('public.push_deliveries') IS NOT NULL THEN
+    DELETE FROM push_deliveries WHERE notification_id IN (SELECT id FROM notifications WHERE user_id=req.user_id)
+      OR installation_id IN (SELECT installation_id FROM push_devices WHERE user_id=req.user_id);
+  END IF;
+  FOR item IN SELECT * FROM (VALUES ('push_devices','user_id'),('notification_preferences','user_id'),('tts_linked_snapshots','teacher_id')) x(tbl,key) LOOP
+    IF to_regclass('public.'||item.tbl) IS NOT NULL THEN
+      EXECUTE format('DELETE FROM public.%I WHERE %I=$1',item.tbl,item.key) USING req.user_id;
+    END IF;
+  END LOOP;
   FOR item IN SELECT * FROM (VALUES
     ('teacher_classes','teacher_id'),('user_tags','user_id'),('event_reads','user_id'),
     ('notifications','user_id'),('meeting_minute_confirms','user_id'),('checklist_records','teacher_id'),

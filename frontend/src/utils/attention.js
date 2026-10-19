@@ -4,6 +4,8 @@ export const TTS_DAYS = ['월', '화', '수', '목', '금', '토']
 export function todayTtsChecks(questions, week, today) {
   if (!week || week.importedPeriod) return []
   const index = new Date(today + 'T12:00:00').getDay()
+  if (week.closedQuarter || (index === 0 && week.attendanceEditable === false)
+    || (index > 0 && Array.isArray(week.editableDays) && !week.editableDays.includes(TTS_DAYS[index - 1]))) return []
   return questions.filter(q => (!q.linkType || q.linkType === 'NONE') &&
     (index === 0 ? q.type === 'ATTEND' : q.type === 'DAYS')).map(q => {
     const raw = week.answers?.find(a => a.questionId === q.id)?.answerData

@@ -1,4 +1,5 @@
 import EventStatusSummary from '../components/common/EventStatusSummary'
+import { Collapse } from '../components/common/Motion'
 import SearchField from '../components/common/SearchField'
 import useToday from '../hooks/useToday'
 import { eventToday, isEventAttendanceInactive } from '../utils/eventAttendance'
@@ -456,7 +457,7 @@ export default function EventAttendanceAdminPage() {
                       </div>
 
                       {/* 학생 목록 (확대 시에만 표시) */}
-                      {expandedClassId === cls.classGroupId && (
+                      <Collapse open={expandedClassId === cls.classGroupId}>
                         <div className="flex flex-col gap-1.5 pt-1">
                           {cls.records.map(student => (
                             <div
@@ -498,7 +499,7 @@ export default function EventAttendanceAdminPage() {
                             </div>
                           ))}
                         </div>
-                      )}
+                      </Collapse>
                     </Card>
                   </motion.div>
                 ))}

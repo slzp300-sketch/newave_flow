@@ -59,13 +59,16 @@ def sign():
     private.mkdir(mode=0o700)
     team = os.environ.get('APPLE_TEAM_ID', '')
     apple = os.environ['APPLE_LOGIN'] == 'true'
+    push = os.environ.get('PUSH_NOTIFICATIONS', 'false') == 'true'
     certificate = private / 'distribution.p12'
     certificate.write_bytes(helpers['decode_secret'](os.environ, 'IOS_CERTIFICATE_BASE64'))
     profile_file = private / 'distribution.mobileprovision'
     profile_file.write_bytes(helpers['decode_secret'](os.environ, 'IOS_PROFILE_BASE64'))
     require(bool(os.environ.get('P12_PASSWORD')), 'Missing secret: P12_PASSWORD')
     profile = command_plist(['security', 'cms', '-D', '-i', str(profile_file)], 'Profile decoding')
-    profile_uuid = helpers['validate_profile'](profile, team, apple)
+    profile_uuid = helpers['validate_profile'](profile, team, apple, push_notifications=push)
+    entitlement_file = private / 'release.entitlements'
+    entitlement_file.write_bytes(plistlib.dumps(helpers['release_entitlements'](apple, push)))
     cert_pem = private / 'distribution.pem'
     cert_pem.write_bytes(command(['openssl', 'pkcs12', '-in', str(certificate), '-clcerts', '-nokeys',
                                  '-passin', 'env:P12_PASSWORD'], 'Certificate decoding'))
@@ -100,14 +103,14 @@ def sign():
              f'PROVISIONING_PROFILE_SPECIFIER={profile_uuid}', f'OTHER_CODE_SIGN_FLAGS=--keychain {keychain}',
              f'MARKETING_VERSION={os.environ["RELEASE_VERSION"]}', f'CURRENT_PROJECT_VERSION={os.environ["RELEASE_BUILD"]}',
              f'NEWAVE_APPLE_SIGN_IN_ENABLED={"YES" if apple else "NO"}',
-             f'CODE_SIGN_ENTITLEMENTS={"App/AppleSignIn.entitlements" if apple else ""}'],
+             f'CODE_SIGN_ENTITLEMENTS={entitlement_file}'],
             'Signed archive build', cwd=ROOT / 'frontend')
     app = archive / 'Products/Applications/App.app'
     summary = verify_bundle(app, apple_login=apple, device=True)
     require(summary['version'] == os.environ['RELEASE_VERSION'] and summary['build'] == os.environ['RELEASE_BUILD'], 'Archive version mismatch')
     command(['codesign', '--verify', '--deep', '--strict', str(app)], 'Archive signature validation')
     archive_entitlements = signed_entitlements(app, 'Archive entitlement inspection')
-    helpers['verify_signed_entitlements'](archive_entitlements, team, apple)
+    helpers['verify_signed_entitlements'](archive_entitlements, team, apple, push)
     export = private / 'ExportOptions.plist'
     export.write_bytes(plistlib.dumps({'method': 'app-store-connect', 'destination': 'export',
         'signingStyle': 'manual', 'teamID': team, 'signingCertificate': matches[0],
@@ -123,11 +126,11 @@ def sign():
     require(exported == summary, 'Export changed the app metadata')
     command(['codesign', '--verify', '--deep', '--strict', str(exported_app)], 'Exported IPA signature validation')
     exported_entitlements = signed_entitlements(exported_app, 'Exported entitlement inspection')
-    helpers['verify_signed_entitlements'](exported_entitlements, team, apple)
+    helpers['verify_signed_entitlements'](exported_entitlements, team, apple, push)
     exported_profile = command_plist(['security', 'cms', '-D', '-i', str(exported_app / 'embedded.mobileprovision')], 'Exported profile inspection')
-    require(helpers['validate_profile'](exported_profile, team, apple) == profile_uuid, 'Export used a different provisioning profile')
+    require(helpers['validate_profile'](exported_profile, team, apple, push_notifications=push) == profile_uuid, 'Export used a different provisioning profile')
     summary.update({'commit': os.environ['RELEASE_SHA'], 'ipaSha256': hashlib.sha256(ipas[0].read_bytes()).hexdigest(),
-                    'uploadCommandCompleted': False, 'appleProcessingVerified': False})
+                    'pushEnabled': push, 'uploadCommandCompleted': False, 'appleProcessingVerified': False})
     (private / 'summary.json').write_text(json.dumps(summary, indent=2), encoding='utf8')
     print('Signed archive, entitlements, privacy resources and IPA export passed. No Apple upload has occurred.')
 

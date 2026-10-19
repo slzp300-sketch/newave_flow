@@ -9,10 +9,12 @@ import { appleNative } from '../auth/apple'
 import { startAppleSessionMonitor } from '../auth/appleSessionMonitor'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
+import { startPushNotifications, refreshPushNotifications } from './pushNotifications'
 
 export default function NativeRuntime({ router }) {
   const [storageError, setStorageError] = useState(false)
   const [appleNotice, setAppleNotice] = useState('')
+  useEffect(() => startPushNotifications(router), [router])
   useEffect(() => {
     if (nativePlatform !== 'ios') return
     return startAppleSessionMonitor({ native: appleNative, app: NativeApp, store: useAuthStore,
@@ -37,7 +39,10 @@ export default function NativeRuntime({ router }) {
         // Keep web navigation usable if the native lifecycle plugin is unavailable.
       }
     }
-    void register('appStateChange', ({ isActive }) => focusManager.setFocused(isActive))
+    void register('appStateChange', ({ isActive }) => {
+      focusManager.setFocused(isActive)
+      if (isActive) void refreshPushNotifications()
+    })
     const openKakao = ({ url }) => { const path = nativeKakaoDestination(url); if (path) void router.navigate(path) }
     void register('appUrlOpen', openKakao)
     void NativeApp.getLaunchUrl().then(value => { if (!disposed && value?.url) openKakao(value) }).catch(() => {})

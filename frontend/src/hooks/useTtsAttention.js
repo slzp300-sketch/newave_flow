@@ -4,9 +4,10 @@ import useToday from './useToday'
 import { toApiDate } from '../utils/date'
 import { ttsApi } from '../api/tts'
 import { knownRead, todayTtsChecks } from '../utils/attention'
+import { ttsToday } from '../utils/ttsPeriod'
 
 export default function useTtsAttention() {
-  const today = useToday()
+  const today = useToday(ttsToday)
   const weekStart = toApiDate(startOfWeek(new Date(today + 'T12:00:00'), { weekStartsOn: 0 }))
   const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const questions = useQuery({ queryKey: ['tts-questions', weekStart],

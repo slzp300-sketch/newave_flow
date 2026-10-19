@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
@@ -37,6 +38,10 @@ public class TtsService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final TtsQuestionPolicy questionPolicy;
+    private final TtsLinkedSnapshotRepository linkedSnapshotRepository;
+    private Clock clock = Clock.system(TtsPeriod.ZONE);
+
+    private LocalDate today() { return LocalDate.now(clock.withZone(TtsPeriod.ZONE)); }
 
     // ── 주차 계산: 일~토 한 주, 1월 1일이 들어 있는 주가 1주차 (화면의 date-fns getWeek와 동일) ──
 
@@ -68,7 +73,7 @@ public class TtsService {
     }
 
     public List<TtsQuestion> getActiveQuestions() {
-        return getActiveQuestions(LocalDate.now());
+        return getActiveQuestions(today());
     }
 
     public List<TtsQuestion> getActiveQuestions(LocalDate date) {
@@ -97,7 +102,7 @@ public class TtsService {
         if (request.weekStart() == null || request.questionId() == null || request.answerData() == null) {
             throw AppException.badRequest("필수 값이 비어 있습니다.");
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = today();
         LocalDate sunday = weekSunday(request.weekStart());
         if (sunday.isAfter(today)) {
             throw AppException.forbidden("다음 주 이후는 아직 체크할 수 없습니다.");
@@ -105,9 +110,16 @@ public class TtsService {
         if (!TtsPeriod.includes(weekYear(sunday),weekNum(sunday))) {
             throw AppException.badRequest("TTS 입력은 2026년 4분기부터 관리합니다.");
         }
+        if (TtsPeriod.closed(TtsPeriod.attendanceDate(sunday), today)) {
+            throw AppException.forbidden("마감된 분기의 TTS는 조회만 할 수 있습니다.");
+        }
 
         // A user lock also protects simultaneous first writes from multiple devices.
         userRepository.lockById(teacher.getId()).orElseThrow(() -> AppException.unauthorized("교사를 찾을 수 없습니다."));
+        today = today(); // A blocked write may acquire the lock after Korean midnight.
+        if (TtsPeriod.closed(TtsPeriod.attendanceDate(sunday), today)) {
+            throw AppException.forbidden("마감된 분기의 TTS는 조회만 할 수 있습니다.");
+        }
         if (isImportedPeriod(sunday)) {
             throw AppException.badRequest("시트에서 가져온 확정 점수입니다. 관리자에게 원본 점수 수정을 요청해 주세요.");
         }
@@ -119,8 +131,6 @@ public class TtsService {
         if (isLinked(question)) {
             throw AppException.badRequest("이 항목은 다른 화면 기록으로 자동 체크됩니다.");
         }
-
-        String answerData = normalizeAnswer(question, request.answerData(), sunday, today);
 
         int year = weekYear(sunday);
         int week = weekNum(sunday);
@@ -135,6 +145,8 @@ public class TtsService {
                 .filter(a -> a.getQuestion().getId().equals(question.getId()))
                 .findFirst()
                 .orElse(null);
+        String answerData = normalizeAnswer(question, request.answerData(), sunday, today,
+                existing == null ? null : existing.getAnswerData());
         if (existing != null) {
             existing.setAnswerData(answerData);
         } else {
@@ -148,10 +160,13 @@ public class TtsService {
     }
 
     // 답변 값 검사: 미래 요일 체크 금지, 형식 통일
-    private String normalizeAnswer(TtsQuestion question, String raw, LocalDate sunday, LocalDate today) {
+    private String normalizeAnswer(TtsQuestion question, String raw, LocalDate sunday, LocalDate today, String previous) {
         if (question.getType() == TtsQuestionType.ATTEND) {
             if (!"true".equals(raw) && !"false".equals(raw)) {
                 throw AppException.badRequest("잘못된 값입니다.");
+            }
+            if (!TtsPeriod.editableAttendance(sunday, today)) {
+                throw AppException.forbidden("주간 항목은 그 주 토요일이 속한 분기에만 수정할 수 있습니다.");
             }
             return raw;
         }
@@ -163,10 +178,16 @@ public class TtsService {
         }
         Map<String, Boolean> normalized = new LinkedHashMap<>();
         if (dayMap == null || !DAY_LABELS.containsAll(dayMap.keySet())) throw AppException.badRequest("요일 값이 올바르지 않습니다.");
+        Map<String, Boolean> oldDays = readDays(previous);
         for (int i = 0; i < DAY_LABELS.size(); i++) {
             String label = DAY_LABELS.get(i);
+            LocalDate date = sunday.plusDays(i + 1);
+            if (TtsPeriod.closed(date, today)
+                    && Boolean.TRUE.equals(oldDays.get(label)) != Boolean.TRUE.equals(dayMap.get(label))) {
+                throw AppException.forbidden("마감된 분기의 체크는 변경할 수 없습니다. 현재 분기 날짜만 수정해 주세요.");
+            }
             if (Boolean.TRUE.equals(dayMap.get(label))) {
-                if (sunday.plusDays(i + 1).isAfter(today)) {
+                if (date.isAfter(today)) {
                     throw AppException.forbidden("아직 오지 않은 요일은 체크할 수 없습니다.");
                 }
                 normalized.put(label, true);
@@ -179,7 +200,16 @@ public class TtsService {
         }
     }
 
+    private Map<String, Boolean> readDays(String raw) {
+        if (raw == null) return Map.of();
+        try {
+            Map<String, Boolean> values = objectMapper.readValue(raw, new TypeReference<>() {});
+            return values == null ? Map.of() : values;
+        } catch (Exception ignored) { return Map.of(); }
+    }
+
     private TtsResponse buildWeekResponse(Long teacherId, LocalDate sunday, TtsRecord record) {
+        LocalDate today = today();
         boolean importedPeriod = isImportedPeriod(sunday);
         Integer importedScore = sheetScoreFor(teacherId, sunday);
         var timeline = questionPolicy.load();
@@ -209,6 +239,15 @@ public class TtsService {
                 .score(importedPeriod ? (importedScore == null ? 0 : importedScore) : recordScore(record, timeline) + linkedScore(linkedDone, sunday, timeline))
                 .importedScore(importedScore)
                 .importedPeriod(importedPeriod)
+                .serverToday(today)
+                .editableDays(importedPeriod || !TtsPeriod.includes(weekYear(sunday), weekNum(sunday)) ? List.of()
+                        : java.util.stream.IntStream.range(0, DAY_LABELS.size())
+                        .filter(i -> TtsPeriod.editableDay(sunday.plusDays(i + 1), today))
+                        .mapToObj(DAY_LABELS::get).toList())
+                .attendanceDate(TtsPeriod.attendanceDate(sunday))
+                .attendanceEditable(!importedPeriod && TtsPeriod.includes(weekYear(sunday), weekNum(sunday))
+                        && TtsPeriod.editableAttendance(sunday, today))
+                .closedQuarter(TtsPeriod.closed(TtsPeriod.attendanceDate(sunday), today))
                 .build();
     }
 
@@ -244,6 +283,11 @@ public class TtsService {
 
     /** 교사별 → 주차별 앱 점수 (직접 체크 + 자동 연동) */
     Map<Long, Map<Integer, Integer>> computeAppScores(int year, Map<Long, User> usersOut) {
+        return computeAppScores(year, usersOut, null);
+    }
+
+    private Map<Long, Map<Integer, Integer>> computeAppScores(int year, Map<Long, User> usersOut,
+            Map<Long, Map<Integer, Map<LocalDate, Integer>>> calendar) {
         Map<Long, Map<Integer, Integer>> scores = new HashMap<>();
         var timeline = questionPolicy.load();
         if (year < TtsPeriod.START_YEAR) return scores;
@@ -264,8 +308,10 @@ public class TtsService {
             var weekly = scores.computeIfAbsent(row.teacherId(), k -> new HashMap<>());
             // Keep an existing empty/unchecked record distinct from a missing record.
             weekly.putIfAbsent(row.weekNum(), 0);
-            if (row.questionId() != null && seenQuestions.add(row.questionId())) {
-                weekly.merge(row.weekNum(), answerScore(row.answerData(), rulesByWeek.get(row.weekNum()).get(row.questionId())), Integer::sum);
+            if (seenQuestions.add(row.questionId())) {
+                var question = rulesByWeek.get(row.weekNum()).get(row.questionId());
+                if (row.questionId() != null) weekly.merge(row.weekNum(), answerScore(row.answerData(), question), Integer::sum);
+                if (calendar != null) projectCalendarAnswer(calendar, row, TtsPeriod.sunday(year, row.weekNum()), question, year);
             }
         }
 
@@ -280,10 +326,24 @@ public class TtsService {
                 if (rules == null) return;
                 int s = rules.values().stream().filter(q -> q.isActive() && isLinked(q))
                         .filter(q -> types.contains(q.getLinkType())).mapToInt(TtsService::pointsOf).sum();
-                if (s > 0) scores.computeIfAbsent(teacherId, k -> new HashMap<>()).merge(weekNum(sunday), s, Integer::sum);
+                if (s > 0) {
+                    scores.computeIfAbsent(teacherId, k -> new HashMap<>()).merge(weekNum(sunday), s, Integer::sum);
+                    if (calendar != null) calendarScore(calendar, teacherId, sunday, TtsPeriod.attendanceDate(sunday), year, s);
+                }
             }));
         }
+        LocalDate nextSunday = weekSunday(LocalDate.of(year + 1, 1, 1));
+        if (calendar != null && nextSunday.getYear() == year) {
+            // Only the last partial week lives under next year's stored week key.
+            var rules = timeline.allAt(nextSunday).stream().collect(Collectors.toMap(TtsQuestion::getId, q -> q));
+            Set<String> seen = new HashSet<>();
+            for (var row : recordRepository.findScoreRows(year + 1, 1, 1)) {
+                if (seen.add(row.recordId() + ":" + row.questionId()))
+                    projectCalendarAnswer(calendar, row, nextSunday, rules.get(row.questionId()), year);
+            }
+        }
         var missingUsers = new HashSet<>(scores.keySet());
+        if (calendar != null) missingUsers.addAll(calendar.keySet());
         missingUsers.removeAll(usersOut.keySet());
         if (!missingUsers.isEmpty()) userRepository.findAllWithClassesByIdIn(missingUsers)
                 .forEach(u -> usersOut.put(u.getId(), u));
@@ -298,20 +358,21 @@ public class TtsService {
     @Transactional(readOnly = true)
     public Map<String, Object> getStats(int year) {
         TtsPeriod.firstSunday(year);
-        LocalDate thisSunday = weekSunday(LocalDate.now());
+        LocalDate thisSunday = weekSunday(today());
         Map<String, Object> result = new HashMap<>();
         result.put("year", year);
         result.put("firstWeek", TtsPeriod.firstManagedWeek(year));
         result.put("lastWeek", TtsPeriod.weeksInYear(year));
         result.put("currentWeek", weekYear(thisSunday) == year ? weekNum(thisSunday) : null);
-        result.put("people", year < TtsPeriod.START_YEAR ? List.of() : scorePeople(year));
+        result.put("serverToday", today());
+        result.put("people", year < TtsPeriod.START_YEAR ? List.of() : calendarPeople(year));
         return result;
     }
 
     @Transactional(readOnly = true)
     public TtsWeekStatsResponse getWeekStats(int year, int week) {
         LocalDate sunday = TtsPeriod.sunday(year, week);
-        if (!TtsPeriod.includes(year, week) || sunday.isAfter(weekSunday(LocalDate.now()))) {
+        if (!TtsPeriod.includes(year, week) || sunday.isAfter(weekSunday(today()))) {
             throw AppException.badRequest("관리 중인 지난 주 또는 이번 주를 선택해 주세요.");
         }
         boolean imported = isImportedPeriod(sunday);
@@ -352,18 +413,63 @@ public class TtsService {
         }
         int score = isLinked(q) ? (checked ? pointsOf(q) : 0) : answer == null ? 0 : answerScore(answer, q);
         return new TtsWeekStatsResponse.Item(q.getId(), q.getTitle(), q.getType().name(), pointsOf(q),
-                isLinked(q), q.isActive(), days, checked, score);
+                isLinked(q), q.isActive(), days, checked, score,
+                q.getType() == TtsQuestionType.DAYS && !isLinked(q) ? DAY_LABELS : List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public TtsWeekStatsResponse getWeekStats(int year, int week, int calendarYear, int quarter) {
+        LocalDate start = TtsPeriod.quarterStart(calendarYear, quarter);
+        LocalDate end = TtsPeriod.quarterEnd(calendarYear, quarter);
+        var full = getWeekStats(year, week);
+        LocalDate sunday = full.weekStart();
+        if (sunday.isAfter(end) || sunday.plusDays(6).isBefore(start)) {
+            throw AppException.badRequest("선택한 분기에 속하는 주가 아닙니다.");
+        }
+        if (full.importedPeriod()) {
+            if (calendarYear != 2026 || quarter != 4) throw AppException.badRequest("시트 확정 점수는 2026년 4분기에 포함됩니다.");
+            return full;
+        }
+        var people = full.people().stream().map(person -> {
+            List<TtsWeekStatsResponse.Item> items = person.items().stream().map(item -> {
+                if (item.type().equals("DAYS") && !item.linked()) {
+                    var days = item.days().stream().filter(day -> inRange(sunday.plusDays(DAY_LABELS.indexOf(day) + 1), start, end)).toList();
+                    var eligible = DAY_LABELS.stream().filter(day -> inRange(sunday.plusDays(DAY_LABELS.indexOf(day) + 1), start, end)).toList();
+                    return new TtsWeekStatsResponse.Item(item.questionId(), item.title(), item.type(), item.points(),
+                            false, item.active(), days, false, days.size() * item.points(), eligible);
+                }
+                return inRange(TtsPeriod.attendanceDate(sunday), start, end) ? item : null;
+            }).filter(Objects::nonNull).toList();
+            Integer score = person.score() == null ? null : items.stream().mapToInt(TtsWeekStatsResponse.Item::score).sum();
+            return new TtsWeekStatsResponse.Person(person.key(), person.teacherId(), person.name(), person.grade(),
+                    score, person.source(), person.updatedAt(), items);
+        }).toList();
+        int days = (int) java.util.stream.IntStream.range(0, DAY_LABELS.size())
+                .filter(i -> inRange(sunday.plusDays(i + 1), start, end)).count();
+        int max = questionPolicy.load().at(sunday).stream().mapToInt(q -> q.getType() == TtsQuestionType.DAYS && !isLinked(q)
+                ? pointsOf(q) * days : inRange(TtsPeriod.attendanceDate(sunday), start, end) ? pointsOf(q) : 0).sum();
+        return new TtsWeekStatsResponse(year, week, sunday, max, false, people);
+    }
+
+    private static boolean inRange(LocalDate date, LocalDate start, LocalDate end) {
+        return !date.isBefore(start) && !date.isAfter(end);
     }
 
     private List<Map<String, Object>> scorePeople(int year) {
+        return scorePeople(year, null);
+    }
+
+    private List<Map<String, Object>> scorePeople(int year, Map<Long, Map<Integer, Map<LocalDate, Integer>>> calendar) {
         Map<Long, User> users = new LinkedHashMap<>();
         activeTeachers().forEach(t -> users.put(t.getId(), t));
-        Map<Long, Map<Integer, Integer>> appScores = computeAppScores(year, users);
+        Map<Long, Map<Integer, Integer>> appScores = computeAppScores(year, users, calendar);
         var imported = legacyScoreRepository.findAllByInfoYear(year).stream()
                 .filter(s -> TtsPeriod.usesSheet(year,s.getWeekNum())).toList();
         var importedWeeks = imported.stream().map(TtsLegacyScore::getWeekNum).collect(Collectors.toSet());
         // Once a whole week is imported, a blank cell stays unrecorded instead of reviving an old app score.
         appScores.values().forEach(scores -> scores.keySet().removeAll(importedWeeks));
+        if (calendar != null && !importedWeeks.isEmpty()) calendar.values().forEach(quarters -> quarters.values()
+                .forEach(weeks -> weeks.keySet().removeIf(day -> weekYear(day) == year && importedWeeks.contains(weekNum(day)))));
         appScores.keySet().forEach(id -> users.computeIfAbsent(id, k -> userRepository.findById(k).orElse(null)));
         users.values().removeIf(Objects::isNull);
 
@@ -393,6 +499,52 @@ public class TtsService {
             sheetWeeks.add(ls.getWeekNum());
         }
         return new ArrayList<>(people.values());
+    }
+
+    /** Calendar statistics are an extra projection; the existing week-year keys and answers stay intact. */
+    private List<Map<String, Object>> calendarPeople(int year) {
+        Map<Long, Map<Integer, Map<LocalDate, Integer>>> scores = new HashMap<>();
+        List<Map<String, Object>> people = scorePeople(year, scores);
+
+        for (var person : people) {
+            Map<Integer, Map<LocalDate, Integer>> byQuarter = scores.getOrDefault((Long) person.get("teacherId"), Map.of());
+            Map<Integer, Map<String, Object>> quarters = new LinkedHashMap<>();
+            for (int q = 1; q <= 4; q++) {
+                Map<String, Integer> weekly = new TreeMap<>();
+                byQuarter.getOrDefault(q, Map.of()).forEach((week, score) -> weekly.put(week.toString(), score));
+                // 2026 sheet totals have no day-level data. Preserve their approved Q4 attribution verbatim.
+                if (year == TtsPeriod.START_YEAR && q == 4) {
+                    for (var week : (Set<?>) person.get("sheetWeeks")) {
+                        int w = (Integer) week;
+                        weekly.put(TtsPeriod.sunday(year, w).toString(), weekly(person).get(w));
+                    }
+                }
+                Map<String, Object> value = new LinkedHashMap<>();
+                value.put("weekly", weekly);
+                value.put("total", weekly.values().stream().mapToInt(Integer::intValue).sum());
+                value.put("weeks", weekly.values().stream().filter(s -> s > 0).count());
+                quarters.put(q, value);
+            }
+            person.put("calendarQuarters", quarters);
+        }
+        return people;
+    }
+
+    private void projectCalendarAnswer(Map<Long, Map<Integer, Map<LocalDate, Integer>>> scores,
+            com.newaveflow.dto.tts.TtsScoreRow row, LocalDate sunday, TtsQuestion q, int year) {
+        if (q != null && q.getType() == TtsQuestionType.DAYS && !isLinked(q)) {
+            var days = readDays(row.answerData());
+            for (int i = 0; i < DAY_LABELS.size(); i++) calendarScore(scores, row.teacherId(), sunday, sunday.plusDays(i + 1), year,
+                    Boolean.TRUE.equals(days.get(DAY_LABELS.get(i))) ? pointsOf(q) : 0);
+        } else calendarScore(scores, row.teacherId(), sunday, TtsPeriod.attendanceDate(sunday), year,
+                q == null || isLinked(q) ? 0 : answerScore(row.answerData(), q));
+    }
+
+    private void calendarScore(Map<Long, Map<Integer, Map<LocalDate, Integer>>> scores, Long teacher,
+                               LocalDate sunday, LocalDate date, int year, int value) {
+        if (date.getYear() != year || (year == TtsPeriod.START_YEAR && TtsPeriod.quarter(date) < 4)) return;
+        scores.computeIfAbsent(teacher, k -> new HashMap<>()).computeIfAbsent(TtsPeriod.quarter(date), k -> new TreeMap<>())
+                .merge(sunday, value, Integer::sum);
     }
 
     private Map<String, Object> scorePerson(String key, String name, User user) {
@@ -440,13 +592,19 @@ public class TtsService {
         TtsPeriod.validateQuarter(year, quarter);
         if (year < TtsPeriod.START_YEAR || (year == TtsPeriod.START_YEAR && quarter < 4)) return List.of();
 
-        return scorePeople(year).stream().map(person -> {
-            List<Map<String, Object>> weeklyScores = weekly(person).entrySet().stream()
-                    .filter(e -> TtsPeriod.quarter(e.getKey()) == quarter)
-                    .sorted(Map.Entry.comparingByKey())
+        return calendarPeople(year).stream().map(person -> {
+            @SuppressWarnings("unchecked")
+            var quarters = (Map<Integer, Map<String, Object>>) person.get("calendarQuarters");
+            @SuppressWarnings("unchecked")
+            var calendarWeeks = (Map<String, Integer>) quarters.get(quarter).get("weekly");
+            List<Map<String, Object>> weeklyScores = calendarWeeks.entrySet().stream()
                     .map(e -> {
+                        LocalDate sunday = LocalDate.parse(e.getKey());
                         Map<String, Object> ws = new HashMap<>();
-                        ws.put("weekNum", e.getKey());
+                        ws.put("weekNum", (int) ChronoUnit.WEEKS.between(firstSunday(year), sunday) + 1);
+                        ws.put("weekStart", sunday);
+                        ws.put("year", weekYear(sunday));
+                        ws.put("recordWeekNum", weekNum(sunday));
                         ws.put("score", e.getValue());
                         return ws;
                     })
@@ -576,7 +734,30 @@ public class TtsService {
                     .computeIfAbsent(weekSunday(v.getWeekStart()), k -> EnumSet.noneOf(TtsLinkType.class))
                     .add(TtsLinkType.PRAYER_MEETING);
         }
+        for (var snapshot : linkedSnapshotRepository.findByWeekStartBetween(from, to)) {
+            var types = result.computeIfAbsent(snapshot.getTeacher().getId(), k -> new HashMap<>())
+                    .computeIfAbsent(snapshot.getWeekStart(), k -> EnumSet.noneOf(TtsLinkType.class));
+            if (snapshot.isChecked()) types.add(snapshot.getLinkType());
+            else types.remove(snapshot.getLinkType());
+        }
         return result;
+    }
+
+    /** Called in the same transaction before a source change; includes an absent/false result. */
+    @Transactional
+    public void preserveClosedLinkedScore(Long teacherId, LocalDate activityDate, TtsLinkType type) {
+        LocalDate sunday = weekSunday(activityDate);
+        if (!TtsPeriod.includes(weekYear(sunday), weekNum(sunday))) return;
+        // All source mutations share this lock with TTS writes, so first snapshot and edit are atomic.
+        User teacher = userRepository.lockById(teacherId).orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+        // A queued source edit may acquire its lock after the quarter closes at Korean midnight.
+        if (!TtsPeriod.closed(TtsPeriod.attendanceDate(sunday), today())) return;
+        if (questionPolicy.load().at(sunday).stream().noneMatch(q -> q.getLinkType() == type)) return;
+        if (linkedSnapshotRepository.existsByTeacherIdAndWeekStartAndLinkType(teacherId, sunday, type)) return;
+        boolean checked = loadLinked(sunday, sunday.plusDays(6)).getOrDefault(teacherId, Map.of())
+                .getOrDefault(sunday, Set.of()).contains(type);
+        linkedSnapshotRepository.save(TtsLinkedSnapshot.builder().teacher(teacher).weekStart(sunday)
+                .linkType(type).checked(checked).build());
     }
 
 }

@@ -42,6 +42,7 @@ const AdminStudentAttendancePage = lazy(() => import('../pages/AdminStudentAtten
 const ManualPreviewPage = lazy(() => import('../pages/ManualPreviewPage'))
 const ProfilePage = lazy(() => import('../pages/ProfilePage'))
 const NotificationPage = lazy(() => import('../pages/NotificationPage'))
+const AccountConnectionsPage = lazy(() => import('../pages/AccountConnectionsPage'))
 const AccountHelpPage = lazy(() => import('../pages/AccountHelpPage'))
 const PrivacyPage = lazy(() => import('../pages/PrivacyPage'))
 const CommunityPolicyPage = lazy(() => import('../pages/CommunityPolicyPage'))
@@ -231,6 +232,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
           { path: '/class-manage',         element: <ClassManagePage /> },
           { path: '/notifications',        element: <NotificationPage /> },
           { path: '/profile',              element: <ProfilePage /> },
+          { path: '/profile/connections', element: <AccountConnectionsPage /> },
           { path: '/safety/report', element: <ContentReportPage /> },
           {
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,

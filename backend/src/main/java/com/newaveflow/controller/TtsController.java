@@ -74,8 +74,11 @@ public class TtsController {
     }
 
     @GetMapping("/stats/week")
-    public ResponseEntity<TtsWeekStatsResponse> getWeekStats(@RequestParam int year, @RequestParam int weekNum) {
-        return ResponseEntity.ok(ttsService.getWeekStats(year, weekNum));
+    public ResponseEntity<TtsWeekStatsResponse> getWeekStats(@RequestParam int year, @RequestParam int weekNum,
+            @RequestParam(required = false) Integer calendarYear, @RequestParam(required = false) Integer quarter) {
+        if (calendarYear == null && quarter == null) return ResponseEntity.ok(ttsService.getWeekStats(year, weekNum));
+        if (calendarYear == null || quarter == null) throw com.newaveflow.exception.AppException.badRequest("연도와 분기를 함께 선택해 주세요.");
+        return ResponseEntity.ok(ttsService.getWeekStats(year, weekNum, calendarYear, quarter));
     }
 
     @GetMapping("/window")

@@ -2,19 +2,19 @@ import { useState, useMemo, useSyncExternalStore, useEffect, useRef, useId } fro
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
-import { Reveal, AnimatedValue, ProgressFill, SelectionMark } from '../components/common/Motion'
-import { addDays, format } from 'date-fns'
+import { Reveal, AnimatedValue, ProgressFill, SelectionMark, Collapse } from '../components/common/Motion'
+import { addDays, addWeeks, format, startOfWeek } from 'date-fns'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import WeekNavigator from '../components/common/WeekNavigator'
-import { getWeekStartByOffset, toApiDate, weekLabels } from '../utils/date'
+import { toApiDate, weekLabels } from '../utils/date'
 import { ttsApi } from '../api/tts'
 import QueryNotice from '../components/common/QueryNotice'
 import { ttsReadState, ttsAnswerOptions } from '../utils/ttsQuery'
 import SegmentedControl from '../components/common/SegmentedControl'
 import TtsStats from '../components/tts/TtsStats'
 import HomeTtsSummary from '../components/tts/HomeTtsSummary'
-import { firstTtsOffset } from '../utils/ttsPeriod'
+import { firstTtsOffset, ttsToday } from '../utils/ttsPeriod'
 import useToday from '../hooks/useToday'
 import { todayTtsChecks } from '../utils/attention'
 import AttentionDot from '../components/common/AttentionDot'
@@ -96,10 +96,10 @@ export function CheckTab({ embedded = false }) {
     setShowEditor(false)
     editorButtonRef.current?.focus({ preventScroll: true })
   }
-  const todayStr = useToday()
+  const todayStr = useToday(ttsToday)
   const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const offline = useSyncExternalStore(onlineManager.subscribe, () => !onlineManager.isOnline())
-  const sunday    = getWeekStartByOffset(offset, 0)
+  const sunday    = addWeeks(startOfWeek(new Date(todayStr + 'T12:00:00'), { weekStartsOn: 0 }), offset)
   const weekStart = toApiDate(sunday)
   const weekKey   = ['tts-week', weekStart]
 
@@ -112,6 +112,7 @@ export function CheckTab({ embedded = false }) {
     queryKey: weekKey,
     enabled: !saving,
     queryFn: () => ttsApi.getWeek(weekStart).then(r => r.data),
+    refetchInterval: 60_000,
   })
 
   const questions = questionsQuery.data || []
@@ -119,6 +120,9 @@ export function CheckTab({ embedded = false }) {
   const reads = [questionsQuery, weekQuery]
   const readState = ttsReadState(reads)
   const ready = readState.editable
+  const editableDays = week?.editableDays || []
+  const attendanceEditable = week?.attendanceEditable === true
+  const quarterStart = `${todayStr.slice(0, 4)}-${String(Math.floor((Number(todayStr.slice(5,7)) - 1) / 3) * 3 + 1).padStart(2,'0')}-01`
   const mutationOptions = useMemo(() => ttsAnswerOptions(queryClient,
     payload => ttsApi.saveAnswer(payload).then(r => r.data)), [queryClient])
   const { mutate: saveAnswer } = useMutation({
@@ -153,12 +157,13 @@ export function CheckTab({ embedded = false }) {
     ?.find(a => a.questionId === q.id)?.answerData)
   const toggleDay = (q, day) => {
     const dayIndex = DAYS.indexOf(day)
-    if (!ready || offline || !isDaily(q) || dayIndex < 0 || dayDate(dayIndex) > todayStr || week?.importedPeriod) return
+    if (!ready || offline || !isDaily(q) || dayIndex < 0 || !editableDays.includes(day)
+      || dayDate(dayIndex) > todayStr || dayDate(dayIndex) < quarterStart || week?.importedPeriod) return
     setSaveError('')
     saveAnswer({ weekStart, questionId: q.id, day, checked: !currentAnswer(q)?.[day] })
   }
   const toggleAttend = q => {
-    if (!ready || offline) return
+    if (!ready || offline || !attendanceEditable || week?.attendanceDate < quarterStart) return
     setSaveError('')
     saveAnswer({ weekStart, questionId: q.id, checked: currentAnswer(q) !== true })
   }
@@ -181,6 +186,7 @@ export function CheckTab({ embedded = false }) {
     ? questions.filter(q => q.type === 'DAYS' && !isLinked(q) && !answers[q.id]?.[DAYS[todayIdx]])
     : []
   const todayChecks = todayTtsChecks(questions, week, todayStr)
+    .filter(({ day }) => day ? editableDays.includes(day) : attendanceEditable)
 
   return (
     <>
@@ -212,7 +218,7 @@ export function CheckTab({ embedded = false }) {
             <p className="text-xs font-bold text-gray-500">시트 확정 점수</p>
             <p className="text-3xl font-bold text-primary-600 mt-2">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
             <p className="text-xs text-gray-500 mt-3">당시 주간 총점을 보존한 기록입니다.</p>
-            <p className="text-xs text-gray-400 mt-1">수정이 필요하면 관리자에게 알려 주세요.</p>
+            <p className="text-xs text-gray-400 mt-1">{week.closedQuarter ? '마감된 분기로, 기록과 통계만 확인할 수 있어요.' : '수정이 필요하면 관리자에게 알려 주세요.'}</p>
           </Card>
         </div>
       ) : (
@@ -241,12 +247,13 @@ export function CheckTab({ embedded = false }) {
               range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
               items={summaryItems} answers={answers}
               onToggleDay={toggleDay} disabled={!ready || offline}
-              days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr, today: i === todayIdx }))} />
+              days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr,
+                locked: !editableDays.includes(day) || dayDate(i) < quarterStart, today: i === todayIdx }))} />
             <div className="mt-3 flex gap-2">
               <button ref={editorButtonRef} type="button" aria-expanded={showEditor} aria-controls={editorId}
                 onClick={() => showEditor ? closeEditor() : setShowEditor(true)}
                 className={`brand-action flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border px-2 text-xs ${showEditor ? 'border-secondary-300 bg-secondary-50 text-secondary-800' : 'border-primary-200'}`}>
-                {showEditor ? '이번 주 기록 닫기' : '이번 주 기록 수정'}<ChevronDown size={14} aria-hidden="true" className={showEditor ? 'rotate-180' : ''} />
+                {showEditor ? '이번 주 기록 닫기' : '이번 주 기록 수정'}<ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${showEditor ? 'rotate-180' : ''}`} />
               </button>
               <button type="button" onClick={() => navigate('/tts?tab=stats&view=mine')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">내 상세 통계</button>
             </div>
@@ -267,17 +274,22 @@ export function CheckTab({ embedded = false }) {
             }
           />}
 
-          {(!embedded || showEditor) && <div id={editorId} ref={editorRef} role="region" tabIndex={-1} aria-label="이번 주 기록 수정" className="scroll-mt-20 space-y-3 focus:outline-none">
+          <Collapse open={!embedded || showEditor} id={editorId} ref={editorRef} role="region" tabIndex={-1} aria-label="이번 주 기록 수정" className="scroll-mt-20 space-y-3 focus:outline-none">
           {embedded && <div className="flex items-center justify-between gap-2 px-1">
             <h2 className="brand-section-title font-semibold">이번 주 기록 수정</h2>
             <button type="button" onClick={closeEditor} className="min-h-11 px-3 text-xs font-semibold text-primary-700">접기</button>
           </div>}
+          <p role="status" className="rounded-xl bg-gray-50 px-3 py-2 text-xs leading-relaxed text-gray-600">
+            {week?.closedQuarter ? '마감된 분기예요. 저장된 기록과 통계만 확인할 수 있어요.'
+              : `${quarterStart.slice(5).replace('-', '/')}부터 현재 분기의 날짜를 수정할 수 있어요. 이전 분기 날짜는 잠겨 있어요.`}
+          </p>
           {dayQuestions.length > 0 && (
             <DayGrid
               items={dayQuestions}
               answers={answers}
               dayLabel={(i) => format(addDays(sunday, i + 1), 'M.d')}
               isFuture={(i) => dayDate(i) > todayStr}
+              isLocked={(i) => !editableDays.includes(DAYS[i]) || dayDate(i) < quarterStart}
               todayIdx={todayIdx}
               onToggle={toggleDay}
               disabled={!ready || offline}
@@ -290,6 +302,7 @@ export function CheckTab({ embedded = false }) {
                 <h2 className="brand-section-title font-bold text-gray-900 text-sm">예배 · 모임</h2>
                 <p className="text-xs font-bold text-gray-400">참여를 마친 뒤 체크</p>
               </div>
+              <p className="mb-3 text-xs leading-relaxed text-gray-500">주간 항목은 이 주 토요일({format(addDays(sunday, 6), 'M/d')})이 속한 분기로 집계돼요.{!attendanceEditable && !week?.closedQuarter ? ' 해당 분기가 시작되면 체크할 수 있어요.' : ''}</p>
               <div className="flex flex-col gap-2">
                 {otherQuestions.map(({ q, color }) => isLinked(q) ? (
                   <CheckRow
@@ -306,8 +319,8 @@ export function CheckTab({ embedded = false }) {
                     q={q}
                     color={color}
                     checked={answers[q.id] === true}
-                    disabled={!ready || offline}
-                    sub={answers[q.id] === true ? '참여 완료 · 탭해서 해제' : '참여 완료 후 탭해서 체크'}
+                    disabled={!ready || offline || !attendanceEditable || week?.attendanceDate < quarterStart}
+                    sub={answers[q.id] === true ? '참여 완료' : '미체크'}
                     onClick={() => toggleAttend(q)}
                   />
                 ))}
@@ -315,10 +328,10 @@ export function CheckTab({ embedded = false }) {
             </Card>
           )}
 
-          </div>}
+          </Collapse>
           {!embedded && (
             <p className="text-xs text-gray-400 font-medium text-center mt-1">
-              지난 주 기록도 언제든 고칠 수 있어요. 아직 오지 않은 요일은 체크할 수 없어요.
+              같은 분기의 지난 기록은 수정할 수 있어요. 다음 분기가 시작되면 마감돼요.
             </p>
           )}
         </div>
@@ -348,7 +361,7 @@ function ScoreCard({ score, maxScore, weekLabel, items, message, saveStatus }) {
 }
 
 // Labels above controls keep weekdays readable on narrow phones.
-function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle, disabled }) {
+function DayGrid({ items, answers, dayLabel, isFuture, isLocked, todayIdx, onToggle, disabled }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4 gap-2">
@@ -366,12 +379,13 @@ function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle, disab
               {DAYS.map((day, i) => {
                 const done = !!answers[q.id]?.[day]
                 const future = isFuture(i)
+                const locked = isLocked(i)
                 return (
                   <div key={day} className="min-w-0 text-center">
                     <p className={'text-xs mb-1 ' + (i === todayIdx ? 'text-primary-700 font-semibold' : 'text-gray-500')}>{day}</p>
                     <p className="text-xs text-gray-400 mb-2">{dayLabel(i)}</p>
-                    <button disabled={future || disabled} onClick={() => onToggle(q, day)}
-                      aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : '')} aria-pressed={done}
+                    <button disabled={future || locked || disabled} onClick={() => onToggle(q, day)}
+                      aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : locked ? ' (마감)' : '')} aria-pressed={done}
                       className={'tts-day w-full flex items-center justify-center border transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-300') + (future ? ' opacity-40' : '') + (i === todayIdx && !done ? ' ring-1 ring-primary-600' : '')}>
                       {done ? <SelectionMark /> : <span aria-hidden="true">—</span>}
                     </button>

@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import { useState } from 'react'
@@ -108,7 +109,7 @@ function TeacherSelfCheck({ event, userId }) {
         <div className="flex flex-col gap-3">
           <div className={`grid gap-2 ${statusKeys.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {statusKeys.map(key => (
-              <button aria-pressed={pending === key}
+              <button data-tone={key === 'ABSENT' ? 'absence' : undefined} aria-pressed={pending === key}
                 key={key}
                 onClick={() => setPending(key)}
                 className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] ${
@@ -125,7 +126,7 @@ function TeacherSelfCheck({ event, userId }) {
 
           {/* 불참 사유 입력 */}
           {pending === 'ABSENT' && (
-            <motion.div
+            <CollapsePanel
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="flex flex-col gap-2 overflow-hidden"
@@ -140,12 +141,12 @@ function TeacherSelfCheck({ event, userId }) {
                   className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-sm font-medium outline-none focus:ring-2 focus:ring-red-300"
                 />
               </div>
-            </motion.div>
+            </CollapsePanel>
           )}
 
           {/* 부분참석 상세 입력 */}
           {pending === 'PARTIAL' && (
-            <motion.div
+            <CollapsePanel
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="flex flex-col gap-2"
@@ -171,7 +172,7 @@ function TeacherSelfCheck({ event, userId }) {
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200"
                 />
               </div>
-            </motion.div>
+            </CollapsePanel>
           )}
 
           <Button size="lg" onClick={() => saveMutation.mutate()} disabled={!canSubmit || saveMutation.isPending}>
@@ -318,7 +319,7 @@ function StudentAttendanceCheck({ event, userId }) {
                   {isMultiDay && isEditable ? (
                     <div className="flex gap-1">
                       {['PRESENT','PARTIAL','ABSENT'].map(k => (
-                        <button aria-pressed={status === k} key={k} onClick={() => setStatus(sid, k)}
+                        <button data-tone={k === 'ABSENT' ? 'absence' : undefined} aria-pressed={status === k} key={k} onClick={() => setStatus(sid, k)}
                           className={`text-[0.6875rem] font-bold px-2 py-1.5 rounded-lg transition-all ${
                             status === k
                               ? k === 'PRESENT' ? 'bg-secondary-200 text-secondary-800'
@@ -331,7 +332,7 @@ function StudentAttendanceCheck({ event, userId }) {
                       ))}
                     </div>
                   ) : (
-                    <button onClick={() => isEditable && toggleSimple(sid)} disabled={!isEditable}
+                    <button data-tone={status === 'ABSENT' ? 'absence' : undefined} aria-pressed={status === 'PRESENT' || status === 'ABSENT'} onClick={() => isEditable && toggleSimple(sid)} disabled={!isEditable}
                       className={`text-xs font-bold flex items-center gap-1 ${
                         status === 'PRESENT' ? 'text-secondary-600' : status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
                       } ${!isEditable ? 'cursor-default' : ''}`}>
@@ -343,19 +344,19 @@ function StudentAttendanceCheck({ event, userId }) {
 
                 {/* 결석 사유 */}
                 {status === 'ABSENT' && (
-                  <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1">
+                  <CollapsePanel initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1">
                     <input type="text" value={reasonMap[sid] || ''}
                       onChange={e => setReasonMap(p => ({ ...p, [sid]: e.target.value }))}
                       placeholder="결석 사유를 입력해 주세요 (필수)" disabled={!isEditable}
                       className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
                         isEditable ? 'bg-white border-red-100 focus:border-red-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
                       }`} />
-                  </motion.div>
+                  </CollapsePanel>
                 )}
 
                 {/* 부분참석 입력 (다중 일정만) */}
                 {isMultiDay && status === 'PARTIAL' && (
-                  <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1 flex flex-col gap-1.5">
+                  <CollapsePanel initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1 flex flex-col gap-1.5">
                     <input type="date" value={partialFromDateMap[sid] || ''}
                       min={event.eventDate} max={event.endDate} disabled={!isEditable}
                       onChange={e => setPartialFromDateMap(p => ({ ...p, [sid]: e.target.value }))}
@@ -368,7 +369,7 @@ function StudentAttendanceCheck({ event, userId }) {
                       className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
                         isEditable ? 'bg-white border-amber-100 focus:border-amber-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
                       }`} />
-                  </motion.div>
+                  </CollapsePanel>
                 )}
               </motion.div>
             )
@@ -541,7 +542,7 @@ export default function EventAttendanceListPage() {
                 {/* 출석 체크 패널 */}
                 <AnimatePresence>
                   {isOpen && (
-                    <motion.div
+                    <CollapsePanel
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -551,7 +552,7 @@ export default function EventAttendanceListPage() {
                       <fieldset disabled={queryReadState([eventsQuery]) !== 'ready' || isEventAttendanceInactive(event, today)} className="min-w-0">
                         <EventPanel event={event} user={user} />
                       </fieldset>
-                    </motion.div>
+                    </CollapsePanel>
                   )}
                 </AnimatePresence>
               </motion.div>

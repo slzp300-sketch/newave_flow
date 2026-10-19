@@ -11,6 +11,7 @@ public class NotificationResponse {
     private final String title;
     private final String content;
     private final String type;
+    private final String targetPath;
     private final boolean read;
     private final LocalDateTime createdAt;
 
@@ -19,6 +20,7 @@ public class NotificationResponse {
         this.title = notification.getTitle();
         this.content = notification.getContent();
         this.type = notification.getType().name();
+        this.targetPath = notification.getTargetPath();
         this.read = notification.isRead();
         this.createdAt = notification.getCreatedAt();
     }

@@ -1,8 +1,12 @@
-import { ttsYear } from './ttsPeriod.js'
+import { differenceInCalendarWeeks, startOfWeek } from 'date-fns'
+import { ttsYear, ttsToday } from './ttsPeriod.js'
 
 export function elapsedWeeks(year, range, currentWeek, now = new Date()) {
   const currentYear = ttsYear(now)
-  const last = year > currentYear ? 0 : year < currentYear ? range.to : Math.min(range.to, currentWeek || 0)
+  if (!range || (range.start && range.start > ttsToday(now))) return []
+  const today = new Date(ttsToday(now) + 'T12:00:00')
+  const calendarWeek = differenceInCalendarWeeks(today, startOfWeek(new Date(year, 0, 1), { weekStartsOn: 0 }), { weekStartsOn: 0 }) + 1
+  const last = year > currentYear ? 0 : year < currentYear ? range.to : Math.min(range.to, calendarWeek)
   return Array.from({ length: Math.max(0, last - range.from + 1) }, (_, i) => last - i)
 }
 

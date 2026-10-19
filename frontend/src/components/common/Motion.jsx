@@ -1,5 +1,5 @@
-import { createContext, useContext } from 'react'
-import { MotionConfig, motion, useReducedMotion } from 'framer-motion'
+import { createContext, useContext, forwardRef, useId, useState } from 'react'
+import { AnimatePresence, MotionConfig, motion, useReducedMotion, useIsPresent } from 'framer-motion'
 
 const MotionPreference = createContext(null)
 const ease = [0.22, 1, 0.36, 1]
@@ -20,6 +20,40 @@ export function useMotionPreference() {
   const context = useContext(MotionPreference)
   const systemPreference = useReducedMotion()
   return context ?? systemPreference ?? false
+}
+
+// One disclosure motion for forms, details and lists. Closed content is unmounted
+// after the exit so hidden inputs never remain in the keyboard focus order.
+export const Collapse = forwardRef(function Collapse({ open, children, className = '', ...props }, ref) {
+  return <AnimatePresence initial={false}>
+    {open && <CollapsePanel panelRef={ref} {...props}
+      className={`overflow-hidden ${className}`}>
+      {children}
+    </CollapsePanel>}
+  </AnimatePresence>
+})
+
+export const CollapsePanel = forwardRef(function CollapsePanel({ children, className = '', initial, animate, exit, transition, panelRef, ...props }, ref) {
+  const reduced = useMotionPreference()
+  const present = useIsPresent()
+  return <motion.div ref={panelRef || ref} {...props} inert={present ? undefined : ''} aria-hidden={present ? undefined : true}
+    initial={reduced ? false : initial ?? { height: 0, opacity: 0 }}
+    animate={animate ?? { height: 'auto', opacity: 1 }} exit={exit ?? { height: 0, opacity: 0 }}
+    transition={{ ...transition, duration: reduced ? 0 : 0.24, ease }}
+    className={`overflow-hidden ${className}`}>
+    {children}
+  </motion.div>
+})
+
+export function Disclosure({ title, children, className = '', defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen)
+  const id = useId()
+  return <section className={className}>
+    <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)} className="flex min-h-11 w-full items-center justify-between gap-3 py-3 text-left text-sm font-semibold">
+      <span>{title}</span><span aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+    </button>
+    <Collapse open={open} id={id}>{children}</Collapse>
+  </section>
 }
 
 // Reveal each section once as it enters view. Never wait for an exit before navigation.

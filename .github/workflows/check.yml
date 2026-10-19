@@ -185,3 +185,12 @@ jobs:
           RUN_TTS_MANUAL_MIGRATION: 'true'
           TTS_MANUAL_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_tts_manual_ci
         run: bash gradlew test --tests com.newaveflow.TtsManualMigrationTest --no-daemon
+      - name: Create isolated post-release migration database
+        env:
+          PGPASSWORD: migration-ci-only
+        run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_post_release_ci'
+      - name: Verify push and calendar-quarter migrations without real records
+        env:
+          RUN_POST_RELEASE_MIGRATION: 'true'
+          POST_RELEASE_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_post_release_ci
+        run: bash gradlew test --tests com.newaveflow.PostReleaseMigrationTest --no-daemon

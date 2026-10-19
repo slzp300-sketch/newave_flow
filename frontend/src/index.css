@@ -25,4 +25,17 @@
 }
 @layer utilities {
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* Negative attendance is a semantic state, not the generic green selection. */
+  :root :is(button, .brand-action)[data-tone='absence']:is([aria-pressed='true'], [data-checked='true']):not(.brand-color-swatch) {
+    --surface-bg: theme('colors.red.50');
+    --surface-border: theme('colors.red.300');
+    --surface-ink: theme('colors.red.700');
+  }
+  :root :is(button, .brand-action)[data-tone='absence']:is([aria-pressed='true'], [data-checked='true']):not(.brand-color-swatch) :is(svg, span) { color: inherit; }
+  .refresh-spinner { animation: refresh-spin .8s linear infinite; }
+  @keyframes refresh-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .refresh-spinner { animation: none; }
+  }
 }

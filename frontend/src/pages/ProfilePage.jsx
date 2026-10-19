@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
 import { useState } from 'react'
@@ -14,8 +15,7 @@ import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
-import KakaoConnection from '../components/common/KakaoConnection'
-import AppleConnection from '../components/common/AppleConnection'
+import NotificationPreferences from '../components/notifications/NotificationPreferences'
 
 const ROLE_MAP = {
   PASTOR:    { label: '목사님',  bg: 'bg-primary-100    text-primary-700' },
@@ -181,13 +181,16 @@ export default function ProfilePage() {
           <InfoRow icon={Shield} label="권한"  value={roleCfg.label} divider />
         </Card>
 
-        <KakaoConnection />
-        <AppleConnection />
+        <Card className="!p-0 overflow-hidden">
+          <button type="button" onClick={() => navigate('/profile/connections')} className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-semibold">
+            <span>계정 연결 관리</span><ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </Card>
 
         {/* 내 프로필 편집 */}
         <Card className="!p-0 overflow-hidden">
           <button
-            onClick={() => { setProfileOpen(v => !v); setProfileResult(null) }}
+            aria-expanded={profileOpen} aria-controls="profile-editor" onClick={() => { setProfileOpen(v => !v); setProfileResult(null) }}
             className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -196,9 +199,7 @@ export default function ProfilePage() {
               </div>
               <div className="text-left">
                 <span className="text-sm font-bold text-gray-800">프로필 정보 수정</span>
-                <p className="text-xs text-gray-400 font-medium mt-0.5">
-                  교사 교적부에 표시되는 정보를 입력해 주세요
-                </p>
+
               </div>
             </div>
             <motion.div animate={{ rotate: profileOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
@@ -208,7 +209,7 @@ export default function ProfilePage() {
 
           <AnimatePresence>
             {profileOpen && (
-              <motion.div
+              <CollapsePanel id="profile-editor"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -318,7 +319,7 @@ export default function ProfilePage() {
                         <option key={p} value={p}>{p || '선택 안 함'}</option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-400 px-1">교사 교적부 상세 정보에 표시됩니다</p>
+
                   </div>
 
                   {profileResult && (
@@ -347,7 +348,7 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </CollapsePanel>
             )}
           </AnimatePresence>
         </Card>
@@ -355,7 +356,7 @@ export default function ProfilePage() {
         {/* 비밀번호 변경 */}
         {user?.passwordLoginEnabled !== false && <Card className="!p-0 overflow-hidden">
           <button
-            onClick={() => { setPwOpen(v => !v); setPwResult(null) }}
+            aria-expanded={pwOpen} aria-controls="password-editor" onClick={() => { setPwOpen(v => !v); setPwResult(null) }}
             className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -371,7 +372,7 @@ export default function ProfilePage() {
 
           <AnimatePresence>
             {pwOpen && (
-              <motion.div
+              <CollapsePanel id="password-editor"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -401,7 +402,7 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 </form>
-              </motion.div>
+              </CollapsePanel>
             )}
           </AnimatePresence>
         </Card>}
@@ -416,7 +417,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800">큰 글씨 모드</p>
-                <p className="text-xs text-gray-400 font-medium mt-0.5">글자 크기를 키워드립니다</p>
+
               </div>
             </div>
             <button
@@ -437,6 +438,8 @@ export default function ProfilePage() {
           </div>
         </Card>
 
+        <NotificationPreferences />
+
         {/* 앱 정보 */}
         <Card className="!p-0 overflow-hidden">
           <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">앱 정보</p>
@@ -452,7 +455,9 @@ export default function ProfilePage() {
 
         {/* 로그아웃 */}
         <Card className="!p-0 overflow-hidden">
-          <button className="w-full px-4 py-4 text-left text-sm font-semibold" onClick={() => navigate('/privacy')}>개인정보처리방침</button>
+          <button className="w-full px-4 py-4 text-left text-sm" onClick={() => navigate('/safety/report')}>콘텐츠·사용자 신고</button>
+          <button className="w-full px-4 py-4 text-left text-sm border-t border-gray-100" onClick={() => navigate('/community-guidelines')}>이용수칙</button>
+          <button className="w-full px-4 py-4 text-left text-sm border-t border-gray-100" onClick={() => navigate('/privacy')}>개인정보처리방침</button>
           <button className="w-full px-4 py-4 text-left text-sm font-semibold border-t border-gray-100" onClick={() => navigate('/support')}>고객지원</button>
           <button className="w-full px-4 py-4 text-left text-sm font-semibold border-t border-gray-100" onClick={() => navigate('/account-deletion')}>회원 탈퇴·계정 삭제 요청</button>
         </Card>
