@@ -74,4 +74,8 @@ NF-001~011 준비 코드를 포함한다. 홈 전체 메뉴·하단 3탭, 개인
 - 제품 코드 0873627: 프런트 135개 및 [웹·백엔드·Android·PostgreSQL 17/18 회귀](https://github.com/slzp300-sketch/newave_flow/actions/runs/39199844017) 5개 성공.
 - 같은 코드의 [iOS 통합·Release 화면 검사](https://github.com/slzp300-sketch/newave_flow/actions/runs/39199844281)도 최종 성공했다. 실제 iPhone에서 이번 홈을 검수했다는 의미는 아니다.
 - V015/V016 합성 PostgreSQL 검사: 기존 답변/이관 점수 보존, 선행 버전/재실행 거부, 실패 원복, 중복 방지와 다른 사용자 보존 확인. 운영 복원본 결과가 아니다.
-- 1.0.1(6) 후보의 최종 빌드·서명·파일 해시는 아래 완료 기록에 추가한다. 푸시 비활성, 실제 Play 업로드 및 실기기 업데이트 미실행.
+- 1.0.1(6) 후보: 코드/버전 커밋 `dc88efa`, native sync와 `bundleRelease lintRelease` 성공. 릴리스 앱 lint 오류 0개·경고 32개이며 의존성 flatDir/사용 중단 API 경고도 있어 경고 0개로 표현하지 않는다.
+- 기존 업로드 인증서 SHA-256 `6D:11:2B:44:B0:FC:D1:38:5D:06:E2:D5:F5:3F:A7:7F:EB:C9:58:74:84:86:FF:BB:53:B6:30:64:CD:CC:3E:0C`와 일치하고 JAR 서명 검증 성공. 새 키를 만들거나 권한을 넓히지 않았다.
+- 로컬 AAB: 원래 프로젝트 `.verification/android-1.0.1-candidate/newaveflow-1.0.1-6-dc88efa.aab`, 10,172,209바이트. SHA-256 `ab9086ee0079541d63ed33ba124c4b9e805c3b6f6b65cc4efbee3965643c21fb`.
+- 병합 manifest의 패키지/버전/비디버그 설정, AAB 내 dc88efa 빌드 표시·운영 API 주소, 금지 파일명·개인 키 헤더 미포함, native 서비스워커 미포함을 확인했다. 푸시 빌드 플래그 false. 검증 결과 JSON·서명 로그는 같은 로컬 폴더에 보관하며 AAB/키/검수 자격증명은 Git에 올리지 않는다.
+- **현재 미실행:** 새 운영 백업·운영 복원본 검수, V015/V016 운영 적용, 운영/심사 서버·웹 배포, Play 업로드·제출·제공, 1.0.0(5)→1.0.1(6) 실제 Play 업데이트 검수, 푸시 연결/실수신. 준비본 성공이 이 단계들의 완료는 아니다.
