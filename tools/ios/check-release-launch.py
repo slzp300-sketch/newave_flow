@@ -194,8 +194,10 @@ class LaunchCheck:
             # This preparation remains inside the same 510-second total budget.
             self.run('boot', ['xcrun', 'simctl', 'bootstatus', simulator, '-b'],
                      240 if self.family == 'ipad' else 120)
+            # Hosted macOS can take longer to activate Simulator after a cold boot.
+            # run() still clamps this allowance to the remaining device budget.
             self.run('prepare-simulator-gui', ['open', '-g', '-a', str(application), '--args',
-                                             '-CurrentDeviceUDID', simulator], 15)
+                                             '-CurrentDeviceUDID', simulator], 60)
             self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 90)
             # Installation follows the native tests; no second terminate-and-relaunch operation is needed.
             self.run('launch-release', ['xcrun', 'simctl', 'launch', simulator, 'app.newaveflow.mobile'], 360)

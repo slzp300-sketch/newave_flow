@@ -131,10 +131,20 @@ class ReleaseLaunch(unittest.TestCase):
                          ['boot', 'prepare-simulator-gui', 'install-release', 'launch-release', 'shutdown'])
         self.assertEqual(command.call_args_list[1].args,
                          ('prepare-simulator-gui', ['open', '-g', '-a', str(self.simulator_app),
-                                                   '--args', '-CurrentDeviceUDID', 'synthetic-device'], 15))
+                                                   '--args', '-CurrentDeviceUDID', 'synthetic-device'], 60))
         self.assertEqual(command.call_args_list[3].args[2], 360)
+        self.assertEqual(self.check.deadline - self.check.started, 510)
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
         self.assertTrue(report['loginScreenVerified'])
+
+    def test_gui_startup_allowance_cannot_extend_remaining_device_budget(self):
+        self.check.deadline = 117
+        with patch('time.monotonic', return_value=100), \
+                patch('subprocess.run', return_value=Mock(returncode=0, stdout='')) as command:
+            self.check.run('prepare-simulator-gui', ['synthetic-open'], 60)
+        self.assertEqual(command.call_args.kwargs['timeout'], 17)
+        self.assertEqual(self.check.deadline, 117)
+        self.assertEqual(self.check.records[-1]['timeoutSeconds'], 17)
 
     def test_gui_timeout_cannot_fall_through_to_install_or_accept_screen(self):
         def run(label, *args, **kwargs):
