@@ -16,7 +16,7 @@ import { eventAttendanceState, eventToday } from '../utils/eventAttendance'
 const checkState = (query, done) => knownRead(query) ? (done ? 'done' : 'pending') : 'unknown'
 
 export default function useWeeklyTasks() {
-  const { user } = useAuthStore()
+  const { user, apiEnvironment } = useAuthStore()
   const today = useToday(ttsToday)
   const eventDate = useToday(eventToday)
   const date = new Date(today + 'T12:00:00')
@@ -32,6 +32,8 @@ export default function useWeeklyTasks() {
     queryFn: () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data) })
   const weekly = useQuery({ ...fresh, queryKey: ['weekly-status', sunday, user?.id],
     queryFn: () => weeklyStatusApi.getStatus().then(r => r.data) })
+  const minutes = useQuery({ ...fresh, queryKey: ['meeting-minutes', apiEnvironment, user?.id],
+    queryFn: ({ signal }) => client.get('/minutes', { signal }).then(r => r.data) })
   const classes = useQuery({ ...fresh, queryKey: ['my-classes', user?.id],
     queryFn: () => classesApi.getMyClasses().then(r => r.data) })
   const eventQuery = useQuery({ ...fresh, queryKey: ['attendance-required-events'],
@@ -57,11 +59,11 @@ export default function useWeeklyTasks() {
     { id: 'meeting', title: '교사회의 체크', desc: '이번 주 교사회의 참석', path: '/meeting/sat', state: checkState(meeting, !!meeting.data?.status) },
     { id: 'minutes', title: '회의록 및 영상', path: '/minutes',
       desc: weekly.data?.currentWeekMinutesExists ? '회의 내용과 영상 확인' : '회의록 등록 대기',
-      state: minutesTaskState(meeting, weekly) },
+      state: minutesTaskState(minutes, today) },
     { id: 'event', title: '행사 출석', desc: eventState === 'none' ? '현재 제출할 행사 없음' : '내 출석과 우리 반 참석',
       path: events.length === 1 ? `/event-attendance/${events[0].id}` : '/event-attendance', state: eventState },
   ]
-  const reads = [weekly, classes, prayer, meeting, ...eventReads]
+  const reads = [weekly, classes, prayer, meeting, minutes, ...eventReads]
   return { tasks, reads, summary: summarizeChecks(tasks),
     needsAction: path => tasks.some(t => t.state === 'pending' &&
       (t.path === path || (path === '/event-attendance' && t.id === 'event'))) }

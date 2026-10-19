@@ -35,14 +35,19 @@ test('Saved completion removes TTS gaps, malformed answers do not imply completi
 })
 
 test('Minutes reminders require confirmed absence and published unconfirmed minutes', () => {
-  const published = success({ currentWeekMinutesExists: true, currentWeekMinutesConfirmed: false })
-  assert.equal(minutesTaskState(success({ status: 'ABSENT' }), published), 'pending')
-  for (const meeting of [null, { status: 'PRESENT' }]) assert.equal(minutesTaskState(success(meeting), published), 'none')
-  assert.equal(minutesTaskState(success({ status: 'ABSENT' }), success({ currentWeekMinutesExists: false })), 'none')
-  assert.equal(minutesTaskState(success({ status: 'ABSENT' }), success({ currentWeekMinutesExists: true, currentWeekMinutesConfirmed: true })), 'done')
+  const today = '2026-10-18'
+  const published = { id: 1, isActive: true, attendanceStatus: 'ABSENT', meetingDate: '2026-10-17', confirmed: false }
+  assert.equal(minutesTaskState(success([published]), today), 'pending')
+  // A Sunday/new week must not drop an older unconfirmed absence; another confirmation must not hide it.
+  assert.equal(minutesTaskState(success([{ ...published, confirmed: true }, { ...published, id: 2 }]), today), 'pending')
+  assert.equal(minutesTaskState(success([{ ...published, confirmed: true }]), today), 'done')
+  for (const change of [{ isActive: false }, { attendanceStatus: 'ATTEND' }, { attendanceStatus: 'UNKNOWN' }, { meetingDate: '2026-10-24' }]) {
+    assert.equal(minutesTaskState(success([{ ...published, ...change }]), today), 'none')
+  }
+  assert.equal(minutesTaskState(success([]), today), 'none')
+  assert.equal(minutesTaskState(success(null), today), 'unknown')
   for (const extra of [{ isError: true }, { fetchStatus: 'paused' }, { isSuccess: false }]) {
-    assert.equal(minutesTaskState({ ...success({ status: 'ABSENT' }), ...extra }, published), 'unknown')
-    assert.equal(minutesTaskState(success({ status: 'ABSENT' }), { ...published, ...extra }), 'unknown')
+    assert.equal(minutesTaskState({ ...success([published]), ...extra }, today), 'unknown')
   }
 })
 

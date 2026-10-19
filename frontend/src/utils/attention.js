@@ -27,12 +27,12 @@ export function weeklyTtsChecks(questions, week, today) {
   })
 }
 
-export function minutesTaskState(meeting, weekly) {
-  if (!knownRead(meeting)) return 'unknown'
-  if (meeting.data?.status !== 'ABSENT') return 'none'
-  if (!knownRead(weekly)) return 'unknown'
-  if (!weekly.data?.currentWeekMinutesExists) return 'none'
-  return weekly.data.currentWeekMinutesConfirmed ? 'done' : 'pending'
+export function minutesTaskState(minutes, today) {
+  if (!knownRead(minutes) || !Array.isArray(minutes.data)) return 'unknown'
+  const relevant = minutes.data.filter(m => m.isActive === true && m.attendanceStatus === 'ABSENT'
+    && m.meetingDate && m.meetingDate <= today)
+  if (!relevant.length) return 'none'
+  return relevant.every(m => m.confirmed === true) ? 'done' : 'pending'
 }
 
 export function hasRotationThisWeek(schedules, today) {
