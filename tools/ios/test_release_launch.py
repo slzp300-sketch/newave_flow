@@ -45,6 +45,41 @@ class ReleaseLaunch(unittest.TestCase):
         self.assertTrue(self.check.records[0]['timedOut'])
         self.assertIn('boot pending', self.check.log.read_text())
 
+    def test_reset_rejects_local_and_self_hosted_before_any_command(self):
+        for actions, runner in (('', ''), ('true', 'self-hosted'), ('false', 'github-hosted')):
+            with self.subTest(runner=runner), patch.dict(os.environ, {
+                    'GITHUB_ACTIONS': actions, 'RUNNER_ENVIRONMENT': runner}), \
+                    patch.object(self.check, 'run') as command:
+                with self.assertRaisesRegex(ValueError, 'disposable GitHub-hosted'):
+                    self.check.check('synthetic-device', Path('App.app'), Path('checker'),
+                                     reset_ci_simulator=True)
+                command.assert_not_called()
+
+    def test_ci_reset_is_bounded_and_precedes_boot_and_install(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted'}), \
+                patch.object(self.check, 'run', return_value=0) as command, \
+                patch.object(self.check, 'wait_for_screen') as screen:
+            self.check.check('synthetic-device', Path('App.app'), Path('checker'), reset_ci_simulator=True)
+        self.assertEqual([call.args[0] for call in command.call_args_list][:3],
+                         ['shutdown-ci-simulators', 'erase-ci-simulator', 'boot'])
+        self.assertEqual(command.call_args_list[1].args,
+                         ('erase-ci-simulator', ['xcrun', 'simctl', 'erase', 'synthetic-device'], 45))
+        self.assertAlmostEqual(self.check.deadline - self.check.started, 510)
+        screen.assert_called_once()
+
+    def test_ci_reset_failure_cannot_install_or_accept_screen(self):
+        def run(label, *args, **kwargs):
+            if label == 'erase-ci-simulator':
+                raise ValueError('reset failed')
+            return 0
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted'}), \
+                patch.object(self.check, 'run', side_effect=run) as command, \
+                patch.object(self.check, 'wait_for_screen') as screen:
+            with self.assertRaisesRegex(ValueError, 'reset failed'):
+                self.check.check('synthetic-device', Path('App.app'), Path('checker'), reset_ci_simulator=True)
+        self.assertNotIn('install-release', [call.args[0] for call in command.call_args_list])
+        screen.assert_not_called()
+
     def test_ocr_not_ready_can_retry_but_ocr_error_fails(self):
         with patch('subprocess.run', return_value=Mock(returncode=2, stdout='not ready')):
             self.assertEqual(self.check.run('ocr', ['synthetic'], 30, allowed=(0, 2)), 2)

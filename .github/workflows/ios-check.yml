@@ -93,6 +93,7 @@ jobs:
         working-directory: frontend
         run: |
           python3 ../tools/ios/check-release-launch.py --family iphone --simulator "$IOS_SIMULATOR_ID" \
+            --reset-ci-simulator \
             --app .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
             --checker .verification/ios/check-launch-screen --output .verification/ios
       - name: Check the Release login screen in iPad compatibility mode

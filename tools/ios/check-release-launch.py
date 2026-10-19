@@ -186,12 +186,21 @@ class LaunchCheck:
         except OSError:
             self.records.append({'phase': label, 'diagnosticError': 'App crash summary unavailable'})
 
-    def check(self, simulator, app, checker):
+    def check(self, simulator, app, checker, *, reset_ci_simulator=False):
         # Validate before any simulator command; do not fall back to another installed Xcode.
         application = simulator_application()
+        # Reset is opt-in and restricted to disposable GitHub-hosted machines.
+        # Never erase a developer's local or self-hosted simulator.
+        if reset_ci_simulator and (os.environ.get('GITHUB_ACTIONS') != 'true'
+                                   or os.environ.get('RUNNER_ENVIRONMENT') != 'github-hosted'):
+            raise ValueError('Simulator reset requires a disposable GitHub-hosted runner')
         name = 'iphone-launch.png' if self.family == 'iphone' else 'ipad-compatibility-launch.png'
         error = None
         try:
+            if reset_ci_simulator:
+                # Release installation must not inherit the Debug test host's running app state.
+                self.run('shutdown-ci-simulators', ['xcrun', 'simctl', 'shutdown', 'all'], 30)
+                self.run('erase-ci-simulator', ['xcrun', 'simctl', 'erase', simulator], 45)
             # Complete boot before GUI startup can asynchronously boot the same device.
             # A fresh iPad runtime migrates its system data before our app is installed.
             # This preparation remains inside the same 510-second total budget.
@@ -235,8 +244,10 @@ def main():
     parser.add_argument('--app', type=Path, required=True)
     parser.add_argument('--checker', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--reset-ci-simulator', action='store_true')
     args = parser.parse_args()
-    LaunchCheck(args.output, args.family).check(args.simulator, args.app, args.checker.resolve())
+    LaunchCheck(args.output, args.family).check(args.simulator, args.app, args.checker.resolve(),
+                                              reset_ci_simulator=args.reset_ci_simulator)
 
 
 if __name__ == '__main__':
