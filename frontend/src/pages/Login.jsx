@@ -110,17 +110,6 @@ export default function Login() {
           <Link to="/app-guide" className="inline-flex min-h-11 items-center text-sm font-semibold underline text-primary-700">전체 기능·계정별 이용 안내</Link>
         </fieldset>
         {error && <div role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-        <div className="mb-5 space-y-3">
-          {nativePlatform === 'ios' && <div>
-            <AppleButton onClick={handleApple} loading={appleLoading} disabled={busy || !appleEnabled} />
-            {!appleEnabled && accountEnvironment !== 'review' && <AuthServiceStatus provider="Apple" environment={accountEnvironment} query={appleQuery} onRetry={() => appleQuery.refetch()} />}
-          </div>}
-          <div><KakaoButton onClick={handleKakao} loading={kakaoLoading} disabled={busy || !kakaoEnabled} />
-            {!kakaoEnabled && accountEnvironment !== 'review' && <AuthServiceStatus provider="카카오" environment={accountEnvironment} query={kakaoQuery} onRetry={() => kakaoQuery.refetch()} />}
-          </div>
-          {accountEnvironment === 'review' && <AuthServiceStatus provider="Apple·카카오" environment="review" query={{}} />}
-          <p className="text-sm leading-6 text-gray-600">기존 회원은 이메일 로그인 후 내 정보에서 외부 계정을 연결해 주세요.</p>
-        </div>
         <form onSubmit={handleSubmit}>
           <fieldset disabled={busy} className="flex flex-col gap-4">
           <div>
@@ -143,6 +132,17 @@ export default function Login() {
           <Button type="submit" size="lg" loading={loading} disabled={busy} className="mt-1">{accountEnvironment === 'review' ? '가상 자료 계정 로그인' : '일반 계정 로그인'}</Button>
           </fieldset>
         </form>
+        <div className="mt-5 border-t border-gray-200 pt-5 space-y-3">
+          {nativePlatform === 'ios' && <div>
+            <AppleButton onClick={handleApple} loading={appleLoading} disabled={busy || !appleEnabled} />
+            {!appleEnabled && accountEnvironment !== 'review' && <AuthServiceStatus provider="Apple" environment={accountEnvironment} query={appleQuery} onRetry={() => appleQuery.refetch()} />}
+          </div>}
+          <div><KakaoButton onClick={handleKakao} loading={kakaoLoading} disabled={busy || !kakaoEnabled} />
+            {!kakaoEnabled && accountEnvironment !== 'review' && <AuthServiceStatus provider="카카오" environment={accountEnvironment} query={kakaoQuery} onRetry={() => kakaoQuery.refetch()} />}
+          </div>
+          {accountEnvironment === 'review' && <AuthServiceStatus provider="Apple·카카오" environment="review" query={{}} />}
+          <p className="text-sm leading-6 text-gray-600">기존 회원은 이메일 로그인 후 내 정보에서 외부 계정을 연결해 주세요.</p>
+        </div>
         {accountEnvironment === 'review' && <p className="mt-4 text-sm leading-6 text-amber-900">아래 회원가입·계정 찾기는 일반 서비스를 위한 기능입니다. 가상 계정은 별도로 제공된 로그인 정보를 사용합니다.</p>}
         <nav aria-label="회원가입 및 계정 찾기" className="mt-4 flex flex-wrap items-center justify-center gap-x-1 border-t border-gray-200 pt-3 text-xs text-gray-500">
           <Link to="/signup" className="inline-flex min-h-11 items-center px-2 py-2 font-semibold text-primary-700">회원가입</Link>
