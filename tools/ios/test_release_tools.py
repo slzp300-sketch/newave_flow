@@ -92,6 +92,14 @@ class ReleaseInputs(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 preflight['validate_inputs']({**self.env, key: value})
 
+    def test_review_branch_requires_exact_name_and_commit(self):
+        env = {**self.env, 'GITHUB_REF': 'refs/heads/codex/ios-review-clarity'}
+        preflight['validate_inputs'](env)
+        for change in ({'RELEASE_SHA': 'b' * 40}, {'GITHUB_REF': 'refs/heads/codex/ios-review-clarity-other'},
+                       {'GITHUB_REF': 'refs/tags/codex/ios-review-clarity'}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                preflight['validate_inputs']({**env, **change})
+
     def test_upload_needs_exact_confirmation(self):
         with self.assertRaises(ValueError):
             preflight['validate_inputs']({**self.env, 'UPLOAD': 'true'})

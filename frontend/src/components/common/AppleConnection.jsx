@@ -6,16 +6,25 @@ import { nativePlatform } from '../../native/platform'
 import AppleButton from './AppleButton'
 import Card from './Card'
 import useAuthStore from '../../store/authStore'
+import AuthServiceStatus from './AuthServiceStatus'
 
 export default function AppleConnection() {
   const passwordLoginEnabled = useAuthStore(state => state.user?.passwordLoginEnabled !== false)
+  const { apiEnvironment, user } = useAuthStore()
   const queryClient = useQueryClient()
-  const { data: available } = useQuery({ queryKey: ['apple-availability'], queryFn: appleAvailability, enabled: nativePlatform === 'ios', retry: false, staleTime: 60000 })
-  const { data } = useQuery({ queryKey: ['apple-connection'], queryFn: () => appleApi.connection().then(r => r.data), enabled: nativePlatform === 'ios' && available === true, retry: false })
+  const availability = useQuery({ queryKey: ['apple-availability', apiEnvironment, user?.id], queryFn: () => appleAvailability(), enabled: nativePlatform === 'ios' && apiEnvironment !== 'review', retry: false, staleTime: 60000 })
+  const connection = useQuery({ queryKey: ['apple-connection', apiEnvironment, user?.id], queryFn: () => appleApi.connection().then(r => r.data), enabled: nativePlatform === 'ios' && apiEnvironment !== 'review' && availability.data === true, retry: false })
+  const data = connection.data
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  if (!available || !data) return null
+  if (nativePlatform !== 'ios') return null
+  if (apiEnvironment === 'review' || availability.data !== true || availability.isError || !data || connection.isError) {
+    const query = availability.data === true && !availability.isError ? connection : availability
+    return <Card><h2 className="brand-section-title text-base font-semibold">Apple 계정 연결</h2>
+      <AuthServiceStatus provider="Apple" environment={apiEnvironment} query={query} onRetry={() => query.refetch()} />
+    </Card>
+  }
   const connect = async () => {
     setLoading(true); setError('')
     try {

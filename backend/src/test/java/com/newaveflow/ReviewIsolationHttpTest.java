@@ -53,6 +53,61 @@ class ReviewIsolationHttpTest {
         return json.readTree(http.postForObject(base + "/auth/login", request(Map.of("email", email, "password", PASSWORD), null), String.class));
     }
 
+    @Test void fullReviewAssignmentsUseRealEndpointsAndReviewerChangesSurviveRestart() throws Exception {
+        java.time.LocalDate monday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).with(java.time.DayOfWeek.MONDAY);
+        java.time.LocalDate editedDate = monday.plusDays(24);
+        Long eventId;
+        Long scheduleId;
+        Long minuteId;
+        try (var review = startReview()) {
+            String base = "http://localhost:" + review.getWebServer().getPort() + "/api";
+            var http = new RestTemplate();
+            String teacher = login(http, base, ReviewFixtures.TEACHER_EMAIL).get("accessToken").asText();
+            String admin = login(http, base, ReviewFixtures.ADMIN_EMAIL).get("accessToken").asText();
+            for (String token : new String[]{teacher, admin}) {
+                http.postForObject(base + "/safety/agreement", request(Map.of("version", CommunitySafetyService.POLICY_VERSION, "accepted", true), token), String.class);
+            }
+            JsonNode roster = json.readTree(http.exchange(base + "/evangelism/status/mine", HttpMethod.GET, request(null, teacher), String.class).getBody());
+            assertEquals("가상 전도 1조", roster.at("/myGroup/name").asText());
+            assertEquals(4, roster.path("upcomingSchedules").size());
+            assertEquals(2, roster.at("/myGroup/members").size());
+            scheduleId = roster.at("/nextSchedule/id").asLong();
+            assertThrows(HttpClientErrorException.Forbidden.class, () -> http.exchange(base + "/evangelism/groups/1", HttpMethod.PUT, request(Map.of("name", "not allowed"), teacher), String.class));
+            http.exchange(base + "/evangelism/groups/1", HttpMethod.PUT, request(Map.of("name", "가상 수정된 조"), admin), String.class);
+            JsonNode meeting = json.readTree(http.postForObject(base + "/meetings/attendance", request(Map.of("meetingDate", monday.plusDays(5).toString(), "status", "ATTEND", "reason", ""), teacher), String.class));
+            assertEquals("ATTEND", meeting.path("status").asText());
+            JsonNode prayer = json.readTree(http.postForObject(base + "/prayer-votes", request(Map.of("weekStart", monday.toString(), "status", "THU", "reason", ""), teacher), String.class));
+            assertEquals("THU", prayer.path("status").asText());
+            JsonNode minuteList = json.readTree(http.exchange(base + "/minutes", HttpMethod.GET, request(null, teacher), String.class).getBody());
+            assertEquals(1, minuteList.size());
+            assertEquals("ABSENT", minuteList.get(0).path("attendanceStatus").asText());
+            minuteId = minuteList.get(0).path("id").asLong();
+            http.postForObject(base + "/minutes/" + minuteId + "/confirm", request(Map.of(), teacher), String.class);
+            assertEquals(7, json.readTree(http.exchange(base + "/tts/questions", HttpMethod.GET, request(null, teacher), String.class).getBody()).size());
+
+            eventId = review.getBean(EventRepository.class).findAll().get(0).getId();
+            new org.springframework.transaction.support.TransactionTemplate(review.getBean(org.springframework.transaction.PlatformTransactionManager.class)).executeWithoutResult(tx -> {
+                review.getBean(EventRepository.class).findById(eventId).orElseThrow().setEventDate(editedDate);
+                review.getBean(UserRepository.class).findByEmailIgnoreCase(ReviewFixtures.TEACHER_EMAIL).orElseThrow().updateRole(User.Role.EXECUTIVE);
+                review.getBean(EvangelismScheduleRepository.class).findById(scheduleId).orElseThrow().cancel();
+            });
+            // Running the initializer again is not a reset, even during the same process.
+            review.getBean(ReviewFixtures.class).refresh();
+            assertEquals(editedDate, review.getBean(EventRepository.class).findById(eventId).orElseThrow().getEventDate());
+        }
+        try (var restarted = startReview()) {
+            assertEquals(editedDate, restarted.getBean(EventRepository.class).findById(eventId).orElseThrow().getEventDate());
+            assertEquals(User.Role.EXECUTIVE, restarted.getBean(UserRepository.class).findByEmailIgnoreCase(ReviewFixtures.TEACHER_EMAIL).orElseThrow().getRole());
+            assertEquals("CANCELED", restarted.getBean(EvangelismScheduleRepository.class).findById(scheduleId).orElseThrow().getStatus());
+            assertEquals("가상 수정된 조", restarted.getBean(EvangelismGroupRepository.class).findById(1L).orElseThrow().getName());
+            assertEquals(1, restarted.getBean(MeetingMinuteConfirmRepository.class).count());
+            assertEquals(2, restarted.getBean(PrayerVoteRepository.class).count());
+            assertEquals(3, restarted.getBean(MeetingAttendanceRepository.class).count());
+            assertEquals(4, restarted.getBean(EvangelismScheduleRepository.class).count());
+            assertEquals(8, restarted.getBean(StudentRepository.class).count());
+        }
+    }
+
     @Configuration @EnableWebMvc @Import({SecurityConfig.class, com.newaveflow.exception.GlobalExceptionHandler.class})
     static class SyntheticProduction {
         @Bean UserRepository users() {

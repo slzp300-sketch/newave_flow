@@ -12,8 +12,8 @@ export const clearApplePending = () => flow.clearPending()
 export const registerWithApple = form => flow.register(form)
 export const isAppleCancellation = error => error?.code === 'APPLE_CANCELLED'
 
-export async function appleAvailability() {
+export async function appleAvailability(config) {
   if (nativePlatform !== 'ios') return false
-  const [{ data }, native] = await Promise.all([appleApi.config(), appleNative.getAvailability()])
+  const [{ data }, native] = await Promise.all([appleApi.config(config), appleNative.getAvailability()])
   return data.enabled === true && native.available === true
 }

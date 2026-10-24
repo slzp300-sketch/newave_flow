@@ -40,6 +40,7 @@ const AdminStudentManagePage = lazy(() => import('../pages/AdminStudentManagePag
 const AdminPendingUsersPage = lazy(() => import('../pages/AdminPendingUsersPage'))
 const AdminStudentAttendancePage = lazy(() => import('../pages/AdminStudentAttendancePage'))
 const ManualPreviewPage = lazy(() => import('../pages/ManualPreviewPage'))
+const AppGuidePage = lazy(() => import('../pages/AppGuidePage'))
 const ProfilePage = lazy(() => import('../pages/ProfilePage'))
 const NotificationPage = lazy(() => import('../pages/NotificationPage'))
 const AccountHelpPage = lazy(() => import('../pages/AccountHelpPage'))
@@ -200,6 +201,7 @@ function RequireRole({ roles }) {
 
 const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingScreen />}><Outlet /></Suspense>, children: [
   { path: '/login', element: <Login /> },
+  { path: '/app-guide', element: <AppGuidePage /> },
   { path: '/auth/kakao/callback', element: <KakaoCallbackPage /> },
   { path: '/signup', element: <Signup /> },
   { path: '/find-account', element: <FindAccountPage /> },

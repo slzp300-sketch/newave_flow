@@ -3,12 +3,30 @@ import assert from 'node:assert/strict'
 import axios from 'axios'
 import { createApiClient } from '../src/api/createApiClient.js'
 import { loginEnvironment, validatedReviewApiUrl } from '../src/auth/reviewEnvironment.js'
+import { createEmailLogin } from '../src/auth/createEmailLogin.js'
 
 test('only the reserved review domain selects the synthetic environment', () => {
   assert.equal(loginEnvironment(' Play.Teacher@Review.Newaveflow.Invalid '), 'review')
   for (const email of ['teacher@gmail.com', 'teacher@review.newaveflow.invalid.evil', 'review.newaveflow.invalid@gmail.com', '']) {
     assert.equal(loginEnvironment(email), 'production')
   }
+})
+
+test('credentials never silently switch the selected login environment', async () => {
+  const api = setup()
+  const login = createEmailLogin(api.client)
+  await assert.rejects(login('teacher@review.newaveflow.invalid', 'synthetic'), /가상 자료 계정/)
+  await assert.rejects(login('teacher@example.invalid', 'synthetic', 'review'), /일반 계정/)
+  await assert.rejects(login('teacher@example.invalid', 'synthetic', 'unexpected'), /계정 종류/)
+  assert.equal(api.requests.length, 0, 'mismatched credentials must not leave the device')
+  const review = await login('teacher@review.newaveflow.invalid', 'synthetic', 'review')
+  assert.equal(review.data.apiEnvironment, 'review')
+  assert.equal(api.requests[0].url, 'https://review.example/api/auth/login')
+  assert.equal(api.requests[0].token, undefined)
+  const production = await login('teacher@example.invalid', 'synthetic', 'production')
+  assert.equal(production.data.apiEnvironment, 'production')
+  assert.equal(api.requests[1].url, 'https://production.example/api/auth/login')
+  assert.equal(api.requests[1].token, undefined)
 })
 
 test('review endpoint rejects arbitrary origins, credentials, and redirect-like values', () => {

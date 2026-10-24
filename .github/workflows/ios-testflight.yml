@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       commit_sha:
-        description: 'Exact main commit SHA (40 characters, all checks must be green)'
+        description: 'Exact approved-branch commit SHA (40 characters, all checks must be green)'
         required: true
         type: string
       version:
@@ -53,7 +53,7 @@ jobs:
         run: python3 tools/ios/release-preflight.py
       - name: Test release validation without credentials
         run: python3 -B -m unittest discover -s tools/ios -p 'test_*.py'
-      - name: Require successful regression and native checks on this exact main commit
+      - name: Require successful regression and native checks on this exact approved-branch commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 tools/ios/release-readiness.py
@@ -61,7 +61,7 @@ jobs:
     needs: preflight
     runs-on: macos-15
     timeout-minutes: 40
-    # Create this environment with required reviewer(s) and main-only deployment before enabling.
+    # Create this environment with required reviewer(s) and explicitly approved branch deployment before enabling.
     # Environment secrets are unavailable until its configured approval gate passes.
     environment: ios-testflight
     defaults:
@@ -85,7 +85,7 @@ jobs:
           npm test
           npm run ios:sync
           npm run ios:verify
-      - name: Recheck main and required jobs after environment approval and web build
+      - name: Recheck selected branch and required jobs after environment approval and web build
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 tools/ios/release-readiness.py

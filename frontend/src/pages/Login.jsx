@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '../api/auth'
@@ -12,12 +12,12 @@ import AppleButton from '../components/common/AppleButton'
 import { beginKakao } from '../auth/kakao'
 import { appleAvailability, beginApple, clearApplePending, isAppleCancellation } from '../auth/apple'
 import { flushAuthStorage, nativePlatform } from '../native/platform'
-import { loginEnvironment } from '../auth/reviewEnvironment'
+import AuthServiceStatus from '../components/common/AuthServiceStatus'
 import { appleSessionIdentity } from '../auth/authIdentity'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { setAuth } = useAuthStore()
+  const { user, setAuth } = useAuthStore()
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -31,15 +31,22 @@ export default function Login() {
   const [kakaoLoading, setKakaoLoading] = useState(false)
   const [appleLoading, setAppleLoading] = useState(false)
   const [appleRegistration, setAppleRegistration] = useState(false)
-  const { data: appleEnabled } = useQuery({ queryKey: ['apple-availability'], queryFn: appleAvailability, enabled: nativePlatform === 'ios', retry: false, staleTime: 60000 })
-  const { data: kakaoConfig } = useQuery({ queryKey: ['kakao-config'], queryFn: () => authApi.kakaoConfig().then(r => r.data), retry: false, staleTime: 60000 })
+  const [accountEnvironment, setAccountEnvironment] = useState('production')
+  const publicConfig = { apiEnvironment: 'production', skipAuth: true }
+  const appleQuery = useQuery({ queryKey: ['apple-availability', 'login', accountEnvironment], queryFn: () => appleAvailability(publicConfig), enabled: nativePlatform === 'ios' && accountEnvironment === 'production', retry: false, staleTime: 60000 })
+  const kakaoQuery = useQuery({ queryKey: ['kakao-config', 'login', accountEnvironment], queryFn: () => authApi.kakaoConfig(publicConfig).then(r => r.data), enabled: accountEnvironment === 'production', retry: false, staleTime: 60000 })
+  const appleEnabled = accountEnvironment === 'production' && appleQuery.data === true && !appleQuery.isError
+  const kakaoEnabled = accountEnvironment === 'production' && kakaoQuery.data?.enabled === true && !kakaoQuery.isError
+  const busy = loading || kakaoLoading || appleLoading
   const handleKakao = async () => {
+    if (!kakaoEnabled || busy) return
     setError(''); setKakaoLoading(true)
     try { await beginKakao() }
     catch (err) { setError(err.response?.data?.message || err.message || '카카오 로그인을 시작하지 못했습니다.') }
     finally { setKakaoLoading(false) }
   }
   const handleApple = async () => {
+    if (!appleEnabled || busy) return
     setError(''); setAppleLoading(true)
     try {
       const result = await beginApple()
@@ -53,6 +60,9 @@ export default function Login() {
       if (!isAppleCancellation(err)) setError(err.response?.data?.message || err.message || 'Apple 로그인을 완료하지 못했습니다.')
     } finally { setAppleLoading(false) }
   }
+  // A signed-in review session must not start production OAuth through /login.
+  // Switching accounts always follows logout, which clears the stored environment.
+  if (user) return <Navigate to="/" replace />
   if (appleRegistration) return <div className="safe-page-top min-h-screen max-w-mobile mx-auto bg-white px-6 pb-10" style={{ '--safe-page-space': '2.5rem' }}>
     <h1 className="text-xl font-semibold">계정 연결 또는 가입 신청</h1>
     <p className="mt-4 text-sm leading-relaxed text-gray-600">Apple 인증을 완료했어요. 기존 회원은 이메일로 로그인한 뒤 ‘내 정보 → Apple 계정 연결’을 이용해 주세요.</p>
@@ -63,10 +73,11 @@ export default function Login() {
   </div>
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (busy) return
     setError('')
     setLoading(true)
     try {
-      const { data } = await authApi.login(form.email, form.password)
+      const { data } = await authApi.login(form.email, form.password, accountEnvironment)
       queryClient.clear()
       setAuth(data.user, data.accessToken, data.refreshToken, data.apiEnvironment)
       await flushAuthStorage()
@@ -81,21 +92,37 @@ export default function Login() {
 
   return (
     <div className="safe-page-top min-h-screen bg-white max-w-mobile mx-auto">
-      <div className={`login-hero motion-login ${appleEnabled ? 'h-[180px]' : 'h-[254px]'} flex flex-col items-center justify-center text-white`}>
+      <div className={`login-hero motion-login h-[180px] flex flex-col items-center justify-center text-white`}>
         <Brand emblem light />
         <p className="text-sm font-medium tracking-[.12em] mt-6">시대를 바꿀 새로운 파도</p>
       </div>
       <div className="motion-enter px-6 pt-7 pb-8" style={{ animationDelay: '100ms' }}>
         <h1 className="sr-only">뉴웨이브 로그인</h1>
         <p className="text-sm text-gray-500 mb-6">뉴웨이브 청소년부 교사 공간</p>
-        {appleEnabled && error && <div role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-        {appleEnabled && <div className="mb-5">
-          <AppleButton onClick={handleApple} loading={appleLoading} disabled={loading || kakaoLoading} />
-          {kakaoConfig?.enabled && <KakaoButton onClick={handleKakao} loading={kakaoLoading} disabled={loading || appleLoading} className="mt-3" />}
-          <p className="mt-3 text-center text-xs leading-relaxed text-gray-500">기존 회원은 이메일 로그인 후 내 정보에서 먼저 연결해 주세요.</p>
-          <div className="mt-4 flex items-center gap-3 text-xs text-gray-400"><span className="h-px flex-1 bg-gray-200" />이메일로 로그인<span className="h-px flex-1 bg-gray-200" /></div>
-        </div>}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <fieldset disabled={busy} className="mb-5 rounded-xl border border-gray-200 p-4">
+          <legend className="px-1 text-sm font-bold">로그인할 계정 종류</legend>
+          <div className="flex flex-wrap gap-4 text-sm">
+            {[['production', '일반 계정'], ['review', '가상 자료 계정']].map(([value, label]) => <label key={value} className="flex min-h-11 items-center gap-2">
+              <input type="radio" name="account-environment" value={value} checked={accountEnvironment === value} onChange={() => { setAccountEnvironment(value); setError(''); setForm(f => ({ ...f, password: '' })) }} />{label}
+            </label>)}
+          </div>
+          <p className="text-sm leading-6 text-gray-600">{accountEnvironment === 'review' ? '실제 회원·학생 자료와 분리된 가상 자료입니다. 제공된 교사 또는 관리자 계정으로 로그인해 주세요.' : '승인된 교사·사역 담당자의 실제 업무 자료를 이용합니다.'}</p>
+          <Link to="/app-guide" className="inline-flex min-h-11 items-center text-sm font-semibold underline text-primary-700">전체 기능·계정별 이용 안내</Link>
+        </fieldset>
+        {error && <div role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+        <div className="mb-5 space-y-3">
+          {nativePlatform === 'ios' && <div>
+            <AppleButton onClick={handleApple} loading={appleLoading} disabled={busy || !appleEnabled} />
+            {!appleEnabled && accountEnvironment !== 'review' && <AuthServiceStatus provider="Apple" environment={accountEnvironment} query={appleQuery} onRetry={() => appleQuery.refetch()} />}
+          </div>}
+          <div><KakaoButton onClick={handleKakao} loading={kakaoLoading} disabled={busy || !kakaoEnabled} />
+            {!kakaoEnabled && accountEnvironment !== 'review' && <AuthServiceStatus provider="카카오" environment={accountEnvironment} query={kakaoQuery} onRetry={() => kakaoQuery.refetch()} />}
+          </div>
+          {accountEnvironment === 'review' && <AuthServiceStatus provider="Apple·카카오" environment="review" query={{}} />}
+          <p className="text-sm leading-6 text-gray-600">기존 회원은 이메일 로그인 후 내 정보에서 외부 계정을 연결해 주세요.</p>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <fieldset disabled={busy} className="flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">아이디</label>
             <EmailInput onChange={email => setForm(f => ({ ...f, email }))} />
@@ -113,15 +140,10 @@ export default function Login() {
               </button>
             </div>
           </div>
-          {loginEnvironment(form.email) === 'review' && <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-800">가상 심사 환경으로 로그인합니다. 실제 회원·학생 기록과 분리되어 있습니다.</p>}
-          {!appleEnabled && error && <div role="alert" className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>}
-          <Button type="submit" size="lg" loading={loading} disabled={kakaoLoading || appleLoading} className="mt-1">로그인</Button>
+          <Button type="submit" size="lg" loading={loading} disabled={busy} className="mt-1">{accountEnvironment === 'review' ? '가상 자료 계정 로그인' : '일반 계정 로그인'}</Button>
+          </fieldset>
         </form>
-        {kakaoConfig?.enabled && !appleEnabled && <div className="mt-5">
-          <div className="mb-4 flex items-center gap-3 text-xs text-gray-400"><span className="h-px flex-1 bg-gray-200" />또는<span className="h-px flex-1 bg-gray-200" /></div>
-          <KakaoButton onClick={handleKakao} loading={kakaoLoading} disabled={loading || appleLoading} />
-          <p className="mt-2 text-center text-xs leading-relaxed text-gray-500">기존 회원은 이메일 로그인 후 내 정보에서 먼저 연결해 주세요.</p>
-        </div>}
+        {accountEnvironment === 'review' && <p className="mt-4 text-sm leading-6 text-amber-900">아래 회원가입·계정 찾기는 일반 서비스를 위한 기능입니다. 가상 계정은 별도로 제공된 로그인 정보를 사용합니다.</p>}
         <nav aria-label="회원가입 및 계정 찾기" className="mt-4 flex flex-wrap items-center justify-center gap-x-1 border-t border-gray-200 pt-3 text-xs text-gray-500">
           <Link to="/signup" className="inline-flex min-h-11 items-center px-2 py-2 font-semibold text-primary-700">회원가입</Link>
           <span aria-hidden="true" className="text-gray-300">·</span>

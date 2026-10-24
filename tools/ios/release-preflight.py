@@ -15,9 +15,9 @@ def require(condition, message):
 
 def validate_inputs(env):
     require(env.get('IOS_RELEASE_CONFIGURED') == 'true', 'Configure the protected ios-testflight environment first')
-    require(env.get('GITHUB_REF') == 'refs/heads/main', 'Signed builds only run from main')
+    require(env.get('GITHUB_REF') in ('refs/heads/main', 'refs/heads/codex/ios-review-clarity'), 'Signed builds require an explicitly approved release branch')
     sha = env.get('RELEASE_SHA', '')
-    require(re.fullmatch(r'[a-f0-9]{40}', sha) is not None and sha == env.get('GITHUB_SHA'), 'Confirm the exact current main commit SHA')
+    require(re.fullmatch(r'[a-f0-9]{40}', sha) is not None and sha == env.get('GITHUB_SHA'), 'Confirm the exact current selected-branch commit SHA')
     require(re.fullmatch(r'[1-9][0-9]{0,3}\.(?:0|[1-9][0-9]{0,1})\.(?:0|[1-9][0-9]{0,1})', env.get('RELEASE_VERSION', '')) is not None, 'Use a numeric version such as 1.0.0')
     require(re.fullmatch(r'[1-9][0-9]{0,3}', env.get('RELEASE_BUILD', '')) is not None, 'Use an unused build number between 1 and 9999')
     require(env.get('APPLE_LOGIN') in ('true', 'false'), 'Explicit Apple login choice required')

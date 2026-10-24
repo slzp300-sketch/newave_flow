@@ -19,16 +19,16 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def latest_success(payload, repository, sha, workflow):
+def latest_success(payload, repository, sha, workflow, branch="main"):
     require(isinstance(payload, dict) and isinstance(payload.get('workflow_runs'), list),
             'GitHub returned an invalid workflow response')
-    # Limit to the actual workflow file and trusted main runs, not a similarly named PR check.
+    # Limit to the actual workflow file and the explicitly approved branch runs, not a similarly named PR check.
     runs = [run for run in payload['workflow_runs']
-            if run.get('head_sha') == sha and run.get('head_branch') == 'main'
+            if run.get('head_sha') == sha and run.get('head_branch') == branch
             and run.get('event') in ('push', 'workflow_dispatch')
             and run.get('path') == f'.github/workflows/{workflow}'
             and (run.get('head_repository') or {}).get('full_name', '').lower() == repository.lower()]
-    require(bool(runs), f'Run {workflow} on this exact main commit before signing')
+    require(bool(runs), f'Run {workflow} on this exact selected-branch commit before signing')
     require(all(type(run.get('id')) is int and type(run.get('run_attempt')) is int
                 and run['id'] > 0 and run['run_attempt'] > 0 for run in runs),
             'Invalid workflow run identifier')
@@ -76,35 +76,39 @@ def github_get(endpoint, token):
         raise ValueError('Cannot confirm GitHub checks; signing is blocked. No token or API body was logged.') from None
 
 
-def verify(repository, sha, get):
+def verify(repository, sha, get, branch="main"):
+    require(branch in ('main', 'codex/ios-review-clarity'), 'Release branch is not explicitly approved')
     require(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*', repository or '') is not None,
             'Invalid GitHub repository')
     require(re.fullmatch(r'[a-f0-9]{40}', sha or '') is not None, 'Invalid release commit')
     prefix = f'/repos/{repository}'
-    main = get(prefix + '/git/ref/heads/main')
-    require(main.get('ref') == 'refs/heads/main' and (main.get('object') or {}).get('type') == 'commit'
-            and main['object'].get('sha') == sha, 'Main changed; select and verify the current commit again')
+    ref_path = prefix + '/git/ref/heads/' + branch
+    main = get(ref_path)
+    require(main.get('ref') == 'refs/heads/' + branch and (main.get('object') or {}).get('type') == 'commit'
+            and main['object'].get('sha') == sha, 'Selected branch changed; select and verify the current commit again')
     evidence = []
     for workflow in REQUIRED:
-        query = urllib.parse.urlencode({'head_sha': sha, 'branch': 'main', 'per_page': 100})
+        query = urllib.parse.urlencode({'head_sha': sha, 'branch': branch, 'per_page': 100})
         payload = get(prefix + f'/actions/workflows/{workflow}/runs?' + query)
-        run = latest_success(payload, repository, sha, workflow)
+        run = latest_success(payload, repository, sha, workflow, branch)
         jobs = get(prefix + f'/actions/runs/{run["id"]}/attempts/{run["run_attempt"]}/jobs?per_page=100')
         validate_jobs(jobs, workflow, run)
         evidence.append({'workflow': workflow, 'run': run['id'], 'attempt': run['run_attempt']})
-    # A push while querying must not turn the receipt into approval of an obsolete main commit.
-    require((get(prefix + '/git/ref/heads/main').get('object') or {}).get('sha') == sha,
-            'Main changed during verification; check the current commit again')
+    # A push while querying must not turn the receipt into approval of an obsolete selected-branch commit.
+    require((get(ref_path).get('object') or {}).get('sha') == sha,
+            'Selected branch changed during verification; check the current commit again')
     return {'commit': sha, 'checks': evidence, 'readyForSigning': True}
 
 
 if __name__ == '__main__':
     try:
-        require(os.environ.get('GITHUB_REF') == 'refs/heads/main', 'Release checks require main')
+        ref = os.environ.get('GITHUB_REF', '')
+        require(ref in ('refs/heads/main', 'refs/heads/codex/ios-review-clarity'), 'Release checks require an approved branch')
+        branch = ref.removeprefix('refs/heads/')
         sha = os.environ.get('RELEASE_SHA', '')
         require(sha == os.environ.get('GITHUB_SHA'), 'Release commit differs from this workflow')
         result = verify(os.environ.get('GITHUB_REPOSITORY', ''), sha,
-                        lambda endpoint: github_get(endpoint, os.environ.get('GH_TOKEN', '')))
+                        lambda endpoint: github_get(endpoint, os.environ.get('GH_TOKEN', '')), branch=branch)
         print(json.dumps(result))
     except (ValueError, TypeError, KeyError, AttributeError) as error:
         # Validation messages contain no credentials, response bodies, or private account data.

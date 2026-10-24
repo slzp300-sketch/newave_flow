@@ -1,17 +1,13 @@
 import client from './client'
-import { loginEnvironment } from '../auth/reviewEnvironment'
+import { createEmailLogin } from '../auth/createEmailLogin'
 
 export const authApi = {
-  kakaoConfig: () => client.get('/auth/kakao/config'),
+  kakaoConfig: (config) => client.get('/auth/kakao/config', config),
   kakaoConnection: () => client.get('/users/me/kakao'),
   startKakao: (mode, data) => client.post(mode === 'LINK' ? '/users/me/kakao/start' : '/auth/kakao/start', data),
   completeKakao: data => client.post('/auth/kakao/complete', data),
   registerKakao: data => client.post('/auth/kakao/register', data),
-  login: async (email, password) => {
-    const apiEnvironment = loginEnvironment(email)
-    const response = await client.post('/auth/login', { email, password }, { apiEnvironment, skipAuth: true })
-    return { ...response, data: { ...response.data, apiEnvironment } }
-  },
+  login: createEmailLogin(client),
   register: (data)          => client.post('/auth/register', data),
   logout: (config)          => client.post('/auth/logout', undefined, config),
   me:     ()                => client.get('/users/me'),

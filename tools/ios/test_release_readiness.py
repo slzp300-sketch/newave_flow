@@ -113,6 +113,30 @@ class RequiredChecks(unittest.TestCase):
                 helpers['verify'](repo, sha, self.get)
         self.assertEqual(self.requests, [])
 
+    def test_only_exact_review_branch_with_matching_runs_and_ref_is_accepted(self):
+        branch = 'codex/ios-review-clarity'
+        self.main['ref'] = 'refs/heads/' + branch
+        for payload in self.runs.values():
+            payload['workflow_runs'][0]['head_branch'] = branch
+        def get(endpoint):
+            if '/runs?' in endpoint:
+                self.assertIn('branch=codex%2Fios-review-clarity', endpoint)
+            return self.get(endpoint.replace('/git/ref/heads/' + branch, '/git/ref/heads/main'))
+        self.assertTrue(helpers['verify'](self.repo, self.sha, get, branch)['readyForSigning'])
+        self.runs['ios-check.yml']['workflow_runs'][0]['head_branch'] = 'main'
+        with self.assertRaises(ValueError):
+            helpers['verify'](self.repo, self.sha, get, branch)
+        self.runs['ios-check.yml']['workflow_runs'][0]['head_branch'] = branch
+        self.main['object']['sha'] = 'b' * 40
+        with self.assertRaises(ValueError):
+            helpers['verify'](self.repo, self.sha, get, branch)
+
+    def test_unapproved_branch_never_requests_network(self):
+        for branch in ('feature', 'codex/ios-review-clarity-other', 'codex/ios-*', '../main', 'main\n'):
+            with self.subTest(branch=branch), self.assertRaises(ValueError):
+                helpers['verify'](self.repo, self.sha, self.get, branch)
+        self.assertEqual(self.requests, [])
+
 
 class GitHubTransport(unittest.TestCase):
     def test_api_errors_never_include_token_or_response_body(self):

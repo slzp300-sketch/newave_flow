@@ -1,7 +1,7 @@
 import client from './client'
 
 export const appleApi = {
-  config: () => client.get('/auth/apple/config'),
+  config: (config) => client.get('/auth/apple/config', config),
   connection: () => client.get('/users/me/apple'),
   start: (mode, data) => client.post(mode === 'LINK' ? '/users/me/apple/start'
     : mode === 'DELETE' ? '/users/me/apple/deletion/start'

@@ -6,15 +6,24 @@ import { beginKakao } from '../../auth/kakao'
 import Card from './Card'
 import KakaoButton from './KakaoButton'
 import useAuthStore from '../../store/authStore'
+import AuthServiceStatus from './AuthServiceStatus'
 
 export default function KakaoConnection() {
   const passwordLoginEnabled = useAuthStore(state => state.user?.passwordLoginEnabled !== false)
+  const { apiEnvironment, user } = useAuthStore()
   const [params] = useSearchParams()
-  const { data } = useQuery({ queryKey: ['kakao-connection'], queryFn: () => authApi.kakaoConnection().then(r => r.data), retry: false })
+  const connection = useQuery({ queryKey: ['kakao-connection', apiEnvironment, user?.id], queryFn: () => authApi.kakaoConnection().then(r => r.data), enabled: apiEnvironment !== 'review', retry: false })
+  const data = connection.data
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  if (!passwordLoginEnabled || !data || (!data.enabled && !data.connected)) return null
+  if (apiEnvironment === 'review' || !data || connection.isError || (!data.enabled && !data.connected)) return <Card>
+    <h2 className="brand-section-title text-base font-semibold">카카오 계정 연결</h2>
+    <AuthServiceStatus provider="카카오" environment={apiEnvironment} query={connection} onRetry={() => connection.refetch()} />
+  </Card>
+  if (!passwordLoginEnabled && !data.connected) return <Card><h2 className="brand-section-title text-base font-semibold">카카오 계정 연결</h2>
+    <p className="mt-2 text-sm leading-6 text-gray-600">현재 계정에는 앱 비밀번호가 없어 카카오 연결을 추가할 수 없습니다. 기존 Apple 로그인으로 이용해 주세요.</p>
+  </Card>
   const connect = async () => {
     setLoading(true); setError('')
     try { await beginKakao('LINK', password); setPassword('') }
