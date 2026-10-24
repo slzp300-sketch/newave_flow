@@ -19,8 +19,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   ios:
-    # Keep simulator checks on the 14 GB standard Intel host; signing still uses Apple Silicon.
-    runs-on: macos-15-intel
+    # Use the standard Apple Silicon host: Intel WebKit GPU repeatedly stalled before JS tests.
+    # This job uses simulator ad-hoc signing only; distribution signing/upload is a separate workflow.
+    runs-on: macos-15
     timeout-minutes: 30
     defaults:
       run:
@@ -53,6 +54,7 @@ jobs:
           npm run ios:sync
           npm run ios:verify
       - name: Compile the iOS Release app with simulator ad-hoc signing
+        id: release-build
         working-directory: frontend
         run: |
           set -o pipefail
@@ -78,19 +80,24 @@ jobs:
             -resultBundlePath .verification/ios/native-tests.xcresult \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES test 2>&1 | tee .verification/ios/native-tests.log
       - name: Prepare the Release login screen verifier
+        id: screen-verifier
+        if: ${{ !cancelled() && steps.release-build.outcome == 'success' }}
         timeout-minutes: 2
         working-directory: frontend
         run: |
           xcrun swiftc ../tools/ios/check-launch-screen.swift -o .verification/ios/check-launch-screen
           .verification/ios/check-launch-screen --self-test
       - name: Check the Release login screen on iPhone
+        if: ${{ !cancelled() && steps.screen-verifier.outcome == 'success' }}
         timeout-minutes: 9
         working-directory: frontend
         run: |
           python3 ../tools/ios/check-release-launch.py --family iphone --simulator "$IOS_SIMULATOR_ID" \
+            --reset-ci-simulator \
             --app .verification/ios/DerivedData/Build/Products/Release-iphonesimulator/App.app \
             --checker .verification/ios/check-launch-screen --output .verification/ios
       - name: Check the Release login screen in iPad compatibility mode
+        if: ${{ !cancelled() && steps.screen-verifier.outcome == 'success' }}
         timeout-minutes: 9
         working-directory: frontend
         run: |

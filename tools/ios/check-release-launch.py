@@ -78,18 +78,21 @@ class LaunchCheck:
         return result.returncode
 
     def wait_for_screen(self, simulator, screenshot, checker):
-        deadline = min(self.deadline, time.monotonic() + 90)
+        # Cold simulator capture and Vision initialization exceeded 30s on the hosted
+        # Apple Silicon runner even though the saved screen was fully rendered.
+        # Share one bounded allowance, still within the original 510s device budget.
+        deadline = min(self.deadline, time.monotonic() + 150)
         while time.monotonic() < deadline:
             # Never accept an image from an earlier attempt when capture fails.
             screenshot.unlink(missing_ok=True)
             self.run('capture', ['xcrun', 'simctl', 'io', simulator, 'screenshot', str(screenshot)],
-                     30, deadline=deadline)
+                     60, deadline=deadline)
             code = self.run('login-screen-ocr', [str(checker), str(screenshot)],
-                            30, allowed=(0, 2), deadline=deadline)
+                            60, allowed=(0, 2), deadline=deadline)
             if code == 0:
                 return
             time.sleep(min(5, max(0, deadline - time.monotonic())))
-        raise ValueError(f'{self.family}: Release login screen was not visible within 90 seconds')
+        raise ValueError(f'{self.family}: Release login screen was not verified within the remaining screen/device budget')
 
     def capture_failure_diagnostics(self, simulator):
         # Evidence only: neither a diagnostic image nor a status result can pass this check.
@@ -183,20 +186,33 @@ class LaunchCheck:
         except OSError:
             self.records.append({'phase': label, 'diagnosticError': 'App crash summary unavailable'})
 
-    def check(self, simulator, app, checker):
+    def check(self, simulator, app, checker, *, reset_ci_simulator=False):
         # Validate before any simulator command; do not fall back to another installed Xcode.
         application = simulator_application()
+        # Reset is opt-in and restricted to disposable GitHub-hosted machines.
+        # Never erase a developer's local or self-hosted simulator.
+        if reset_ci_simulator and (os.environ.get('GITHUB_ACTIONS') != 'true'
+                                   or os.environ.get('RUNNER_ENVIRONMENT') != 'github-hosted'):
+            raise ValueError('Simulator reset requires a disposable GitHub-hosted runner')
         name = 'iphone-launch.png' if self.family == 'iphone' else 'ipad-compatibility-launch.png'
         error = None
         try:
+            if reset_ci_simulator:
+                # Release installation must not inherit the Debug test host's running app state.
+                self.run('shutdown-ci-simulators', ['xcrun', 'simctl', 'shutdown', 'all'], 30)
+                self.run('erase-ci-simulator', ['xcrun', 'simctl', 'erase', simulator], 45)
             # Complete boot before GUI startup can asynchronously boot the same device.
             # A fresh iPad runtime migrates its system data before our app is installed.
             # This preparation remains inside the same 510-second total budget.
             self.run('boot', ['xcrun', 'simctl', 'bootstatus', simulator, '-b'],
                      240 if self.family == 'ipad' else 120)
+            # Hosted macOS can take longer to activate Simulator after a cold boot.
+            # run() still clamps this allowance to the remaining device budget.
             self.run('prepare-simulator-gui', ['open', '-g', '-a', str(application), '--args',
-                                             '-CurrentDeviceUDID', simulator], 15)
-            self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 90)
+                                             '-CurrentDeviceUDID', simulator], 60)
+            # Cold installcoordinationd can exceed 90s on a 7 GB hosted Mac.
+            # This allowance is clamped to the same overall device deadline.
+            self.run('install-release', ['xcrun', 'simctl', 'install', simulator, str(app)], 180)
             # Installation follows the native tests; no second terminate-and-relaunch operation is needed.
             self.run('launch-release', ['xcrun', 'simctl', 'launch', simulator, 'app.newaveflow.mobile'], 360)
             self.wait_for_screen(simulator, self.output / name, checker)
@@ -228,8 +244,10 @@ def main():
     parser.add_argument('--app', type=Path, required=True)
     parser.add_argument('--checker', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--reset-ci-simulator', action='store_true')
     args = parser.parse_args()
-    LaunchCheck(args.output, args.family).check(args.simulator, args.app, args.checker.resolve())
+    LaunchCheck(args.output, args.family).check(args.simulator, args.app, args.checker.resolve(),
+                                              reset_ci_simulator=args.reset_ci_simulator)
 
 
 if __name__ == '__main__':

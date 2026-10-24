@@ -45,6 +45,41 @@ class ReleaseLaunch(unittest.TestCase):
         self.assertTrue(self.check.records[0]['timedOut'])
         self.assertIn('boot pending', self.check.log.read_text())
 
+    def test_reset_rejects_local_and_self_hosted_before_any_command(self):
+        for actions, runner in (('', ''), ('true', 'self-hosted'), ('false', 'github-hosted')):
+            with self.subTest(runner=runner), patch.dict(os.environ, {
+                    'GITHUB_ACTIONS': actions, 'RUNNER_ENVIRONMENT': runner}), \
+                    patch.object(self.check, 'run') as command:
+                with self.assertRaisesRegex(ValueError, 'disposable GitHub-hosted'):
+                    self.check.check('synthetic-device', Path('App.app'), Path('checker'),
+                                     reset_ci_simulator=True)
+                command.assert_not_called()
+
+    def test_ci_reset_is_bounded_and_precedes_boot_and_install(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted'}), \
+                patch.object(self.check, 'run', return_value=0) as command, \
+                patch.object(self.check, 'wait_for_screen') as screen:
+            self.check.check('synthetic-device', Path('App.app'), Path('checker'), reset_ci_simulator=True)
+        self.assertEqual([call.args[0] for call in command.call_args_list][:3],
+                         ['shutdown-ci-simulators', 'erase-ci-simulator', 'boot'])
+        self.assertEqual(command.call_args_list[1].args,
+                         ('erase-ci-simulator', ['xcrun', 'simctl', 'erase', 'synthetic-device'], 45))
+        self.assertAlmostEqual(self.check.deadline - self.check.started, 510)
+        screen.assert_called_once()
+
+    def test_ci_reset_failure_cannot_install_or_accept_screen(self):
+        def run(label, *args, **kwargs):
+            if label == 'erase-ci-simulator':
+                raise ValueError('reset failed')
+            return 0
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted'}), \
+                patch.object(self.check, 'run', side_effect=run) as command, \
+                patch.object(self.check, 'wait_for_screen') as screen:
+            with self.assertRaisesRegex(ValueError, 'reset failed'):
+                self.check.check('synthetic-device', Path('App.app'), Path('checker'), reset_ci_simulator=True)
+        self.assertNotIn('install-release', [call.args[0] for call in command.call_args_list])
+        screen.assert_not_called()
+
     def test_ocr_not_ready_can_retry_but_ocr_error_fails(self):
         with patch('subprocess.run', return_value=Mock(returncode=2, stdout='not ready')):
             self.assertEqual(self.check.run('ocr', ['synthetic'], 30, allowed=(0, 2)), 2)
@@ -81,6 +116,23 @@ class ReleaseLaunch(unittest.TestCase):
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
         self.assertFalse(report['loginScreenVerified'])
         self.assertEqual(report['error'], 'launch failed')
+
+    def test_slow_capture_leaves_only_remaining_device_budget_for_ocr(self):
+        now = [100.0]
+        self.check.deadline = 170.0
+        screenshot = self.output / 'current.png'
+        def execute(args, **kwargs):
+            if args[0] == 'xcrun':
+                self.assertEqual(kwargs['timeout'], 60)
+                now[0] += 55
+                screenshot.write_bytes(b'synthetic current capture')
+            else:
+                self.assertEqual(kwargs['timeout'], 15)
+            return Mock(returncode=0, stdout='synthetic check')
+        with patch('time.monotonic', side_effect=lambda: now[0]), patch('subprocess.run', side_effect=execute):
+            self.check.wait_for_screen('synthetic-device', screenshot, Path('synthetic-checker'))
+        self.assertEqual(self.check.deadline, 170)
+        self.assertEqual([r['timeoutSeconds'] for r in self.check.records], [60, 15])
 
     def test_diagnostic_failures_preserve_first_error_and_shutdown(self):
         stale = self.output / 'iphone-failure-diagnostic.png'
@@ -131,10 +183,20 @@ class ReleaseLaunch(unittest.TestCase):
                          ['boot', 'prepare-simulator-gui', 'install-release', 'launch-release', 'shutdown'])
         self.assertEqual(command.call_args_list[1].args,
                          ('prepare-simulator-gui', ['open', '-g', '-a', str(self.simulator_app),
-                                                   '--args', '-CurrentDeviceUDID', 'synthetic-device'], 15))
+                                                   '--args', '-CurrentDeviceUDID', 'synthetic-device'], 60))
         self.assertEqual(command.call_args_list[3].args[2], 360)
+        self.assertAlmostEqual(self.check.deadline - self.check.started, 510)
         report = json.loads((self.output / 'iphone-release-launch.json').read_text())
         self.assertTrue(report['loginScreenVerified'])
+
+    def test_gui_startup_allowance_cannot_extend_remaining_device_budget(self):
+        self.check.deadline = 117
+        with patch('time.monotonic', return_value=100), \
+                patch('subprocess.run', return_value=Mock(returncode=0, stdout='')) as command:
+            self.check.run('prepare-simulator-gui', ['synthetic-open'], 60)
+        self.assertEqual(command.call_args.kwargs['timeout'], 17)
+        self.assertEqual(self.check.deadline, 117)
+        self.assertEqual(self.check.records[-1]['timeoutSeconds'], 17)
 
     def test_gui_timeout_cannot_fall_through_to_install_or_accept_screen(self):
         def run(label, *args, **kwargs):
