@@ -99,19 +99,19 @@ export default function Login() {
       <div className="motion-enter px-6 pt-7 pb-8" style={{ animationDelay: '100ms' }}>
         <h1 className="sr-only">뉴웨이브 로그인</h1>
         <p className="text-sm text-gray-500 mb-6">뉴웨이브 청소년부 교사 공간</p>
-        <fieldset disabled={busy} className="mb-5 rounded-xl border border-gray-200 p-4">
+        <fieldset disabled={busy} className="mb-5 min-w-0 rounded-xl border border-gray-200 p-4">
           <legend className="px-1 text-sm font-bold">로그인할 계정 종류</legend>
           <div className="flex flex-wrap gap-4 text-sm">
             {[['production', '일반 계정'], ['review', '가상 자료 계정']].map(([value, label]) => <label key={value} className="flex min-h-11 items-center gap-2">
               <input type="radio" name="account-environment" value={value} checked={accountEnvironment === value} onChange={() => { setAccountEnvironment(value); setError(''); setForm(f => ({ ...f, password: '' })) }} />{label}
             </label>)}
           </div>
-          <p className="text-sm leading-6 text-gray-600">{accountEnvironment === 'review' ? '실제 회원·학생 자료와 분리된 가상 자료입니다. 제공된 교사 또는 관리자 계정으로 로그인해 주세요.' : '승인된 교사·사역 담당자의 실제 업무 자료를 이용합니다.'}</p>
+          <p className="break-keep text-sm leading-6 text-gray-600">{accountEnvironment === 'review' ? '실제 회원·학생 자료와 분리된 가상 자료입니다. 제공된 교사 또는 관리자 계정으로 로그인해 주세요.' : '승인된 교사·사역 담당자의 실제 업무 자료를 이용합니다.'}</p>
           <Link to="/app-guide" className="inline-flex min-h-11 items-center text-sm font-semibold underline text-primary-700">전체 기능·계정별 이용 안내</Link>
         </fieldset>
         {error && <div role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <fieldset disabled={busy} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="min-w-0">
+          <fieldset disabled={busy} className="flex min-w-0 flex-col gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">아이디</label>
             <EmailInput onChange={email => setForm(f => ({ ...f, email }))} />
