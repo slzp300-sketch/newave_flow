@@ -1,3 +1,4 @@
+import { Collapse } from '../components/common/Motion'
 import './SupportingReadability.css'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -43,13 +44,13 @@ function PhotoCard({ photo, onSaved, scope }) {
     <p className="text-xs font-semibold text-primary-700">{PHOTO_STATUS[photo.status]} · {photo.targetType === 'USER' ? '교사' : '학생'}</p>
     <h2 className="mt-2 break-words text-lg font-semibold">{photo.targetName}</h2><p className="mt-2 text-xs text-gray-500">신청 {photo.submittedAt?.replace('T', ' ').slice(0, 16)}</p>
     {photo.status !== 'PENDING' ? <p className="mt-3 whitespace-pre-wrap break-words text-sm">{photo.reviewNote}</p> : <>
-      <button className="mt-3 min-h-12 w-full rounded-xl border border-gray-300 px-4 text-sm font-semibold" onClick={() => { setOpened(!opened); setChecked(false) }}>{opened ? '사진 닫기' : '검토할 사진 열기'}</button>
-      {opened && <div className="mt-3">
+      <button className="mt-3 min-h-12 w-full rounded-xl border border-gray-300 px-4 text-sm font-semibold" aria-expanded={opened} onClick={() => { setOpened(!opened); setChecked(false) }}>{opened ? '사진 닫기' : '검토할 사진 열기'}</button>
+      <Collapse open={opened} className="mt-3">
         {image.isPending && <p role="status">사진을 불러오는 중…</p>}
         {image.isError && <p role="alert" className="text-sm text-red-700">사진을 불러오지 못했습니다. <button className="min-h-11 underline" onClick={() => image.refetch()}>다시 시도</button></p>}
         {currentImage && <img src={currentImage} alt={`${photo.targetName}의 검토 대기 사진`} className="max-h-72 w-full rounded-xl object-contain" />}
         {image.data && !currentImage && <p role="alert" className="text-sm text-red-700">사진이 변경되었습니다. <button className="min-h-11 underline" onClick={onSaved}>최신 요청 불러오기</button></p>}
-      </div>}
+      </Collapse>
       <form className="mt-4 space-y-4" onSubmit={e => { e.preventDefault(); save.mutate() }}>
         <label className="block text-sm font-semibold">검토 결과<select className={field} required value={decision} onChange={e => { setDecision(e.target.value); setChecked(false) }}><option value="">결과 선택</option><option value="APPROVED">게시 승인</option><option value="REJECTED">게시 거절</option></select></label>
         <label className="block text-sm font-semibold">처리 안내<textarea required maxLength={2000} rows={3} className={field} value={note} onChange={e => setNote(e.target.value)} placeholder="확인 결과를 적어주세요. 사진 신청자에게 표시됩니다." /></label>

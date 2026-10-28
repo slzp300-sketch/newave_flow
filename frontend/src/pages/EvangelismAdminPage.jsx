@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../components/common/Motion'
 import FitLabel from '../components/common/FitLabel'
 import './EvangelismAdminPage.css'
 import SegmentedControl from '../components/common/SegmentedControl'
@@ -202,9 +203,9 @@ function GroupManagementTab({ teachers }) {
         {/* ── 조 추가 폼 ── */}
         <AnimatePresence>
           {showAddGroup && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="px-4">
+            <CollapsePanel className="px-4">
               <Card className="flex flex-wrap items-center gap-2 p-3">
-                <input autoFocus aria-label="새 전도 조 이름" disabled={createGroup.isPending}
+                <input aria-label="새 전도 조 이름" disabled={createGroup.isPending}
                   className="evangelism-input w-full"
                   placeholder="조 이름 (예: 1조)"
                   value={newGroupName}
@@ -216,7 +217,7 @@ function GroupManagementTab({ teachers }) {
                   className="evangelism-action bg-primary-600 text-white font-bold disabled:opacity-50"><FitLabel>{createGroup.isPending ? '저장 중' : '추가'}</FitLabel></button>
                 <button aria-label="조 추가 닫기" disabled={createGroup.isPending} onClick={() => { setShowAddGroup(false); setNewGroupName('') }} className="evangelism-action text-gray-600"><X size={18} aria-hidden="true"/><FitLabel>취소</FitLabel></button>
               </Card>
-            </motion.div>
+            </CollapsePanel>
           )}
         </AnimatePresence>
 
@@ -559,7 +560,7 @@ function ScheduleManagementTab({ teachers }) {
 
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+          <CollapsePanel>
             <Card className="min-w-0 p-4 flex flex-col gap-5 border-2 border-primary-100 shadow-xl shadow-primary-50">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-bold text-gray-900 text-lg">{editTarget ? '일정 수정' : '새 일정 등록'}</p>
@@ -597,7 +598,7 @@ function ScheduleManagementTab({ teachers }) {
                 <button disabled={isPending} onClick={closeForm} className="evangelism-action flex-1 bg-gray-100 text-gray-700"><FitLabel>취소</FitLabel></button>
               </div>
             </Card>
-          </motion.div>
+          </CollapsePanel>
         )}
       </AnimatePresence>
 

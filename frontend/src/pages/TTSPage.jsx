@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient, useIsMutating, useMutationState, onlineManager } from '@tanstack/react-query'
 import { ttsFeedbackIndex, ttsCompletionMessage } from '../utils/ttsFeedback'
-import { Reveal, AnimatedValue, ProgressFill, SelectionMark, Collapse } from '../components/common/Motion'
+import { Reveal, AnimatedValue, ProgressFill, SelectionMark, Collapse, Disclosure } from '../components/common/Motion'
 import { addDays, addWeeks, format, startOfWeek } from 'date-fns'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -89,7 +89,6 @@ export function CheckTab({ embedded = false }) {
     if (!embedded || !showEditor) return
     const frame = requestAnimationFrame(() => {
       editorRef.current?.focus({ preventScroll: true })
-      editorRef.current?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
     })
     return () => cancelAnimationFrame(frame)
   }, [embedded, showEditor])
@@ -338,14 +337,13 @@ export function CheckTab({ embedded = false }) {
             </Card>
           )}
 
-          <details className="rounded-xl border border-gray-200">
-            <summary className="min-h-11 cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold">이용 안내</summary>
-            <div className="space-y-2 px-4 py-3 text-sm leading-relaxed text-gray-700">
+          <Disclosure title="이용 안내" className="rounded-xl border border-gray-200 px-4">
+            <div className="space-y-2 pb-3 text-sm leading-relaxed text-gray-700">
               <p>체크한 내용은 자동 저장돼요. 예배·모임은 참여를 마친 뒤 체크해 주세요.</p>
               <p>{quarterStart.slice(5).replace('-', '/')}부터 같은 분기의 지난 기록을 수정할 수 있어요. 다음 분기가 시작되면 마감돼요.</p>
               <p>주간 항목은 이 주 토요일({format(addDays(sunday, 6), 'M/d')})이 속한 분기로 집계돼요.</p>
             </div>
-          </details>
+          </Disclosure>
           </Collapse>
         </div>
       )}

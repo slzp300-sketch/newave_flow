@@ -1,21 +1,25 @@
-import { createContext, useContext, forwardRef, useId, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, forwardRef, useId, useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback } from 'react'
 import { AnimatePresence, MotionConfig, motion, useReducedMotion, useIsPresent } from 'framer-motion'
 
+import { createDisclosureScroll, DISCLOSURE_SECONDS, disclosureEase } from '../../utils/disclosureScroll'
 import { installPressFeedback } from '../../utils/pressFeedback'
 
 const MotionPreference = createContext(null)
+const DisclosureScroll = createContext(null)
 const ease = [0.22, 1, 0.36, 1]
 
 export function AppMotion({ children, reducedMotion }) {
   const rootRef = useRef(null)
+  const disclosureScroll = useMemo(createDisclosureScroll, [])
+  useEffect(() => disclosureScroll.connect(rootRef.current), [disclosureScroll])
   useEffect(() => installPressFeedback(rootRef.current), [])
   const systemPreference = useReducedMotion()
   const reduced = reducedMotion ?? systemPreference ?? false
   return (
     <MotionPreference.Provider value={reduced}>
-      <MotionConfig reducedMotion={reduced ? 'always' : 'never'} transition={{ duration: reduced ? 0 : 0.32, ease }}>
+      <DisclosureScroll.Provider value={disclosureScroll}><MotionConfig reducedMotion={reduced ? 'always' : 'never'} transition={{ duration: reduced ? 0 : 0.32, ease }}>
         <div ref={rootRef} className={reduced ? 'contents app-motion motion-reduced' : 'contents app-motion'}>{children}</div>
-      </MotionConfig>
+      </MotionConfig></DisclosureScroll.Provider>
     </MotionPreference.Provider>
   )
 }
@@ -37,15 +41,39 @@ export const Collapse = forwardRef(function Collapse({ open, children, className
   </AnimatePresence>
 })
 
-export const CollapsePanel = forwardRef(function CollapsePanel({ children, className = '', initial, animate, exit, transition, panelRef, ...props }, ref) {
+export const CollapsePanel = forwardRef(function CollapsePanel({ children, className = '', initial, animate, exit, transition, panelRef, onAnimationComplete, ...props }, ref) {
   const reduced = useMotionPreference()
   const present = useIsPresent()
-  return <motion.div ref={panelRef || ref} {...props} inert={present ? undefined : ''} aria-hidden={present ? undefined : true}
+  const coordinator = useContext(DisclosureScroll)
+  const node = useRef(null), session = useRef(null), close = useRef(null)
+  const bind = useCallback(element => {
+    node.current = element
+    for (const target of [panelRef, ref]) {
+      if (typeof target === 'function') target(element)
+      else if (target) target.current = element
+    }
+  }, [panelRef, ref])
+  useLayoutEffect(() => {
+    if (present) {
+      session.current = coordinator?.begin(node.current)
+      close.current = null
+      coordinator?.reveal(session.current, node.current, reduced)
+    } else {
+      close.current = coordinator?.closing(session.current, node.current)
+      coordinator?.restore(session.current, close.current, reduced)
+    }
+  }, [present, reduced, coordinator])
+  const complete = definition => {
+    if (present) coordinator?.reveal(session.current, node.current, reduced)
+    else coordinator?.restore(session.current, close.current, reduced)
+    onAnimationComplete?.(definition)
+  }
+  return <motion.div ref={bind} onAnimationComplete={complete} data-disclosure-panel="true" {...props} inert={present ? undefined : ''} aria-hidden={present ? undefined : true}
     initial={reduced ? false : initial ?? { height: 0, opacity: 0 }}
     animate={animate ?? { height: 'auto', opacity: 1 }} exit={exit ?? { height: 0, opacity: 0 }}
-    transition={{ ...transition, duration: reduced ? 0 : 0.24, ease }}
-    className={`overflow-hidden ${className}`}>
-    {children}
+    transition={{ ...transition, duration: reduced ? 0 : DISCLOSURE_SECONDS, ease: disclosureEase }}
+    className="min-w-0 overflow-hidden">
+    <div className={className}>{children}</div>
   </motion.div>
 })
 
@@ -54,7 +82,7 @@ export function Disclosure({ title, children, className = '', defaultOpen = fals
   const id = useId()
   return <section className={className}>
     <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)} className="flex min-h-11 w-full items-center justify-between gap-3 py-3 text-left text-sm font-semibold">
-      <span>{title}</span><span aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+      <span>{title}</span><span aria-hidden="true" className={`transition-transform duration-[280ms] ease-in-out ${open ? 'rotate-180' : ''}`}>⌄</span>
     </button>
     <Collapse open={open} id={id}>{children}</Collapse>
   </section>

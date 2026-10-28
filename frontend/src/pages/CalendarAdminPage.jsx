@@ -1,5 +1,5 @@
 import './SupportingReadability.css'
-import { CollapsePanel } from '../components/common/Motion'
+import { Collapse, CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
 import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
@@ -144,7 +144,6 @@ export default function CalendarAdminPage() {
       attendanceTarget: event.attendanceTarget || 'STUDENT_ONLY',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -212,8 +211,7 @@ export default function CalendarAdminPage() {
             options={[{value: 'all', label: '전체'}, {value: 'upcoming', label: '진행·예정'}, {value: 'past', label: '종료된 일정'}]} />
         </div>
 
-        {showForm && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <Collapse open={showForm} className="mb-8">
             <Card className="calendar-event-form-card p-6 border-2 border-primary-100 shadow-xl shadow-primary-50">
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div>
@@ -365,7 +363,7 @@ export default function CalendarAdminPage() {
                   </div>
                 </button>
 
-                {formData.attendanceRequired && <EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} />}
+                <Collapse open={formData.attendanceRequired}><EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} /></Collapse>
 
                 <div className="flex gap-3">
                   <Button type="submit" size="lg" loading={submitting}>
@@ -375,8 +373,7 @@ export default function CalendarAdminPage() {
                 </div>
               </form>
             </Card>
-          </motion.div>
-        )}
+        </Collapse>
 
         <AdminReadGuard queries={[eventsQuery]} label="일정 목록">
         <FilterResults count={Object.values(categorizedEvents).flat().length} total={events.length} unit="건" filtered={!!search.trim() || period !== 'all'} onReset={() => { setSearch(''); setPeriod('all') }} />

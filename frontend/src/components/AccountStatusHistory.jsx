@@ -1,3 +1,4 @@
+import { Collapse } from './common/Motion'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { adminUsersApi } from '../api/adminUsers'
@@ -19,7 +20,7 @@ export default function AccountStatusHistory({ userId }) {
     <button type="button" className="min-h-11 text-sm font-semibold text-primary-700" aria-expanded={open} onClick={() => setOpen(v => !v)}>
       {open ? '정지·복구 이력 접기' : '정지·복구 이력 보기'}
     </button>
-    {open && (!hasQueryData([query]) ? <QueryNotice queries={[query]} label="계정 조치 이력" /> : <div className="space-y-3 border-t border-gray-100 pt-3">
+    <Collapse open={open}>{!hasQueryData([query]) ? <QueryNotice queries={[query]} label="계정 조치 이력" /> : <div className="space-y-3 border-t border-gray-100 pt-3">
       <QueryRefreshNotice queries={[query]} label="계정 조치 이력" />
       {!query.data.length && <p className="text-xs text-gray-500">기록된 이용 정지·복구 이력이 없습니다.</p>}
       {query.data.map(event => <div key={event.id} className="rounded-xl bg-gray-50 p-3 text-xs">
@@ -28,6 +29,6 @@ export default function AccountStatusHistory({ userId }) {
         <p className="mt-2 whitespace-pre-wrap break-words text-gray-700">{event.reason}</p>
       </div>)}
       {query.data.length === 100 && <p className="text-xs text-gray-500">최근 100건을 표시합니다.</p>}
-    </div>)}
+    </div>}</Collapse>
   </div>
 }

@@ -1,3 +1,4 @@
+import { Collapse } from '../components/common/Motion'
 import './SupportingReadability.css'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -54,12 +55,12 @@ function ReviewCard({ report, onSaved, scope }) {
     <p className="mt-2 text-xs text-gray-600">담당: {report.assignedToName || '미지정'} · 목표 {report.dueAt?.replace('T', ' ').slice(0, 16)}</p>
     {(report.urgent || report.overdue) && <p className="mt-2 text-sm font-semibold text-red-700">{[report.urgent && '긴급 확인', report.overdue && '처리 목표시간 경과'].filter(Boolean).join(' · ')}</p>}
     <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6">{report.details}</p>
-    <button type="button" className="mt-3 min-h-11 rounded-xl border px-3 text-sm" onClick={() => setOpened(!opened)}>{opened ? '대상 닫기' : '현재 신고 대상 확인'}</button>
-    {opened && <div className="mt-3 rounded-xl bg-gray-50 p-3 text-sm">
+    <button type="button" className="mt-3 min-h-11 rounded-xl border px-3 text-sm" aria-expanded={opened} onClick={() => setOpened(!opened)}>{opened ? '대상 닫기' : '현재 신고 대상 확인'}</button>
+    <Collapse open={opened} className="mt-3 rounded-xl bg-gray-50 p-3 text-sm">
       {target.isPending && <p role="status">대상을 불러오는 중…</p>}
       {target.isError && <p role="alert" className="text-red-700">대상을 불러오지 못했습니다. <button className="min-h-11 underline" onClick={() => target.refetch()}>다시 시도</button></p>}
       {target.data && !target.isError && (target.data.available ? <><p className="font-semibold">{target.data.title}</p><p className="mt-2 whitespace-pre-wrap break-words">{target.data.text}</p>{target.data.image && <img src={target.data.image} alt="현재 신고 대상 사진" className="mt-3 max-h-64 w-full rounded-xl object-contain" />}</> : <p>직접 표시할 수 없는 대상입니다. 신고 내용의 위치를 확인하거나 이미 삭제·숨김 처리됐는지 확인해 주세요.</p>)}
-    </div>}
+    </Collapse>
     {!report.resolvedAt && <div className="mt-4 rounded-xl border border-gray-200 p-3">
       <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} className="h-5 w-5" />긴급 확인</label>
       <button type="button" disabled={assign.isPending} onClick={() => assign.mutate()} className="min-h-11 text-sm font-semibold text-primary-700">{assign.isPending ? '저장 중…' : '내가 담당하고 우선순위 저장'}</button>

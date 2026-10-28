@@ -1,6 +1,6 @@
 import FitLabel from '../components/common/FitLabel'
 import './MeetingMinutesAdminPage.css'
-import { CollapsePanel } from '../components/common/Motion'
+import { Collapse, CollapsePanel } from '../components/common/Motion'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { FilterResults } from '../components/common/AdminTools'
@@ -107,7 +107,6 @@ export default function MeetingMinutesAdminPage() {
       isActive: m.isActive
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -179,7 +178,7 @@ export default function MeetingMinutesAdminPage() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-gray-900">{showForm ? editingId ? '회의록 수정' : '회의록 등록' : '회의록 목록'}</h2>
-            <Button disabled={submitting} variant={showForm ? 'secondary' : 'primary'} onClick={() => showForm ? handleCloseForm() : setShowForm(true)}>
+            <Button aria-expanded={showForm} disabled={submitting} variant={showForm ? 'secondary' : 'primary'} onClick={() => showForm ? handleCloseForm() : setShowForm(true)}>
               {!showForm && <Plus size={18} aria-hidden="true" />}<FitLabel>{showForm ? '닫기' : '등록하기'}</FitLabel>
             </Button>
           </div>
@@ -189,7 +188,7 @@ export default function MeetingMinutesAdminPage() {
           {!loading && !loadError && <FilterResults count={filteredMinutes.length} total={minutes.length} unit="건" filtered={!!search.trim() || visibility !== 'all'} onReset={() => { setSearch(''); setVisibility('all') }} />}
         </div>
 
-        {showForm && <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}}>
+        <Collapse open={showForm}>
           <Card className="min-w-0 border-2 border-primary-100 p-4">
             <form onSubmit={handleSubmit} aria-label={editingId ? '회의록 수정' : '회의록 등록'}>
               <fieldset disabled={submitting} className="flex min-w-0 flex-col gap-5">
@@ -222,7 +221,7 @@ export default function MeetingMinutesAdminPage() {
               </fieldset>
             </form>
           </Card>
-        </motion.div>}
+        </Collapse>
 
         <ViewModeToggle mode={viewMode} onChange={setViewMode} label="회의록 목록 보기 방식" />
         <div className="min-w-0">
@@ -254,11 +253,11 @@ export default function MeetingMinutesAdminPage() {
               </div>
             </RecordViews></div>}
         </div>
-        {viewMode !== 'large' && selectedStatus && <section aria-label="회의록 참석 및 확인 현황" className="min-w-0 space-y-3">
-          <h2 className="text-lg font-bold text-gray-900">{minutes.find(m=>m.id===selectedStatus.id)?.title} · 참석 및 확인 현황</h2>
+        <Collapse open={viewMode !== 'large' && !!selectedStatus} aria-label="회의록 참석 및 확인 현황" className="min-w-0 space-y-3">
+          <h2 className="text-lg font-bold text-gray-900">{minutes.find(m=>m.id===selectedStatus?.id)?.title} · 참석 및 확인 현황</h2>
           <Button variant="secondary" onClick={()=>{statusRequest.current++;setSelectedStatus(null)}}>상세 닫기</Button>
           {renderStatus()}
-        </section>}
+        </Collapse>
       </div>
     </div>
   )

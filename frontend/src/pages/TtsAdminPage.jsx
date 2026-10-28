@@ -204,10 +204,10 @@ function ScoresTab() {
             })}
           </div>
           </RecordViews></div>
-          {viewMode !== 'large' && pageItems.filter(t => (t.key ?? `u${t.teacherId}`) === expanded).map(t => <section key={expanded} aria-label={`${t.teacherName} 주차별 점수`}>
+          <AnimatePresence>{viewMode !== 'large' && pageItems.filter(t => (t.key ?? `u${t.teacherId}`) === expanded).map(t => <CollapsePanel key={expanded} aria-label={`${t.teacherName} 주차별 점수`}>
             <h3 className="mb-2 text-sm font-semibold">{t.teacherName} · 주차별 점수</h3>
             <WeeklyScoreDetail year={year} scores={t.weeklyScores} total={t.totalScore} />
-          </section>)}
+          </CollapsePanel>)}</AnimatePresence>
 
           {/* 페이지 네비게이션 */}
           {totalPages > 1 && (

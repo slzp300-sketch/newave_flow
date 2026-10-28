@@ -1,3 +1,4 @@
+import { Collapse, CollapsePanel } from '../components/common/Motion'
 import './CalendarPage.css'
 import ReportLink from '../components/common/ReportLink'
 import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
@@ -623,7 +624,7 @@ export default function CalendarPage() {
 
                 <AnimatePresence initial={false}>
                   {!formData.allDay && (
-                    <motion.div
+                    <CollapsePanel
                       key="time-fields"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -655,7 +656,7 @@ export default function CalendarPage() {
                           <input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
                         </div>
                       </div>
-                    </motion.div>
+                    </CollapsePanel>
                   )}
                 </AnimatePresence>
                 <div>
@@ -696,7 +697,7 @@ export default function CalendarPage() {
                   </div>
                 </button>
 
-                {formData.attendanceRequired && <EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} />}
+                <Collapse open={formData.attendanceRequired}><EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} /></Collapse>
 
                 <div className="flex gap-2 mt-2">
                   <Button type="submit" loading={submitting} className="flex-1">저장하기</Button>

@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../common/Motion'
 import EventAttendanceFields from './EventAttendanceFields'
 import { eventToday, validateAttendanceWindow } from '../../utils/eventAttendance'
 import { useState, useEffect, useRef } from 'react'
@@ -182,12 +183,12 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
               </button>
               <AnimatePresence initial={false}>
                 {!common.allDay && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                  <CollapsePanel initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                     <div className="supporting-form-grid gap-2">
                       <input type="time" value={common.startTime} onChange={e => setCommon(c => ({ ...c, startTime: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-100 bg-white text-sm font-bold outline-none" aria-label="시작 시간" />
                       <input type="time" value={common.endTime} onChange={e => setCommon(c => ({ ...c, endTime: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-100 bg-white text-sm font-bold outline-none" aria-label="종료 시간" />
                     </div>
-                  </motion.div>
+                  </CollapsePanel>
                 )}
               </AnimatePresence>
               <div className="flex flex-wrap gap-3 items-center justify-between">
@@ -229,9 +230,9 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
                   </button>
                   <AnimatePresence initial={false}>
                     {r.attendanceRequired && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                      <CollapsePanel initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                         <EventAttendanceFields value={r} onChange={patch => updateRow(r.key, patch)} />
-                      </motion.div>
+                      </CollapsePanel>
                     )}
                   </AnimatePresence>
                 </div>
