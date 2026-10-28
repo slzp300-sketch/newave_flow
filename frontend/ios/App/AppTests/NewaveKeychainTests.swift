@@ -149,6 +149,7 @@ final class NewaveKeychainTests: XCTestCase {
     func testAuthenticationViewportRestoresOnlyTheAuthHandoff() {
         let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
         let viewport = NewaveAuthViewport()
+        let originalPinchEnabled = webView.scrollView.pinchGestureRecognizer?.isEnabled
         webView.pageZoom = 1.4
         XCTAssertFalse(viewport.restore(webView, finish: false))
         XCTAssertEqual(webView.pageZoom, 1.4)
@@ -168,7 +169,7 @@ final class NewaveKeychainTests: XCTestCase {
         XCTAssertEqual(webView.pageZoom, 1.5)
         XCTAssertTrue(viewport.restore(webView, finish: true, force: true))
         XCTAssertEqual(webView.pageZoom, 1)
-        XCTAssertTrue(webView.scrollView.pinchGestureRecognizer?.isEnabled ?? false)
+        XCTAssertEqual(webView.scrollView.pinchGestureRecognizer?.isEnabled, originalPinchEnabled)
     }
 
 }
