@@ -5,8 +5,10 @@
 .motion-enter { animation: section-arrive .55s var(--motion-ease) backwards; }
 .motion-week { animation: section-arrive .24s var(--motion-ease); }
 .motion-fade { animation: page-arrive .2s ease-out; }
-.tts-check-mark { animation: tts-check-arrive .12s ease-out; }
-@keyframes tts-check-arrive { from { opacity: .65; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
+.tts-check-mark { animation: tts-check-arrive .2s var(--motion-ease); }
+.tts-check-mark path { stroke-dasharray: 24; animation: tts-check-stroke .18s ease-out; }
+@keyframes tts-check-stroke { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@keyframes tts-check-arrive { from { opacity: .55; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
 .motion-button, .motion-tap, .icon-button, .attendance-actions button, .tts-day {
   transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .2s ease, scale .18s var(--motion-ease);
 }
@@ -49,3 +51,23 @@
   .motion-row > svg:last-child { translate: none !important; }
 }
 @media print { *, *::before, *::after { animation: none !important; } }
+
+/* Shared touch/keyboard response also covers plain page buttons and menu links.
+   Independent scale leaves existing layout/Framer transforms intact. */
+.app-motion :where(button, a[href], summary, [role='button']) {
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease,
+    box-shadow .2s ease, opacity .16s ease, scale .22s var(--motion-ease);
+}
+.app-motion :is(button, a[href], summary, [role='button'])[data-press-feedback='true']:not(:disabled):not([aria-disabled='true']) {
+  scale: .97;
+  transition-duration: .08s;
+}
+.app-motion :is(.home-menu-card, .motion-row, .ui-list-row)[data-press-feedback='true'] { scale: .985; }
+/* Keep the sliding highlight visible instead of painting a second instant one. */
+:root .ui-segments > button:not(.brand-color-swatch) { background-color: transparent; box-shadow: none; }
+:root .ui-segments .brand-selection { background-color: theme('colors.secondary.50'); border: 1px solid theme('colors.secondary.400'); }
+:root .brand-nav-link { box-shadow: none; }
+.motion-reduced :is(button, a[href], summary, [role='button']) { scale: 1 !important; }
+@media (prefers-reduced-motion: reduce) {
+  .app-motion :is(button, a[href], summary, [role='button']) { scale: 1 !important; }
+}

@@ -417,7 +417,7 @@ const DayCell = memo(function DayCell({ q, day, label, today, done, future, lock
   </div>
 })
 
-// A complete check mark appears immediately. A short CSS entrance avoids a JS
+// Selection and score update immediately; a short CSS check stroke avoids a JS
 // animation observer for every checked day in Android WebView and iOS WKWebView.
 function TtsCheckMark({ size = 18, className = '' }) {
   return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" className={`tts-check-mark ${className}`}>

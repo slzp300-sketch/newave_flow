@@ -1,16 +1,20 @@
-import { createContext, useContext, forwardRef, useId, useState } from 'react'
+import { createContext, useContext, forwardRef, useId, useState, useEffect, useRef } from 'react'
 import { AnimatePresence, MotionConfig, motion, useReducedMotion, useIsPresent } from 'framer-motion'
+
+import { installPressFeedback } from '../../utils/pressFeedback'
 
 const MotionPreference = createContext(null)
 const ease = [0.22, 1, 0.36, 1]
 
 export function AppMotion({ children, reducedMotion }) {
+  const rootRef = useRef(null)
+  useEffect(() => installPressFeedback(rootRef.current), [])
   const systemPreference = useReducedMotion()
   const reduced = reducedMotion ?? systemPreference ?? false
   return (
     <MotionPreference.Provider value={reduced}>
       <MotionConfig reducedMotion={reduced ? 'always' : 'never'} transition={{ duration: reduced ? 0 : 0.32, ease }}>
-        <div className={reduced ? 'contents motion-reduced' : 'contents'}>{children}</div>
+        <div ref={rootRef} className={reduced ? 'contents app-motion motion-reduced' : 'contents app-motion'}>{children}</div>
       </MotionConfig>
     </MotionPreference.Provider>
   )
