@@ -44,3 +44,9 @@
     .safe-overlay-sm-spaced { --safe-overlay-gap: 1rem; }
   }
 }
+
+/* Small text fields trigger iPhone focus zoom, which can survive an OAuth handoff.
+   Keep large-font preferences and user pinch zoom available. */
+:root[data-native-platform='ios'] :is(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea) {
+  font-size: max(16px, 1rem) !important;
+}

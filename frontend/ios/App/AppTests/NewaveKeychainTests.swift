@@ -98,6 +98,22 @@ final class NewaveKeychainTests: XCTestCase {
                 && document.querySelector('#root form button[type="submit"]')?.textContent.includes('로그인');
             while (!loginReady() && Date.now() < readyBy) await new Promise(resolve => setTimeout(resolve, 100));
             if (!loginReady()) throw new Error('The packaged React login screen did not render after native storage hydration');
+            const fields = [...document.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]), select, textarea')];
+            if (fields.some(field => parseFloat(getComputedStyle(field).fontSize) < 16)) throw new Error('iOS login fields must not trigger focus zoom');
+            if (document.querySelector('meta[name="viewport"]').content.includes('user-scalable=no')) throw new Error('User pinch zoom must remain available');
+            const options = document.querySelector('button[aria-controls="account-environment-options"]');
+            if (!options || options.getAttribute('aria-expanded') !== 'false' || document.querySelector('input[value="review"]')) throw new Error('Review options must be publicly discoverable but initially collapsed');
+            options.click();
+            await new Promise(resolve => setTimeout(resolve, 350));
+            document.querySelector('input[value="review"]').click();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (!document.querySelector('form button[type="submit"]').textContent.includes('가상 자료')) throw new Error('Review login must remain explicitly selectable');
+            document.querySelector('input[value="production"]').click(); options.click();
+            await new Promise(resolve => setTimeout(resolve, 350));
+            const viewport = (method, options = {}) => Capacitor.nativePromise('NewaveAuthViewport', method, options);
+            await viewport('prepare');
+            if ((await viewport('restore', { finish: true, force: false })).restored !== true) throw new Error('Native authentication viewport bridge did not restore');
+            if ((await viewport('restore', { finish: false, force: false })).restored !== false) throw new Error('Ordinary resume must preserve user zoom');
             const storage = (method, options) => Capacitor.nativePromise('NewaveSecureStorage', method, options);
             const apple = (method, options = {}) => Capacitor.nativePromise('NewaveAppleSignIn', method, options);
             const availability = await apple('getAvailability');
@@ -129,4 +145,30 @@ final class NewaveKeychainTests: XCTestCase {
             """, arguments: [:], in: nil, contentWorld: .page)
         XCTAssertEqual(result as? Int, 32)
     }
+    @MainActor
+    func testAuthenticationViewportRestoresOnlyTheAuthHandoff() {
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        let viewport = NewaveAuthViewport()
+        webView.pageZoom = 1.4
+        XCTAssertFalse(viewport.restore(webView, finish: false))
+        XCTAssertEqual(webView.pageZoom, 1.4)
+        viewport.prepare(webView)
+        XCTAssertTrue(viewport.pending)
+        XCTAssertEqual(webView.pageZoom, 1)
+        webView.pageZoom = 1.3
+        XCTAssertTrue(viewport.restore(webView, finish: false))
+        XCTAssertEqual(webView.pageZoom, 1)
+        XCTAssertTrue(viewport.pending)
+        webView.pageZoom = 1.2
+        XCTAssertTrue(viewport.restore(webView, finish: true))
+        XCTAssertEqual(webView.pageZoom, 1)
+        XCTAssertFalse(viewport.pending)
+        webView.pageZoom = 1.5
+        XCTAssertFalse(viewport.restore(webView, finish: false))
+        XCTAssertEqual(webView.pageZoom, 1.5)
+        XCTAssertTrue(viewport.restore(webView, finish: true, force: true))
+        XCTAssertEqual(webView.pageZoom, 1)
+        XCTAssertTrue(webView.scrollView.pinchGestureRecognizer?.isEnabled ?? false)
+    }
+
 }

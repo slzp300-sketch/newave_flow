@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Browser } from '@capacitor/browser'
+import { restorePendingAuthViewport, finishExternalAuthViewport } from './authViewport'
 import { App as NativeApp } from '@capacitor/app'
 import { focusManager } from '@tanstack/react-query'
 import { isNativeApp, nativePlatform, flushAuthStorage } from './platform'
@@ -37,7 +39,11 @@ export default function NativeRuntime({ router }) {
         // Keep web navigation usable if the native lifecycle plugin is unavailable.
       }
     }
-    void register('appStateChange', ({ isActive }) => focusManager.setFocused(isActive))
+    void register('appStateChange', ({ isActive }) => {
+      focusManager.setFocused(isActive)
+      if (isActive) void restorePendingAuthViewport()
+    })
+    if (nativePlatform === 'ios') void Browser.addListener('browserFinished', () => { void finishExternalAuthViewport(false) }).then(handle => { if (disposed) void handle.remove(); else handles.push(handle) }).catch(() => {})
     const openKakao = ({ url }) => { const path = nativeKakaoDestination(url); if (path) void router.navigate(path) }
     void register('appUrlOpen', openKakao)
     void NativeApp.getLaunchUrl().then(value => { if (!disposed && value?.url) openKakao(value) }).catch(() => {})
