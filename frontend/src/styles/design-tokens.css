@@ -47,9 +47,12 @@
   .login-hero .newave-brand > span { font-weight: 500; }
   .tts-days { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
   .tts-day { min-width: 0; min-height: 44px; border-radius: 9px; }
-  .attendance-person { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .attendance-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .attendance-actions button { min-width: 52px; min-height: 44px; border-radius: 10px; font-size: .8125rem; font-weight: 600; }
+  @media (min-width: 351px) and (max-width: 380px) {
+    .tts-days { gap: 3px; }
+  }
+  .attendance-person { display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
+  .attendance-actions { display: flex; gap: 8px; width: 100%; }
+  .attendance-actions button { flex: 1; min-width: 0; min-height: 48px; border-radius: 12px; font-size: 1rem; font-weight: 700; }
   .attendance-submit { @apply fixed left-1/2 -translate-x-1/2 w-full max-w-mobile bg-white border-t border-gray-200 px-4 py-3 z-30; bottom: calc(68px + env(safe-area-inset-bottom)); }
   @media (max-width: 350px) {
     .tts-days { grid-template-columns: repeat(3, minmax(0, 1fr)); }

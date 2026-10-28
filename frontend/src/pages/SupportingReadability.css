@@ -1,0 +1,39 @@
+/* Supporting routes: full text first, compact labels, usable input sizes. */
+.supporting-readable { min-width: 0; }
+.supporting-readable :where(p, h1, h2, h3, h4, label, button, a, span, dd, dt) { word-break: keep-all; overflow-wrap: anywhere; }
+.supporting-readable :where(.flex-1, fieldset, form, .supporting-form-grid > *) { min-width: 0; }
+.supporting-readable .text-xs { font-size: clamp(12px, .875rem, 14px); line-height: 1.6; }
+.supporting-readable .text-sm { font-size: clamp(14px, 1rem, 17px); line-height: 1.55; }
+.supporting-readable .text-base { font-size: clamp(16px, 1.05rem, 18px); line-height: 1.5; }
+.supporting-readable .text-lg { font-size: clamp(17px, 1.125rem, 20px); line-height: 1.45; }
+.supporting-readable .text-xl { font-size: clamp(18px, 1.25rem, 22px); line-height: 1.45; }
+.supporting-readable .text-2xl { font-size: clamp(21px, 1.5rem, 26px); line-height: 1.4; }
+.supporting-readable :where(.tracking-widest, .tracking-wider) { letter-spacing: .02em; }
+.supporting-readable :where(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) { min-width: 0; max-width: 100%; font-size: max(16px, 1rem); line-height: 1.5; }
+.supporting-readable :where(button, a) > svg { flex-shrink: 0; }
+.supporting-readable :where(input[type=checkbox], input[type=radio]) { flex-shrink: 0; }
+.supporting-readable .text-gray-400:not(svg) { color: #64748b; }
+.supporting-readable .supporting-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.supporting-readable .supporting-choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.5rem), 1fr)); }
+.supporting-readable .supporting-event-heading { flex-basis: 13rem; }
+.supporting-readable .supporting-event-actions { margin-left: auto; }
+.supporting-readable .supporting-toggle { gap: .75rem; }
+.supporting-readable .supporting-modal { overflow: hidden; }
+.supporting-readable .supporting-modal > :first-child,
+.supporting-readable .supporting-modal > :last-child { flex-shrink: 0; }
+.supporting-readable .supporting-modal-body { min-height: 0; }
+.supporting-readable .signup-phone { display: grid; grid-template-columns: 5ch .5ch minmax(0,1fr) .5ch minmax(0,1fr); gap: .5rem; }
+.supporting-readable .signup-phone > :is(input, div) { padding-inline: .35rem; text-align: center; letter-spacing: normal; }
+.supporting-readable .account-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
+.supporting-readable .account-tabs button { padding-inline: .5rem; }
+.supporting-readable .account-form { padding: 1.25rem; }
+.supporting-readable .privacy-document { word-break: keep-all; }
+/* Give the domain a complete row instead of clipping it in half an input. */
+@media (max-width: 430px) {
+  .supporting-readable .email-parts { display: grid; grid-template-columns: auto minmax(0,1fr); }
+  .supporting-readable .email-parts > input { grid-column: 1 / -1; width: 100%; }
+  .supporting-readable .email-parts > select { width: 100%; }
+  .supporting-readable .supporting-event-icon { display: none; }
+}
+
+@media (max-width: 430px) { .calendar-admin-readable .calendar-event-form-card { padding: 1rem; } }

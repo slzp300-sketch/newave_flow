@@ -11,7 +11,8 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "codex/ios-review-clarity": false
+      "codex/ios-review-clarity": false,
+      "codex/ios-first-update": false
     }
   }
 }

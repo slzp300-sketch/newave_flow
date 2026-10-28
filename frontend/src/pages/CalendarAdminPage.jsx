@@ -1,3 +1,5 @@
+import './SupportingReadability.css'
+import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
 import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
@@ -197,7 +199,7 @@ export default function CalendarAdminPage() {
   }, [events, search, period, today])
 
   return (
-    <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
+    <div className="supporting-readable calendar-admin-readable readable-content flex flex-col min-h-screen pb-10 bg-gray-50/50">
       <Header title="일정 관리" showBack />
 
       <div className="px-4 py-6">
@@ -212,7 +214,7 @@ export default function CalendarAdminPage() {
 
         {showForm && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <Card className="p-6 border-2 border-primary-100 shadow-xl shadow-primary-50">
+            <Card className="calendar-event-form-card p-6 border-2 border-primary-100 shadow-xl shadow-primary-50">
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div>
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">일정 제목</label>
@@ -239,7 +241,7 @@ export default function CalendarAdminPage() {
                 {/* 하루종일 토글 */}
                 <div
                   onClick={() => setFormData(d => ({ ...d, allDay: !d.allDay }))}
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                  className={`supporting-toggle flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
                     formData.allDay ? 'border-primary-300 bg-primary-50' : 'border-gray-100 bg-gray-50'
                   }`}
                 >
@@ -258,7 +260,7 @@ export default function CalendarAdminPage() {
 
                 <AnimatePresence initial={false}>
                   {!formData.allDay && (
-                    <motion.div
+                    <CollapsePanel
                       key="time-fields"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -266,7 +268,7 @@ export default function CalendarAdminPage() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="supporting-form-grid gap-4">
                         <div>
                           <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">시작 시간</label>
                           <input
@@ -295,7 +297,7 @@ export default function CalendarAdminPage() {
                           />
                         </div>
                       </div>
-                    </motion.div>
+                    </CollapsePanel>
                   )}
                 </AnimatePresence>
 
@@ -342,7 +344,7 @@ export default function CalendarAdminPage() {
                   onClick={() => setFormData(d => ({ ...d, attendanceRequired: !d.attendanceRequired,
                     attendanceStartDate: d.attendanceStartDate || (eventToday() > d.endDate ? d.endDate : eventToday()),
                     attendanceDeadline: d.attendanceDeadline || d.endDate }))}
-                  className={`w-full text-left flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                  className={`w-full text-left supporting-toggle flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
                     formData.attendanceRequired
                       ? 'border-emerald-300 bg-emerald-50'
                       : 'border-gray-100 bg-gray-50'
@@ -419,8 +421,8 @@ export default function CalendarAdminPage() {
                       <Card key={event.id} className={`${isEventEnded(event, today) ? 'event-inactive' : ''} brand-custom-color p-0 overflow-hidden border-0 border-l-4 transition-all hover:shadow-lg ${colors.split(' ')[0]}`}>
                         <div className={`p-4 ${colors.split(' ')[1]}`}>
                           <div className="flex flex-wrap justify-between items-start gap-3">
-                            <div className="flex min-w-0 flex-1 items-start gap-3">
-                              <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm">
+                            <div className="supporting-event-heading flex min-w-0 flex-1 items-start gap-3">
+                              <div className="supporting-event-icon w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm">
                                 <CalendarIcon size={22} className={colors.split(' ')[2]} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -455,7 +457,7 @@ export default function CalendarAdminPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-1 ml-2">
+                            <div className="supporting-event-actions flex gap-1">
                               <button aria-label={`${event.title} 수정`} onClick={() => handleEdit(event)} className="min-h-11 min-w-11 p-2 text-gray-400 hover:text-primary-500 hover:bg-white rounded-lg transition-colors bg-white/50 shadow-sm">
                                 <PenLine size={16} />
                               </button>

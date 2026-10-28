@@ -1,3 +1,4 @@
+import './PeopleReadability.css'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -28,7 +29,7 @@ export default function StudentDetailPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen pb-10">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-10">
       <Header title="학생 상세 정보" showBack />
 
       <div className="px-4 py-6 flex flex-col gap-6">
@@ -60,10 +61,10 @@ export default function StudentDetailPage() {
             { label: '모', name: student?.motherName, phone: student?.motherPhone },
           ].filter(p => p.name || p.phone).map(p => (
             <Card key={p.label} className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
+              <div className="w-10 h-10 shrink-0 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
                 <Phone size={18} />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400">{p.label} {p.name ?? ''}</p>
                 <p className="font-bold text-gray-900">{p.phone ?? '연락처 없음'}</p>
               </div>
@@ -89,7 +90,7 @@ export default function StudentDetailPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
                 >
-                  <Card className="flex items-center justify-between py-3">
+                  <Card className="flex flex-wrap gap-2 items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-secondary-500' : 'bg-red-400'}`} />
                       <span className="text-sm font-semibold text-gray-700">{formatDate(record.attendanceDate)}</span>

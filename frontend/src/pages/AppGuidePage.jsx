@@ -10,13 +10,13 @@ export const FEATURE_GUIDE = [
   ['교적부 · 반관리', '권한에 맞는 학생 정보와 담당 반을 조회·관리합니다.'],
   ['내 정보 · 계정 연결 · 삭제', '프로필을 관리하고 외부 로그인 계정을 연결합니다. 삭제 요청은 로그인 전에도 본인 확인 후 접수할 수 있습니다.'],
   ['이용수칙 · 신고 · 사진 검토', '콘텐츠와 사용자를 신고하고 처리 상태를 확인합니다. 새 사진은 관리자 승인 후 다른 사용자에게 표시됩니다.'],
-  ['관리자 기능', '교사·학생·반 배정, 가입 승인·이용 정지, 일정·행사·회의·기도모임·회의록·전도·TTS·출석·신고·사진을 관리합니다. 관리자 권한 계정으로 전체 → 관리에서 접근합니다.'],
+  ['관리자 기능', '교사·학생·반 배정, 가입 승인·이용 정지, 일정·행사·회의·기도모임·회의록·전도·TTS·출석·신고·사진을 관리합니다. 관리자 권한 계정으로 홈의 관리 메뉴에서 접근합니다.'],
 ]
 
 export default function AppGuidePage() {
   const { user, apiEnvironment } = useAuthStore()
   return <main className="safe-page-top mx-auto min-h-screen max-w-mobile bg-white px-5 pb-12 text-gray-900">
-    <Link to={user ? '/menu' : '/login'} className="inline-flex min-h-12 items-center font-semibold text-primary-700">{user ? '전체 메뉴로 돌아가기' : '로그인으로 돌아가기'}</Link>
+    <Link to={user ? '/' : '/login'} className="inline-flex min-h-12 items-center font-semibold text-primary-700">{user ? '홈으로 돌아가기' : '로그인으로 돌아가기'}</Link>
     <h1 className="mt-3 text-2xl font-bold">앱 기능·계정 안내</h1>
     <p className="mt-3 text-sm leading-7">뉴웨이브 플로우는 만 14세 이상 승인된 교사·사역 담당자를 위한 무료 업무 앱입니다. 학생·보호자는 앱 계정을 만들지 않습니다.</p>
     <section className="mt-6 rounded-xl bg-blue-50 p-4 text-sm leading-7">

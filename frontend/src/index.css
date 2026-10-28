@@ -24,5 +24,49 @@
   }
 }
 @layer utilities {
+  .attendance-choice { display: flex; gap: 4px; padding: 4px; border: 1px solid #dce4ef; background: #f1f5f9; border-radius: 14px; }
+  :root .attendance-choice > button:not(.brand-color-swatch) { flex: 1; min-width: 0; min-height: 48px; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 8px 4px; border: 2px solid transparent; border-radius: 10px; font-size: 1rem; font-weight: 700; line-height: 1.4; word-break: keep-all; --surface-bg: transparent; --surface-ink: #334155; }
+  .large-font .attendance-choice { flex-wrap: wrap; }
+  .attendance-choice[data-multi='true'] > button { flex-direction: column; }
+  :root.large-font .attendance-choice > button:not(.brand-color-swatch) { flex-basis: 100%; flex-direction: row; }
+  @media (max-width: 359px) { .attendance-choice > button { flex-direction: column; } }
+  :root .attendance-choice > button[aria-pressed='true']:not(.brand-color-swatch) { --surface-bg: #21643f; --surface-ink: white; border-color: #21643f; box-shadow: 0 1px 3px #0002; }
+  :root .attendance-choice > button[data-tone='absence'][aria-pressed='true']:not(.brand-color-swatch) { --surface-bg: #b42338; --surface-ink: white; border-color: #b42338; }
+  :root .attendance-choice > button[data-tone='partial'][aria-pressed='true']:not(.brand-color-swatch) { --surface-bg: #8a4b08; --surface-ink: white; border-color: #8a4b08; }
+  .attendance-choice-mark { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 50%; flex-shrink: 0; }
+  .home-menu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+  .home-menu-card { display: flex; min-height: 7rem; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; padding: .85rem .4rem; text-align: center; border: 1px solid #dce4ef; border-radius: 1rem; }
+  :root .home-menu-card .home-menu-status { color: #475569; padding: 1px 6px; border-radius: 6px; }
+  :root .home-menu-card[data-menu-state='pending'] .home-menu-status { color: #991b1b; background: #fef2f2; }
+  :root .home-menu-card[data-menu-state='new'] .home-menu-status { color: #1d4ed8; }
+  .large-font .home-menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 359px) { .home-menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* Negative attendance is a semantic state, not the generic green selection. */
+  :root :is(button, .brand-action)[data-tone='absence']:is([aria-pressed='true'], [data-checked='true']):not(.brand-color-swatch) {
+    --surface-bg: theme('colors.red.50');
+    --surface-border: theme('colors.red.300');
+    --surface-ink: theme('colors.red.700');
+  }
+  :root :is(button, .brand-action)[data-tone='absence']:is([aria-pressed='true'], [data-checked='true']):not(.brand-color-swatch) :is(svg, span) { color: inherit; }
+  .refresh-spinner { animation: refresh-spin .8s linear infinite; }
+  @keyframes refresh-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .refresh-spinner { animation: none; }
+  }
 }
+
+/* Let readable text reflow without shrinking reading content or form inputs. */
+.readable-content :where(h1, h2, h3, p, label, dt, dd, button, a) { word-break: keep-all; overflow-wrap: anywhere; }
+.readable-content :where(button, a) > svg { flex-shrink: 0; }
+.readable-content textarea { word-break: keep-all; overflow-wrap: anywhere; }
+.readable-content .ui-segments { align-items: stretch; }
+
+/* Keep compact cards readable instead of squeezing text into narrow columns. */
+.readable-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr)); }
+
+/* Navigation labels stay compact; decorative icons yield space before text. */
+.app-header h1 { font-size:clamp(16px,1.125rem,18px); }
+@media (max-width:359px) { .app-header .brand-heading-icon { display:none; } }
+@media (max-width:430px) { .large-font .app-header .brand-heading-icon { display:none; } }

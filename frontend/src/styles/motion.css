@@ -5,6 +5,8 @@
 .motion-enter { animation: section-arrive .55s var(--motion-ease) backwards; }
 .motion-week { animation: section-arrive .24s var(--motion-ease); }
 .motion-fade { animation: page-arrive .2s ease-out; }
+.tts-check-mark { animation: tts-check-arrive .12s ease-out; }
+@keyframes tts-check-arrive { from { opacity: .65; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
 .motion-button, .motion-tap, .icon-button, .attendance-actions button, .tts-day {
   transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .2s ease, scale .18s var(--motion-ease);
 }

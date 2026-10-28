@@ -1,3 +1,4 @@
+import './PeopleReadability.css'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
 import { useState } from 'react'
@@ -45,7 +46,7 @@ export default function ClassManagePage() {
   const inactiveStudents = students.filter(s => !s.isActive)
 
   return (
-    <div className="flex flex-col min-h-screen pb-24">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-24">
       <Header title="반 관리" showBack />
 
       {/* 탭 스위처 */}
@@ -78,7 +79,7 @@ export default function ClassManagePage() {
       ) : (
         <div className="px-4 py-4 flex flex-col gap-4">
           {/* 통계 */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="people-summary-grid gap-2">
             <Card className="text-center py-3">
               <p className="text-xl font-bold text-gray-900">{students.length}</p>
               <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
@@ -208,7 +209,7 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: idx * 0.04 }}
     >
-      <Card className={`flex items-center gap-3 p-4 ${isInactive ? 'opacity-60' : ''}`}>
+      <Card className={`people-student-row flex flex-wrap items-center gap-3 p-4 ${isInactive ? 'opacity-60' : ''}`}>
         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden ${
           student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
         }`}>
@@ -239,9 +240,10 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
           </p>
         </div>
 
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="people-row-actions flex items-center gap-1 flex-shrink-0">
           <button
             onClick={onEdit}
+            aria-label={`${student.name} 정보 수정`}
             className="p-2 rounded-xl bg-gray-100 text-gray-500 active:scale-90 transition-all"
           >
             <PenLine size={14} />
@@ -289,7 +291,7 @@ function MemoTab({ students, onEditMemo }) {
         const hasContent = student.prayerRequest || student.sketch
         return (
           <motion.div key={student.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}>
-            <Card onClick={() => onEditMemo(student)} className="flex items-start gap-3 p-4 group">
+            <Card onClick={() => onEditMemo(student)} className="people-memo-card p-4 group">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden ${
                 student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
               }`}>
@@ -305,13 +307,13 @@ function MemoTab({ students, onEditMemo }) {
                   {student.prayerRequest ? (
                     <div className="flex items-start gap-1.5">
                       <span className="text-[0.6875rem] font-bold text-secondary-700 bg-secondary-50 px-1 rounded flex-shrink-0 mt-0.5">기도</span>
-                      <p className="text-xs text-gray-500 leading-relaxed line-clamp-1">{student.prayerRequest}</p>
+                      <p className="text-xs text-gray-500 leading-relaxed whitespace-pre-wrap">{student.prayerRequest}</p>
                     </div>
                   ) : null}
                   {student.sketch ? (
                     <div className="flex items-start gap-1.5">
                       <span className="text-[0.6875rem] font-bold text-primary-500 bg-primary-50 px-1 rounded flex-shrink-0 mt-0.5">스케치</span>
-                      <p className="text-xs text-gray-500 leading-relaxed line-clamp-1">{student.sketch}</p>
+                      <p className="text-xs text-gray-500 leading-relaxed whitespace-pre-wrap">{student.sketch}</p>
                     </div>
                   ) : null}
                   {!hasContent && (
@@ -546,7 +548,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
               <PhotoReviewStatus targetType="STUDENT" targetId={student.id} onRemoved={() => set('profileImage', '')} />
             </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="people-form-grid gap-3">
             <FormField label="이름">
               <input value={form.name} onChange={e => set('name', e.target.value)}
                 className="field-input" placeholder="이름" />
@@ -563,7 +565,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="people-form-grid gap-3">
             <FormField label="생년월일">
               <input type="date" value={form.birthDate} onChange={e => set('birthDate', e.target.value)}
                 className="field-input" />
@@ -577,7 +579,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="people-form-grid gap-3">
             <FormField label="학교">
               <input value={form.school} onChange={e => set('school', e.target.value)}
                 className="field-input" placeholder="학교명" />
@@ -588,7 +590,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="people-form-grid gap-3">
             <FormField label="아버지 이름">
               <input value={form.fatherName} onChange={e => set('fatherName', e.target.value)}
                 className="field-input" placeholder="이름" />
@@ -599,7 +601,7 @@ function EditStudentSheet({ student, onClose, onSaved }) {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="people-form-grid gap-3">
             <FormField label="어머니 이름">
               <input value={form.motherName} onChange={e => set('motherName', e.target.value)}
                 className="field-input" placeholder="이름" />

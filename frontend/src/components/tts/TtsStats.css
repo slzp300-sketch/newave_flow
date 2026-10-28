@@ -1,0 +1,10 @@
+/* Ranking-only rhythm: other record screens keep their own presentation. */
+.tts-ranking-records h3 { font-size: 1rem; line-height: 1.5; }
+.tts-ranking-records dl { font-size: .875rem; line-height: 1.5; margin-top: .75rem; }
+.tts-ranking-records dt { color: #4b5563; font-weight: 500; }
+.tts-ranking-records table { table-layout: fixed; white-space: normal; font-size: 1rem; }
+.tts-ranking-records th { font-size: .875rem; color: #4b5563; padding: .875rem .75rem; }
+.tts-ranking-records td { padding: 1rem .75rem; overflow-wrap: anywhere; vertical-align: top; }
+.tts-ranking-records th:first-child { width: 44%; }
+.tts-ranking-records th:nth-child(2) { width: 24%; }
+.tts-ranking-records th:last-child { width: 32%; }

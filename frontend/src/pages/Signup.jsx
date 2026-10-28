@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
@@ -173,7 +174,7 @@ export default function Signup() {
   }
 
   if (isApple && appleReady === false && !success) {
-    return <div className="min-h-screen bg-gray-50">
+    return <div className="supporting-readable readable-content min-h-screen bg-gray-50">
       <Header title="회원가입" showBack />
       <main className="px-6 py-8">
         <h2 className="text-xl font-bold text-gray-900">Apple 인증을 다시 진행해 주세요</h2>
@@ -186,7 +187,7 @@ export default function Signup() {
 
   if (success) {
     return (
-      <div className="safe-page-top min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
+      <div className="supporting-readable readable-content safe-page-top min-h-screen bg-gray-50 flex flex-col items-center justify-center px-6">
         <div className="w-20 h-20 bg-secondary-100 text-secondary-700 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">✅</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">가입 신청 완료</h2>
         <p className="text-gray-500 text-center text-sm mb-8">
@@ -201,7 +202,7 @@ export default function Signup() {
   }
 
   if (!eligibilityConfirmed) {
-    return <div className="min-h-screen bg-gray-50">
+    return <div className="supporting-readable readable-content min-h-screen bg-gray-50">
       <Header title="회원가입" showBack />
       <SignupEligibility key={isApple ? 'apple' : isKakao ? 'kakao' : 'email'} error={error}
         disabled={(isApple && !appleReady) || (isKakao && !kakaoReady)}
@@ -213,7 +214,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="supporting-readable readable-content min-h-screen bg-gray-50">
       <Header title="회원가입" showBack />
       
       <div className="px-6 pt-6 pb-10">
@@ -289,7 +290,7 @@ export default function Signup() {
                 type={showConfirmPw ? 'text' : 'password'}
                 value={confirmPw}
                 onChange={(e) => setConfirmPw(e.target.value)}
-                placeholder="비밀번호를 한 번 더 입력하세요"
+                placeholder="비밀번호 재입력"
                 required
                 className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 text-sm font-medium pr-12 transition ${
                   pwMatch === false ? 'border-red-300 focus:ring-red-400' :
@@ -319,7 +320,7 @@ export default function Signup() {
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">전화번호 <span className="text-gray-500 font-normal">(선택)</span></label>
-            <div className="flex items-center gap-2">
+            <div className="signup-phone flex items-center gap-2">
               <div className="flex-[3] px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 select-none text-center">
                 010
               </div>

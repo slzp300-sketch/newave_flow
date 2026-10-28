@@ -1,3 +1,5 @@
+import FitLabel from '../components/common/FitLabel'
+import './AdminStudentAttendancePage.css'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { AdminIntro } from '../components/common/AdminTools'
 import AdminReadGuard from '../components/common/AdminReadGuard'
@@ -8,13 +10,13 @@ import { usePersistedState } from '../hooks/usePersistedState'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { format, subWeeks, startOfWeek } from 'date-fns'
-import { Users, CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react'
+import { Users, CheckCircle2, Clock, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
 import RecordViews from '../components/common/RecordViews'
 import { attendanceApi } from '../api/attendance'
-import { weekLabels } from '../utils/date'
+
 
 // ── 주차 목록 생성 (최근 10주, 일요일 기준) ─────────────────────
 function getPastSundays(count = 10) {
@@ -48,6 +50,16 @@ function getGradeColor(grade) {
   return GRADE_COLORS[grade] || GRADE_COLORS['기타']
 }
 
+function AttendanceRecords(props) {
+  return <div className="admin-attendance-records min-w-0"><RecordViews {...props} /></div>
+}
+
+function AttendanceStatus({ status }) {
+  const labels = { PRESENT: '출석', ABSENT: '결석', LATE: '지각' }
+  const tone = status === 'PRESENT' ? 'bg-secondary-50 text-secondary-700' : status === 'ABSENT' ? 'bg-red-50 text-red-700' : status === 'LATE' ? 'bg-amber-50 text-amber-800' : 'bg-gray-100 text-gray-700'
+  return <span className={`inline-block rounded-lg px-2 py-1 text-sm font-bold ${tone}`}>{labels[status] || '미기록'}</span>
+}
+
 // ── 학생 목록 패널 ────────────────────────────────────────────
 function StudentDetailPanel({ classId, className, date, onBack, viewMode }) {
   const studentsQuery = useQuery({
@@ -56,7 +68,6 @@ function StudentDetailPanel({ classId, className, date, onBack, viewMode }) {
   })
   const { data: students = [], isLoading } = studentsQuery
 
-  if (!hasQueryData([studentsQuery]) || studentsQuery.isError) return <QueryNotice queries={[studentsQuery]} label="학생 출석 명단" />
 
   const present = students.filter(s => s.status === 'PRESENT').length
   const absent  = students.filter(s => s.status === 'ABSENT').length
@@ -64,43 +75,48 @@ function StudentDetailPanel({ classId, className, date, onBack, viewMode }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <button
           onClick={onBack}
-          className="flex min-h-11 items-center gap-1.5 text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+          className="flex min-w-0 max-w-full min-h-11 items-center gap-2 text-base font-bold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
         >
-          ← {className}
+          <span aria-hidden="true">←</span><FitLabel>{className}</FitLabel>
         </button>
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">학생 명단</p>
+        <h2 className="text-lg font-bold text-gray-900">학생 명단</h2>
       </div>
 
+      <AdminReadGuard queries={[studentsQuery]} label="학생 출석 명단">
       {/* 반 통계 */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="text-center py-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="min-w-0 text-center px-2 py-3">
           <p className="text-xl font-bold text-gray-900">{students.length}</p>
-          <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
+          <p className="text-sm font-bold text-gray-600 mt-0.5">전체</p>
         </Card>
-        <Card className="text-center py-3">
+        <Card className="min-w-0 text-center px-2 py-3">
           <p className="text-xl font-bold text-secondary-700">{present}</p>
-          <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
+          <p className="text-sm font-bold text-gray-600 mt-0.5">출석</p>
         </Card>
-        <Card className="text-center py-3">
-          <p className="text-xl font-bold text-red-400">{absent + late}</p>
-          <p className="text-xs font-bold text-gray-400 mt-0.5">결석</p>
+        <Card className="min-w-0 text-center px-2 py-3">
+          <p className="text-xl font-bold text-red-700">{absent}</p>
+          <p className="text-sm font-bold text-gray-600 mt-0.5">결석</p>
+        </Card>
+        <Card className="min-w-0 text-center px-2 py-3">
+          <p className="text-xl font-bold text-amber-800">{late}</p>
+          <p className="text-sm font-bold text-gray-600 mt-0.5">지각</p>
         </Card>
       </div>
 
       {isLoading ? (
-        <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
+        <Card className="py-8 text-center text-sm text-gray-600">불러오는 중...</Card>
       ) : students.length === 0 ? (
         <Card className="py-10 text-center flex flex-col items-center gap-2">
           <Clock size={24} className="text-gray-200" />
-          <p className="text-sm font-bold text-gray-400">아직 출석 데이터가 없습니다</p>
+          <p className="text-sm font-bold text-gray-600">아직 출석 데이터가 없습니다</p>
         </Card>
       ) : (
-        <RecordViews mode={viewMode} rows={students} rowKey={s => s.studentId} columns={[
+        <AttendanceRecords mode={viewMode} rows={students} rowKey={s => s.studentId} columns={[
           { label: '학생', render: s => s.studentName },
-          { label: '출석', render: s => ({ PRESENT: '출석', ABSENT: '결석', LATE: '지각' }[s.status] || '미기록') },
+          { label: '출석', render: s => <AttendanceStatus status={s.status} /> },
           { label: '결석 사유', render: s => s.absentReason },
           { label: '메모', render: s => s.note },
         ]}>
@@ -111,44 +127,32 @@ function StudentDetailPanel({ classId, className, date, onBack, viewMode }) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.03 }}
-              className={`brand-card flex items-start justify-between px-3 py-2.5 rounded-2xl ${
+              className={`brand-card grid grid-cols-[auto_minmax(0,1fr)] gap-3 items-start px-3 py-3 rounded-2xl ${
                 s.status === 'PRESENT' ? 'bg-secondary-50/60' :
                 s.status === 'ABSENT'  ? 'bg-red-50/60' :
                 s.status === 'LATE'    ? 'bg-amber-50/60' : 'bg-gray-50'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span className={`text-xs font-bold w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              <div className="contents">
+                <span className={`text-sm font-bold w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                   s.status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
                   s.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
                   s.status === 'LATE'    ? 'bg-amber-200 text-amber-700' :
                   'bg-gray-200 text-gray-500'
                 }`}>{(s.studentName || '?')[0]}</span>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">{s.studentName}</p>
-                  {s.absentReason && (
-                    <p className="text-xs text-red-400 font-medium mt-0.5">
-                      사유: {s.absentReason}
-                    </p>
-                  )}
-                  {s.note && (
-                    <p className="text-xs text-gray-400 font-medium mt-0.5">
-                      메모: {s.note}
-                    </p>
-                  )}
+                <div className="min-w-0">
+                  <p className="text-base font-bold leading-relaxed text-gray-900">{s.studentName}</p>
                 </div>
               </div>
-              <div className="flex-shrink-0 mt-0.5">
-                {s.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-secondary-700" /> :
-                 s.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400" /> :
-                 s.status === 'LATE'    ? <Clock size={16} className="text-amber-500" /> :
-                 <span className="text-xs text-gray-400 font-bold">미기록</span>}
-              </div>
+              <div className="col-start-2"><AttendanceStatus status={s.status} /></div>
+              {s.absentReason && <p className="col-span-2 text-sm text-red-700 font-medium leading-relaxed">사유: {s.absentReason}</p>}
+              {s.note && <p className="col-span-2 text-sm text-gray-600 font-medium leading-relaxed">메모: {s.note}</p>}
             </motion.div>
           ))}
         </Card>
-        </RecordViews>
+        </AttendanceRecords>
       )}
+      </AdminReadGuard>
     </div>
   )
 }
@@ -158,17 +162,17 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass, viewMode 
   const color = getGradeColor(grade)
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <button
           onClick={onBack}
-          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${color.back}`}
+          className={`flex min-h-11 min-w-0 max-w-full items-center gap-2 text-base font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${color.back}`}
         >
-          ← {grade} 전체
+          <span aria-hidden="true">←</span><FitLabel>{grade} 전체</FitLabel>
         </button>
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">반별 현황</p>
+        <h2 className="text-lg font-bold text-gray-900">반별 현황</h2>
       </div>
 
-      <RecordViews mode={viewMode} rows={classes} rowKey={cls => cls.classGroupId} onRowClick={onSelectClass} columns={[
+      <AttendanceRecords mode={viewMode} rows={classes} rowKey={cls => cls.classGroupId} onRowClick={onSelectClass} columns={[
         { label: '반', render: cls => cls.classGroupName },
         { label: '담임', render: cls => cls.teacherName },
         { label: '전체', render: cls => `${cls.totalStudents}명` },
@@ -189,24 +193,24 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass, viewMode 
               className="w-full text-left"
             >
               <Card className="p-4 flex flex-col gap-3 hover:shadow-md transition-shadow active:scale-[0.99]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+                  <div className="contents">
                     <div className={`w-10 h-10 rounded-2xl ${color.accent} flex items-center justify-center flex-shrink-0`}>
                       <Users size={18} className={color.text} />
                     </div>
-                    <div>
-                      <p className="font-bold text-gray-900 text-sm">{cls.classGroupName}</p>
-                      <p className="text-xs text-gray-400 font-bold mt-0.5">
-                        {cls.teacherName ? `담임 ${cls.teacherName} · ` : ''}{cls.presentCount}명 출석 · {cls.absentCount}명 결석
-                        {!cls.submitted && <span className="text-amber-500 ml-1">· 미제출</span>}
+                    <div className="min-w-0">
+                      <p className="font-bold text-gray-900 text-base"><FitLabel>{cls.classGroupName}</FitLabel></p>
+                      <p className="text-sm text-gray-600 font-bold mt-0.5">
+                        {cls.teacherName ? `담임 ${cls.teacherName}` : '담임 미배정'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`text-xs font-bold ${color.text}`}>
-                      {cls.presentCount}/{cls.totalStudents}
-                    </span>
-                    <ChevronRight size={16} className="text-gray-300" />
+                  <ChevronRight size={18} className="shrink-0 text-gray-500 mt-1" aria-hidden="true" />
+                  <div className="col-start-2 col-span-2 flex flex-wrap gap-x-3 gap-y-2 text-sm font-semibold">
+                    <span className="text-gray-600">전체 {cls.totalStudents}명</span>
+                    <span className="text-secondary-700">출석 {cls.presentCount}명</span>
+                    <span className="text-red-700">결석 {cls.absentCount}명</span>
+                    <span className={cls.submitted ? 'text-gray-600' : 'text-amber-800'}>{cls.submitted ? '제출 완료' : '미제출'}</span>
                   </div>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -222,7 +226,7 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass, viewMode 
           )
         })}
       </div>
-      </RecordViews>
+      </AttendanceRecords>
     </div>
   )
 }
@@ -231,8 +235,8 @@ function ClassListPanel({ grade, classes, date, onBack, onSelectClass, viewMode 
 function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade, viewMode }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
-      <RecordViews mode={viewMode} rows={gradeList} rowKey={g => g.grade} onRowClick={g => onSelectGrade(g.grade)} columns={[
+      <h2 className="text-lg font-bold text-gray-900 px-1">학년별 현황</h2>
+      <AttendanceRecords mode={viewMode} rows={gradeList} rowKey={g => g.grade} onRowClick={g => onSelectGrade(g.grade)} columns={[
         { label: '학년', render: g => g.grade },
         { label: '전체', render: g => `${g.total}명` },
         { label: '출석', render: g => `${g.present}명` },
@@ -249,14 +253,14 @@ function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade, viewMode }) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: idx * 0.05 }}
               onClick={() => onSelectGrade(g.grade)}
-              className={`${color.bg} rounded-3xl p-5 flex flex-col items-center gap-2 border-2 border-transparent hover:border-opacity-50 active:scale-95 transition-all text-center`}
+              className={`${color.bg} min-w-0 rounded-3xl p-4 flex flex-col items-center gap-2 border-2 border-transparent hover:border-opacity-50 active:scale-95 transition-all text-center`}
             >
               <div className={`w-12 h-12 rounded-2xl ${color.accent} flex items-center justify-center mb-1`}>
                 <Users size={24} className={color.text} />
               </div>
-              <div>
-                <p className={`font-bold text-lg leading-tight ${color.text}`}>{g.grade}</p>
-                <p className="text-xs text-gray-400 font-bold mt-1">
+              <div className="min-w-0 w-full">
+                <p className={`font-bold text-lg leading-tight ${color.text}`}><FitLabel>{g.grade}</FitLabel></p>
+                <p className="text-sm text-gray-600 font-bold mt-1">
                   {g.present} / {g.total} 출석
                 </p>
               </div>
@@ -267,7 +271,7 @@ function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade, viewMode }) {
           )
         })}
       </div>
-      </RecordViews>
+      </AttendanceRecords>
     </div>
   )
 }
@@ -281,27 +285,27 @@ function AbsentListPanel({ date, viewMode }) {
   })
   const { data: absentList = [], isLoading } = absentQuery
 
-  if (!hasQueryData([absentQuery]) || absentQuery.isError) return <QueryNotice queries={[absentQuery]} label="결석자 명단" />
-  if (isLoading) return <Card className="py-10 text-center text-sm text-gray-400">불러오는 중...</Card>
+  if (!hasQueryData([absentQuery]) || absentQuery.isError) return <QueryNotice queries={[absentQuery]} label="결석·지각 명단" />
+  if (isLoading) return <Card className="py-10 text-center text-sm text-gray-600">불러오는 중...</Card>
 
   if (absentList.length === 0) return (
     <Card className="py-14 flex flex-col items-center gap-3">
       <CheckCircle2 size={32} className="text-secondary-200" />
-      <p className="text-sm font-bold text-gray-400">이번 주 결석자가 없습니다</p>
+      <p className="text-sm font-bold text-gray-600">선택한 주일에 결석·지각 기록이 없습니다</p>
     </Card>
   )
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">결석자 목록</p>
-        <span className="text-xs font-bold text-red-500">{absentList.length}명</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <h2 className="text-lg font-bold text-gray-900">결석·지각 목록</h2>
+        <span className="text-sm font-bold text-red-700">{absentList.length}명</span>
       </div>
-      <RecordViews mode={viewMode} rows={absentList} rowKey={(s, index) => `${s.ageGroup}:${s.classGroupName}:${s.studentName}:${index}`} columns={[
+      <AttendanceRecords mode={viewMode} rows={absentList} rowKey={(s, index) => `${s.ageGroup}:${s.classGroupName}:${s.studentName}:${index}`} columns={[
         { label: '학생', render: s => s.studentName },
         { label: '학년', render: s => s.ageGroup },
         { label: '반', render: s => s.classGroupName },
-        { label: '출석', render: s => s.status === 'LATE' ? '지각' : '결석' },
+        { label: '출석', render: s => <AttendanceStatus status={s.status} /> },
         { label: '결석 사유', render: s => s.absentReason },
       ]}>
       <Card className="flex flex-col gap-1.5 p-3">
@@ -313,36 +317,31 @@ function AbsentListPanel({ date, viewMode }) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.02 }}
-              className="brand-card flex items-start gap-3 px-3 py-3 rounded-2xl bg-red-50/50"
+              className="brand-card flex flex-col gap-2 px-3 py-3 rounded-2xl bg-red-50/50"
             >
               {/* 학년 뱃지 */}
-              <div className={`px-2 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${gradeColor.accent} ${gradeColor.text}`}>
+              <div className={`self-start max-w-full px-2 py-1 rounded-lg text-sm font-bold ${gradeColor.accent} ${gradeColor.text}`}>
                 {s.ageGroup || '기타'}
               </div>
               {/* 반 + 이름 */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-gray-400 font-bold">{s.classGroupName}</span>
-                  <span className="text-gray-200">·</span>
-                  <span className="text-sm font-bold text-gray-800">{s.studentName}</span>
-                  {s.status === 'LATE' && (
-                    <span className="text-[0.6875rem] font-bold bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md">지각</span>
-                  )}
-                </div>
+                <p className="text-base font-bold leading-relaxed text-gray-900">{s.studentName}</p>
+                <p className="mt-1 text-sm text-gray-600">{s.classGroupName}</p>
+                <div className="mt-2"><AttendanceStatus status={s.status} /></div>
                 {s.absentReason ? (
-                  <p className="text-xs text-red-400 font-medium mt-0.5 truncate">
+                  <p className="text-sm text-red-700 font-medium mt-2 leading-relaxed">
                     사유: {s.absentReason}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-300 font-medium mt-0.5">사유 미입력</p>
+                  <p className="text-sm text-gray-500 font-medium mt-0.5">사유 미입력</p>
                 )}
               </div>
-              <XCircle size={15} className="text-red-300 flex-shrink-0 mt-0.5" />
+
             </motion.div>
           )
         })}
       </Card>
-      </RecordViews>
+      </AttendanceRecords>
     </div>
   )
 }
@@ -405,24 +404,24 @@ export default function AdminStudentAttendancePage() {
   const handleBackToGrades = () => { setSelectedGrade(null); setSelectedClass(null) }
 
   return (
-    <div className="flex flex-col min-h-screen pb-10 bg-gray-50/50">
+    <div className="admin-attendance-page flex flex-col min-h-screen pb-10 bg-gray-50/50">
       <Header title="출석 관리" showBack />
 
       <div className="px-4 py-5 flex flex-col gap-5">
 
-        <AdminIntro title="주일 출석 현황" description="학년 → 반 → 학생 순서로 확인하거나 결석자만 모아 보세요." />
+        <AdminIntro title="주일 출석 현황" description="학년·반·학생별 출석과 결석·지각 기록을 확인하세요." />
         <ViewModeToggle mode={viewMode} onChange={setViewMode} />
         {/* 주차 선택 */}
         <section>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">주차 선택 (기준 주일)</p>
-          <select aria-label="출석 조회 주차"
+          <label htmlFor="admin-attendance-week" className="block text-base font-bold text-gray-900 px-1 mb-2">조회할 주일</label>
+          <select id="admin-attendance-week" aria-label="출석 조회 주차"
             value={selectedDate}
             onChange={e => handleDateChange(e.target.value)}
-            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-bold text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-primary-200"
+            className="w-full px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-base font-bold text-gray-900 shadow-sm outline-none focus:ring-2 focus:ring-primary-200"
           >
             {sundays.map(s => (
               <option key={s} value={s}>
-                {weekLabels(new Date(s + 'T00:00:00')).monthWeek} ({weekLabels(new Date(s + 'T00:00:00')).yearWeek}) · {format(new Date(s + 'T00:00:00'), 'M/d')} 주일
+                {format(new Date(s + 'T00:00:00'), 'yyyy년 M월 d일')} 주일
               </option>
             ))}
           </select>
@@ -430,34 +429,34 @@ export default function AdminStudentAttendancePage() {
 
         <AdminReadGuard queries={[attendanceQuery]} label="주간 출석 현황">
         {isLoading ? (
-          <Card className="py-16 text-center text-sm text-gray-400">불러오는 중...</Card>
+          <Card className="py-16 text-center text-sm text-gray-600">불러오는 중...</Card>
         ) : classSummaries.length === 0 ? (
           <Card className="py-16 flex flex-col items-center gap-3">
             <Users size={36} className="text-gray-200" />
-            <p className="text-sm font-bold text-gray-400">해당 주차에 제출된 출석 데이터가 없습니다</p>
+            <p className="text-sm font-bold text-gray-600">해당 주차에 제출된 출석 데이터가 없습니다</p>
           </Card>
         ) : (
           <>
             {/* 전체 통계 */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="text-center py-4">
+            <div className="grid grid-cols-3 gap-2">
+              <Card className="min-w-0 text-center px-2 py-4">
                 <p className="text-2xl font-bold text-gray-900">{totalStudents}</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">전체</p>
+                <p className="text-sm font-bold text-gray-600 mt-1">전체</p>
               </Card>
-              <Card className="text-center py-4">
+              <Card className="min-w-0 text-center px-2 py-4">
                 <p className="text-2xl font-bold text-secondary-700">{totalPresent}</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">출석</p>
+                <p className="text-sm font-bold text-gray-600 mt-1">출석</p>
               </Card>
-              <Card className="text-center py-4">
-                <p className="text-2xl font-bold text-red-400">{totalAbsent}</p>
-                <p className="text-xs font-bold text-gray-400 mt-1">결석</p>
+              <Card className="min-w-0 text-center px-2 py-4">
+                <p className="text-2xl font-bold text-red-700">{totalAbsent}</p>
+                <p className="text-sm font-bold text-gray-600 mt-1">결석</p>
               </Card>
             </div>
 
             {/* 탭 (학년별 / 결석자) */}
             {!selectedGrade && !selectedClass && (
               <SegmentedControl label="출석 조회 방식" value={activeTab} onChange={setActiveTab} selectedClassName="text-gray-900"
-                options={[{ value: 'grade', label: '학년별 현황' }, { value: 'absent', label: '결석자 목록' }]} />
+                options={[{ value: 'grade', label: '학년별 현황' }, { value: 'absent', label: '결석·지각' }]} />
             )}
 
             {/* 뷰 전환 */}

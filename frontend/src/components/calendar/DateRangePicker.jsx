@@ -1,3 +1,4 @@
+import '../../pages/SupportingReadability.css'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
@@ -58,7 +59,7 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
     <>
       <div className="fixed inset-0 z-[80] bg-black/50" onClick={onClose} />
       <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
-        <div className="safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl">
+        <div className="supporting-readable readable-content date-range-readable safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl">
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={() => setMonth(m => subMonths(m, 1))} className="p-2 rounded-lg active:bg-gray-100" aria-label="이전 달">
               <ChevronLeft size={18} />
@@ -93,7 +94,7 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
                 >
                   {isStart && e > s && <span className="absolute inset-y-0 right-0 w-1/2 bg-secondary-50" />}
                   {isEnd && e > s && <span className="absolute inset-y-0 left-0 w-1/2 bg-secondary-50" />}
-                  <span className={`relative mx-auto w-9 h-9 rounded-full flex items-center justify-center
+                  <span className={`relative mx-auto w-full max-w-9 h-9 rounded-full flex items-center justify-center
                     ${isEdge ? 'bg-secondary-700 text-white' :
                       !isSameMonth(day, month) ? 'text-gray-300' :
                       dow === 0 ? 'text-red-400' : dow === 6 ? 'text-primary-400' : 'text-gray-800'}`}>
@@ -135,7 +136,7 @@ export function DateRangeField({ start, end, onChange, className = '' }) {
         className={`flex items-center gap-2 text-left ${className}`}
       >
         <CalendarDays size={16} className="text-primary-500 flex-shrink-0" />
-        <span className="truncate">{formatRange(start, end)}</span>
+        <span className="min-w-0 whitespace-normal break-keep [overflow-wrap:anywhere]">{formatRange(start, end)}</span>
       </button>
       <DateRangePicker
         open={open}

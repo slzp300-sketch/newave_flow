@@ -1,3 +1,4 @@
+import './CalendarPage.css'
 import ReportLink from '../components/common/ReportLink'
 import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
@@ -70,7 +71,7 @@ export default function CalendarPage() {
   const setSelected = useCallback((val) => setSelectedTs(prev => (typeof val === 'function' ? val(new Date(prev)) : val).getTime()), [setSelectedTs])
 
   const { swipeHandlers, direction } = useSwipeMonth(current, setCurrent)
-  
+
   // Form State
   const [showForm, setShowForm] = useState(false)
   const [showChoice, setShowChoice] = useState(false)
@@ -92,7 +93,7 @@ export default function CalendarPage() {
     attendanceStartDate: '',
     attendanceTarget: 'STUDENT_ONLY',
   })
-  
+
   const [viewMode, setViewMode] = useState('calendar')
 
   const eventsQuery = useQuery({
@@ -115,7 +116,7 @@ export default function CalendarPage() {
   const { isNew, markSeen, isSaving, readError, retryReads } = useEventSeen(today, viewMode === 'list' ? allEvents : events)
   const acknowledge = event => knownRead(viewMode === 'list' ? allEventsQuery : eventsQuery) && isNew(event) && <button type="button" disabled={isSaving}
     aria-label={`${event.title} 내용 확인`} onClick={() => markSeen([event])}
-    className="relative mt-3 min-h-11 rounded-xl border border-primary-200 py-2 pl-3 pr-6 text-xs disabled:opacity-50">
+    className="relative mt-3 min-h-11 rounded-xl border border-primary-200 py-2 pl-3 pr-6 text-sm disabled:opacity-50">
     <AttentionDot show label="새 일정 또는 변경된 일정" />{isSaving ? '확인 상태 저장 중…' : '내용 확인했어요'}
   </button>
 
@@ -175,18 +176,18 @@ export default function CalendarPage() {
     return lanes;
   }, [events]);
 
-  const days = eachDayOfInterval({ 
-    start: startOfWeek(startOfMonth(current)), 
-    end: endOfWeek(endOfMonth(current)) 
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(current)),
+    end: endOfWeek(endOfMonth(current))
   })
 
   const eventsOnDay = (day) =>
     events.filter(e => {
       const start = new Date(e.eventDate);
       const end = e.endDate ? new Date(e.endDate) : start;
-      return isWithinInterval(startOfDay(day), { 
-        start: startOfDay(start), 
-        end: startOfDay(end) 
+      return isWithinInterval(startOfDay(day), {
+        start: startOfDay(start),
+        end: startOfDay(end)
       });
     }).sort((a, b) => a.id - b.id)
 
@@ -325,7 +326,7 @@ export default function CalendarPage() {
               {format(current, 'yyyy년 M월', { locale: ko })}
             </h2>
             {isAdmin && (
-              <button 
+              <button
                 onClick={() => setShowChoice(true)}
                 aria-label="일정 추가" className="ml-2 min-w-11 min-h-11 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center hover:bg-primary-100 transition-colors"
               >
@@ -335,7 +336,7 @@ export default function CalendarPage() {
           </div>
           <div className="flex items-center bg-gray-100 rounded-xl p-1">
             <button onClick={() => setCurrent(subMonths(current, 1))} aria-label="이전 달" className="min-w-11 min-h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all"><ChevronLeft size={18} /></button>
-            <button onClick={() => setCurrent(new Date())} className="min-h-11 px-3 py-1 text-xs font-bold uppercase tracking-widest hover:bg-white rounded-lg transition-all">오늘</button>
+            <button onClick={() => setCurrent(new Date())} className="min-h-11 px-3 py-1 text-sm font-bold  hover:bg-white rounded-lg transition-all">오늘</button>
             <button onClick={() => setCurrent(addMonths(current, 1))} aria-label="다음 달" className="min-w-11 min-h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all"><ChevronRight size={18} /></button>
           </div>
         </div>
@@ -343,8 +344,8 @@ export default function CalendarPage() {
         {/* 요일 */}
         <div className="grid grid-cols-7 mb-2">
           {WEEKDAYS.map((d, i) => (
-            <div key={d} className={`text-center text-xs font-bold py-1 uppercase tracking-widest
-              ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
+            <div key={d} className={`text-center text-sm font-bold py-1
+              ${i === 0 ? 'text-red-600' : i === 6 ? 'text-blue-700' : 'text-gray-600'}`}>
               {d}
             </div>
           ))}
@@ -375,27 +376,30 @@ export default function CalendarPage() {
             const dayOfWeek = getDay(day)
 
             return (
-              <div 
+              <div
                 key={day.toISOString()}
                 onClick={() => setSelected(day)}
-                className={`min-h-[70px] p-1 flex flex-col gap-0.5 cursor-pointer relative transition-all
+                role="button" tabIndex={0} aria-pressed={isSelected}
+                aria-label={`${format(day, 'M월 d일')} 일정 ${dayEvents.length}개`}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelected(day) } }}
+                className={`calendar-day min-w-0 min-h-[70px] flex flex-col gap-0.5 cursor-pointer relative transition-all
                   ${isSelected ? 'bg-secondary-50 ring-2 ring-secondary-600 ring-inset z-10' : !isCurrMonth ? 'bg-gray-50/50' : 'bg-white'}`}
               >
                 <div className="flex justify-between items-start mb-0.5">
-                  <span className={`text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full
+                  <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
                     ${isSelected ? 'bg-secondary-700 text-white' :
                       isToday(day) ? 'bg-primary-600 text-white shadow-md' :
                       !isCurrMonth ? 'text-gray-300' :
-                      dayOfWeek === 0 ? 'text-red-400' : 
-                      dayOfWeek === 6 ? 'text-blue-400' : 'text-gray-900'}`}>
+                      dayOfWeek === 0 ? 'text-red-600' :
+                      dayOfWeek === 6 ? 'text-blue-700' : 'text-gray-900'}`}>
                     {format(day, 'd')}
                   </span>
                 </div>
-                
-                <div className="flex flex-col gap-0.5 mt-auto relative h-[50px] justify-end">
+
+                <div className="calendar-lanes flex flex-col gap-0.5 mt-auto relative">
                   {[0, 1, 2].map(laneIndex => {
                     const e = dayEvents.find(ev => eventLanes[ev.id] === laneIndex);
-                    if (!e) return <div key={`empty-${laneIndex}`} className="h-3.5" />; // Spacer
+                    if (!e) return <div key={`empty-${laneIndex}`} className="calendar-event-slot" aria-hidden="true" />; // Spacer
 
                     const isStartOfEvent = isSameDay(day, new Date(e.eventDate));
                     const isEndOfEvent = isSameDay(day, new Date(e.endDate));
@@ -404,9 +408,10 @@ export default function CalendarPage() {
                     const shouldShowTitle = isStartOfEvent || isStartOfWeek;
 
                     return (
-                      <div 
-                        key={e.id} 
-                        className={`h-3.5 px-1 text-[8px] font-bold truncate transition-all flex items-center shrink-0
+                      <div
+                        key={e.id}
+                        title={e.title}
+                        className={`calendar-event-slot font-bold transition-colors flex items-center min-w-0
                           ${isEventEnded(e, today) ? 'bg-gray-200 text-gray-600 border-gray-300' : getEventBg(e.color)}
                           ${(isStartOfEvent || isStartOfWeek) ? 'rounded-l-sm border-l-2' : 'rounded-l-none border-l-0'}
                           ${(isEndOfEvent || isEndOfWeek) ? 'rounded-r-sm' : 'rounded-r-none'}
@@ -414,12 +419,12 @@ export default function CalendarPage() {
                           ${!isEndOfEvent && !isEndOfWeek ? '-mr-1.5' : ''}
                         `}
                       >
-                        {shouldShowTitle && e.title}
+                        {shouldShowTitle && <span className="calendar-event-title">{e.title}</span>}
                       </div>
                     )
                   })}
                   {dayEvents.length > 3 && (
-                    <div className="absolute -top-4 right-0 text-[7px] font-bold text-gray-400 bg-white/80 px-1 rounded-full">
+                    <div className="absolute -top-4 right-0 text-xs font-bold text-gray-600 bg-white/80 px-1 rounded-full">
                       +{dayEvents.filter(ev => eventLanes[ev.id] >= 3).length}
                     </div>
                   )}
@@ -435,7 +440,7 @@ export default function CalendarPage() {
       <div className="px-4 py-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <p className="text-xs font-bold text-primary-500 uppercase tracking-[0.2em] mb-0.5">선택한 날짜</p>
+            <p className="text-sm font-bold text-primary-500  mb-0.5">선택한 날짜</p>
             <h3 className="text-lg font-bold text-gray-900">{format(selected, 'M월 d일 (EEEE)', { locale: ko })}</h3>
           </div>
           {isAdmin && (
@@ -447,7 +452,7 @@ export default function CalendarPage() {
 
         <div className="flex flex-col gap-3">
           {selectedEvents.length === 0 ? (
-            <Card className="py-12 flex flex-col items-center justify-center text-gray-400">
+            <Card className="py-12 flex flex-col items-center justify-center text-gray-600">
               <Clock size={32} strokeWidth={1} className="mb-2 opacity-20" />
               <p className="text-sm font-bold">등록된 일정이 없습니다</p>
             </Card>
@@ -462,16 +467,16 @@ export default function CalendarPage() {
                     <div className="flex items-center gap-1">
                       {(e.startTime || e.endTime || (e.endDate && e.endDate !== e.eventDate)) && (
                         <div className="flex flex-col items-end gap-0.5 mr-2">
-                          <div className="flex items-center gap-1 text-[0.6875rem] font-bold text-primary-500">
-                            {format(new Date(e.eventDate), 'M/d')} 
+                          <div className="flex items-center gap-1 text-sm font-semibold text-primary-700">
+                            {format(new Date(e.eventDate), 'M/d')}
                             {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M/d')}`}
                           </div>
                           {!e.startTime ? (
-                            <div className="flex items-center gap-1 text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
+                            <div className="flex items-center gap-1 text-sm font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
                               하루종일
                             </div>
                           ) : (e.startTime || e.endTime) && (
-                            <div className="flex items-center gap-1 text-xs font-bold text-gray-400">
+                            <div className="flex items-center gap-1 text-sm font-bold text-gray-600">
                               <Clock size={12} /> {e.startTime} {e.endTime && `~ ${e.endTime}`}
                             </div>
                           )}
@@ -486,8 +491,8 @@ export default function CalendarPage() {
                     </div>
                   </div>
                   <h4 className="font-bold text-gray-900 text-base mb-1">{e.title}</h4>
-                  {isEventEnded(e, today) ? <p className="mb-2 text-xs font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
-                  {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
+                  {isEventEnded(e, today) ? <p className="mb-2 text-sm font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
+                  {e.description && <p className="text-sm text-gray-600 font-medium leading-relaxed mb-2">{e.description}</p>}
                   <EventAttendanceStatus event={e} today={today} />
                   <ReportLink contentType="EVENT" targetId={e.id} label="일정 신고" />
                 </Card>
@@ -512,7 +517,7 @@ export default function CalendarPage() {
             </div>
           )}
           {allEvents.length === 0 ? (
-            <div className="py-20 text-center text-gray-400">
+            <div className="py-20 text-center text-gray-600">
               <CalendarIcon size={40} className="mx-auto mb-3 opacity-20" />
               <p className="text-sm font-bold">등록된 일정이 없습니다</p>
             </div>
@@ -525,14 +530,14 @@ export default function CalendarPage() {
               <div key={key} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-                  <p className="text-xs font-bold text-gray-500">{label}</p>
-                  <span className="text-xs text-gray-400">{list.length}</span>
+                  <p className="text-base font-bold text-gray-900">{label}</p>
+                  <span className="text-sm text-gray-600">{list.length}</span>
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
                 {list.map(e => (
                   <Card key={e.id} className={`brand-custom-color p-4 border-l-4 ${isEventEnded(e, today) ? 'event-inactive' : getEventBorderColor(e.color)}`}>
-                    <div className="flex justify-between items-start mb-1">
-                      <p className="text-xs font-bold text-gray-400">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-1">
+                      <p className="text-sm font-bold text-gray-600">
                         {format(new Date(e.eventDate), 'M월 d일 (EEE)', { locale: ko })}
                         {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M월 d일', { locale: ko })}`}
                       </p>
@@ -543,14 +548,14 @@ export default function CalendarPage() {
                         </div>
                       )}
                     </div>
-                    <h4 className="font-bold text-gray-900 text-sm mb-1">{e.title}</h4>
-                    {isEventEnded(e, today) ? <p className="mb-2 text-xs font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
-                    {e.description && <p className="text-xs text-gray-500 leading-relaxed">{e.description}</p>}
+                    <h4 className="font-bold text-gray-900 text-base mb-1">{e.title}</h4>
+                    {isEventEnded(e, today) ? <p className="mb-2 text-sm font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
+                    {e.description && <p className="text-sm text-gray-600 leading-relaxed">{e.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {!e.startTime ? (
-                        <span className="text-xs font-bold text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
+                        <span className="text-sm font-bold text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
                       ) : e.startTime && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-gray-400">
+                        <span className="flex items-center gap-1 text-sm font-bold text-gray-600">
                           <Clock size={10} /> {e.startTime}{e.endTime && ` ~ ${e.endTime}`}
                         </span>
                       )}

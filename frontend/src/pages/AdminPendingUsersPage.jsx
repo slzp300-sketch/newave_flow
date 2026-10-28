@@ -1,3 +1,5 @@
+import FitLabel from '../components/common/FitLabel'
+import './AdminPendingUsersPage.css'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserCheck } from 'lucide-react'
@@ -48,18 +50,18 @@ export default function AdminPendingUsersPage() {
   const pendingUsers = pendingQuery.data || []
   const filtered = pendingUsers.filter(user => matchesAdminSearch(search, user.name, user.email))
   const ready = queryReadState([pendingQuery]) === 'ready'
-  return <div className="min-h-screen bg-gray-50 pb-20">
+  return <div className="admin-accounts-page readable-content min-h-screen bg-gray-50 pb-20">
     <Header title="가입·이용 정지 관리" showBack />
     <div className="flex flex-col gap-4 px-4 py-5">
       <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="계정 관리 구분">
         {[['pending', '가입 승인 대기'], ['suspended', '이용 정지']].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value}
           className={`min-h-11 rounded-2xl px-3 py-3 text-sm font-bold ${tab === value ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 border border-gray-200'}`}
-          onClick={() => { setParams(value === 'suspended' ? { tab: value } : {}); setSearch('') }}>{label}</button>)}
+          onClick={() => { setParams(value === 'suspended' ? { tab: value } : {}); setSearch('') }}><FitLabel>{label}</FitLabel></button>)}
       </div>
       {tab === 'suspended' ? <SuspendedAccounts query={suspendedQuery} actor={actor} /> : <>
-      <AdminIntro title="새로운 교사를 맞이해요" description="신규 가입 정보를 확인해 승인한 뒤 반을 배정해주세요. 이용 정지 계정은 별도 목록에서 확인합니다." />
+      <AdminIntro title="새로운 교사를 맞이해요" description="가입 정보를 확인하고 승인 후 반을 배정해주세요." />
       <Link to="/admin/class-assignment" className="brand-action flex min-h-11 items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm font-semibold text-gray-600">
-        승인 후 반 배정하기 <span aria-hidden="true">›</span>
+        <FitLabel>승인 후 반 배정하기</FitLabel> <span aria-hidden="true">›</span>
       </Link>
       <SearchField label="승인 대기 교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
       <ViewModeToggle mode={viewMode} onChange={setViewMode} />
@@ -71,15 +73,15 @@ export default function AdminPendingUsersPage() {
           { label: '교사', render: user => user.name },
           { label: '이메일', render: user => user.email },
           { label: '상태', render: () => '승인 대기' },
-          { label: '승인', action: true, render: user => <Button onClick={() => approve(user.id)} loading={isPending && variables === user.id} disabled={!ready || isPending} className="w-full">{user.name} 승인</Button> },
+          { label: '승인', action: true, render: user => <Button onClick={() => approve(user.id)} loading={isPending && variables === user.id} disabled={!ready || isPending} className="w-full">{`${user.name} 승인`}</Button> },
         ]}>
         {filtered.map(user => <Card key={user.id} className="flex flex-col gap-4 p-5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0"><h3 className="font-bold text-gray-900">{user.name}</h3><p className="mt-1 break-all text-xs text-gray-500">{user.email}</p></div>
-            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-600">승인 대기</span>
+          <div className="account-heading">
+            <div className="account-identity"><h3 className="account-name font-bold text-gray-900">{user.name}</h3><p className="account-email mt-1 text-gray-600">{user.email}</p></div>
+            <span className="account-status rounded-full bg-amber-50 px-3 py-1 font-semibold text-amber-800">승인 대기</span>
           </div>
           <Button onClick={() => approve(user.id)} loading={isPending && variables === user.id} disabled={!ready || isPending} className="w-full">
-            <UserCheck size={17} /> {user.name} 승인
+            <UserCheck size={20} aria-hidden="true" /><FitLabel>{`${user.name} 승인`}</FitLabel>
           </Button>
         </Card>)}
         </RecordViews>
@@ -116,18 +118,18 @@ function SuspendedAccounts({ query, actor }) {
     if (window.confirm(`${row.user.name} 계정의 이용 정지를 해제할까요?\n기존 로그인은 복구되지 않으며 다시 로그인해야 합니다.`)) mutation.mutate({ row, note: reason.trim(), version: reviewVersion })
   }
   return <>
-    <AdminIntro title="이용 정지 계정" description="정지 사유와 조치 이력을 검토해주세요. 최종 관리자만 사유를 남기고 이용 정지를 해제할 수 있습니다." />
+    <AdminIntro title="이용 정지 계정" description="정지 사유와 이력을 확인해주세요. 최종 관리자만 정지를 해제할 수 있습니다." />
     <SearchField label="이용 정지 계정 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
     {!hasQueryData([query]) ? <QueryNotice queries={[query]} label="이용 정지 목록" /> : <>
       <QueryRefreshNotice queries={[query]} label="이용 정지 목록" />
       <FilterResults count={rows.length} total={query.data.length} filtered={!!search.trim()} onReset={() => setSearch('')} />
       {!rows.length && <AdminEmpty title={search.trim() ? undefined : '이용 정지 중인 계정이 없습니다'} />}
       {rows.map(row => <Card key={row.user.id} className="space-y-3 p-5">
-        <div className="flex items-start justify-between gap-2"><div className="min-w-0"><h3 className="font-bold text-gray-900">{row.user.name}</h3><p className="mt-1 break-all text-xs text-gray-500">{row.user.email}</p></div>
-          <span className="shrink-0 rounded-full bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700">이용 정지</span></div>
+        <div className="account-heading"><div className="account-identity"><h3 className="account-name font-bold text-gray-900">{row.user.name}</h3><p className="account-email mt-1 text-gray-600">{row.user.email}</p></div>
+          <span className="account-status rounded-full bg-rose-50 px-3 py-1 font-bold text-rose-700">이용 정지</span></div>
         <p className="text-xs text-gray-500">정지 시각: {statusTime(row.suspendedAt)}</p>
-        <p className="whitespace-pre-wrap break-words rounded-xl bg-gray-50 p-3 text-sm text-gray-700">{row.reason}</p>
-        <AccountStatusHistory userId={row.user.id} />
+        <div className="account-reason rounded-xl bg-gray-50 p-4"><h4 className="text-sm font-semibold text-gray-600">정지 사유</h4><p className="mt-2 whitespace-pre-wrap">{row.reason || '등록된 사유가 없습니다.'}</p></div>
+        <div className="account-history"><AccountStatusHistory userId={row.user.id} /></div>
         {actor?.role === 'ADMIN' && actor.id !== row.user.id ? selectedId === row.user.id ? <form onSubmit={event => restore(event, row)} className="space-y-3 border-t border-gray-100 pt-3">
           <label className="block text-sm font-semibold text-gray-700">이용 정지 해제 사유
             <textarea required maxLength={2000} rows={3} value={reason} disabled={mutation.isPending} onChange={event => { setReason(event.target.value); setError('') }}
@@ -136,7 +138,7 @@ function SuspendedAccounts({ query, actor }) {
           <p className="text-xs text-gray-500">계정 권한은 유지되며 이전 로그인은 다시 사용할 수 없습니다.</p>
           {reviewVersion !== row.authVersion && <p role="alert" className="text-sm text-rose-700">계정 상태가 변경됐습니다. 취소한 뒤 최신 사유를 다시 검토해주세요.</p>}
           {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
-          <div className="flex flex-wrap gap-2"><Button type="submit" disabled={!ready || !reason.trim() || reviewVersion !== row.authVersion} loading={mutation.isPending}>사유 저장 후 이용 정지 해제</Button>
+          <div className="account-review-actions"><Button type="submit" disabled={!ready || !reason.trim() || reviewVersion !== row.authVersion} loading={mutation.isPending}>사유 저장 후 이용 정지 해제</Button>
             <Button type="button" variant="secondary" disabled={mutation.isPending} onClick={() => { setSelectedId(null); setReviewVersion(null); setReason(''); setError('') }}>취소</Button></div>
         </form> : <Button className="w-full" disabled={!ready || mutation.isPending} onClick={() => { setSelectedId(row.user.id); setReviewVersion(row.authVersion); setReason(''); setError('') }}>이용 정지 해제 검토</Button> : <p className="text-xs text-gray-500">복구가 필요하면 최종 관리자에게 요청해주세요.</p>}
       </Card>)}

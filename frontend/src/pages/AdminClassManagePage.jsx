@@ -1,3 +1,4 @@
+import './PeopleReadability.css'
 import SearchField from '../components/common/SearchField'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
 import { matchesAdminSearch } from '../utils/adminSearch'
@@ -72,7 +73,7 @@ export default function AdminClassManagePage() {
   )
 
   return (
-    <div className="flex flex-col min-h-screen pb-24 bg-gray-50/50">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-24 bg-gray-50/50">
       <Header title="반 담임/부담임 관리" showBack />
 
       <div className="flex flex-col gap-4 px-4 py-5">
@@ -165,9 +166,9 @@ function ClassAssignmentCard({ cls, onManage }) {
 
   return (
     <Card onClick={onManage} className="p-5 flex items-center justify-between group hover:border-primary-500 border border-transparent transition-all bg-white shadow-sm overflow-hidden min-h-[100px]">
-      <div className="flex flex-col gap-4 flex-1">
+      <div className="flex flex-col gap-4 flex-1 min-w-0">
         {/* 상단: 반 이름 */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
            <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">{cls.grade}</span>
            <h3 className="text-lg font-bold text-gray-900">{cls.name}</h3>
         </div>
@@ -175,11 +176,11 @@ function ClassAssignmentCard({ cls, onManage }) {
         {/* 하단: 담임 및 부담임 */}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-gray-400 font-bold w-12">담임</span>
+            <span className="text-gray-400 font-bold shrink-0 w-12">담임</span>
             <span className="text-gray-900 font-bold">{primaryTeacher?.name || '미배정'}</span>
           </div>
           <div className="flex items-start gap-2 text-xs">
-            <span className="text-gray-400 font-bold w-12 pt-0.5">부담임</span>
+            <span className="text-gray-400 font-bold shrink-0 w-12 pt-0.5">부담임</span>
             <div className="flex flex-wrap gap-1 flex-1">
               {subTeachers.length > 0 ? (
                 subTeachers.map(t => (
@@ -322,8 +323,8 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         className="w-full max-w-[430px]"
       >
-        <div aria-busy={updateMutation.isPending || undefined} className="w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85d">
-          <div className="p-5 border-b border-gray-50 flex items-start justify-between gap-3">
+        <div aria-busy={updateMutation.isPending || undefined} className="people-assignment-panel w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85d">
+          <div className="shrink-0 p-5 border-b border-gray-50 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">{cls.grade}</p>
               <h3 className="break-keep text-lg font-bold text-gray-900">{cls.name} 배정 현황</h3>
@@ -333,7 +334,8 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
             </button>
           </div>
 
-          <fieldset disabled={updateMutation.isPending} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-5 space-y-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <fieldset disabled={updateMutation.isPending} className="min-w-0 p-5 space-y-6">
             {/* 현재 배정 된 명단 */}
             <div className="space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">배정된 교사</p>
@@ -420,9 +422,9 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
                   ) : (
                     filteredUsers.map(u => (
                       <div key={u.id} className="flex flex-col gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-primary-200 transition-colors">
-                        <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-400">{u.name[0]}</div>
-                           <div>
+                        <div className="flex min-w-0 items-center gap-3">
+                           <div className="w-8 h-8 shrink-0 rounded-lg bg-gray-50 flex items-center justify-center text-xs font-bold text-gray-400">{u.name[0]}</div>
+                           <div className="min-w-0">
                               <p className="text-sm font-bold text-gray-700">{u.name}</p>
                               <p className="break-all text-xs text-gray-400">{u.email}</p>
                            </div>
@@ -448,8 +450,9 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
               </div>
             )}
           </fieldset>
+          </div>
 
-          <div className="p-6 bg-gray-50/50 flex gap-4">
+          <div className="shrink-0 p-4 bg-gray-50/50 flex gap-3">
              <Button variant="ghost" onClick={requestClose} className="flex-1" disabled={updateMutation.isPending}>취소</Button>
              <Button 
                 className="flex-[2]" 

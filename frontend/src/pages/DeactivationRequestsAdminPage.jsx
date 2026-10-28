@@ -1,3 +1,4 @@
+import './PeopleReadability.css'
 import SearchField from '../components/common/SearchField'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
 import { matchesAdminSearch } from '../utils/adminSearch'
@@ -39,7 +40,7 @@ export default function DeactivationRequestsAdminPage() {
   const filtered = requests.filter(req => matchesAdminSearch(search, req.studentName, req.studentGrade, req.classGroupName, req.teacherName))
 
   return (
-    <div className="flex flex-col min-h-screen pb-24">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-24">
       <Header title="제적 승인 관리" showBack />
 
       <div className="flex flex-col gap-4 px-4 py-5">

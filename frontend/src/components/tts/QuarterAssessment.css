@@ -1,0 +1,12 @@
+/* Keep status surfaces consistent in all four views, including sticky table cells.
+   Scope overrides here so the common brand-card blue does not hide the status. */
+:root body :is(.tts-ranking-records, .tts-admin-quarter-records) .tts-quarter-passed { --quarter-bg: #f0fdf4; --quarter-border: #86efac; }
+:root body :is(.tts-ranking-records, .tts-admin-quarter-records) .tts-quarter-below { --quarter-bg: #fff1f2; --quarter-border: #fda4af; }
+:root body :is(.tts-ranking-records, .tts-admin-quarter-records) .tts-quarter-unrecorded { --quarter-bg: #f9fafb; --quarter-border: #d1d5db; }
+:root body :is(.tts-ranking-records, .tts-admin-quarter-records) :is(.tts-quarter-passed, .tts-quarter-below, .tts-quarter-unrecorded) {
+  --surface-bg: var(--quarter-bg);
+  --surface-border: var(--quarter-border);
+  background-color: var(--quarter-bg);
+  border-color: var(--quarter-border);
+}
+:root body :is(.tts-ranking-records, .tts-admin-quarter-records) :is(.tts-quarter-passed, .tts-quarter-below, .tts-quarter-unrecorded) > td { background-color: var(--quarter-bg); }

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { CollapsePanel } from '../components/common/Motion'
+import { useState, useEffect, useId } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, CalendarCheck, MessageSquare, PenLine } from 'lucide-react'
 import Header from '../components/layout/Header'
@@ -71,15 +72,16 @@ export default function SatMeetingPage() {
         <WeekNavigator
           offset={offset}
           onChange={setOffset}
-          title={`${labels.monthWeek} 토요 교사회의`}
-          sub={labels.yearWeek}
-          range={`${satDateLabel} (토) · 지난 주 기록도 언제든 수정할 수 있어요`}
+          disabled={saveSatMutation.isPending}
+          title={labels.monthWeek}
+
+          range={`${satDateLabel} (토)`}
         />
       </div>
 
       <div className="px-4 py-5">
         {satLoading ? (
-          <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
+          <Card className="py-8 text-center text-base text-gray-600">불러오는 중...</Card>
         ) : satSubmitted ? (
           <SatSubmittedCard sat={sat} updatedAt={satData?.updatedAt} onEdit={() => setEditingSat(true)} />
         ) : (
@@ -96,7 +98,7 @@ export default function SatMeetingPage() {
             satDateLabel={satDateLabel}
           />
         )}
-        <p className="text-xs text-gray-400 font-medium text-center mt-3">
+        <p className="text-sm text-gray-600 leading-relaxed text-center mt-4">
           참석으로 체크하면 TTS의 '교사회의' 점수에 자동으로 반영돼요.
         </p>
       </div>
@@ -108,28 +110,29 @@ function SatForm({ sat, update, onSubmit, onCancel, valid, saving, satDateLabel 
   return (
     <Card className="flex flex-col gap-5">
       <div>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">교사 회의 참석 여부 ({satDateLabel} 토요일)</p>
-        <div className="grid grid-cols-2 gap-3">
+        <h2 className="text-lg font-bold text-gray-900 mb-1">참석 여부를 선택해 주세요</h2>
+        <p className="text-sm text-gray-600 mb-4">{satDateLabel} 토요일 교사회의</p>
+        <fieldset disabled={saving} aria-label="교사회의 참석 여부" className="grid grid-cols-2 gap-3 min-w-0">
           <AttendButton active={sat.status === 'ATTEND'} onClick={() => update({ status: 'ATTEND', reason: '' })} color="blue" label="참석" />
           <AttendButton active={sat.status === 'ABSENT'} onClick={() => update({ status: 'ABSENT' })} color="red" label="불참" />
-        </div>
+        </fieldset>
       </div>
 
       <AnimatePresence>
         {sat.status === 'ABSENT' && (
-          <motion.div key="sat-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-            <ReasonInput value={sat.reason} onChange={v => update({ reason: v })} placeholder="불참 사유를 입력해 주세요" required />
-          </motion.div>
+          <CollapsePanel key="sat-reason" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+            <ReasonInput value={sat.reason} onChange={v => update({ reason: v })} placeholder="불참 사유를 입력해 주세요" required disabled={saving} />
+          </CollapsePanel>
         )}
       </AnimatePresence>
 
       <div className="flex gap-2">
         {onCancel && (
-          <Button size="lg" variant="secondary" onClick={onCancel} className="flex-1">취소</Button>
+          <Button size="lg" variant="secondary" disabled={saving} onClick={onCancel} className="flex-1">취소</Button>
         )}
         <Button size="lg" disabled={!valid || saving} onClick={onSubmit} className="flex-[2]">
           <CalendarCheck size={17} />
-          {saving ? '저장 중...' : '저장'}
+          {saving ? '저장 중…' : '참석 여부 저장'}
         </Button>
       </div>
     </Card>
@@ -139,17 +142,17 @@ function SatForm({ sat, update, onSubmit, onCancel, valid, saving, satDateLabel 
 function SatSubmittedCard({ sat, updatedAt, onEdit }) {
   return (
     <Card className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <CheckCircle2 size={18} className="text-primary-500" />
-          <span className="font-bold text-gray-900 text-sm">교사 회의 체크 완료</span>
+          <CheckCircle2 size={18} className="text-primary-700 shrink-0" />
+          <span className="font-bold text-gray-900 text-base">교사회의 투표 완료</span>
         </div>
-        <button onClick={onEdit} className="text-xs text-primary-600 font-bold flex items-center gap-1">
-          <PenLine size={12} /> 수정
+        <button onClick={onEdit} className="min-h-11 px-3 rounded-xl text-sm text-primary-700 font-bold flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary-300">
+          <PenLine size={16} /> 수정
         </button>
       </div>
-      <div className="bg-gray-50 rounded-xl px-4 py-3 flex flex-col gap-2 text-sm">
-        <Row label="참석 여부" value={sat.status === 'ATTEND' ? '✅ 참석' : '❌ 불참'} />
+      <div className="bg-gray-50 rounded-xl px-4 py-4 flex flex-col gap-4">
+        <Row label="참석 여부" value={sat.status === 'ATTEND' ? '참석' : '불참'} tone={sat.status === 'ABSENT' ? 'absence' : 'present'} />
         {sat.reason && <Row label="사유" value={sat.reason} />}
         {updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(updatedAt)} muted />}
       </div>
@@ -158,34 +161,35 @@ function SatSubmittedCard({ sat, updatedAt, onEdit }) {
 }
 
 function AttendButton({ active, onClick, color, label }) {
-  const colors    = { blue: active ? 'border-primary-400 bg-primary-50' : 'border-gray-100 bg-gray-50/50', red: active ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-gray-50/50' }
-  const textColors = { blue: active ? 'text-primary-700' : 'text-gray-400', red: active ? 'text-red-600' : 'text-gray-400' }
+  const colors    = { blue: active ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50/50', red: active ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50/50' }
+  const textColors = { blue: active ? 'text-primary-700' : 'text-gray-700', red: active ? 'text-red-600' : 'text-gray-700' }
   return (
-    <button aria-pressed={active} onClick={onClick} className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all active:scale-95 ${colors[color]}`}>
-      {active ? <CheckCircle2 size={22} className={textColors[color]} /> : <div className="w-[22px] h-[22px] rounded-full border-2 border-gray-200" />}
-      <span className={`font-bold text-sm ${textColors[color]}`}>{label}</span>
+    <button data-tone={color === 'red' ? 'absence' : undefined} aria-pressed={active} onClick={onClick} className={`flex flex-col items-center gap-2 min-h-24 px-3 py-5 rounded-2xl border-2 transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 active:scale-95 ${colors[color]}`}>
+      {active ? <CheckCircle2 size={22} aria-hidden="true" className={textColors[color]} /> : <div aria-hidden="true" className="w-[22px] h-[22px] rounded-full border-2 border-gray-200" />}
+      <span className={`font-bold text-base ${textColors[color]}`}>{label}</span>
     </button>
   )
 }
 
-function ReasonInput({ value, onChange, placeholder, required }) {
+function ReasonInput({ value, onChange, placeholder, required, disabled }) {
+  const id = useId()
   return (
     <div>
-      <div className="flex items-center gap-1.5 mb-2">
-        <MessageSquare size={13} className="text-red-400" />
-        <span className="text-xs font-bold text-gray-500">사유 입력</span>
-        {required && <span className="text-xs text-red-400 font-bold">*필수</span>}
-      </div>
-      <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border border-gray-100 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-200 text-gray-700 placeholder-gray-300 font-medium bg-gray-50" />
+      <label htmlFor={id} className="flex flex-wrap items-center gap-1.5 mb-2">
+        <MessageSquare size={16} aria-hidden="true" className="text-red-700" />
+        <span className="text-sm font-semibold text-gray-700">불참 사유</span>
+        {required && <span className="text-sm text-red-700 font-semibold">(필수)</span>}
+      </label>
+      <textarea id={id} required={required} disabled={disabled} rows={3} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-base resize-y min-h-28 focus:outline-none focus:ring-2 focus:ring-red-200 text-gray-900 placeholder-gray-500 bg-gray-50" />
     </div>
   )
 }
 
-function Row({ label, value, muted }) {
+function Row({ label, value, muted, tone }) {
   return (
-    <div className="flex justify-between items-start gap-3">
-      <span className={`text-xs font-bold ${muted ? 'text-gray-300' : 'text-gray-400'}`}>{label}</span>
-      <span className={`text-xs font-bold text-right max-w-[200px] ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{value}</span>
+    <div className="flex flex-col gap-1">
+      <span className="text-sm font-medium text-gray-600">{label}</span>
+      <span className={`${muted ? 'text-sm font-medium text-gray-600' : 'text-base font-semibold'} ${tone === 'absence' ? 'text-red-700' : tone === 'present' ? 'text-secondary-800' : muted ? '' : 'text-gray-900'} leading-relaxed break-words [overflow-wrap:anywhere]`}>{value}</span>
     </div>
   )
 }

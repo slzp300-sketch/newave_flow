@@ -1,0 +1,6 @@
+/* Seven-column overview stays compact; full titles remain in selected-day details. */
+.calendar-day { overflow:visible; padding:2px; }
+.calendar-day:focus-visible { outline:2px solid #164e36; outline-offset:-2px; }
+.calendar-lanes { min-width:0; }
+.calendar-event-slot { height:20px; min-height:20px; padding-inline:1px; flex-shrink:0; }
+.calendar-event-title { display:block; min-width:0; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:clamp(10px, .625rem, 11px); line-height:1.4; font-weight:600; }

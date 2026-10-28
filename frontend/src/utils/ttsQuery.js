@@ -9,6 +9,7 @@ export function ttsReadState(queries) {
 }
 
 const journals = new WeakMap()
+const batches = new WeakMap()
 const keyOf = week => ['tts-week', week]
 
 function applyIntent(week, intent) {
@@ -53,11 +54,27 @@ export function ttsAnswerOptions(client, save) {
       publish(intent.weekStart, journal)
     },
     mutationFn: intent => {
-      const week = applyIntent(weeks.get(intent.weekStart).confirmed, intent)
-      return save({ weekStart: intent.weekStart, questionId: intent.questionId,
-        answerData: week.answers.find(a => a.questionId === intent.questionId).answerData })
+      if (batches.has(intent)) return batches.get(intent).promise
+      const journal = weeks.get(intent.weekStart)
+      // Send the first tap immediately. While it is in flight, combine unsent
+      // changes to this question into its latest value (including all days).
+      // Keep the global serial scope: the API returns the entire week's state.
+      const group = journal.pending.filter(p => p.questionId === intent.questionId && !batches.has(p))
+      const week = group.reduce(applyIntent, journal.confirmed)
+      const batch = { applied: false, promise: null }
+      for (const queued of group) batches.set(queued, batch)
+      batch.promise = Promise.resolve().then(() => save({ weekStart: intent.weekStart, questionId: intent.questionId,
+        answerData: week.answers.find(a => a.questionId === intent.questionId).answerData }))
+      return batch.promise
     },
-    onSuccess: (response, intent) => finish(intent, response),
+    onSuccess: (response, intent) => {
+      const batch = batches.get(intent)
+      // A later member may run after a different question has saved. Never
+      // replay an older full-week response over that newer confirmed state.
+      const first = !batch.applied
+      batch.applied = true
+      finish(intent, first ? response : undefined)
+    },
     onError: (_error, intent) => finish(intent),
     onSettled: (_data, error, intent) => {
       if (client.isMutating({ mutationKey: ['tts-answer'] }) === 1) {
@@ -66,6 +83,7 @@ export function ttsAnswerOptions(client, save) {
         if (error) void client.invalidateQueries({ queryKey: keyOf(intent.weekStart), exact: true })
         void client.invalidateQueries({ queryKey: ['tts-stats'] })
         void client.invalidateQueries({ queryKey: ['tts-week-stats'] })
+        void client.invalidateQueries({ queryKey: ['tts-quarterly-scores'] })
       }
     },
   }

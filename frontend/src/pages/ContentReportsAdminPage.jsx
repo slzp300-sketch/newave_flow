@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/layout/Header'
@@ -15,7 +16,7 @@ export default function ContentReportsAdminPage() {
   const queueKey = ['content-report-queue', apiEnvironment, user?.id]
   const queue = useQuery({ queryKey: [...queueKey, status, page], queryFn: () => safetyApi.queue(page, status) })
   const refresh = () => { qc.invalidateQueries({ queryKey: queueKey }); qc.invalidateQueries({ queryKey: ['my-content-reports'] }); qc.invalidateQueries({ queryKey: ['safety-summary'] }); qc.invalidateQueries({ queryKey: ['photo-review-queue'] }); qc.invalidateQueries({ queryKey: ['meeting-minutes'] }) }
-  return <div className="pb-8"><Header title="신고 관리" showBack showNotification={false} />
+  return <div className="supporting-readable readable-content pb-8"><Header title="신고 관리" showBack showNotification={false} />
     <div className="space-y-5 px-4 py-5">
       <SafetySummary />
       <p className="text-sm leading-6 text-gray-600">신고 내용을 검토한 뒤 필요한 조치를 하고 결과를 남겨주세요. 신고자를 보호하고 업무에 필요한 범위로만 확인합니다.</p>

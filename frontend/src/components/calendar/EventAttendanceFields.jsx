@@ -6,14 +6,14 @@ export default function EventAttendanceFields({ value, onChange }) {
     <legend className="px-1 text-sm font-semibold">출석 접수 설정</legend>
     <div>
       <p id={`${id}-target`} className="mb-2 text-xs font-semibold">대상자</p>
-      <div role="group" aria-labelledby={`${id}-target`} className="grid grid-cols-3 gap-2">
+      <div role="group" aria-labelledby={`${id}-target`} className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-2">
         {[['TEACHER_ONLY', '교사만'], ['STUDENT_ONLY', '학생만'], ['BOTH', '교사 + 학생']].map(([target, label]) =>
           <button key={target} type="button" aria-pressed={value.attendanceTarget === target}
             onClick={() => onChange({ attendanceTarget: target })} className="min-h-11 rounded-xl border px-2 py-2 text-xs font-semibold">{label}</button>)}
       </div>
       <p className="mt-2 text-xs text-gray-500">교사는 본인 참석 여부를, 학생은 담당 교사가 반별로 체크합니다.</p>
     </div>
-    <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
       <div className="min-w-0">
         <label htmlFor={`${id}-start`} className="mb-1.5 block text-xs font-semibold">접수 시작일</label>
         <input id={`${id}-start`} required type="date" value={value.attendanceStartDate || ''}

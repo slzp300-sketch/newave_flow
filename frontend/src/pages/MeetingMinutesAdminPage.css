@@ -1,0 +1,19 @@
+.admin-minutes-page .minutes-action { display: flex; min-height: 2.75rem; min-width: 0; max-width: 100%; align-items: center; justify-content: center; gap: .5rem; border-radius: .75rem; padding: .75rem; font-size: 1rem; font-weight: 600; }
+.admin-minutes-page .minutes-action:disabled { opacity: .6; }
+.admin-minutes-page .minutes-field-label { display: block; margin-bottom: .5rem; color: #4b5563; font-size: .875rem; font-weight: 700; }
+.admin-minutes-page .minutes-input { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 3rem; padding: .75rem; border: 1px solid #d1d5db; border-radius: .75rem; background: #fff; font-size: 1rem; color: #111827; }
+.admin-minutes-page .minutes-input:focus { outline: 2px solid #315fae; outline-offset: 2px; }
+.admin-minutes-page .ui-segments button { font-size: 1rem; }
+.admin-minutes-page .text-xs { font-size: .875rem; }
+.admin-minutes-records h3, .admin-minutes-records article > button, .admin-minute-status-records h3 { font-size: 1rem; line-height: 1.5; }
+.admin-minutes-records dl, .admin-minute-status-records dl { font-size: .875rem; line-height: 1.6; }
+.admin-minutes-records dt, .admin-minute-status-records dt { color: #4b5563; }
+.admin-minutes-records dl > div, .admin-minute-status-records dl > div { flex-wrap: wrap; }
+.admin-minutes-records table, .admin-minute-status-records table { min-width: 52rem; table-layout: fixed; white-space: normal; font-size: 1rem; }
+.admin-minutes-records th, .admin-minute-status-records th { font-size: .875rem; color: #4b5563; padding: .875rem .75rem; }
+.admin-minutes-records td, .admin-minute-status-records td { padding: 1rem .75rem; overflow-wrap: anywhere; word-break: keep-all; vertical-align: top; }
+.admin-minutes-records th:first-child, .admin-minute-status-records th:first-child { width: 9rem; }
+.admin-minutes-records td:first-child, .admin-minute-status-records td:first-child { z-index: 1; }
+
+.admin-minutes-page .minutes-actions > button { flex: 1 1 6rem; }
+.admin-minutes-page .minutes-actions > .minutes-visibility { flex-basis: 100%; }

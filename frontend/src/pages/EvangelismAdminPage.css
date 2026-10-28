@@ -1,0 +1,19 @@
+.admin-evangelism-page .text-xs { font-size: .875rem; }
+.admin-evangelism-page .ui-segments button { font-size: 1rem; }
+.admin-evangelism-page .evangelism-action { display:flex; min-width:0; max-width:100%; min-height:2.75rem; align-items:center; justify-content:center; gap:.5rem; padding:.75rem; border-radius:.75rem; font-size:1rem; font-weight:600; }
+.admin-evangelism-page .evangelism-action:disabled { opacity:.6; }
+.admin-evangelism-page .evangelism-actions > button { flex:1 1 6rem; }
+.admin-evangelism-page .evangelism-input { min-width:0; max-width:100%; min-height:3rem; padding:.75rem; font-size:1rem; color:#111827; border:1px solid #d1d5db; border-radius:.75rem; background:white; }
+.admin-evangelism-page .evangelism-input:focus { outline:2px solid #315fae; outline-offset:2px; }
+.admin-evangelism-page [role="alert"] p, .admin-evangelism-page [role="status"] p { font-size:.875rem; }
+.admin-evangelism-page [role="alert"] button { min-height:2.75rem; }
+.admin-evangelism-records h3, .admin-evangelism-records article > button { font-size:1rem; line-height:1.5; }
+.admin-evangelism-records dl { font-size:.875rem; line-height:1.6; }
+.admin-evangelism-records dt { color:#4b5563; }
+.admin-evangelism-records dl > div { flex-wrap:wrap; }
+.admin-evangelism-records table { min-width:42rem; table-layout:fixed; white-space:normal; font-size:1rem; }
+.admin-evangelism-records th { font-size:.875rem; color:#4b5563; padding:.875rem .75rem; }
+.admin-evangelism-records td { padding:1rem .75rem; overflow-wrap:anywhere; word-break:keep-all; vertical-align:top; }
+.admin-evangelism-records th:first-child { width:9rem; }
+.admin-evangelism-records td:first-child { z-index:1; }
+.admin-evangelism-page [aria-live="polite"] > p:empty { display:none; }

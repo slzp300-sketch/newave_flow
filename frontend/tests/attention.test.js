@@ -27,6 +27,13 @@ test('Sunday offers manual attendance, never linked or imported score fields', (
   assert.equal(todayTtsChecks(questions, { answers: [{ questionId: 1, answerData: 'broken' }] }, '2026-10-12')[0].checked, false)
 })
 
+test('quarter-locked checks cannot create an attention reminder', () => {
+  assert.deepEqual(todayTtsChecks(questions, { ...week, closedQuarter: true }, '2026-10-12'), [])
+  assert.deepEqual(todayTtsChecks(questions, { ...week, attendanceEditable: false }, '2027-03-28'), [])
+  assert.deepEqual(todayTtsChecks(questions, { ...week, editableDays: [] }, '2026-10-12'), [])
+  assert.equal(todayTtsChecks(questions, { ...week, editableDays: ['월'] }, '2026-10-12').length, 2)
+})
+
 test('Collective attendance completion, no assigned class, and unavailable reads stay distinct', () => {
   assert.equal(attendanceTaskState(success({ attendanceSubmittedThisWeek: true }), success([{ id: 1 }])), 'done')
   assert.equal(attendanceTaskState(success({ attendanceSubmittedThisWeek: false }), success([{ id: 1 }])), 'pending')

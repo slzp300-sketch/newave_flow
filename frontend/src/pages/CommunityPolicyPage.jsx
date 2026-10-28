@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -34,7 +35,7 @@ export default function CommunityPolicyPage({ required = false }) {
     catch { setError('서버 로그아웃에 실패했습니다. 연결을 확인해주세요.'); setBusy(false); return }
     qc.clear(); clearAuth(); navigate('/login', { replace: true })
   }
-  return <div className="safe-page-top mx-auto min-h-screen w-full max-w-mobile bg-white px-5 pb-24" style={{ '--safe-page-space': '1.75rem' }}>
+  return <div className="supporting-readable readable-content safe-page-top mx-auto min-h-screen w-full max-w-mobile bg-white px-5 pb-24" style={{ '--safe-page-space': '1.75rem' }}>
     <ReviewEnvironmentNotice />
     <ShieldCheck className="mb-4 text-primary-600" size={32} aria-hidden="true" />
     <h1 className="text-2xl font-bold text-gray-900">함께 지키는 이용수칙</h1>
@@ -65,7 +66,7 @@ export default function CommunityPolicyPage({ required = false }) {
       <Link className="inline-flex min-h-11 items-center" to="/privacy">개인정보처리방침</Link>
       <Link className="inline-flex min-h-11 items-center" to="/support">지원 문의</Link>
       {user && required && <button disabled={busy} onClick={logout} className="min-h-11 text-gray-600">로그아웃</button>}
-      {!required && <Link className="inline-flex min-h-11 items-center" to={user ? '/menu' : '/login'}>돌아가기</Link>}
+      {!required && <Link className="inline-flex min-h-11 items-center" to={user ? '/profile' : '/login'}>돌아가기</Link>}
     </div>
   </div>
 }

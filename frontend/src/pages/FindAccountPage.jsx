@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, User, Lock, CheckCircle, Copy } from 'lucide-react'
@@ -21,14 +22,14 @@ export default function FindAccountPage() {
   const [tab, setTab] = useState(searchParams.get('tab') === 'pw' ? TAB_PW : TAB_ID)
 
   return (
-    <div className="safe-page-top min-h-screen bg-primary-900 flex flex-col items-center justify-center px-5 pb-8 max-w-mobile mx-auto" style={{ '--safe-page-space': '2rem' }}>
+    <div className="supporting-readable readable-content safe-page-top min-h-screen bg-primary-900 flex flex-col items-center justify-center px-5 pb-8 max-w-mobile mx-auto" style={{ '--safe-page-space': '2rem' }}>
       <div className="mb-8 text-center animate-[fadeIn_0.5s_ease]">
         <h1><Brand emblem light /></h1>
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-3xl border border-gray-200 overflow-hidden animate-[slideUp_0.4s_ease]">
         {/* 탭 */}
-        <div className="flex">
+        <div className="account-tabs flex">
           <button aria-pressed={tab === TAB_ID}
             type="button"
             onClick={() => setTab(TAB_ID)}
@@ -55,7 +56,7 @@ export default function FindAccountPage() {
           </button>
         </div>
 
-        <div className="p-7">
+        <div className="account-form p-7">
           {tab === TAB_ID ? <FindIdTab /> : <FindPasswordTab />}
         </div>
       </div>

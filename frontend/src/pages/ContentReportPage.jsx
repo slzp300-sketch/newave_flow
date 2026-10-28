@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -32,7 +33,7 @@ export default function ContentReportPage() {
     submission.current = reportSubmission(submission.current, payload, () => crypto.randomUUID())
     send.mutate({ ...payload, requestId: submission.current.id })
   }
-  return <div className="pb-8">
+  return <div className="supporting-readable readable-content pb-8">
     <Header title="콘텐츠·사용자 신고" showBack showNotification={false} />
     <div className="space-y-6 px-4 py-5">
       <div className="rounded-2xl bg-primary-50 p-4 text-sm leading-6 text-primary-900">문제가 있는 글·사진이나 사용자를 알려주세요. 신고는 본인과 담당 관리자만 확인할 수 있습니다. 비밀번호·인증번호 등 불필요한 개인정보는 입력하지 마세요.</div>
@@ -46,6 +47,7 @@ export default function ContentReportPage() {
           <select aria-label="신고할 사용자" required className={fieldClass} value={target.targetId || ''} onChange={e => setTarget({ ...target, targetId: Number(e.target.value) || null })}>
             <option value="">사용자 선택</option>{people.data?.map(person => <option value={person.id} key={person.id}>{person.name}</option>)}
           </select>
+          {target.targetId && <span className="mt-2 block text-sm font-normal text-gray-600">선택: {people.data?.find(person => person.id === target.targetId)?.name}</span>}
           {people.isError && <span role="alert" className="block text-red-700">사용자를 불러오지 못했습니다. <button type="button" onClick={() => people.refetch()} className="min-h-11 underline">다시 시도</button></span>}
         </label> : target.contentType === 'OTHER' ? <label className="block text-sm font-semibold">문제가 있는 화면·콘텐츠
           <input aria-label="문제가 있는 화면·콘텐츠" required maxLength={200} className={fieldClass} value={subject} onChange={e => setSubject(e.target.value)} placeholder="예: 교적부의 프로필 사진, 출결보고 내용" />
@@ -55,6 +57,7 @@ export default function ContentReportPage() {
           <select aria-label="신고 사유" required className={fieldClass} value={reason} onChange={e => setReason(e.target.value)}>
             <option value="">사유 선택</option>{Object.entries(REPORT_REASONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
+          {reason && <span className="mt-2 block text-sm font-normal text-gray-600">{REPORT_REASONS[reason]}</span>}
         </label>
         <label className="block text-sm font-semibold">상세 내용
           <textarea aria-label="상세 내용" required maxLength={2000} rows={5} className={fieldClass} value={details} onChange={e => setDetails(e.target.value)} placeholder="어떤 문제가 있는지, 관리자가 확인할 위치를 알려주세요." />

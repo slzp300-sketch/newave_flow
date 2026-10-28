@@ -1,0 +1,46 @@
+/* Shared only by roster/student/class screens; preserve full text and input size. */
+.people-readable { min-width: 0; }
+.people-readable :where(p, h2, h3, h4, label, button, a, span) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.people-readable .people-text { white-space: normal; overflow: visible; text-overflow: clip; min-width: 0; }
+.people-readable :where(.flex-1, .people-form-grid > *, .readable-card-grid > *) { min-width: 0; }
+.people-readable :where(button, a) > svg { flex-shrink: 0; }
+.people-readable .text-xs { font-size: clamp(12px, .875rem, 14px); line-height: 1.5; }
+.people-readable .text-sm { font-size: clamp(14px, 1rem, 17px); line-height: 1.5; }
+.people-readable :where(h2, h3) { line-height: 1.4; }
+.people-readable :where(.tracking-widest, .tracking-wider) { letter-spacing: .02em; }
+.people-readable :where(input:not([type=checkbox]):not([type=file]), select, textarea) {
+  min-width: 0; max-width: 100%; font-size: max(16px, 1rem); line-height: 1.5;
+}
+.people-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.people-class-symbol { min-width: 2.5rem; min-height: 2.5rem; max-width: 100%; padding: .35rem .5rem; flex-shrink: 0; }
+.people-student-row > .flex-1 { flex-basis: 9rem; }
+.people-row-actions { margin-left: auto; }
+.people-row-actions button { min-width: 44px; min-height: 44px; }
+.people-readable .text-gray-300:not(svg) { color: #64748b; }
+
+.people-readable .safe-modal-panel :where(h2, h3) { font-size: clamp(16px, 1.125rem, 18px); }
+.people-class-heading > div:last-child { min-width: 0; flex: 1; }
+@media (max-width: 359px) {
+  .people-class-heading > .people-class-symbol { display: none; }
+}
+.large-font .people-class-heading > .people-class-symbol { display: none; }
+
+.people-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.people-summary-grid > * { padding-inline: .25rem; }
+.people-memo-card { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) 1rem; gap: .75rem; }
+.people-memo-card > .flex-1 { display: contents; }
+.people-memo-card > div:first-child { grid-column: 1; grid-row: 1; }
+.people-memo-card > .flex-1 > p { grid-column: 2; grid-row: 1; align-self: center; }
+.people-memo-card > .flex-1 > div { grid-column: 1 / -1; }
+.people-memo-card > svg { grid-column: 3; grid-row: 1; }
+.people-memo-card > .flex-1 > div > div { flex-direction: column; align-items: flex-start; }
+
+.people-readable .people-assignment-panel { overflow: hidden; }
+
+@media (max-width: 430px) {
+  .people-advance-row { flex-direction: column; align-items: stretch; gap: .5rem; }
+  .people-advance-row > svg { display: none; }
+}

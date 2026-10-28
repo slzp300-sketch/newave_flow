@@ -1,6 +1,9 @@
+import './SupportingReadability.css'
+import AttendanceChoice from '../components/common/AttendanceChoice'
+import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -25,12 +28,13 @@ import { confirmAttendance, studentEventForm, teacherEventForm } from '../utils/
 const STATUS_LABEL = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }
 const STATUS_COLOR = {
   PRESENT: { btn: 'border-secondary-400 bg-secondary-50 text-secondary-700', banner: 'bg-secondary-50 border-secondary-200 text-secondary-700', icon: <CheckCircle2 size={16} className="text-secondary-600" /> },
-  PARTIAL: { btn: 'border-amber-400 bg-amber-50 text-amber-700',   banner: 'bg-amber-50 border-amber-200 text-amber-700',   icon: <Clock size={16} className="text-amber-500" /> },
-  ABSENT:  { btn: 'border-red-300 bg-red-50 text-red-600',         banner: 'bg-red-50 border-red-200 text-red-600',         icon: <XCircle size={16} className="text-red-500" /> },
+  PARTIAL: { btn: 'border-amber-400 bg-amber-50 text-amber-700',   banner: 'bg-amber-50 border-amber-200 text-amber-700',   icon: <Clock size={16} className="text-amber-700" /> },
+  ABSENT:  { btn: 'border-red-300 bg-red-50 text-red-600',         banner: 'bg-red-50 border-red-200 text-red-600',         icon: <XCircle size={16} className="text-red-700" /> },
 }
 
 // ── 교사 본인 출석 체크 섹션 ──────────────────────────────
 function TeacherSelfCheck({ event, userId }) {
+  const fieldId = useId()
   const eventId = event.id
   const isUnavailable = isEventAttendanceInactive(event)
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
@@ -70,7 +74,6 @@ function TeacherSelfCheck({ event, userId }) {
     (pending !== 'PARTIAL' || partialFromDate) &&
     (pending !== 'ABSENT'  || absenceReason.trim() !== '')
   const isEditable = (!submitted || editing) && !isUnavailable
-  const statusKeys = isMultiDay ? ['PRESENT', 'PARTIAL', 'ABSENT'] : ['PRESENT', 'ABSENT']
 
   if (!hasQueryData([attendanceQuery])) return <QueryNotice queries={[attendanceQuery]} label="교사 출석 기록" />
 
@@ -86,18 +89,18 @@ function TeacherSelfCheck({ event, userId }) {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               {STATUS_COLOR[pending]?.icon}
-              <span className="text-xs font-bold">{STATUS_LABEL[pending]}으로 제출 완료</span>
+              <span className="text-sm font-bold">{STATUS_LABEL[pending]}으로 제출 완료</span>
             </div>
             {pending === 'PARTIAL' && (partialFromDate || partialNote) && (
-              <p className="text-xs text-gray-500 font-medium pl-6">
+              <p className="text-sm text-gray-600 font-medium pl-6">
                 {partialFromDate && `${partialFromDate}부터`}{partialNote && ` · ${partialNote}`}
               </p>
             )}
             {pending === 'ABSENT' && absenceReason && (
-              <p className="text-xs text-gray-500 font-medium pl-6">사유: {absenceReason}</p>
+              <p className="text-sm text-gray-600 font-medium pl-6">사유: {absenceReason}</p>
             )}
           </div>
-          {!isUnavailable && <button onClick={() => setEditing(true)} className="text-xs text-gray-500 font-bold flex items-center gap-1 flex-shrink-0">
+          {!isUnavailable && <button onClick={() => setEditing(true)} aria-label="내 행사 참석 수정" className="min-h-11 min-w-11 px-2 text-sm text-gray-700 font-bold flex items-center justify-center gap-1 flex-shrink-0">
             <PenLine size={12} /> 수정
           </button>}
         </div>
@@ -106,72 +109,63 @@ function TeacherSelfCheck({ event, userId }) {
       {/* 상태 선택 버튼 */}
       {isEditable && (
         <div className="flex flex-col gap-3">
-          <div className={`grid gap-2 ${statusKeys.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            {statusKeys.map(key => (
-              <button aria-pressed={pending === key}
-                key={key}
-                onClick={() => setPending(key)}
-                className={`py-3 rounded-2xl border-2 text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] ${
-                  pending === key ? STATUS_COLOR[key].btn : 'border-gray-100 bg-gray-50 text-gray-400'
-                }`}
-              >
-                {key === 'PRESENT' && <CheckCircle2 size={15} />}
-                {key === 'PARTIAL' && <Clock size={15} />}
-                {key === 'ABSENT'  && <XCircle size={15} />}
-                {STATUS_LABEL[key]}
-              </button>
-            ))}
-          </div>
+          <AttendanceChoice label="내 행사 참석" value={pending} onChange={setPending} multiDay={isMultiDay} />
+          <p className="text-sm leading-5 text-gray-700" role="status">
+            {saveMutation.isPending ? '제출 중…' : pending ? '선택됨 · 제출 버튼을 눌러 완료해 주세요' : '참석 여부를 선택해 주세요'}
+          </p>
 
           {/* 불참 사유 입력 */}
           {pending === 'ABSENT' && (
-            <motion.div
+            <CollapsePanel
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="flex flex-col gap-2 overflow-hidden"
             >
               <div>
-                <label className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1 block">불참 사유 (필수)</label>
+                <label htmlFor={`${fieldId}-reason`} className="text-sm font-bold text-red-700 leading-5 mb-1 block">내 불참 사유 (필수)</label>
                 <input
+                  id={`${fieldId}-reason`} required
                   type="text"
                   value={absenceReason}
                   onChange={e => setAbsenceReason(e.target.value)}
                   placeholder="불참 사유를 입력해 주세요"
-                  className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-sm font-medium outline-none focus:ring-2 focus:ring-red-300"
+                  className="w-full px-4 py-2.5 rounded-xl border border-red-200 bg-red-50/30 text-base font-medium outline-none focus:ring-2 focus:ring-red-300"
                 />
               </div>
-            </motion.div>
+            </CollapsePanel>
           )}
 
           {/* 부분참석 상세 입력 */}
           {pending === 'PARTIAL' && (
-            <motion.div
+            <CollapsePanel
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="flex flex-col gap-2"
             >
               <div>
-                <label className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1 block">참석 시작일 (필수)</label>
+                <label htmlFor={`${fieldId}-date`} className="text-sm font-bold text-amber-700 leading-5 mb-1 block">내 참석 시작일 (필수)</label>
                 <input
+                  id={`${fieldId}-date`} required
                   type="date"
                   value={partialFromDate}
                   min={event.eventDate}
                   max={event.endDate}
                   onChange={e => setPartialFromDate(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-300"
+                  className="w-full px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/30 text-base font-bold outline-none focus:ring-2 focus:ring-amber-300"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">세부 시간 / 메모 (선택)</label>
+                <label htmlFor={`${fieldId}-note`} className="text-sm font-bold text-gray-600 leading-5 mb-1 block">세부 시간 / 메모 (선택)</label>
                 <input
+                  id={`${fieldId}-note`}
                   type="text"
                   value={partialNote}
                   onChange={e => setPartialNote(e.target.value)}
                   placeholder="예: 오후 2시부터 참석 가능합니다"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-amber-200"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-base font-medium outline-none focus:ring-2 focus:ring-amber-200"
                 />
               </div>
-            </motion.div>
+            </CollapsePanel>
           )}
 
           <Button size="lg" onClick={() => saveMutation.mutate()} disabled={!canSubmit || saveMutation.isPending}>
@@ -187,6 +181,7 @@ function TeacherSelfCheck({ event, userId }) {
 
 // ── 학생 출석 체크 섹션 ─────────────────────────────────────
 function StudentAttendanceCheck({ event, userId }) {
+  const fieldId = useId()
   const eventId  = event.id
   const isUnavailable = isEventAttendanceInactive(event)
   const isMultiDay = event.endDate && event.endDate !== event.eventDate
@@ -219,7 +214,6 @@ function StudentAttendanceCheck({ event, userId }) {
   })
 
   const setStatus = (sid, status) => setStatusMap(p => ({ ...p, [sid]: status }))
-  const toggleSimple = (sid) => setStatusMap(p => ({ ...p, [sid]: p[sid] === 'PRESENT' ? 'ABSENT' : 'PRESENT' }))
 
   const handleSubmit = () => {
     if (!ready) return
@@ -255,15 +249,15 @@ function StudentAttendanceCheck({ event, userId }) {
         <div className="grid grid-cols-3 gap-2">
           <Card className="text-center py-3">
             <p className="text-lg font-bold text-gray-900">{students.length}</p>
-            <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
+            <p className="text-sm font-bold text-gray-600 mt-0.5">전체</p>
           </Card>
           <Card className="text-center py-3">
             <p className="text-lg font-bold text-secondary-700">{presentCount}</p>
-            <p className="text-xs font-bold text-gray-400 mt-0.5">출석</p>
+            <p className="text-sm font-bold text-gray-600 mt-0.5">출석</p>
           </Card>
           <Card className="text-center py-3">
-            <p className="text-lg font-bold text-red-400">{absentCount}</p>
-            <p className="text-xs font-bold text-gray-400 mt-0.5">결석</p>
+            <p className="text-lg font-bold text-red-700">{absentCount}</p>
+            <p className="text-sm font-bold text-gray-600 mt-0.5">결석</p>
           </Card>
         </div>
       )}
@@ -273,9 +267,9 @@ function StudentAttendanceCheck({ event, userId }) {
         <div className="brand-card flex items-center justify-between px-4 py-3 bg-secondary-50 rounded-2xl border border-secondary-200">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-secondary-600" />
-            <span className="text-xs font-bold text-secondary-700">출석 체크 제출 완료</span>
+            <span className="text-sm font-bold text-secondary-700">출석 체크 제출 완료</span>
           </div>
-          {!isUnavailable && <button onClick={() => setEditing(true)} className="text-xs text-secondary-600 font-bold flex items-center gap-1">
+          {!isUnavailable && <button aria-label="학생 행사 참석 수정" onClick={() => setEditing(true)} className="min-h-11 min-w-11 shrink-0 px-2 text-sm text-secondary-700 font-bold flex items-center justify-center gap-1">
             <PenLine size={12} /> 수정
           </button>}
         </div>
@@ -285,7 +279,7 @@ function StudentAttendanceCheck({ event, userId }) {
       {students.length === 0 ? (
         <Card className="py-8 text-center flex flex-col items-center gap-2">
           <Users size={24} className="text-gray-200" />
-          <p className="text-sm font-bold text-gray-400">배정된 학생이 없습니다</p>
+          <p className="text-sm font-bold text-gray-600">배정된 학생이 없습니다</p>
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
@@ -297,78 +291,66 @@ function StudentAttendanceCheck({ event, userId }) {
                 className="flex flex-col gap-1.5"
               >
                 {/* 학생 카드 */}
-                <div className={`brand-card flex items-center justify-between px-4 py-3 rounded-2xl border-2 ${
+                <div className={`brand-card flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 ${
                   status === 'PRESENT' ? 'border-secondary-200 bg-secondary-50' :
                   status === 'PARTIAL' ? 'border-amber-200 bg-amber-50' :
                   'border-red-200 bg-red-50'
                 }`}>
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold ${
                       status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
                       status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
                       'bg-red-200 text-red-700'
                     }`}>{student.studentName[0]}</div>
                     <div>
-                      <p className="font-bold text-gray-900 text-sm">{student.studentName}</p>
-                      <p className="text-xs text-gray-400 font-medium">{student.grade}</p>
+                      <p className="font-bold text-gray-900 text-base">{student.studentName}</p>
+                      <p className="text-sm text-gray-600 font-medium">{student.grade}</p>
                     </div>
                   </div>
 
-                  {/* 단일 일정: 클릭 토글 / 다중 일정: 버튼 그룹 */}
-                  {isMultiDay && isEditable ? (
-                    <div className="flex gap-1">
-                      {['PRESENT','PARTIAL','ABSENT'].map(k => (
-                        <button aria-pressed={status === k} key={k} onClick={() => setStatus(sid, k)}
-                          className={`text-[0.6875rem] font-bold px-2 py-1.5 rounded-lg transition-all ${
-                            status === k
-                              ? k === 'PRESENT' ? 'bg-secondary-200 text-secondary-800'
-                              : k === 'PARTIAL' ? 'bg-amber-200 text-amber-800'
-                              : 'bg-red-200 text-red-800'
-                              : 'bg-white/70 text-gray-400'
-                          }`}>
-                          {{ PRESENT:'출석', PARTIAL:'부분', ABSENT:'결석' }[k]}
-                        </button>
-                      ))}
+                  {isEditable ? (
+                    <div className="w-full">
+                      <AttendanceChoice label={`${student.studentName} 행사 참석 여부`} value={status}
+                        onChange={value => setStatus(sid, value)} multiDay={isMultiDay} />
                     </div>
                   ) : (
-                    <button onClick={() => isEditable && toggleSimple(sid)} disabled={!isEditable}
-                      className={`text-xs font-bold flex items-center gap-1 ${
-                        status === 'PRESENT' ? 'text-secondary-600' : status === 'PARTIAL' ? 'text-amber-600' : 'text-red-500'
-                      } ${!isEditable ? 'cursor-default' : ''}`}>
-                      {status === 'PRESENT' ? <><CheckCircle2 size={14} /> 출석</> :
-                       status === 'PARTIAL' ? <><Clock size={14} /> 부분참석</> : status === 'ABSENT' ? <><XCircle size={14} /> 결석</> : '미제출'}
-                    </button>
+                    <span className={`text-sm font-bold ${status === 'ABSENT' ? 'text-red-700' : status === 'PARTIAL' ? 'text-amber-700' : 'text-secondary-700'}`}>
+                      {STATUS_LABEL[status] || '미제출'}
+                    </span>
                   )}
                 </div>
 
                 {/* 결석 사유 */}
                 {status === 'ABSENT' && (
-                  <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1">
-                    <input type="text" value={reasonMap[sid] || ''}
+                  <CollapsePanel initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1">
+                    <label htmlFor={`${fieldId}-${sid}-reason`} className="mb-1 block text-sm font-semibold text-red-700">불참 사유 (필수)</label>
+                    <input id={`${fieldId}-${sid}-reason`} aria-label={`${student.studentName} 불참 사유 (필수)`} required type="text" value={reasonMap[sid] || ''}
                       onChange={e => setReasonMap(p => ({ ...p, [sid]: e.target.value }))}
                       placeholder="결석 사유를 입력해 주세요 (필수)" disabled={!isEditable}
-                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
-                        isEditable ? 'bg-white border-red-100 focus:border-red-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
+                      className={`w-full px-4 py-2.5 rounded-xl text-base font-medium border transition-all ${
+                        isEditable ? 'bg-white border-red-100 focus:border-red-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-600'
                       }`} />
-                  </motion.div>
+                  </CollapsePanel>
                 )}
 
                 {/* 부분참석 입력 (다중 일정만) */}
                 {isMultiDay && status === 'PARTIAL' && (
-                  <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1 flex flex-col gap-1.5">
-                    <input type="date" value={partialFromDateMap[sid] || ''}
+                  <CollapsePanel initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} className="px-1 flex flex-col gap-1.5">
+                    <label htmlFor={`${fieldId}-${sid}-date`} className="text-sm font-semibold text-amber-700">참석 시작일 (필수)</label>
+                    <input id={`${fieldId}-${sid}-date`} aria-label={`${student.studentName} 참석 시작일 (필수)`} required type="date" value={partialFromDateMap[sid] || ''}
                       min={event.eventDate} max={event.endDate} disabled={!isEditable}
                       onChange={e => setPartialFromDateMap(p => ({ ...p, [sid]: e.target.value }))}
-                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                        isEditable ? 'bg-amber-50/40 border-amber-200 focus:ring-2 focus:ring-amber-200 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
+                      className={`w-full px-4 py-2.5 rounded-xl text-base font-bold border transition-all ${
+                        isEditable ? 'bg-amber-50/40 border-amber-200 focus:ring-2 focus:ring-amber-200 outline-none' : 'bg-gray-50 border-gray-100 text-gray-600'
                       }`} />
-                    <input type="text" value={partialNoteMap[sid] || ''}
+                    <label htmlFor={`${fieldId}-${sid}-note`} className="text-sm font-medium text-gray-600">메모 (선택)</label>
+                    <input id={`${fieldId}-${sid}-note`} aria-label={`${student.studentName} 메모 (선택)`} type="text" value={partialNoteMap[sid] || ''}
                       onChange={e => setPartialNoteMap(p => ({ ...p, [sid]: e.target.value }))}
                       placeholder="세부 시간 / 메모 (선택)" disabled={!isEditable}
-                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${
-                        isEditable ? 'bg-white border-amber-100 focus:border-amber-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-400'
+                      className={`w-full px-4 py-2.5 rounded-xl text-base font-medium border transition-all ${
+                        isEditable ? 'bg-white border-amber-100 focus:border-amber-300 outline-none' : 'bg-gray-50 border-gray-100 text-gray-600'
                       }`} />
-                  </motion.div>
+                  </CollapsePanel>
                 )}
               </motion.div>
             )
@@ -379,8 +361,8 @@ function StudentAttendanceCheck({ event, userId }) {
       {/* 제출 버튼 */}
       {isEditable && students.length > 0 && (
         <div className="flex flex-col gap-2">
-          {missingReasons.length > 0 && <p className="text-xs font-bold text-red-400 text-center">결석 사유를 모두 입력해 주세요 ({missingReasons.length}명 누락)</p>}
-          {missingPartials.length > 0 && <p className="text-xs font-bold text-amber-500 text-center">부분참석 날짜를 모두 입력해 주세요 ({missingPartials.length}명 누락)</p>}
+          {missingReasons.length > 0 && <p className="text-sm font-bold text-red-700 text-center">결석 사유를 모두 입력해 주세요 ({missingReasons.length}명 누락)</p>}
+          {missingPartials.length > 0 && <p className="text-sm font-bold text-amber-700 text-center">부분참석 날짜를 모두 입력해 주세요 ({missingPartials.length}명 누락)</p>}
           <Button size="lg" onClick={handleSubmit} disabled={saveMutation.isPending || !canSubmit}>
             <CalendarCheck size={17} />
             {saveMutation.isPending ? '저장 중...' : '학생 출석 제출'}
@@ -443,32 +425,30 @@ function EventCardHeader({ event, userId, isOpen, onToggle }) {
   return (
     <button
       onClick={onToggle}
+      aria-expanded={isOpen}
       className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors text-left"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="brand-action-icon w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0">
+        <div className="supporting-event-icon brand-action-icon w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0">
           <FeatureIcon path="/event-attendance" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className={`font-bold text-sm ${isSubmitted ? 'text-secondary-800' : isOpen ? 'text-secondary-800' : 'text-gray-900'}`}>
+            <p className={`font-bold text-base ${isSubmitted ? 'text-secondary-800' : isOpen ? 'text-secondary-800' : 'text-gray-900'}`}>
               {event.title}
             </p>
             {isSubmitted && (
-              <span className="text-[0.6875rem] font-bold text-secondary-600 bg-secondary-100 px-1.5 py-0.5 rounded-full">
+              <span className="text-sm font-bold text-secondary-600 bg-secondary-100 px-1.5 py-0.5 rounded-full">
                 제출 완료
               </span>
             )}
-            {(readState === 'error' || !hasQueryData(reads)) && <span className="text-xs text-gray-500">
+            {(readState === 'error' || !hasQueryData(reads)) && <span className="text-sm text-gray-600">
               {readState === 'error' ? '출석 현황 조회 실패 · 펼쳐서 다시 시도' : '출석 현황 확인 중...'}
             </span>}
           </div>
-          <p className="text-xs text-gray-400 font-medium mt-0.5">
+          <p className="text-sm text-gray-600 font-medium mt-0.5">
             {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
             {event.startTime && ` · ${event.startTime}`}
-            {' · '}
-            {event.attendanceTarget === 'TEACHER_ONLY' ? '교사 출석' :
-             event.attendanceTarget === 'BOTH'         ? '학생 + 교사' : '학생 출석'}
           </p>
           <EventAttendanceStatus event={event} />
         </div>
@@ -502,11 +482,10 @@ export default function EventAttendanceListPage() {
   const handleSelect = (id) => setSelectedId(prev => prev === id ? null : id)
 
   return (
-    <div className="flex flex-col min-h-screen pb-10">
+    <div className="supporting-readable readable-content flex flex-col min-h-screen pb-10">
       <Header title="행사 출석 체크" showBack />
 
       <div className="px-4 py-5 flex flex-col gap-3">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">출석 체크가 필요한 행사</p>
 
         {!hasQueryData([eventsQuery]) && (
           <QueryNotice queries={[eventsQuery]} label="행사 목록" />
@@ -516,7 +495,7 @@ export default function EventAttendanceListPage() {
         {events.length === 0 ? (
           <Card className="py-14 flex flex-col items-center gap-3">
             <Calendar size={32} className="text-gray-200" />
-            <p className="text-sm font-bold text-gray-400">출석 체크가 필요한 행사가 없습니다</p>
+            <p className="text-sm font-bold text-gray-600">출석 체크가 필요한 행사가 없습니다</p>
           </Card>
         ) : (
           events.map((event, idx) => {
@@ -529,7 +508,7 @@ export default function EventAttendanceListPage() {
                 transition={{ delay: idx * 0.06 }}
                 className={`brand-card rounded-3xl border shadow-sm overflow-hidden ${isEventAttendanceInactive(event, today) ? 'event-inactive' : 'bg-white border-gray-100'}`}
               >
-                {(idx === 0 || eventAttendanceState(events[idx - 1], today) !== eventAttendanceState(event, today)) && <p className="border-b border-gray-200 px-4 py-3 text-xs font-semibold">{groups.find(g => g.state === eventAttendanceState(event, today))?.label}</p>}
+                {(idx === 0 || eventAttendanceState(events[idx - 1], today) !== eventAttendanceState(event, today)) && <p className="border-b border-gray-200 px-4 py-3 text-sm font-semibold">{groups.find(g => g.state === eventAttendanceState(event, today))?.label}</p>}
                 {/* 행사 헤더 (클릭으로 펼치기) */}
                 <EventCardHeader
                   event={event}
@@ -541,7 +520,7 @@ export default function EventAttendanceListPage() {
                 {/* 출석 체크 패널 */}
                 <AnimatePresence>
                   {isOpen && (
-                    <motion.div
+                    <CollapsePanel
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -551,7 +530,7 @@ export default function EventAttendanceListPage() {
                       <fieldset disabled={queryReadState([eventsQuery]) !== 'ready' || isEventAttendanceInactive(event, today)} className="min-w-0">
                         <EventPanel event={event} user={user} />
                       </fieldset>
-                    </motion.div>
+                    </CollapsePanel>
                   )}
                 </AnimatePresence>
               </motion.div>

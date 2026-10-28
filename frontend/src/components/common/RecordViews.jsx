@@ -6,7 +6,7 @@ export default function RecordViews({ mode, rows, columns, rowKey = row => row.i
   if (!rows.length || (mode === 'large' && children != null)) return children ?? null
   if (mode === 'detail') return <DetailTable rows={rows} columns={columns} rowKey={rowKey} onRowClick={onRowClick} rowClassName={rowClassName} />
   const [title, ...fields] = columns
-  return <div className={mode === 'small' ? 'grid grid-cols-2 gap-2' : 'flex flex-col gap-2'}>
+  return <div className={mode === 'small' ? 'readable-card-grid gap-2' : 'flex flex-col gap-2'}>
     {rows.map((row, index) => <article key={rowKey(row, index)} className={`brand-card min-w-0 rounded-2xl border border-gray-200 bg-white ${mode === 'large' ? 'p-5' : 'p-3'} ${rowClassName?.(row) || ''}`}>
       {onRowClick ? <button type="button" onClick={() => onRowClick(row)} className="min-h-11 w-full break-words text-left text-sm font-semibold text-primary-800">
         {title.render(row) ?? '—'}<span className="sr-only"> 상세 보기</span>

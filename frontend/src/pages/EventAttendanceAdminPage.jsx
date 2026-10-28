@@ -1,4 +1,7 @@
+import FitLabel from '../components/common/FitLabel'
+import './EventAttendanceAdminPage.css'
 import EventStatusSummary from '../components/common/EventStatusSummary'
+import { Collapse } from '../components/common/Motion'
 import SearchField from '../components/common/SearchField'
 import useToday from '../hooks/useToday'
 import { eventToday, isEventAttendanceInactive } from '../utils/eventAttendance'
@@ -19,7 +22,7 @@ import RecordViews from '../components/common/RecordViews'
 import QueryNotice from '../components/common/QueryNotice'
 import { queryReadState } from '../utils/queryReadState'
 import { eventApi } from '../api/event'
-import { Users, CheckCircle2, XCircle, Calendar, UserCheck, Clock } from 'lucide-react'
+import { Users, CheckCircle2, Calendar, UserCheck } from 'lucide-react'
 
 const GRADE_STYLES = {
   '중1': { bg: 'bg-rose-50', text: 'text-rose-600', accent: 'bg-rose-100', progress: 'bg-rose-400', border: 'hover:border-rose-200', btn: 'text-rose-600 bg-rose-50' },
@@ -36,6 +39,32 @@ const getGradeStyle = (grade) => {
   if (!grade) return GRADE_STYLES['미배정']
   const key = Object.keys(GRADE_STYLES).find(k => grade.startsWith(k))
   return GRADE_STYLES[key] || GRADE_STYLES['기타']
+}
+
+function EventRecords(props) {
+  return <div className="admin-event-records min-w-0"><RecordViews {...props} /></div>
+}
+
+function AttendanceLabel({ status }) {
+  const label = { PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }[status] || '미제출'
+  const tone = status === 'PRESENT' ? 'bg-secondary-50 text-secondary-700' : status === 'PARTIAL' ? 'bg-amber-50 text-amber-800' : status === 'ABSENT' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-700'
+  return <span className={`inline-block rounded-lg px-2 py-1 text-sm font-bold ${tone}`}>{label}</span>
+}
+
+function PersonAttendance({ name, record, grade }) {
+  return <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2">
+    <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-sm font-bold text-primary-700">{(name || '?')[0]}</span>
+    <div className="min-w-0">
+      <p className="text-base font-bold leading-relaxed text-gray-900">{name}</p>
+      {grade && <p className="text-sm leading-relaxed text-gray-600">{grade}</p>}
+      <div className="mt-2"><AttendanceLabel status={record.status} /></div>
+    </div>
+    {record.status === 'ABSENT' && record.absenceReason && <p className="col-span-2 text-sm leading-relaxed text-red-700">사유: {record.absenceReason}</p>}
+    {record.status === 'PARTIAL' && <div className="col-span-2 space-y-1 text-sm leading-relaxed text-amber-800">
+      {record.partialFromDate && <p>{record.partialFromDate}부터 참석</p>}
+      {record.partialNote && <p>{record.partialNote}</p>}
+    </div>}
+  </div>
 }
 
 export default function EventAttendanceAdminPage() {
@@ -117,7 +146,7 @@ export default function EventAttendanceAdminPage() {
   const teacherGradeSummary = teacherSummary.reduce((acc, t) => {
     let rawGrade = t.grade?.trim() || '미배정'
     let g = rawGrade
-    
+
     // '중1-1' 또는 '중등1부' 등에서 '중1' 형태만 추출하여 그룹화
     if (g !== '미배정') {
       const match = g.match(/^[중고][123]/)
@@ -147,7 +176,7 @@ export default function EventAttendanceAdminPage() {
   const studentRows = (selectedGrade ? currentGradeData?.classes || [] : summary)
     .flatMap(cls => cls.records.map(row => ({ ...row, className: cls.classGroupName })))
   const teacherRows = selectedTeacherGrade ? currentTeacherGradeData?.teachers || [] : teacherSummary
-  const attendanceLabel = status => ({ PRESENT: '참석', PARTIAL: '부분참석', ABSENT: '불참' }[status] || '미제출')
+  const filteredEvents = events.filter(event => matchesAdminSearch(search, event.title, event.eventDate))
 
   // 행사 선택 시 상태 초기화
   const handleEventSelect = (id) => {
@@ -164,58 +193,59 @@ export default function EventAttendanceAdminPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen pb-10">
+    <div className="admin-event-attendance-page flex flex-col min-h-screen pb-10">
       <Header title="행사 출석 현황" showBack />
-      <p className="px-4 pt-3 text-xs text-gray-500">명단은 출석 행사 등록 시점을 기준으로 보존됩니다. 이전 행사는 데이터 전환 시점의 명단이 기준입니다.</p>
+      <p className="px-4 pt-3 text-sm text-gray-500">명단은 출석 행사 등록 시점을 기준으로 보존됩니다. 이전 행사는 데이터 전환 시점의 명단이 기준입니다.</p>
 
       <div className="px-4 py-5 flex flex-col gap-5">
 
         <AdminIntro title="행사별 참여를 살펴보세요" description="행사를 선택한 뒤 학년과 반을 눌러 상세 명단을 확인하세요." />
         <SearchField label="출석 행사 검색" value={search} onChange={setSearch} placeholder="행사 이름 또는 날짜 검색" />
         <ViewModeToggle mode={viewMode} onChange={setViewMode} />
-        {viewMode !== 'large' && (activeTab === 'teacher' ? selectedTeacherGrade : selectedGrade) && <button type="button" className="min-h-11 self-start px-3 text-xs font-semibold text-primary-700"
+        {viewMode !== 'large' && (activeTab === 'teacher' ? selectedTeacherGrade : selectedGrade) && <button type="button" className="min-h-11 self-start px-3 text-sm font-semibold text-primary-700"
           onClick={() => activeTab === 'teacher' ? setSelectedTeacherGrade(null) : setSelectedGrade(null)}>학년 선택 해제 · 전체 명단 보기</button>}
         {/* 행사 선택 */}
         <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">행사 선택</p>
+          <h2 className="text-lg font-bold text-gray-900 px-1 mb-2">행사 선택</h2>
           {queryReadState([eventsQuery]) !== 'ready' ? (
             <QueryNotice queries={[eventsQuery]} label="행사 목록" />
           ) : events.length === 0 ? (
-            <Card className="py-8 text-center text-sm text-gray-400">출석 체크 활성화된 행사가 없습니다</Card>
+            <Card className="py-8 text-center text-sm text-gray-600">출석 체크 활성화된 행사가 없습니다</Card>
           ) : (
             <div className="flex flex-col gap-2">
-              {events.filter(event => matchesAdminSearch(search, event.title, event.eventDate)).map(event => (
+              {filteredEvents.length === 0 && <Card className="py-8 text-center text-base text-gray-700">검색에 맞는 행사가 없습니다</Card>}
+              {filteredEvents.map(event => (
                 <button
                   key={event.id}
                   aria-pressed={selectedEventId === event.id}
                   onClick={() => handleEventSelect(event.id)}
-                  className={`${isEventAttendanceInactive(event, today) ? 'event-inactive' : ''} flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all text-left ${
+                  className={`${isEventAttendanceInactive(event, today) ? 'event-inactive' : ''} grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 px-4 py-4 rounded-2xl border-2 transition-all text-left ${
                     selectedEventId === event.id
                       ? 'border-secondary-300 bg-secondary-50'
                       : 'border-gray-100 bg-white'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Calendar size={16} className={selectedEventId === event.id ? 'text-secondary-600' : 'text-gray-400'} />
-                    <div>
-                      <p className={`font-bold text-sm ${selectedEventId === event.id ? 'text-secondary-800' : 'text-gray-900'}`}>
-                        {event.title}
+                  <div className="min-w-0">
+                    <Calendar aria-hidden="true" size={20} className={`mb-2 ${selectedEventId === event.id ? 'text-secondary-600' : 'text-gray-600'}`} />
+                    <div className="min-w-0">
+                      <p className={`admin-event-title font-bold text-base ${selectedEventId === event.id ? 'text-secondary-800' : 'text-gray-900'}`}>
+                        <FitLabel>{event.title}</FitLabel>
                       </p>
-                      <p className="text-xs text-gray-400 font-medium mt-0.5">
+                      <p className="text-sm text-gray-600 font-medium mt-0.5">
                         {format(new Date(event.eventDate), 'M월 d일 (EEE)', { locale: ko })}
                       </p>
                       <EventAttendanceStatus event={event} today={today} />
                     </div>
                   </div>
-                  {selectedEventId === event.id && <CheckCircle2 size={16} className="text-secondary-700" />}
+                  <CheckCircle2 aria-hidden="true" size={20} className={`shrink-0 ${selectedEventId === event.id ? 'text-secondary-700' : 'invisible'}`} />
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        {!!search.trim() && <FilterResults count={events.filter(event => matchesAdminSearch(search, event.title, event.eventDate)).length} total={events.length} unit="개" filtered onReset={() => setSearch('')} />}
-        {selectedEvent && <p className="text-sm font-semibold text-gray-700">조회 중: {selectedEvent.title}</p>}
+        {!!search.trim() && <FilterResults count={filteredEvents.length} total={events.length} unit="개" filtered onReset={() => setSearch('')} />}
+        {selectedEvent && <p className="text-base font-bold leading-relaxed text-gray-900">조회 중: {selectedEvent.title}</p>}
         {/* 선택된 행사 결과 */}
         {selectedEvent && queryReadState([eventsQuery]) === 'ready' && (
           <>
@@ -233,25 +263,25 @@ export default function EventAttendanceAdminPage() {
                 {/* 전체 통계 */}
                 <EventStatusSummary records={teacherSummary} total={teacherSummary.length} />
 
-                <RecordViews mode={viewMode} rows={teacherRows} rowKey={row => row.teacherId} columns={[
+                <EventRecords mode={viewMode} rows={teacherRows} rowKey={row => row.teacherId} columns={[
                   { label: '교사', render: row => row.teacherName },
                   { label: '학년', render: row => row.grade },
-                  { label: '참석', render: row => attendanceLabel(row.status) },
+                  { label: '참석', render: row => <AttendanceLabel status={row.status} /> },
                   { label: '불참 사유', render: row => row.absenceReason },
                   { label: '부분참석 시작', render: row => row.partialFromDate },
                   { label: '부분참석 메모', render: row => row.partialNote },
                 ]}>
                 {teacherSummaryLoading ? (
-                  <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
+                  <Card className="py-8 text-center text-sm text-gray-600">불러오는 중...</Card>
                 ) : teacherSummary.length === 0 ? (
                   <Card className="py-10 text-center flex flex-col items-center gap-2">
                     <UserCheck size={28} className="text-gray-200" />
-                    <p className="text-sm font-bold text-gray-400">아직 제출된 출석 데이터가 없습니다</p>
+                    <p className="text-sm font-bold text-gray-600">아직 제출된 출석 데이터가 없습니다</p>
                   </Card>
                 ) : !selectedTeacherGrade ? (
                   /* 학년 카드 뷰 */
                   <div className="flex flex-col gap-3">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
+                    <h2 className="text-lg font-bold text-gray-900 px-1">학년별 현황</h2>
                     <div className="grid grid-cols-2 gap-3">
                       {teacherGradeList.map((g, idx) => (
                         <motion.button
@@ -260,14 +290,14 @@ export default function EventAttendanceAdminPage() {
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: idx * 0.05 }}
                           onClick={() => setSelectedTeacherGrade(g.grade)}
-                          className={`glass-card p-5 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent transition-all active:scale-95 text-center ${getGradeStyle(g.grade).border}`}
+                          className={`glass-card min-w-0 p-4 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent transition-all active:scale-95 text-center ${getGradeStyle(g.grade).border}`}
                         >
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-1 ${getGradeStyle(g.grade).accent} ${getGradeStyle(g.grade).text}`}>
                             <UserCheck size={24} />
                           </div>
-                          <div>
-                            <p className="font-bold text-gray-900 text-lg leading-tight">{g.grade}</p>
-                            <p className="text-xs text-gray-400 font-bold mt-1">
+                          <div className="min-w-0 w-full">
+                            <p className="font-bold text-gray-900 text-lg leading-tight"><FitLabel>{g.grade}</FitLabel></p>
+                            <p className="text-sm text-gray-600 font-bold mt-1">
                               {g.present} / {g.total} 참석
                             </p>
                           </div>
@@ -284,14 +314,14 @@ export default function EventAttendanceAdminPage() {
                 ) : (
                   /* 선택된 학년의 교사 목록 뷰 */
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between px-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                       <button
                         onClick={() => setSelectedTeacherGrade(null)}
-                        className={`flex min-h-11 items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedTeacherGrade).btn}`}
+                        className={`flex min-h-11 max-w-full min-w-0 items-center gap-2 text-base font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedTeacherGrade).btn}`}
                       >
-                        ← {selectedTeacherGrade} 전체
+                        <span aria-hidden="true">←</span><FitLabel>{selectedTeacherGrade} 전체</FitLabel>
                       </button>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">교사 현황</p>
+                      <h2 className="text-lg font-bold text-gray-900">교사 현황</h2>
                     </div>
 
                     <Card className="flex flex-col gap-1.5 p-3">
@@ -301,45 +331,19 @@ export default function EventAttendanceAdminPage() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.04 }}
-                          className={`brand-card flex items-start justify-between px-3 py-2.5 rounded-2xl ${
+                          className={`brand-card min-w-0 px-3 py-3 rounded-2xl ${
                             teacher.status === 'PRESENT' ? 'bg-secondary-50/60' :
                             teacher.status === 'PARTIAL' ? 'bg-amber-50/60' :
                             teacher.status === 'ABSENT'  ? 'bg-red-50/60' : 'bg-gray-50'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
-                            <span className={`text-xs font-bold w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                              teacher.status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
-                              teacher.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
-                              teacher.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
-                              'bg-gray-200 text-gray-500'
-                            }`}>{(teacher.teacherName || '?')[0]}</span>
-                            <div>
-                              <p className="text-sm font-bold text-gray-800">{teacher.teacherName}</p>
-                              {teacher.grade && <p className="text-xs text-gray-400 font-medium">{teacher.grade}</p>}
-                              {teacher.status === 'PARTIAL' && (teacher.partialFromDate || teacher.partialNote) && (
-                                <p className="text-xs text-amber-600 font-medium mt-0.5">
-                                  {teacher.partialFromDate && `${teacher.partialFromDate}부터`}
-                                  {teacher.partialNote && ` · ${teacher.partialNote}`}
-                                </p>
-                              )}
-                              {teacher.status === 'ABSENT' && teacher.absenceReason && (
-                                <p className="text-xs text-red-400 font-medium mt-0.5">
-                                  사유: {teacher.absenceReason}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {teacher.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-secondary-700 flex-shrink-0" /> :
-                           teacher.status === 'PARTIAL' ? <span className="text-xs text-amber-600 font-bold flex-shrink-0">부분참석</span> :
-                           teacher.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
-                           <span className="text-xs text-gray-400 font-bold flex-shrink-0">미제출</span>}
+                          <PersonAttendance name={teacher.teacherName} record={teacher} grade={teacher.grade} />
                         </motion.div>
                       ))}
                     </Card>
                   </div>
                 )}
-                </RecordViews>
+                </EventRecords>
               </>
             )}
 
@@ -349,26 +353,26 @@ export default function EventAttendanceAdminPage() {
             <EventStatusSummary records={summary.flatMap(cls => cls.records)} total={totalStudents} />
 
             {/* 학년/반별 계층 결과 */}
-            <RecordViews mode={viewMode} rows={studentRows} rowKey={row => row.studentId} columns={[
+            <EventRecords mode={viewMode} rows={studentRows} rowKey={row => row.studentId} columns={[
               { label: '학생', render: row => row.studentName },
               { label: '학년', render: row => row.grade },
               { label: '반', render: row => row.className },
-              { label: '참석', render: row => attendanceLabel(row.status) },
+              { label: '참석', render: row => <AttendanceLabel status={row.status} /> },
               { label: '불참 사유', render: row => row.absenceReason },
               { label: '부분참석 시작', render: row => row.partialFromDate },
               { label: '부분참석 메모', render: row => row.partialNote },
             ]}>
             {summaryLoading ? (
-              <Card className="py-8 text-center text-sm text-gray-400">불러오는 중...</Card>
+              <Card className="py-8 text-center text-sm text-gray-600">불러오는 중...</Card>
             ) : summary.length === 0 ? (
               <Card className="py-10 text-center flex flex-col items-center gap-2">
                 <Users size={28} className="text-gray-200" />
-                <p className="text-sm font-bold text-gray-400">아직 제출된 출석 데이터가 없습니다</p>
+                <p className="text-sm font-bold text-gray-600">아직 제출된 출석 데이터가 없습니다</p>
               </Card>
             ) : !selectedGrade ? (
               /* 학년 목록 뷰 */
               <div className="flex flex-col gap-3">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">학년별 현황</p>
+                <h2 className="text-lg font-bold text-gray-900 px-1">학년별 현황</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {gradeList.map((g, idx) => (
                     <motion.button
@@ -377,21 +381,21 @@ export default function EventAttendanceAdminPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: idx * 0.05 }}
                       onClick={() => setSelectedGrade(g.grade)}
-                      className={`glass-card p-5 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent transition-all active:scale-95 text-center ${getGradeStyle(g.grade).border}`}
+                      className={`glass-card min-w-0 p-4 rounded-3xl flex flex-col items-center gap-2 border-2 border-transparent transition-all active:scale-95 text-center ${getGradeStyle(g.grade).border}`}
                     >
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-1 ${getGradeStyle(g.grade).accent} ${getGradeStyle(g.grade).text}`}>
                         <Users size={24} />
                       </div>
-                      <div>
-                        <p className="font-bold text-gray-900 text-lg leading-tight">{g.grade}</p>
-                        <p className="text-xs text-gray-400 font-bold mt-1">
+                      <div className="min-w-0 w-full">
+                        <p className="font-bold text-gray-900 text-lg leading-tight"><FitLabel>{g.grade}</FitLabel></p>
+                        <p className="text-sm text-gray-600 font-bold mt-1">
                           {g.presentCount} / {g.totalCount} 참석 (부분 포함)
                         </p>
                       </div>
                       <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
-                        <div 
+                        <div
                           className={`h-full ${getGradeStyle(g.grade).progress}`}
-                          style={{ width: `${(g.presentCount / g.totalCount) * 100}%` }}
+                          style={{ width: `${g.totalCount > 0 ? (g.presentCount / g.totalCount) * 100 : 0}%` }}
                         />
                       </div>
                     </motion.button>
@@ -401,14 +405,14 @@ export default function EventAttendanceAdminPage() {
             ) : (
               /* 선택된 학년의 반 목록 뷰 */
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-1">
-                  <button 
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                  <button
                     onClick={() => setSelectedGrade(null)}
-                    className={`flex min-h-11 items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedGrade).btn}`}
+                    className={`flex min-h-11 max-w-full min-w-0 items-center gap-2 text-base font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-all ${getGradeStyle(selectedGrade).btn}`}
                   >
-                    ← {selectedGrade} 전체
+                    <span aria-hidden="true">←</span><FitLabel>{selectedGrade} 전체</FitLabel>
                   </button>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">반별 현황</p>
+                  <h2 className="text-lg font-bold text-gray-900">반별 현황</h2>
                 </div>
 
                 {currentGradeData.classes.map((cls, idx) => (
@@ -421,26 +425,26 @@ export default function EventAttendanceAdminPage() {
                     <Card className="flex flex-col gap-4">
                       {/* 반 헤더 */}
                       <button type="button" aria-expanded={expandedClassId === cls.classGroupId}
-                        className="flex min-h-11 w-full items-center justify-between text-left"
+                        className="grid min-h-11 min-w-0 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 text-left"
                         onClick={() => setExpandedClassId(expandedClassId === cls.classGroupId ? null : cls.classGroupId)}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="contents">
                           <div className="w-10 h-10 rounded-2xl bg-primary-50 flex items-center justify-center">
                             <Users size={18} className="text-primary-600" />
                           </div>
-                          <div>
-                            <p className="font-bold text-gray-900 text-base">{cls.classGroupName}</p>
-                            <p className="text-xs text-gray-400 font-bold">
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-900 text-base"><FitLabel>{cls.classGroupName}</FitLabel></p>
+                            <p className="mt-2 text-sm leading-relaxed text-gray-600 font-medium">
                               {cls.presentCount}명 참석 (부분 포함)
                               {cls.records.filter(r => r.status === 'PARTIAL').length > 0 &&
                                 ` · ${cls.records.filter(r => r.status === 'PARTIAL').length}명 부분참석`}
-                              {' · '}{cls.absentCount}명 결석
+                              {' · '}{cls.absentCount}명 불참
                               {(cls.totalCount - cls.presentCount - cls.absentCount) > 0 &&
                                 ` · ${cls.totalCount - cls.presentCount - cls.absentCount}명 미제출`}
                             </p>
                           </div>
                         </div>
-                        <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+                        <div className="shrink-0 w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600">
                           {expandedClassId === cls.classGroupId ? '▲' : '▼'}
                         </div>
                       </button>
@@ -456,55 +460,29 @@ export default function EventAttendanceAdminPage() {
                       </div>
 
                       {/* 학생 목록 (확대 시에만 표시) */}
-                      {expandedClassId === cls.classGroupId && (
+                      <Collapse open={expandedClassId === cls.classGroupId}>
                         <div className="flex flex-col gap-1.5 pt-1">
                           {cls.records.map(student => (
                             <div
                               key={student.studentId}
-                              className={`brand-card flex items-start justify-between px-3 py-2.5 rounded-2xl ${
+                              className={`brand-card min-w-0 px-3 py-3 rounded-2xl ${
                                 student.status === 'PRESENT' ? 'bg-secondary-50/50' :
                                 student.status === 'PARTIAL' ? 'bg-amber-50/50' :
                                 student.status === 'ABSENT'  ? 'bg-red-50/50' :
                                 'bg-gray-50/80'
                               }`}
                             >
-                              <div className="flex items-center gap-3">
-                                <span className={`text-xs font-bold w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                  student.status === 'PRESENT' ? 'bg-secondary-200 text-secondary-700' :
-                                  student.status === 'PARTIAL' ? 'bg-amber-200 text-amber-700' :
-                                  student.status === 'ABSENT'  ? 'bg-red-200 text-red-700' :
-                                  'bg-gray-200 text-gray-500'
-                                }`}>{student.studentName[0]}</span>
-                                <div className="flex flex-col">
-                                  <span className="text-xs font-bold text-gray-700">{student.studentName}</span>
-                                  {student.status === 'ABSENT' && student.absenceReason && (
-                                    <p className="text-xs text-red-400 font-medium mt-0.5 leading-tight">
-                                      사유: {student.absenceReason}
-                                    </p>
-                                  )}
-                                  {student.status === 'PARTIAL' && (student.partialFromDate || student.partialNote) && (
-                                    <p className="text-xs text-amber-600 font-medium mt-0.5 leading-tight">
-                                      {student.partialFromDate && `${student.partialFromDate}부터`}
-                                      {student.partialNote && ` · ${student.partialNote}`}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              {student.status === 'PRESENT' ? <CheckCircle2 size={16} className="text-secondary-700 flex-shrink-0" /> :
-                               student.status === 'PARTIAL' ? <Clock size={16} className="text-amber-500 flex-shrink-0" /> :
-                               student.status === 'ABSENT'  ? <XCircle size={16} className="text-red-400 flex-shrink-0" /> :
-                               <span className="text-xs text-orange-400 font-bold flex-shrink-0">미제출</span>
-                              }
+                              <PersonAttendance name={student.studentName} record={student} />
                             </div>
                           ))}
                         </div>
-                      )}
+                      </Collapse>
                     </Card>
                   </motion.div>
                 ))}
               </div>
             )}
-            </RecordViews>
+            </EventRecords>
             </>)}
 
           </>

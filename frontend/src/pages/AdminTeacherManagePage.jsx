@@ -1,10 +1,12 @@
+import FitLabel from '../components/common/FitLabel'
+import AdminReadGuard from '../components/common/AdminReadGuard'
+import './AdminTeacherManagePage.css'
 import SearchField from '../components/common/SearchField'
-import { AdminIntro } from '../components/common/AdminTools'
 import { matchesAdminSearch } from '../utils/adminSearch'
 import { useState, useMemo, forwardRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User as UserIcon, Check, Loader2, ChevronRight, AlertCircle } from 'lucide-react'
+import { User as UserIcon, Check, Loader2, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import AdminPasswordReset from '../components/AdminPasswordReset'
@@ -21,24 +23,23 @@ export default function AdminTeacherManagePage() {
   const queryClient = useQueryClient()
   const { user: currentUser } = useAuthStore()
 
-  const { data: users = [], isLoading, error } = useQuery({
+  const usersQuery = useQuery({
     queryKey: ['users-management'],
     queryFn: () => usersApi.getAll().then((res) => res.data),
   })
 
+  const { data: users = [] } = usersQuery
+
   const mutation = useMutation({
     mutationFn: ({ id, role }) => usersApi.updateRole(id, role),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users-management'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['users-management'] })
       queryClient.invalidateQueries({ queryKey: ['teachers'] })
     },
     onError: err => alert(err.response?.data?.message || '권한을 변경하지 못했습니다. 다시 시도해 주세요.'),
   })
 
-  // 목사님이나 최고관리자는 수정 대상에서 제외 (처음부터 리스트에서 숨김)
-  // 단, 새로 PASTOR 권한을 받은 사람이 있는 경우 리스트에 남아있으면 계속 수정 가능하게 할지 고민
-  // 유저의 요구사항: "목사님이나 최고관리자는 수정대상에 포함하지 말아줘"
-  // 해석: 현재 ADMIN이나 PASTOR인 사람은 리스트에 노출하지 않거나 수정을 막음
+  // 기존 관리 대상 기준 유지: 본인과 ADMIN은 목록에서 제외한다.
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
       if (u.id === currentUser?.id) return false
@@ -66,36 +67,27 @@ export default function AdminTeacherManagePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 pb-20">
+    <div className="admin-teachers-page flex flex-col min-h-screen bg-gray-50 pb-24">
       <Header title="교사 권한 관리" showBack />
 
       <div className="px-4 py-6">
         <div className="mb-5 flex flex-col gap-4">
-          <AdminIntro title="교사 권한을 한눈에" description="교사를 검색하고 이름을 눌러 권한과 계정 정보를 관리하세요." />
-          <Link to="/admin/pending-users?tab=suspended" className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-primary-700">이용 정지 계정·복구 이력 확인하기 →</Link>
+          <h2 className="text-lg font-bold text-gray-900">교사 · 권한 · 계정 정보</h2>
+          <Link to="/admin/pending-users?tab=suspended" className="teacher-action rounded-2xl border border-gray-200 bg-white text-primary-800"><FitLabel>이용 정지 계정·복구 이력</FitLabel><ChevronRight size={18} aria-hidden="true"/></Link>
           <SearchField label="교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
         </div>
 
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 size={32} className="text-primary-500 animate-spin" />
-            <p className="text-sm font-bold text-gray-400">명단을 불러오고 있습니다...</p>
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-500">
-            <AlertCircle size={48} />
-            <p className="font-bold">데이터를 불러오지 못했습니다.</p>
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-2 opacity-40">
-            <UserIcon size={48} className="text-gray-400" />
-            <p className="text-sm font-bold text-gray-500">{search.trim() ? '검색 결과가 없습니다. 검색어를 바꿔 주세요.' : '관리 대상 교사가 없습니다.'}</p>
+        <AdminReadGuard queries={[usersQuery]} label="교사 명단">
+        {filteredUsers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <UserIcon size={48} className="text-gray-600" />
+            <p className="text-base font-semibold text-gray-700">{search.trim() ? '검색 결과가 없습니다. 검색어를 바꿔 주세요.' : '관리 대상 교사가 없습니다.'}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
              <div className="px-1 mb-1 flex flex-wrap gap-2 items-center justify-between">
-                <p className="text-xs font-bold text-gray-400 ">관리 대상 ({filteredUsers.length})</p>
-                <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+                <p className="text-base font-semibold text-gray-700">관리 대상 {filteredUsers.length}명</p>
+                <ViewModeToggle mode={viewMode} onChange={setViewMode} label="교사 명단 보기 방식" />
              </div>
             {viewMode === 'large' ? (
               <AnimatePresence mode="popLayout">
@@ -105,6 +97,7 @@ export default function AdminTeacherManagePage() {
                     user={user}
                     onUpdate={handleRoleChange}
                     isUpdating={mutation.isPending && mutation.variables?.id === user.id}
+                    disabled={mutation.isPending}
                   />
                 ))}
               </AnimatePresence>
@@ -115,11 +108,12 @@ export default function AdminTeacherManagePage() {
                 columns={[
                   { label: '이름', render: u => u.name },
                   { label: '권한', render: u => <RoleBadge role={u.role} /> },
+                  { label: '소속', render: u => u.grade || '소속 미지정' },
                   { label: '이메일', render: u => u.email },
                 ]}
               />
             ) : (
-              <div className={viewMode === 'small' ? 'grid grid-cols-4 gap-2' : 'flex flex-col gap-2'}>
+              <div className={viewMode === 'small' ? 'readable-card-grid gap-3' : 'flex flex-col gap-2'}>
                 {filteredUsers.map((user, idx) => (
                   <UserCompactItem key={user.id} user={user} idx={idx} mode={viewMode} onClick={() => setSelectedId(user.id)} />
                 ))}
@@ -127,28 +121,31 @@ export default function AdminTeacherManagePage() {
             )}
           </div>
         )}
+        </AdminReadGuard>
       </div>
 
       <AnimatePresence>
         {selectedUser && (
           <>
             <motion.div key="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setSelectedId(null)} className="fixed inset-0 bg-black/40 z-[60]" />
+              onClick={() => { if (!mutation.isPending) setSelectedId(null) }} className="fixed inset-0 bg-black/40 z-[60]" />
             <div key="sheet" className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none">
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 12 }}
-                className="safe-modal-panel w-full max-w-[360px] pointer-events-auto flex flex-col gap-2"
+                role="dialog" aria-modal="true" aria-label={`${selectedUser.name} 교사 관리`}
+                className="safe-modal-panel safe-modal-85d overflow-y-auto w-full max-w-[400px] pointer-events-auto flex flex-col gap-2 rounded-2xl bg-white"
               >
                 <UserManagementCard
                   user={selectedUser}
                   onUpdate={handleRoleChange}
                   isUpdating={mutation.isPending && mutation.variables?.id === selectedUser.id}
+                  disabled={mutation.isPending}
                 />
-                <button onClick={() => setSelectedId(null)}
-                  className="py-3 rounded-2xl bg-white text-sm font-bold text-gray-500 shadow-sm active:scale-[0.98] transition-all">
-                  닫기
+                <button disabled={mutation.isPending} onClick={() => setSelectedId(null)}
+                  className="teacher-action sticky bottom-0 rounded-xl bg-white border border-gray-200 text-gray-700 shadow-sm disabled:opacity-50">
+                  <FitLabel>닫기</FitLabel>
                 </button>
               </motion.div>
             </div>
@@ -160,43 +157,21 @@ export default function AdminTeacherManagePage() {
 }
 
 function UserCompactItem({ user, idx, mode, onClick }) {
-  const motionProps = {
-    initial: { opacity: 0, y: 8 },
-    animate: { opacity: 1, y: 0 },
-    transition: { delay: Math.min(idx * 0.03, 0.3) },
-    onClick,
-  }
-  if (mode === 'small') {
-    return (
-      <motion.button {...motionProps}
-        className="bg-white rounded-2xl shadow-sm p-2 flex flex-col items-center gap-1 active:scale-95 transition-all">
-        <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold">
-          {user.name[0]}
-        </div>
-        <p className="text-xs font-bold text-gray-900 truncate w-full text-center">{user.name}</p>
-        <RoleBadge role={user.role} />
-      </motion.button>
-    )
-  }
-  return (
-    <motion.button {...motionProps}
-      className="w-full bg-white rounded-2xl shadow-sm px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-all">
-      <div className="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold flex-shrink-0">
-        {user.name[0]}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-bold text-gray-900 text-sm flex-shrink-0">{user.name}</p>
-          <RoleBadge role={user.role} />
-        </div>
-        <p className="text-xs font-medium text-gray-400 truncate mt-0.5">{user.email}</p>
-      </div>
-      <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
-    </motion.button>
-  )
+  return <motion.button type="button" aria-label={`${user.name} 교사 관리`}
+    initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:Math.min(idx*.03,.3)}} onClick={onClick}
+    className={`min-w-0 w-full rounded-2xl border border-gray-200 bg-white p-3 text-left active:scale-[0.98] ${mode==='small'?'flex flex-col gap-3':'flex items-start gap-3'}`}>
+    <div className="h-10 w-10 shrink-0 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center text-base font-bold" aria-hidden="true">{user.name?.[0]}</div>
+    <div className="min-w-0 flex-1">
+      <p className="text-base font-bold text-gray-900">{user.name}</p>
+      <div className="mt-2"><RoleBadge role={user.role}/></div>
+      <p className="mt-2 text-sm text-gray-600">{user.grade || '소속 미지정'}</p>
+      {mode!=='small' && <p className="teacher-email mt-1 text-sm text-gray-600">{user.email}</p>}
+    </div>
+    {mode!=='small' && <ChevronRight size={18} className="mt-1 shrink-0 text-gray-600" aria-hidden="true"/>}
+  </motion.button>
 }
 
-const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpdate, isUpdating }, ref) {
+const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpdate, isUpdating, disabled }, ref) {
   const actor = useAuthStore(state => state.user)
   return (
     <motion.div
@@ -206,27 +181,21 @@ const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpda
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
     >
-      <Card className="p-5 flex flex-col gap-5 relative overflow-hidden group">
-        {isUpdating && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-            <Loader2 size={24} className="text-primary-500 animate-spin" />
-          </div>
-        )}
-        
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg shadow-sm">
-            {user.name[0]}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-bold text-gray-900 text-base flex-shrink-0">{user.name}</p>
-              <RoleBadge role={user.role} />
-            </div>
-            <p className="text-xs font-medium text-gray-400 mt-0.5 truncate">{user.email}</p>
+      <Card className="min-w-0 p-4 flex flex-col gap-4 relative">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="h-11 w-11 shrink-0 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center text-lg font-bold" aria-hidden="true">{user.name?.[0]}</div>
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-bold text-gray-900">{user.name}</p>
+            <div className="mt-2"><RoleBadge role={user.role}/></div>
+            <p className="mt-2 text-sm text-gray-600">{user.grade || '소속 미지정'}</p>
           </div>
         </div>
+        <p className="teacher-email text-sm text-gray-600">{user.email}</p>
+        <fieldset disabled={disabled} className="min-w-0">
+          <legend className="mb-2 text-sm font-semibold text-gray-600">권한 선택</legend>
+          {isUpdating && <p role="status" className="mb-2 flex items-center gap-2 text-sm text-primary-800"><Loader2 size={18} className="shrink-0 animate-spin" aria-hidden="true"/>권한 변경 중…</p>}
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2">
 
-        <div className="grid grid-cols-3 gap-2">
           <RoleButton
             active={user.role === 'TEACHER'}
             label="일반교사"
@@ -252,8 +221,11 @@ const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpda
             />
           )}
         </div>
+        </fieldset>
+        <fieldset disabled={isUpdating} className="teacher-account-tools">
         {actor?.role === 'ADMIN' && <AdminPasswordReset key={user.id} user={user} />}
         <AccountStatusHistory key={`history-${user.id}`} userId={user.id} />
+        </fieldset>
       </Card>
     </motion.div>
   )
@@ -265,7 +237,7 @@ function RoleButton({ active, label, onClick, variant = 'default' }) {
       ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
       : 'bg-primary-50 text-primary-700 hover:bg-primary-100',
     pastor: active
-      ? 'bg-amber-500 text-white shadow-lg shadow-amber-200'
+      ? 'bg-amber-700 text-white shadow-lg shadow-amber-100'
       : 'bg-amber-50 text-amber-700 hover:bg-amber-100',
     admin: active
       ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
@@ -274,22 +246,23 @@ function RoleButton({ active, label, onClick, variant = 'default' }) {
 
   return (
     <button
+      type="button" aria-pressed={active}
       onClick={onClick}
-      className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 ${styles[variant]}`}
+      className={`teacher-action teacher-role-choice rounded-xl text-base font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 ${styles[variant]}`}
     >
-      {active && <Check size={12} />}
-      {label}
+      <span className="flex h-4 items-center justify-center" aria-hidden="true">{active && <Check size={16} />}</span>
+      <FitLabel>{label}</FitLabel>
     </button>
   )
 }
 
 function RoleBadge({ role }) {
   const map = {
-    TEACHER:   ['일반교사', 'bg-primary-50 text-primary-600'],
-    EXECUTIVE: ['임원교사', 'bg-secondary-50 text-secondary-600'],
-    PASTOR:    ['목사님', 'bg-amber-50 text-amber-600'],
-    ADMIN:     ['최종관리자', 'bg-primary-50 text-primary-600'],
+    TEACHER:   ['일반교사', 'bg-primary-50 text-primary-800'],
+    EXECUTIVE: ['임원교사', 'bg-secondary-50 text-secondary-800'],
+    PASTOR:    ['목사님', 'bg-amber-50 text-amber-800'],
+    ADMIN:     ['최종관리자', 'bg-primary-50 text-primary-800'],
   }
   const [label, cls] = map[role] ?? ['사용자', 'bg-gray-50 text-gray-600']
-  return <span className={`text-[0.6875rem] font-bold px-2 py-0.5 rounded-lg ${cls}`}>{label}</span>
+  return <span className={`teacher-role inline-flex max-w-full text-sm font-semibold px-2.5 py-1 rounded-lg ${cls}`}>{label}</span>
 }

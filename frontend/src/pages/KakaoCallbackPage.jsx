@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -28,7 +29,7 @@ export default function KakaoCallbackPage() {
         navigate('/', { replace: true })
       } else if (result.status === 'LINKED') {
         void queryClient.invalidateQueries({ queryKey: ['kakao-connection'] })
-        navigate('/profile?kakao=linked', { replace: true })
+        navigate('/profile/connections?kakao=linked', { replace: true })
       } else {
         setStatus(result.status === 'REGISTRATION_REQUIRED' ? 'register' : 'error')
         setMessage(result.message || '아직 Newave Flow 계정에 연결되지 않은 카카오 계정이에요.')
@@ -41,7 +42,7 @@ export default function KakaoCallbackPage() {
     })
     return () => { disposed = true }
   }, [hash, navigate, queryClient])
-  return <div className="min-h-screen max-w-mobile mx-auto bg-white">
+  return <div className="supporting-readable readable-content min-h-screen max-w-mobile mx-auto bg-white">
     <Header title="카카오 계정 확인" showBack onBack={() => navigate('/login', { replace: true })} showNotification={false} />
     <div className="px-6 py-8">
       <h2 className="text-xl font-semibold">{status === 'register' ? '계정 연결 또는 가입 신청' : status === 'error' ? '다시 확인해 주세요' : '카카오 인증 중'}</h2>
@@ -49,7 +50,7 @@ export default function KakaoCallbackPage() {
       {status === 'register' && <>
         <div className="mt-6 rounded-2xl border border-primary-200 p-4">
           <h3 className="font-semibold">이미 가입한 교사인가요?</h3>
-          <p className="mt-2 text-sm leading-relaxed text-gray-500">이메일로 로그인한 뒤 ‘내 정보 → 카카오 계정 연결’을 이용해 주세요. 기존 출석과 TTS 기록이 그대로 이어집니다.</p>
+          <p className="mt-2 text-sm leading-relaxed text-gray-500">이메일로 로그인한 뒤 ‘내 정보 → 계정 연결 관리 → 카카오 계정 연결’을 이용해 주세요. 기존 출석과 TTS 기록이 그대로 이어집니다.</p>
           <button className="mt-4 min-h-11 w-full rounded-xl px-3 text-sm font-semibold" onClick={async () => { await clearKakaoPending(); navigate('/login', { replace: true }) }}>기존 이메일 계정으로 로그인</button>
         </div>
         <Link to="/signup?kakao=1" className="brand-action mt-4 flex min-h-12 items-center justify-center rounded-xl border border-primary-200 px-4 text-sm font-semibold">처음이에요 · 가입 신청</Link>

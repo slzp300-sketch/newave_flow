@@ -1,3 +1,4 @@
+import FitLabel from './FitLabel'
 import { useId } from 'react'
 import { LayoutGroup, motion } from 'framer-motion'
 import { useMotionPreference } from './Motion'
@@ -16,7 +17,7 @@ export default function SegmentedControl({ label, value, onChange, options, disa
             {value === option.value && <motion.span aria-hidden="true" layoutId="selection" initial={false}
               transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 34 }}
               className="brand-selection absolute inset-0 -z-10 rounded-xl shadow-sm" />}
-            {option.label}
+            <FitLabel>{option.label}</FitLabel>
           </button>
         ))}
       </div>

@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/layout/Header'
@@ -18,7 +19,7 @@ export default function ContentPhotosAdminPage() {
     qc.invalidateQueries({ queryKey: key }); qc.invalidateQueries({ queryKey: ['safety-summary'] })
     qc.invalidateQueries({ queryKey: ['photo-review-status'] }); qc.invalidateQueries({ queryKey: ['my-profile'] })
   }
-  return <div className="pb-8"><Header title="사진 게시 검토" showBack showNotification={false} />
+  return <div className="supporting-readable readable-content pb-8"><Header title="사진 게시 검토" showBack showNotification={false} />
     <div className="space-y-5 px-4 py-5">
       <SafetySummary />
       <p className="text-sm leading-6 text-gray-600">새 사진은 승인 전까지 게시되지 않습니다. 초상권·개인정보 침해나 부적절한 내용이 없는지 확인하고 결과를 남겨주세요.</p>

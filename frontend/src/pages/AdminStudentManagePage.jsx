@@ -1,3 +1,4 @@
+import './PeopleReadability.css'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
 import SearchField from '../components/common/SearchField'
@@ -86,7 +87,7 @@ export default function AdminStudentManagePage() {
   }, [roster, allStudents])
 
   return (
-    <div className="flex flex-col min-h-screen pb-28 bg-gray-50/50">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-28 bg-gray-50/50">
       <Header title="아이 관리" showBack />
 
       <div className="flex flex-col gap-4 px-4 py-5">
@@ -239,7 +240,7 @@ function StudentListTab({
             ]}
           />
         ) : (
-          <div className={{ large: 'grid grid-cols-2 gap-2', small: 'grid grid-cols-4 gap-2', list: 'flex flex-col gap-2' }[viewMode]}>
+          <div className={{ large: 'readable-card-grid gap-3', small: 'readable-card-grid gap-2', list: 'flex flex-col gap-2' }[viewMode]}>
             {students.map((s, idx) => (
               <StudentCard
                 key={s.id}
@@ -288,8 +289,8 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-bold overflow-hidden ${avatarColor}`}>
           {avatarContent}
         </div>
-        <p className={`text-xs font-bold truncate w-full text-center ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
-        <p className="text-[0.6875rem] text-gray-400 font-bold truncate w-full text-center">{s.classGroupName || s.grade || ''}</p>
+        <p className={`text-xs font-bold people-text w-full text-center ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
+        <p className="text-[0.6875rem] text-gray-400 font-bold people-text w-full text-center">{s.classGroupName || s.grade || ''}</p>
       </motion.button>
     )
   }
@@ -310,8 +311,8 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
           {!s.isActive && <span className="text-[0.6875rem] font-bold bg-red-100 text-red-400 px-1.5 py-0.5 rounded-md">제적</span>}
           {s.baptism && <span className="text-[0.6875rem] font-bold bg-secondary-50 text-secondary-700 px-1.5 py-0.5 rounded-md">세례</span>}
         </div>
-        <p className="text-xs text-gray-500 font-bold truncate w-full">{s.classGroupName || '반 미배정'}</p>
-        {s.school && <p className="text-xs text-gray-300 font-bold truncate w-full -mt-1">{s.school}</p>}
+        <p className="text-xs text-gray-500 font-bold people-text w-full">{s.classGroupName || '반 미배정'}</p>
+        {s.school && <p className="text-xs text-gray-300 font-bold people-text w-full -mt-1">{s.school}</p>}
         <div className="flex gap-1 w-full mt-1">
           <button aria-label={`${s.name} 정보 수정`} onClick={onEdit}
             className="flex-1 min-h-11 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center gap-1 text-xs font-bold">
@@ -346,7 +347,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-      className={`brand-card bg-white rounded-2xl border shadow-sm px-4 py-3.5 flex items-center gap-3 ${
+      className={`brand-card bg-white rounded-2xl border shadow-sm px-4 py-3.5 people-student-row flex flex-wrap items-center gap-3 ${
         !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
       }`}
     >
@@ -363,7 +364,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
 
       {/* 정보 */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <p className={`font-bold text-sm ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>
             {s.name}
           </p>
@@ -376,19 +377,19 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
         </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
           {s.grade && (
-            <span className="shrink-0 whitespace-nowrap text-xs text-primary-500 font-bold bg-primary-50 px-2 py-0.5 rounded-md">{s.grade}</span>
+            <span className="min-w-0 text-xs text-primary-500 font-bold bg-primary-50 px-2 py-0.5 rounded-md">{s.grade}</span>
           )}
           {s.classGroupName && (
             <span className="text-xs text-gray-500 font-bold">{s.classGroupName}</span>
           )}
           {s.school && (
-            <span className="basis-full text-xs text-gray-400 font-medium truncate">{s.school}</span>
+            <span className="basis-full text-xs text-gray-400 font-medium people-text">{s.school}</span>
           )}
         </div>
       </div>
 
       {/* 액션 */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="people-row-actions flex items-center gap-1 flex-shrink-0">
         <button
           aria-label={`${s.name} 정보 수정`} onClick={onEdit}
           className="w-11 h-11 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-primary-50 hover:text-primary-500 transition-colors"
@@ -518,10 +519,10 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
               <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md flex-shrink-0">{cls.grade}</span>
-                  <p className="font-bold text-sm text-gray-900 truncate">{cls.name}</p>
+                  <p className="font-bold text-sm text-gray-900 people-text">{cls.name}</p>
                 </div>
                 {((cls.teachers || []).length > 0) && (
-                  <p className="text-xs text-gray-400 font-bold truncate pl-1">
+                  <p className="text-xs text-gray-400 font-bold people-text pl-1">
                     {(() => {
                       const pt = cls.teachers.find(t => t.isPrimary)
                       const st = cls.teachers.filter(t => !t.isPrimary)
@@ -620,7 +621,7 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
         className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
       >
         <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-80 pointer-events-auto">
-          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+          <div className="shrink-0 p-5 border-b border-gray-50 flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">반 배정 변경</p>
               <h3 className="text-xl font-bold text-gray-900">{student.name}</h3>
@@ -628,7 +629,7 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
                 현재: {student.classGroupName || '미배정'} ({student.grade || '-'})
               </p>
             </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+            <button onClick={onClose} aria-label="학생 관리 창 닫기" className="shrink-0 w-11 h-11 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
               <X size={20} />
             </button>
           </div>
@@ -654,7 +655,7 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
                           <Check size={14} className="text-primary-500" />
                         )}
                         <span className="text-sm font-bold">{cls.name}</span>
-                        <span className="text-xs text-gray-400 font-bold">{(cls.students || []).filter(s => s.isActive !== false).length}명</span>
+                        <span className="whitespace-nowrap shrink-0 text-xs text-gray-400 font-bold">{(cls.students || []).filter(s => s.isActive !== false).length}명</span>
                       </div>
                       {assignMut.isPending && assignMut.variables === cls.id ? (
                         <Loader2 size={14} className="animate-spin text-primary-500" />
@@ -723,7 +724,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
         className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
       >
         <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85 pointer-events-auto">
-          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+          <div className="shrink-0 p-5 border-b border-gray-50 flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">
                 {isEdit ? '정보 수정' : '학생 등록'}
@@ -732,7 +733,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
                 {isEdit ? student.name : '새 학생 추가'}
               </h3>
             </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+            <button onClick={onClose} aria-label="학생 관리 창 닫기" className="shrink-0 w-11 h-11 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
               <X size={20} />
             </button>
           </div>
@@ -789,7 +790,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
                   className={inputCls}
                 />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="people-form-grid gap-3">
                 <Field label="성별">
                   <select value={form.gender} onChange={e => set('gender', e.target.value)} className={inputCls}>
                     <option value="남">남</option>
@@ -814,6 +815,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
                     <option key={cls.id} value={cls.id}>{cls.grade} {cls.name}</option>
                   ))}
                 </select>
+                {form.classGroupId && <p className="text-xs text-gray-600 mt-1">{roster.filter(cls => String(cls.id) === String(form.classGroupId)).map(cls => `${cls.grade} ${cls.name}`).join('')}</p>}
               </Field>
               <Field label="생년월일">
                 <input
@@ -854,7 +856,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
             {/* 부모 정보 */}
             <section className="space-y-3">
               <SectionTitle>보호자 정보</SectionTitle>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="people-form-grid gap-3">
                 <Field label="아버지 이름">
                   <input value={form.fatherName} onChange={e => set('fatherName', e.target.value)} placeholder="홍길동" className={inputCls} />
                 </Field>
@@ -874,7 +876,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
             </section>
           </div>
 
-          <div className="p-5 bg-gray-50/50 flex gap-3">
+          <div className="shrink-0 p-5 bg-gray-50/50 flex flex-wrap gap-3">
             <button onClick={onClose} className="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-2xl text-sm font-bold">
               취소
             </button>
@@ -937,20 +939,20 @@ function GradeAdvanceModal({ grades, onClose, onSuccess }) {
         className="safe-overlay fixed inset-0 z-[70] flex items-center justify-center px-4 pointer-events-none"
       >
         <div className="w-full max-w-[430px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85 pointer-events-auto">
-          <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+          <div className="shrink-0 p-5 border-b border-gray-50 flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">연도 개편</p>
               <h3 className="text-xl font-bold text-gray-900">학년 일괄 진급</h3>
               <p className="text-xs text-gray-400 mt-0.5">진급 후 학년을 확인하고 적용하세요</p>
             </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+            <button onClick={onClose} aria-label="학생 관리 창 닫기" className="shrink-0 w-11 h-11 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
               <X size={20} />
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-2">
             {grades.map(g => (
-              <div key={g} className="flex items-center gap-3 py-2 border-b border-gray-50">
+              <div key={g} className="people-advance-row flex items-center gap-3 py-2 border-b border-gray-50">
                 <div className="flex-1">
                   <span className="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-xl block text-center">{g}</span>
                 </div>
@@ -974,7 +976,7 @@ function GradeAdvanceModal({ grades, onClose, onSuccess }) {
             </p>
           </div>
 
-          <div className="p-5 bg-gray-50/50 flex gap-3">
+          <div className="shrink-0 p-5 bg-gray-50/50 flex flex-wrap gap-3">
             <button onClick={onClose} className="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-2xl text-sm font-bold">
               취소
             </button>

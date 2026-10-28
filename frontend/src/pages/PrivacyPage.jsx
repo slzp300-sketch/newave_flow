@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Header from '../components/layout/Header'
 import PrivacyDocument from '../components/common/PrivacyDocument'
@@ -8,7 +9,7 @@ export default function PrivacyPage() {
   const navigate = useNavigate()
   const user = useAuthStore(state => state.user)
   const back = () => location.key === 'default' ? navigate(user ? '/profile' : '/login', { replace: true }) : navigate(-1)
-  return <div className="min-h-screen bg-surface max-w-mobile mx-auto pb-10">
+  return <div className="supporting-readable readable-content min-h-screen bg-surface max-w-mobile mx-auto pb-10">
     <Header title="개인정보처리방침" showBack onBack={back} showNotification={false} />
     <PrivacyDocument />
     <nav className="flex flex-wrap justify-center gap-2 px-4 text-xs text-primary-700" aria-label="개인정보 이용 지원">

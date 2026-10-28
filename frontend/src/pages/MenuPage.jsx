@@ -17,13 +17,6 @@ import useSafetyAttention from '../hooks/useSafetyAttention'
 
 const COMMON_GROUPS = [
   {
-    title: '안전한 이용',
-    items: [
-      { to: '/safety/report', title: '콘텐츠·사용자 신고' },
-      { to: '/community-guidelines', title: '이용수칙' },
-    ],
-  },
-  {
     title: '주간 체크',
     items: [
       { to: '/checklist',      title: '주간 체크 현황' },
