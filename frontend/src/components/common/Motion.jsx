@@ -1,23 +1,25 @@
-import { createContext, useContext, forwardRef, useId, useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback } from 'react'
-import { AnimatePresence, MotionConfig, motion, useReducedMotion, useIsPresent } from 'framer-motion'
+import { createContext, useContext, forwardRef, useId, useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback, useSyncExternalStore } from 'react'
+import { AnimatePresence, MotionConfig, motion, useIsPresent } from 'framer-motion'
 
 import { createDisclosureScroll, DISCLOSURE_SECONDS, disclosureEase } from '../../utils/disclosureScroll'
 import { installPressFeedback } from '../../utils/pressFeedback'
+import { motionPreferenceStore, FEEDBACK_SECONDS } from '../../utils/motionPreference'
 
 const MotionPreference = createContext(null)
 const DisclosureScroll = createContext(null)
 const ease = [0.22, 1, 0.36, 1]
+const useSystemMotionPreference = () => useSyncExternalStore(motionPreferenceStore.subscribe, motionPreferenceStore.getSnapshot, () => false)
 
 export function AppMotion({ children, reducedMotion }) {
   const rootRef = useRef(null)
   const disclosureScroll = useMemo(createDisclosureScroll, [])
   useEffect(() => disclosureScroll.connect(rootRef.current), [disclosureScroll])
   useEffect(() => installPressFeedback(rootRef.current), [])
-  const systemPreference = useReducedMotion()
+  const systemPreference = useSystemMotionPreference()
   const reduced = reducedMotion ?? systemPreference ?? false
   return (
     <MotionPreference.Provider value={reduced}>
-      <DisclosureScroll.Provider value={disclosureScroll}><MotionConfig reducedMotion={reduced ? 'always' : 'never'} transition={{ duration: reduced ? 0 : 0.32, ease }}>
+      <DisclosureScroll.Provider value={disclosureScroll}><MotionConfig reducedMotion={reduced ? 'always' : 'never'} transition={{ duration: reduced ? FEEDBACK_SECONDS : 0.32, ease }}>
         <div ref={rootRef} className={reduced ? 'contents app-motion motion-reduced' : 'contents app-motion'}>{children}</div>
       </MotionConfig></DisclosureScroll.Provider>
     </MotionPreference.Provider>
@@ -26,7 +28,7 @@ export function AppMotion({ children, reducedMotion }) {
 
 export function useMotionPreference() {
   const context = useContext(MotionPreference)
-  const systemPreference = useReducedMotion()
+  const systemPreference = useSystemMotionPreference()
   return context ?? systemPreference ?? false
 }
 
@@ -57,21 +59,24 @@ export const CollapsePanel = forwardRef(function CollapsePanel({ children, class
     if (present) {
       session.current = coordinator?.begin(node.current)
       close.current = null
-      coordinator?.reveal(session.current, node.current, reduced)
+      if (!reduced) coordinator?.reveal(session.current, node.current, false)
     } else {
       close.current = coordinator?.closing(session.current, node.current)
-      coordinator?.restore(session.current, close.current, reduced)
+      if (!reduced) coordinator?.restore(session.current, close.current, false)
     }
   }, [present, reduced, coordinator])
   const complete = definition => {
-    if (present) coordinator?.reveal(session.current, node.current, reduced)
-    else coordinator?.restore(session.current, close.current, reduced)
+    if (!reduced) {
+      if (present) coordinator?.reveal(session.current, node.current, false)
+      else coordinator?.restore(session.current, close.current, false)
+    }
     onAnimationComplete?.(definition)
   }
   return <motion.div ref={bind} onAnimationComplete={complete} data-disclosure-panel="true" {...props} inert={present ? undefined : ''} aria-hidden={present ? undefined : true}
-    initial={reduced ? false : initial ?? { height: 0, opacity: 0 }}
-    animate={animate ?? { height: 'auto', opacity: 1 }} exit={exit ?? { height: 0, opacity: 0 }}
-    transition={{ ...transition, duration: reduced ? 0 : DISCLOSURE_SECONDS, ease: disclosureEase }}
+    initial={reduced ? { height: 'auto', opacity: 0 } : initial ?? { height: 0, opacity: 0 }}
+    animate={reduced ? { height: 'auto', opacity: 1 } : animate ?? { height: 'auto', opacity: 1 }}
+    exit={reduced ? { height: 'auto', opacity: 0 } : exit ?? { height: 0, opacity: 0 }}
+    transition={reduced ? { duration: FEEDBACK_SECONDS, ease: 'easeOut', height: { duration: 0 } } : { ...transition, duration: DISCLOSURE_SECONDS, ease: disclosureEase }}
     className="min-w-0 overflow-hidden">
     <div className={className}>{children}</div>
   </motion.div>
@@ -92,9 +97,9 @@ export function Disclosure({ title, children, className = '', defaultOpen = fals
 export function Reveal({ children, className = '', delay = 0 }) {
   const reduced = useMotionPreference()
   return <motion.section className={className}
-    initial={reduced ? false : { opacity: 0, y: 14 }}
+    initial={reduced ? { opacity: 0.65 } : { opacity: 0, y: 14 }}
     whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.08 }}
-    transition={{ duration: reduced ? 0 : 0.48, delay: reduced ? 0 : Math.min(delay, 0.2), ease }}>
+    transition={{ duration: reduced ? FEEDBACK_SECONDS : 0.48, delay: reduced ? 0 : Math.min(delay, 0.2), ease }}>
     {children}
   </motion.section>
 }
@@ -103,9 +108,9 @@ export function Reveal({ children, className = '', delay = 0 }) {
 export function AnimatedValue({ value, className = '' }) {
   const reduced = useMotionPreference()
   return <motion.span key={String(value)} className={`inline-block ${className}`}
-    initial={reduced ? false : { opacity: 0.45, y: 5, scale: 0.96 }}
+    initial={reduced ? { opacity: 0.65 } : { opacity: 0.45, y: 5, scale: 0.96 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ duration: reduced ? 0 : 0.3, ease }}>{value}</motion.span>
+    transition={{ duration: reduced ? FEEDBACK_SECONDS : 0.3, ease }}>{value}</motion.span>
 }
 
 export function ProgressFill({ ratio, className = '' }) {
@@ -119,7 +124,8 @@ export function ProgressFill({ ratio, className = '' }) {
 export function SelectionMark({ size = 18, className = '' }) {
   const reduced = useMotionPreference()
   return <motion.svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none"
-    className={className} initial={reduced ? false : { scale: 0.7 }} animate={{ scale: 1 }}>
+    className={className} initial={reduced ? { opacity: 0 } : { scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+    transition={reduced ? { duration: FEEDBACK_SECONDS, ease: 'easeOut' } : undefined}>
     <motion.path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
       initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }}
       transition={{ duration: reduced ? 0 : 0.24 }} />

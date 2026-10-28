@@ -41,17 +41,6 @@
 @keyframes brand-arrive { from { opacity: 0; transform: translateY(12px) scale(.95); } to { opacity: 1; transform: none; } }
 @keyframes ocean-arrive { from { transform: scale(1.09) translateY(5px); } to { transform: scale(1); } }
 @keyframes wave-arrive { from { stroke-dashoffset: 420; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
-.motion-reduced *, .motion-reduced *::before, .motion-reduced *::after { animation: none !important; transition-duration: 0s !important; }
-.motion-reduced .motion-button, .motion-reduced .motion-tap, .motion-reduced .icon-button,
-.motion-reduced .attendance-actions button, .motion-reduced .tts-day { scale: 1 !important; }
-.motion-reduced .motion-row > svg:last-child { translate: none !important; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
-  .motion-button, .motion-tap, .icon-button, .attendance-actions button, .tts-day { scale: 1 !important; }
-  .motion-row > svg:last-child { translate: none !important; }
-}
-@media print { *, *::before, *::after { animation: none !important; } }
-
 /* Shared touch/keyboard response also covers plain page buttons and menu links.
    Independent scale leaves existing layout/Framer transforms intact. */
 .app-motion :where(button, a[href], summary, [role='button']) {
@@ -67,7 +56,32 @@
 :root .ui-segments > button:not(.brand-color-swatch) { background-color: transparent; box-shadow: none; }
 :root .ui-segments .brand-selection { background-color: theme('colors.secondary.50'); border: 1px solid theme('colors.secondary.400'); }
 :root .brand-nav-link { box-shadow: none; }
-.motion-reduced :is(button, a[href], summary, [role='button']) { scale: 1 !important; }
-@media (prefers-reduced-motion: reduce) {
-  .app-motion :is(button, a[href], summary, [role='button']) { scale: 1 !important; }
+/* Reduced motion keeps stationary feedback; never animate geometry or scrolling. */
+@keyframes feedback-fade { from { opacity: .45; } to { opacity: 1; } }
+.motion-reduced *, .motion-reduced *::before, .motion-reduced *::after {
+  animation: none !important;
+  transition-property: background-color, color, border-color, box-shadow, opacity, filter !important;
+  transition-duration: .16s !important;
+  transition-timing-function: ease-out !important;
+  scroll-behavior: auto !important;
 }
+.motion-reduced :is(button, a[href], summary, [role='button']) { scale: 1 !important; }
+.motion-reduced .motion-row > svg:last-child { translate: none !important; }
+.motion-reduced :is(button, a[href], summary, [role='button'])[data-press-feedback='true']:not(:disabled):not([aria-disabled='true']) { filter: brightness(.85); }
+.motion-reduced :is(.motion-page, .motion-card, .motion-enter, .motion-week, .motion-fade, .motion-menu-tile, .tts-check-mark) { animation: feedback-fade .16s ease-out both !important; }
+.motion-reduced .motion-login .newave-brand, .motion-reduced .motion-login > p { animation: feedback-fade .16s ease-out both !important; }
+@media (prefers-reduced-motion: reduce) {
+*, *::before, *::after {
+  animation: none !important;
+  transition-property: background-color, color, border-color, box-shadow, opacity, filter !important;
+  transition-duration: .16s !important;
+  transition-timing-function: ease-out !important;
+  scroll-behavior: auto !important;
+}
+:is(button, a[href], summary, [role='button']) { scale: 1 !important; }
+.motion-row > svg:last-child { translate: none !important; }
+:is(button, a[href], summary, [role='button'])[data-press-feedback='true']:not(:disabled):not([aria-disabled='true']) { filter: brightness(.85); }
+:is(.motion-page, .motion-card, .motion-enter, .motion-week, .motion-fade, .motion-menu-tile, .tts-check-mark) { animation: feedback-fade .16s ease-out both !important; }
+.motion-login .newave-brand, .motion-login > p { animation: feedback-fade .16s ease-out both !important; }
+}
+@media print { *, *::before, *::after { animation: none !important; transition: none !important; } }

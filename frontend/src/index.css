@@ -19,9 +19,6 @@
   input[type='checkbox'], input[type='radio'] { accent-color: var(--newave-blue); }
   input, select, textarea { min-width: 0; }
   input:not([type='checkbox']):not([type='radio']), select { min-height: 44px; }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-  }
 }
 @layer utilities {
   .attendance-choice { display: flex; gap: 4px; padding: 4px; border: 1px solid #dce4ef; background: #f1f5f9; border-radius: 14px; }
