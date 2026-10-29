@@ -11,9 +11,10 @@ import { ttsAdminRefreshOptions as statsRefreshOptions } from '../../utils/ttsAd
 import { useTtsRankingField } from '../../store/ttsRankingViewStore'
 import { ttsYears, ttsToday, quartersForYear, quarterDateLabel, quarterPeople } from '../../utils/ttsPeriod'
 import { rankedPeople, filterPeople } from '../../utils/ttsStats'
-import { assessQuarter, filterQuarterStatus, quarterScore as totalScore, quarterAverageText, quarterStatusLabel } from '../../utils/ttsQuarterAssessment'
+import { assessQuarter, filterQuarterStatus, quarterScore as totalScore, quarterAverageText } from '../../utils/ttsQuarterAssessment'
 import './QuarterAssessment.css'
 import TtsRankingHistory from './TtsRankingHistory'
+import TtsRankingList, { RankingStatus } from './TtsRankingList'
 
 export default function TtsStats() {
   const { user, apiEnvironment } = useAuthStore()
@@ -51,7 +52,7 @@ export default function TtsStats() {
       {ready && mine ? <button type="button" className="tts-ranking-my-card" onClick={() => open(mine)} aria-label="내 체크 기록 보기">
         <span className="tts-ranking-my-rank">{mine.rank == null ? '—' : `${mine.rank}위`}</span>
         <span className="tts-ranking-my-person"><span className="tts-ranking-name">{mine.name}<span className="tts-ranking-me">나</span></span><span className="tts-ranking-my-hint">내 순위 · 항상 상단 고정</span></span>
-        <span className="tts-ranking-my-end"><span className="tts-ranking-score">{totalScore(mine) == null ? '—' : `${totalScore(mine)}점`}</span><Status person={mine} assessment={assessment} /></span>
+        <span className="tts-ranking-my-end"><span className="tts-ranking-score">{totalScore(mine) == null ? '—' : `${totalScore(mine)}점`}</span><RankingStatus person={mine} assessment={assessment} /></span>
         <ChevronRight size={15} aria-hidden="true" />
       </button> : <div className="tts-ranking-my-placeholder" role="status">{!ready ? '내 순위는 조회 완료 후 표시됩니다.' : '이 분기에 연결된 내 순위가 없습니다.'}</div>}
     </section>
@@ -82,17 +83,10 @@ export default function TtsStats() {
         : calendarDataMissing ? <Card className="p-4 text-center text-gray-600"><p role="status">통계 정보를 새로 불러와 주세요.</p><button type="button" onClick={() => stats.refetch()} className="min-h-11 px-4 mt-2">다시 불러오기</button></Card>
         : <>
           <div className="tts-ranking-list-caption"><p role="status">{filtered.length}명 표시 / 전체 {people.length}명</p><span>이름을 누르면 체크 기록</span></div>
-          <div className="tts-ranking-records" aria-label="분기 순위 목록">
-            {filtered.map(person => <button key={person.key} type="button" aria-label={`${person.name} 체크 기록 보기`}
-              onClick={() => open(person)} className={`tts-ranking-row tts-quarter-${assessment.status(totalScore(person))}${person.key === mine?.key ? ' tts-ranking-is-me' : ''}`}>
-              <span className="tts-ranking-rank">{person.rank ?? '—'}</span>
-              <span className="tts-ranking-name">{person.name}{person.key === mine?.key && <span className="tts-ranking-me">나</span>}</span>
-              <span className="tts-ranking-row-end"><span className="tts-ranking-score">{totalScore(person) == null ? '—' : `${totalScore(person)}점`}</span><Status person={person} assessment={assessment} /></span>
-              <ChevronRight size={15} aria-hidden="true" />
-            </button>)}
+          <TtsRankingList people={filtered} assessment={assessment} onSelect={open} mineKey={mine?.key}>
             {!filtered.length && <Empty>{!people.length ? '아직 분기 기록이 없습니다.' : search.trim() ? '선택한 조건에 맞는 이름이 없습니다.' : '선택한 상태의 교사가 없습니다.'}
               {people.length > 0 && <button type="button" onClick={() => { setSearch(''); setStatusFilter('all') }} className="mt-3 block mx-auto min-h-11 rounded-xl border px-4 py-2 font-semibold">전체 보기</button>}</Empty>}
-          </div>
+          </TtsRankingList>
           <p className="tts-ranking-footnote">내 순위는 검색·필터와 관계없이 위에 고정됩니다.<br />평균과 순위는 전체 인원 기준입니다.</p>
         </>}
     </div>
@@ -100,8 +94,4 @@ export default function TtsStats() {
   </div>
 }
 
-function Status({ person, assessment }) {
-  const status = assessment.status(totalScore(person))
-  return <span className={`tts-ranking-status tts-ranking-status-${status}`}>{quarterStatusLabel(status)}</span>
-}
 function Empty({ children }) { return <div className="tts-ranking-empty">{children}</div> }

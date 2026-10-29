@@ -54,3 +54,10 @@ export function rankingWeekDetail(data, personKey, weekStart, range) {
   return { imported: false, saved: rankingSavedLabel(person.updatedAt), weeklyItems: [...weeklyItems],
     dates: [...dates].sort(([a], [b]) => b.localeCompare(a)).map(([date, titles]) => ({ date, titles: [...titles] })) }
 }
+
+// Adapt administrator projection without recalculating totals, linking by name or mutating it.
+export function adminRankingPerson(row) {
+  return { ...row, key: row.key ?? (row.teacherId != null ? `u${row.teacherId}` : null),
+    name: row.teacherName, total: row.totalScore,
+    weekly: Object.fromEntries((row.weeklyScores || []).map(week => [week.weekNum, week.score])) }
+}

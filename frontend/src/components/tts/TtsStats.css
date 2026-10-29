@@ -62,3 +62,8 @@
 .large-font .tts-ranking-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
 
 .large-font .tts-ranking-check-date { grid-template-columns:minmax(0,1fr); gap:.25rem; }
+
+:root body .tts-ranking-page .tts-ranking-sort { --surface-bg:white; --surface-ink:#12358b; display:inline-flex; gap:.4rem; align-items:center; min-height:44px; padding:.4rem .6rem; border:1px solid #dce2ed; border-radius:.55rem; font-size:.8rem; font-weight:650; }
+.tts-ranking-pagination { display:flex; align-items:center; justify-content:space-between; gap:.5rem; border:1px solid #e0e5ed; border-radius:.75rem; padding:.5rem; background:white; }
+.tts-ranking-pagination > button { display:flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; }
+.tts-ranking-pagination > div { text-align:center; color:#617089; font-size:.75rem; line-height:1.6; }
