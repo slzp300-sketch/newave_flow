@@ -88,3 +88,40 @@ test('shared administrator rows retain full-population assessment across filters
   }
   assert.equal(a.average,80)
 })
+
+test('teacher and administrator open identical keyed histories, including namesakes and quarter boundaries', () => {
+  const teachers = response.people.map((p, i) => ({ ...p, total: 30 - i * 10, weekly: { 14: 30 - i * 10 } }))
+  const administrators = teachers.map(p => adminRankingPerson({ key: p.key, teacherName: p.name,
+    totalScore: p.total, weeklyScores: [{ weekNum: 14, score: p.total }] }))
+  for (const teacher of teachers) {
+    const administrator = administrators.find(p => p.key === teacher.key)
+    assert.deepEqual(rankingRecordWeeks(teacher, 2027, 2, '2027-04-03'), rankingRecordWeeks(administrator, 2027, 2, '2027-04-03'))
+    assert.deepEqual(rankingWeekDetail(response, teacher.key, '2027-03-28', range), rankingWeekDetail(response, administrator.key, '2027-03-28', range))
+  }
+  assert.notDeepEqual(rankingWeekDetail(response, teachers[0].key, '2027-03-28', range), rankingWeekDetail(response, teachers[1].key, '2027-03-28', range))
+})
+
+test('search, every status, both score orders and pages retain global means and competition ranks', async () => {
+  const { assessQuarter, quarterScore, filterQuarterStatus } = await import('../src/utils/ttsQuarterAssessment.js')
+  const { rankedPeople, filterPeople } = await import('../src/utils/ttsStats.js')
+  const { paginateAdminRows } = await import('../src/utils/adminSearch.js')
+  const scores = [148,140,133,124,118,112,104,96,88,82,76,70,64,58,52,46,38,null]
+  const people = scores.map((total, i) => ({ key: `u${i}`, name: `교사 ${i}`, total, weekly: total == null ? {} : {43:total} }))
+  // Include ties and recorded zero in the same matrix, alongside the preview cases.
+  for (const population of [people, [...people, {key:'tie',name:'동점 교사',total:96,weekly:{43:96}}, {key:'zero',name:'영점 교사',total:0,weekly:{43:0}}]]) {
+    const assessment = assessQuarter(population)
+    const ranks = rankedPeople(population, quarterScore)
+    const snapshot = JSON.stringify(population)
+    const expected = new Map(ranks.map(p => [p.key, {rank:p.rank, score:quarterScore(p), status:assessment.status(quarterScore(p))}]))
+    for (const status of ['all','passed','below','unrecorded']) for (const search of ['', '교사 1', '교사 7', '없는 이름']) for (const ascending of [false,true]) {
+      const sorted = ascending ? [...ranks].sort((a,b) => (quarterScore(a) ?? Infinity) - (quarterScore(b) ?? Infinity)) : ranks
+      const rows = filterQuarterStatus(filterPeople(sorted, {search}), assessment, status)
+      for (let page=0;page<3;page++) for (const row of paginateAdminRows(rows,page,10).items) {
+        assert.deepEqual({rank:row.rank,score:quarterScore(row),status:assessment.status(quarterScore(row))},expected.get(row.key))
+      }
+      const refreshed = assessQuarter(population)
+      for (const field of ['average','count','passed','below','unrecorded']) assert.equal(refreshed[field], assessment[field])
+    }
+    assert.equal(JSON.stringify(population),snapshot)
+  }
+})
