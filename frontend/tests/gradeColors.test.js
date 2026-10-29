@@ -5,7 +5,7 @@ import { resolveViewMode, STUDENT_ROSTER_MODES } from '../src/utils/viewModes.js
 import { readFileSync } from 'node:fs'
 
 test('grade aliases use one exact palette without misidentifying unknown or combined grades',()=>{
- assert.deepEqual(Object.values(GRADE_PALETTE),['#0223f7','#f2f56f','#f8b4cc','#6fb6f5','#6ff5dc','#f70202'])
+ assert.deepEqual(Object.values(GRADE_PALETTE),['#1750ec','#f2f56f','#f8b4cc','#6fb6f5','#6ff5dc','#e44343'])
  for(const [raw,expected] of [['중 1','중1'],['중학교 2학년','중2'],['중등3부','중3'],['고1-1','고1'],['고등학교 2학년','고2'],['고3','고3']]){
   assert.equal(gradeKey(raw),expected);assert.equal(gradeClasses(raw).color,GRADE_PALETTE[expected])
  }

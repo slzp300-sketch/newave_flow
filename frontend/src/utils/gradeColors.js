@@ -1,7 +1,7 @@
 // Shared student-grade identity. Status colors (attendance/pass/fail) stay separate.
 export const GRADE_PALETTE = Object.freeze({
-  '중1': '#0223f7', '중2': '#f2f56f', '중3': '#f8b4cc',
-  '고1': '#6fb6f5', '고2': '#6ff5dc', '고3': '#f70202',
+  '중1': '#1750ec', '중2': '#f2f56f', '중3': '#f8b4cc',
+  '고1': '#6fb6f5', '고2': '#6ff5dc', '고3': '#e44343',
 })
 export function gradeKey(value) {
   const text = String(value ?? '').normalize('NFKC').trim()
