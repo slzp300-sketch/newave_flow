@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import AttendanceChoice from '../components/common/AttendanceChoice'
 import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
@@ -365,7 +366,7 @@ export default function EventAttendancePage() {
                         </div>
                         <div>
                           <p className="font-bold text-gray-900 text-base">{student.studentName}</p>
-                          <p className="text-sm text-gray-600 font-medium">{student.grade}</p>
+                          <p className="text-sm text-gray-600 font-medium"><GradeLabel value={student.grade} /></p>
                         </div>
                       </div>
 

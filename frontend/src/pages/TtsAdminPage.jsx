@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import { ttsAdminRefreshOptions } from '../utils/ttsAdminRefresh'
 import { useTtsAdminField } from '../store/ttsAdminViewStore'
 import { rankedPeople, matchesTtsName } from '../utils/ttsStats'
@@ -207,7 +208,7 @@ function SummaryTab({ offset, onOffsetChange }) {
           ) : (
             <div className="admin-tts-records"><RecordViews mode={viewMode} rows={gradeNames.flatMap(grade => groupedData[grade])} rowKey={t => t.key ?? `u${t.teacherId}`} columns={[
               { label: '교사', render: t => t.teacherName },
-              { label: '학년', render: t => t.grade },
+              { label: '학년', render: t => <GradeLabel value={t.grade} /> },
               { label: '참여', render: t => t.isSubmitted ? '참여' : '미참여' },
               { label: '주간 점수', render: t => `${t.score ?? 0}점` },
               { label: '기록 출처', render: t => t.scoreSource === 'SHEET' ? '시트 확정 점수' : '앱 기록' },
@@ -230,7 +231,7 @@ function SummaryTab({ offset, onOffsetChange }) {
                   >
                     <div className="flex min-w-0 items-start gap-3">
                       <div className="min-w-0 flex-1">
-                        <div className="text-lg font-bold text-gray-900"><FitLabel>{grade} 관리</FitLabel></div>
+                        <div className="text-lg font-bold text-gray-900"><FitLabel><GradeLabel value={grade} /> 관리</FitLabel></div>
                         <p className="mt-1 text-xs text-gray-600">{submittedCount} / {teachers.length}명 참여</p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2 pt-1">

@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import './SupportingReadability.css'
 import AttendanceChoice from '../components/common/AttendanceChoice'
 import { CollapsePanel } from '../components/common/Motion'
@@ -304,7 +305,7 @@ function StudentAttendanceCheck({ event, userId }) {
                     }`}>{student.studentName[0]}</div>
                     <div>
                       <p className="font-bold text-gray-900 text-base">{student.studentName}</p>
-                      <p className="text-sm text-gray-600 font-medium">{student.grade}</p>
+                      <p className="text-sm text-gray-600 font-medium"><GradeLabel value={student.grade} /></p>
                     </div>
                   </div>
 

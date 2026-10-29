@@ -44,3 +44,9 @@
   .people-advance-row { flex-direction: column; align-items: stretch; gap: .5rem; }
   .people-advance-row > svg { display: none; }
 }
+
+/* Four panels = two columns; content can grow vertically instead of clipping. */
+.roster-four-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.roster-four-grid > *, .roster-four-grid .glass-card { min-width: 0; height: 100%; }
+.roster-four-grid > .people-student-row { flex-direction: column; padding: .75rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: white; }
+.roster-four-grid > .people-student-row > .flex-1 { flex-basis: auto; width: 100%; }

@@ -1,3 +1,5 @@
+import GradeLabel from '../components/common/GradeLabel'
+import { gradeClasses } from '../utils/gradeColors'
 import FitLabel from '../components/common/FitLabel'
 import './EventAttendanceAdminPage.css'
 import EventStatusSummary from '../components/common/EventStatusSummary'
@@ -24,22 +26,7 @@ import { queryReadState } from '../utils/queryReadState'
 import { eventApi } from '../api/event'
 import { Users, CheckCircle2, Calendar, UserCheck } from 'lucide-react'
 
-const GRADE_STYLES = {
-  '중1': { bg: 'bg-rose-50', text: 'text-rose-600', accent: 'bg-rose-100', progress: 'bg-rose-400', border: 'hover:border-rose-200', btn: 'text-rose-600 bg-rose-50' },
-  '중2': { bg: 'bg-orange-50', text: 'text-orange-600', accent: 'bg-orange-100', progress: 'bg-orange-400', border: 'hover:border-orange-200', btn: 'text-orange-600 bg-orange-50' },
-  '중3': { bg: 'bg-amber-50', text: 'text-amber-600', accent: 'bg-amber-100', progress: 'bg-amber-400', border: 'hover:border-amber-200', btn: 'text-amber-600 bg-amber-50' },
-  '고1': { bg: 'bg-secondary-50', text: 'text-secondary-600', accent: 'bg-secondary-100', progress: 'bg-secondary-400', border: 'hover:border-secondary-200', btn: 'text-secondary-600 bg-secondary-50' },
-  '고2': { bg: 'bg-primary-50', text: 'text-primary-600', accent: 'bg-primary-100', progress: 'bg-primary-400', border: 'hover:border-primary-200', btn: 'text-primary-600 bg-primary-50' },
-  '고3': { bg: 'bg-primary-50', text: 'text-primary-600', accent: 'bg-primary-100', progress: 'bg-primary-400', border: 'hover:border-primary-200', btn: 'text-primary-600 bg-primary-50' },
-  '미배정': { bg: 'bg-gray-50', text: 'text-gray-600', accent: 'bg-gray-100', progress: 'bg-gray-400', border: 'hover:border-gray-200', btn: 'text-gray-600 bg-gray-50' },
-  '기타': { bg: 'bg-gray-50', text: 'text-gray-600', accent: 'bg-gray-100', progress: 'bg-gray-400', border: 'hover:border-gray-200', btn: 'text-gray-600 bg-gray-50' },
-}
-
-const getGradeStyle = (grade) => {
-  if (!grade) return GRADE_STYLES['미배정']
-  const key = Object.keys(GRADE_STYLES).find(k => grade.startsWith(k))
-  return GRADE_STYLES[key] || GRADE_STYLES['기타']
-}
+const getGradeStyle = grade => ({ ...gradeClasses(grade), border: gradeClasses(grade).hover })
 
 function EventRecords(props) {
   return <div className="admin-event-records min-w-0"><RecordViews {...props} /></div>
@@ -56,7 +43,7 @@ function PersonAttendance({ name, record, grade }) {
     <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-sm font-bold text-primary-700">{(name || '?')[0]}</span>
     <div className="min-w-0">
       <p className="text-base font-bold leading-relaxed text-gray-900">{name}</p>
-      {grade && <p className="text-sm leading-relaxed text-gray-600">{grade}</p>}
+      {grade && <p className="text-sm leading-relaxed text-gray-600"><GradeLabel value={grade} /></p>}
       <div className="mt-2"><AttendanceLabel status={record.status} /></div>
     </div>
     {record.status === 'ABSENT' && record.absenceReason && <p className="col-span-2 text-sm leading-relaxed text-red-700">사유: {record.absenceReason}</p>}
@@ -265,7 +252,7 @@ export default function EventAttendanceAdminPage() {
 
                 <EventRecords mode={viewMode} rows={teacherRows} rowKey={row => row.teacherId} columns={[
                   { label: '교사', render: row => row.teacherName },
-                  { label: '학년', render: row => row.grade },
+                  { label: '학년', render: row => <GradeLabel value={row.grade} /> },
                   { label: '참석', render: row => <AttendanceLabel status={row.status} /> },
                   { label: '불참 사유', render: row => row.absenceReason },
                   { label: '부분참석 시작', render: row => row.partialFromDate },
@@ -355,7 +342,7 @@ export default function EventAttendanceAdminPage() {
             {/* 학년/반별 계층 결과 */}
             <EventRecords mode={viewMode} rows={studentRows} rowKey={row => row.studentId} columns={[
               { label: '학생', render: row => row.studentName },
-              { label: '학년', render: row => row.grade },
+              { label: '학년', render: row => <GradeLabel value={row.grade} /> },
               { label: '반', render: row => row.className },
               { label: '참석', render: row => <AttendanceLabel status={row.status} /> },
               { label: '불참 사유', render: row => row.absenceReason },

@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import FitLabel from '../components/common/FitLabel'
 import './AdminMeetingAttendancePage.css'
 import SearchField from '../components/common/SearchField'
@@ -230,7 +231,7 @@ export default function AdminMeetingAttendancePage() {
                     : 'bg-white border border-gray-200 text-gray-600'
                 }`}
               >
-                <FitLabel>{g}</FitLabel>
+                <FitLabel><GradeLabel value={g} /></FitLabel>
               </button>
             ))}
           </div>
@@ -261,7 +262,7 @@ export default function AdminMeetingAttendancePage() {
           ) : (
             <div className="admin-meeting-records"><RecordViews mode={viewMode} rows={filteredList} rowKey={row => row.teacherId} columns={[
               { label: '교사', render: row => row.teacherName },
-              { label: '학년', render: row => row.displayGrade },
+              { label: '학년', render: row => <GradeLabel value={row.displayGrade} /> },
               { label: '참석', render: row => <MeetingStatus status={row.satStatus} /> },
               { label: '불참 사유', render: row => row.satReason || '—' },
               { label: '회의록 확인', render: row => minuteLabel(row, !!targetMinute) },
@@ -273,7 +274,7 @@ export default function AdminMeetingAttendancePage() {
                   {/* 학년 헤더 */}
                   <div className="flex items-center gap-2 px-1">
                     <span className="w-1 h-3 bg-primary-400 rounded-full" />
-                    <p className="text-lg font-bold text-gray-900">{grade}</p>
+                    <p className="text-lg font-bold text-gray-900"><GradeLabel value={grade} /></p>
                     <span className="text-sm text-gray-600 font-semibold">{grouped[grade].length}명</span>
                   </div>
 
@@ -296,7 +297,7 @@ export default function AdminMeetingAttendancePage() {
                               <div aria-hidden="true" className="w-10 h-10 shrink-0 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center text-base font-bold">{item.teacherName?.[0]}</div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-base font-bold text-gray-900 leading-relaxed">{item.teacherName}</p>
-                                <p className="mt-0.5 text-sm text-gray-600 leading-relaxed">{item.displayGrade}</p>
+                                <p className="mt-0.5 text-sm text-gray-600 leading-relaxed"><GradeLabel value={item.displayGrade} /></p>
                               </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">

@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
@@ -182,7 +183,7 @@ function StudentListTab({
                 : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
             }`}
           >
-            {g}
+            <GradeLabel value={g} />
           </button>
         ))}
       </div>
@@ -231,7 +232,7 @@ function StudentListTab({
             rowClassName={s => s.isActive ? '' : 'opacity-50'}
             columns={[
               { label: '이름', render: s => s.name },
-              { label: '학년', render: s => s.grade || null },
+              { label: '학년', render: s => <GradeLabel value={s.grade} /> },
               { label: '반', render: s => s.classGroupName || null },
               { label: '학교', render: s => s.school || null },
               { label: '연락처', render: s => s.phone || null },
@@ -290,7 +291,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
           {avatarContent}
         </div>
         <p className={`text-xs font-bold people-text w-full text-center ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
-        <p className="text-[0.6875rem] text-gray-400 font-bold people-text w-full text-center">{s.classGroupName || s.grade || ''}</p>
+        <p className="text-[0.6875rem] text-gray-400 font-bold people-text w-full text-center"><GradeLabel value={s.grade}>{s.classGroupName || s.grade || ''}</GradeLabel></p>
       </motion.button>
     )
   }
@@ -307,7 +308,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
         </div>
         <p className={`font-bold text-sm ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
         <div className="flex flex-wrap justify-center gap-1">
-          {s.grade && <span className="text-xs text-primary-500 font-bold bg-primary-50 px-1.5 py-0.5 rounded-md">{s.grade}</span>}
+          {s.grade && <span className="text-xs text-primary-500 font-bold bg-primary-50 px-1.5 py-0.5 rounded-md"><GradeLabel value={s.grade} /></span>}
           {!s.isActive && <span className="text-[0.6875rem] font-bold bg-red-100 text-red-400 px-1.5 py-0.5 rounded-md">제적</span>}
           {s.baptism && <span className="text-[0.6875rem] font-bold bg-secondary-50 text-secondary-700 px-1.5 py-0.5 rounded-md">세례</span>}
         </div>
@@ -377,7 +378,7 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
         </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
           {s.grade && (
-            <span className="min-w-0 text-xs text-primary-500 font-bold bg-primary-50 px-2 py-0.5 rounded-md">{s.grade}</span>
+            <span className="min-w-0 text-xs text-primary-500 font-bold bg-primary-50 px-2 py-0.5 rounded-md"><GradeLabel value={s.grade} /></span>
           )}
           {s.classGroupName && (
             <span className="text-xs text-gray-500 font-bold">{s.classGroupName}</span>
@@ -469,7 +470,7 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
                 : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
             }`}
           >
-            {g}
+            <GradeLabel value={g} />
           </button>
         ))}
       </div>
@@ -499,7 +500,7 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-xl text-xs font-bold text-gray-700 border border-amber-200 hover:border-primary-400 transition-colors"
                 >
                   {s.name}
-                  <span className="text-xs text-gray-400">{s.grade}</span>
+                  <span className="text-xs text-gray-400"><GradeLabel value={s.grade} /></span>
                   <ArrowRight size={11} className="text-primary-400" />
                 </button>
               ))}
@@ -518,7 +519,7 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 bg-gray-50/50">
               <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md flex-shrink-0">{cls.grade}</span>
+                  <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md flex-shrink-0"><GradeLabel value={cls.grade} /></span>
                   <p className="font-bold text-sm text-gray-900 people-text">{cls.name}</p>
                 </div>
                 {((cls.teachers || []).length > 0) && (
@@ -626,7 +627,7 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
               <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">반 배정 변경</p>
               <h3 className="text-xl font-bold text-gray-900">{student.name}</h3>
               <p className="text-xs text-gray-400 mt-0.5">
-                현재: {student.classGroupName || '미배정'} ({student.grade || '-'})
+                현재: {student.classGroupName || '미배정'} (<GradeLabel value={student.grade}>{student.grade || '-'}</GradeLabel>)
               </p>
             </div>
             <button onClick={onClose} aria-label="학생 관리 창 닫기" className="shrink-0 w-11 h-11 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
@@ -637,7 +638,7 @@ function ClassAssignModal({ student, roster, onClose, onSuccess }) {
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {sortedGrades.map(grade => (
               <div key={grade}>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">{grade}</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1 mb-2"><GradeLabel value={grade} /></p>
                 <div className="flex flex-col gap-1.5">
                   {gradeGroups[grade].map(cls => (
                     <button aria-pressed={student.classGroupId === cls.id}
@@ -954,7 +955,7 @@ function GradeAdvanceModal({ grades, onClose, onSuccess }) {
             {grades.map(g => (
               <div key={g} className="people-advance-row flex items-center gap-3 py-2 border-b border-gray-50">
                 <div className="flex-1">
-                  <span className="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-xl block text-center">{g}</span>
+                  <span className="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-xl block text-center"><GradeLabel value={g} /></span>
                 </div>
                 <ArrowRight size={16} className="text-gray-300 flex-shrink-0" />
                 <div className="flex-1">

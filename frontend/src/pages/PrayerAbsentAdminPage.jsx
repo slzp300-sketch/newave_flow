@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import FitLabel from '../components/common/FitLabel'
 import './PrayerAbsentAdminPage.css'
 import SearchField from '../components/common/SearchField'
@@ -147,7 +148,7 @@ export default function PrayerAbsentAdminPage() {
                     : 'bg-white border border-gray-200 text-gray-600'
                 }`}
               >
-                <FitLabel>{g}</FitLabel>
+                <FitLabel><GradeLabel value={g} /></FitLabel>
               </button>
             ))}
           </div>
@@ -201,7 +202,7 @@ export default function PrayerAbsentAdminPage() {
                 <div key={grade} className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-2 px-1">
                     <span className="w-1 h-3 bg-primary-400 rounded-full" />
-                    <p className="text-lg font-bold text-gray-900">{grade}</p>
+                    <p className="text-lg font-bold text-gray-900"><GradeLabel value={grade} /></p>
                     <span className="text-sm text-gray-600 font-semibold">{grouped[grade].length}명</span>
                   </div>
                   <div className="flex flex-col gap-3">

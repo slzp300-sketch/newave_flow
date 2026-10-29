@@ -1,3 +1,5 @@
+import { gradeClasses } from '../utils/gradeColors'
+import { STUDENT_ROSTER_MODES } from '../utils/viewModes'
 import './PeopleReadability.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -20,15 +22,7 @@ import ReportLink from '../components/common/ReportLink'
 const GRADES = ['전체', '중1', '중2', '중3', '고1', '고2', '고3']
 const GRADE_ORDER = ['중1', '중2', '중3', '고1', '고2', '고3']
 
-const GRADE_COLORS = {
-  '전체': { bg: 'bg-gray-700',    light: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-400'    },
-  '중1': { bg: 'bg-primary-500',    light: 'bg-primary-50',    text: 'text-primary-600',    border: 'border-primary-300'    },
-  '중2': { bg: 'bg-primary-500',  light: 'bg-primary-50',  text: 'text-primary-600',  border: 'border-primary-300'  },
-  '중3': { bg: 'bg-primary-500',  light: 'bg-primary-50',  text: 'text-primary-600',  border: 'border-primary-300'  },
-  '고1': { bg: 'bg-secondary-500', light: 'bg-secondary-50', text: 'text-secondary-600', border: 'border-secondary-300' },
-  '고2': { bg: 'bg-amber-500',   light: 'bg-amber-50',   text: 'text-amber-600',   border: 'border-amber-300'   },
-  '고3': { bg: 'bg-rose-500',    light: 'bg-rose-50',    text: 'text-rose-600',    border: 'border-rose-300'    },
-}
+const GRADE_COLORS = Object.fromEntries(['전체', ...GRADE_ORDER].map(grade => [grade, gradeClasses(grade)]))
 
 const TAG_COLORS = [
   'bg-red-500 text-white border-red-600',
@@ -180,7 +174,7 @@ function RosterLanding({ onSelect }) {
 function StudentRoster() {
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', '전체')
   const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
-  const [viewMode, setViewMode] = useViewMode('roster-classes', 'large')
+  const [viewMode, setViewMode] = useViewMode('roster-classes', 'large', STUDENT_ROSTER_MODES)
   const { data: rawClasses = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['roster'],
     queryFn: () => classesApi.getRoster().then(r => r.data),
@@ -232,7 +226,7 @@ function StudentRoster() {
               <button aria-pressed={isActive} key={grade}
                 onClick={() => { setSelectedGrade(grade); setSelectedClass(null) }}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all active:scale-95 ${
-                  isActive ? `${gc.bg} text-white shadow-md` : 'bg-gray-100 text-gray-500'
+                  isActive ? `${gc.bg} shadow-md` : `${gc.light} ${gc.text}`
                 }`}
               >{grade}</button>
             )
@@ -246,7 +240,7 @@ function StudentRoster() {
           <span className="text-xs text-gray-600 font-semibold">총 {classes.length}반</span>
           <span className="text-gray-300 text-xs">·</span>
           <span className="text-xs text-gray-600 font-semibold">{totalStudents}명</span>
-          <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} /></div>
+          <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} allowedModes={STUDENT_ROSTER_MODES} labels={{ large: '4분할', list: '목록형' }} /></div>
         </motion.div>
       </div>
 
@@ -1061,18 +1055,7 @@ function InfoRow({ label, value, icon, isPhone = false }) {
 
 // ── 학생 교적부 컴포넌트 ─────────────────────────────────
 function ClassList({ classes, grade, colors, mode, selectedId, onSelect }) {
-  if (mode === 'detail') {
-    return (
-      <DetailTable rows={classes} onRowClick={onSelect} columns={[
-        { label: '반', render: c => `${grade} ${c.name}` },
-        { label: '성별', render: c => c.gender || null },
-        { label: '담당', render: c => c.teacherName || null },
-        { label: '인원', render: c => `${c.students.length}명` },
-        { label: '세례', render: c => `${c.students.filter(s => s.baptism === true).length}명` },
-      ]} />
-    )
-  }
-  const wrap = { large: 'readable-card-grid gap-3', small: 'readable-card-grid gap-2', list: 'flex flex-col gap-2' }[mode]
+  const wrap = { large: 'roster-four-grid gap-3', small: 'readable-card-grid gap-2', list: 'flex flex-col gap-2' }[mode]
   return (
     <div className={wrap}>
       {classes.map((cls, idx) => (
@@ -1087,20 +1070,6 @@ function ClassCard({ cls, grade, colors, idx, isSelected, onClick, mode = 'large
   const count = cls.students.length
   const baptizedCount = cls.students.filter(s => s.baptism === true).length
   const genderText = cls.gender === '여' ? 'text-pink-500' : 'text-primary-500'
-
-  if (mode === 'small') {
-    return (
-      <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-        onClick={onClick}
-        className={`glass-card rounded-2xl p-2 flex flex-col items-center gap-1 border-2 active:scale-95 transition-all ${isSelected ? colors.border : 'border-transparent'}`}>
-        <div className={`people-class-symbol rounded-xl ${colors.bg} flex items-center justify-center shadow-sm`}>
-          <span className="text-white font-bold text-xs">{/^\d+반$/.test(cls.name) ? cls.name.replace('반', '') : <BookOpen size={18} aria-hidden="true" />}</span>
-        </div>
-        <p className="text-xs font-bold text-gray-900 leading-tight">{cls.name}</p>
-        <p className={`text-xs font-bold ${genderText}`}>{cls.gender} · {count}명</p>
-      </motion.button>
-    )
-  }
 
   if (mode === 'list') {
     return (
@@ -1164,7 +1133,7 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
 
   const [fullStudents, setFullStudents] = useState(cls.students)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
-  const [viewMode, setViewMode] = useViewMode('roster-students', 'large')
+  const [viewMode, setViewMode] = useViewMode('roster-students', 'large', STUDENT_ROSTER_MODES)
 
   useEffect(() => {
     let isMounted = true
@@ -1214,7 +1183,7 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
                 <span className="text-xs px-2.5 py-1 rounded-full bg-secondary-50 text-secondary-600 font-bold">세례 {baptizedCount}명</span>
                 <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 font-bold">미세례 {unbaptizedCount}명</span>
                 {unknownCount > 0 && <span className="text-xs px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-600 font-bold">미확인 {unknownCount}명</span>}
-                <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} /></div>
+                <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} allowedModes={STUDENT_ROSTER_MODES} labels={{ large: '4분할', list: '목록형' }} /></div>
               </div>
             )}
           </div>
@@ -1235,39 +1204,6 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
 }
 
 function StudentList({ students, colors, mode }) {
-  if (mode === 'detail') {
-    const parent = (name, phone) => [name, phone].filter(Boolean).join(' ') || null
-    return (
-      <div className="p-3">
-        <DetailTable rows={students} columns={[
-          { label: '이름', render: s => s.name },
-          { label: '세례', render: s => s.baptism === true ? '세례' : s.baptism === false ? '미세례' : null },
-          { label: '학교', render: s => s.school || null },
-          { label: '생년월일', render: s => s.birthDate ? `${formatBirth(s.birthDate)} (만 ${calcAge(s.birthDate)}세)` : null },
-          { label: '연락처', render: s => s.phone ? <a href={`tel:${s.phone}`} className="text-primary-600">{s.phone}</a> : null },
-          { label: '아버지', render: s => parent(s.fatherName, s.fatherPhone) },
-          { label: '어머니', render: s => parent(s.motherName, s.motherPhone) },
-          { label: '주소', render: s => s.address || null },
-        ]} />
-      </div>
-    )
-  }
-
-  if (mode === 'small') {
-    return (
-      <div className="readable-card-grid gap-2 p-4">
-        {students.map((s, idx) => (
-          <motion.div key={s.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-            className="flex flex-col items-center gap-1">
-            <StudentAvatar student={s} className="w-12 h-12 rounded-2xl" />
-            <p className="text-xs font-bold text-gray-900 people-text w-full text-center">{s.name}</p>
-            {s.baptism === true && <span className="text-[0.6875rem] font-bold px-1.5 rounded-full bg-secondary-100 text-secondary-600">세례</span>}
-          </motion.div>
-        ))}
-      </div>
-    )
-  }
-
   if (mode === 'list') {
     return (
       <div className="divide-y divide-gray-50">
@@ -1296,7 +1232,7 @@ function StudentList({ students, colors, mode }) {
   }
 
   return (
-    <div className="divide-y divide-gray-50">
+    <div className="roster-four-grid gap-3 p-4">
       {students.map((student, idx) => <StudentRow key={student.id} student={student} colors={colors} idx={idx} />)}
     </div>
   )
@@ -1317,7 +1253,7 @@ function StudentRow({ student, colors, idx }) {
   const age = calcAge(student.birthDate)
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
-      className="flex items-start gap-3 px-5 py-3.5">
+      className="people-student-row flex items-start gap-3 px-5 py-3.5">
       <div className={`w-9 h-9 rounded-xl ${student.gender === '여' ? 'bg-pink-400' : 'bg-primary-400'} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm overflow-hidden`}>
         {student.profileImage
           ? <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />

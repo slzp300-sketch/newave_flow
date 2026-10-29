@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -48,7 +49,7 @@ export default function StudentDetailPage() {
           </div>
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900">{student?.name}</h2>
-            <p className="text-primary-600 font-bold text-sm">{[student?.grade, student?.school].filter(Boolean).join(' · ')}</p>
+            <p className="text-primary-600 font-bold text-sm"><GradeLabel value={student?.grade} />{student?.school && ` · ${student.school}`}</p>
           </div>
           {student?.profileImage && <ReportLink contentType="STUDENT_PHOTO" targetId={student.id} label="학생 사진 신고" />}
         </motion.div>

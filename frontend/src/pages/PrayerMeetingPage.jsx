@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import { CollapsePanel } from '../components/common/Motion'
 import FitLabel from '../components/common/FitLabel'
 import { useState, useEffect, useId } from 'react'
@@ -158,7 +159,7 @@ function PrayerForm({ prayer, micLabel, update, onSubmit, onCancel, valid, isMic
       <div className="brand-card bg-primary-50 rounded-2xl px-4 py-3 border border-primary-100 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-bold text-primary-700 uppercase tracking-widest">마이크 순서</p>
-          <p className="text-base font-bold text-primary-800 mt-1">🎤 {micLabel}</p>
+          <p className="text-base font-bold text-primary-800 mt-1">🎤 <GradeLabel value={micLabel} /></p>
         </div>
         {isMicTurn && (
           <span className="bg-primary-600 text-white text-sm font-bold px-2 py-1 rounded-lg shadow-sm">당번</span>
@@ -252,7 +253,7 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
       <div className="bg-gray-50 rounded-xl px-4 py-4 flex flex-col gap-4">
         <Row label="투표 결과" value={statusMap[vote?.status]} absent={isAbsent} />
         {vote?.reason && <Row label={isAbsent ? "불참 사유" : "마이크 사용이 어려운 사유"} value={vote.reason} />}
-        <Row label="마이크 순서" value={`🎤 ${micLabel}`} muted />
+        <Row label="마이크 순서" value={<>🎤 <GradeLabel value={micLabel} /></>} muted />
         {vote?.updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(vote.updatedAt)} muted />}
       </div>
       {isAbsent && (

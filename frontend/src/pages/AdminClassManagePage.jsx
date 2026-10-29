@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
 import SearchField from '../components/common/SearchField'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
@@ -94,7 +95,7 @@ export default function AdminClassManagePage() {
                   : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
               }`}
             >
-              {g}
+              <GradeLabel value={g} />
             </button>
           ))}
         </div>
@@ -110,7 +111,7 @@ export default function AdminClassManagePage() {
           {!resultCount && <AdminEmpty />}
           <RecordViews mode={viewMode} rows={displayedEntries.flatMap(([, classes]) => classes)} onRowClick={cls => setSelectedClassId(cls.id)} columns={[
             { label: '반', render: cls => cls.name },
-            { label: '학년', render: cls => cls.grade },
+            { label: '학년', render: cls => <GradeLabel value={cls.grade} /> },
             { label: '담당 교사', render: cls => cls.teachers?.map(t => t.name).join(', ') || '미배정' },
             { label: '학생 수', render: cls => `${cls.students?.length ?? 0}명` },
           ]}>
@@ -124,7 +125,7 @@ export default function AdminClassManagePage() {
             >
               <div className="flex items-center gap-2 px-1">
                  <div className="w-1 h-4 bg-primary-500 rounded-full" />
-                 <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">{grade}</p>
+                 <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]"><GradeLabel value={grade} /></p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
@@ -169,7 +170,7 @@ function ClassAssignmentCard({ cls, onManage }) {
       <div className="flex flex-col gap-4 flex-1 min-w-0">
         {/* 상단: 반 이름 */}
         <div className="flex flex-wrap items-center gap-2">
-           <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">{cls.grade}</span>
+           <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md"><GradeLabel value={cls.grade} /></span>
            <h3 className="text-lg font-bold text-gray-900">{cls.name}</h3>
         </div>
 
@@ -326,7 +327,7 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
         <div aria-busy={updateMutation.isPending || undefined} className="people-assignment-panel w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-85d">
           <div className="shrink-0 p-5 border-b border-gray-50 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1">{cls.grade}</p>
+              <p className="text-xs font-bold text-primary-500 uppercase tracking-widest mb-1"><GradeLabel value={cls.grade} /></p>
               <h3 className="break-keep text-lg font-bold text-gray-900">{cls.name} 배정 현황</h3>
             </div>
             <button ref={closeButtonRef} aria-label="교사 배정 닫기" disabled={updateMutation.isPending} onClick={requestClose} className="h-11 w-11 shrink-0 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 disabled:opacity-50">

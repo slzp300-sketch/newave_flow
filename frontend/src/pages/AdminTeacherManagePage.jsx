@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import FitLabel from '../components/common/FitLabel'
 import AdminReadGuard from '../components/common/AdminReadGuard'
 import './AdminTeacherManagePage.css'
@@ -108,7 +109,7 @@ export default function AdminTeacherManagePage() {
                 columns={[
                   { label: '이름', render: u => u.name },
                   { label: '권한', render: u => <RoleBadge role={u.role} /> },
-                  { label: '소속', render: u => u.grade || '소속 미지정' },
+                  { label: '소속', render: u => <GradeLabel value={u.grade}>{u.grade || '소속 미지정'}</GradeLabel> },
                   { label: '이메일', render: u => u.email },
                 ]}
               />
@@ -164,7 +165,7 @@ function UserCompactItem({ user, idx, mode, onClick }) {
     <div className="min-w-0 flex-1">
       <p className="text-base font-bold text-gray-900">{user.name}</p>
       <div className="mt-2"><RoleBadge role={user.role}/></div>
-      <p className="mt-2 text-sm text-gray-600">{user.grade || '소속 미지정'}</p>
+      <p className="mt-2 text-sm text-gray-600"><GradeLabel value={user.grade}>{user.grade || '소속 미지정'}</GradeLabel></p>
       {mode!=='small' && <p className="teacher-email mt-1 text-sm text-gray-600">{user.email}</p>}
     </div>
     {mode!=='small' && <ChevronRight size={18} className="mt-1 shrink-0 text-gray-600" aria-hidden="true"/>}
@@ -187,7 +188,7 @@ const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpda
           <div className="min-w-0 flex-1">
             <p className="text-lg font-bold text-gray-900">{user.name}</p>
             <div className="mt-2"><RoleBadge role={user.role}/></div>
-            <p className="mt-2 text-sm text-gray-600">{user.grade || '소속 미지정'}</p>
+            <p className="mt-2 text-sm text-gray-600"><GradeLabel value={user.grade}>{user.grade || '소속 미지정'}</GradeLabel></p>
           </div>
         </div>
         <p className="teacher-email text-sm text-gray-600">{user.email}</p>

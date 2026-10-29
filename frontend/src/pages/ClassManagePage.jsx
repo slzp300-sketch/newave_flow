@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
@@ -236,7 +237,7 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
             )}
           </div>
           <p className="text-xs text-gray-400 mt-0.5">
-            {[student.grade, student.school].filter(Boolean).join(' · ')}
+            <GradeLabel value={student.grade} />{student.school && ` · ${student.school}`}
           </p>
         </div>
 

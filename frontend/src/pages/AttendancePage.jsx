@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import { CollapsePanel } from '../components/common/Motion'
 import { useState, useMemo, useId } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -277,7 +278,7 @@ function StudentAttendanceCard({ student, data, onChange, idx }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-gray-900 text-lg leading-snug break-words">{student.name}</p>
-              <p className="mt-1 text-sm leading-relaxed text-gray-600 break-words">{student.grade} · {student.school || '학교미입력'}</p>
+              <p className="mt-1 text-sm leading-relaxed text-gray-600 break-words"><GradeLabel value={student.grade} /> · {student.school || '학교미입력'}</p>
             </div>
           </div>
 

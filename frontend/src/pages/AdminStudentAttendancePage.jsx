@@ -1,3 +1,5 @@
+import GradeLabel from '../components/common/GradeLabel'
+import { gradeClasses, gradeKey } from '../utils/gradeColors'
 import FitLabel from '../components/common/FitLabel'
 import './AdminStudentAttendancePage.css'
 import SegmentedControl from '../components/common/SegmentedControl'
@@ -30,25 +32,8 @@ function getPastSundays(count = 10) {
 
 const GRADE_ORDER = ['중1', '중2', '중3', '고1', '고2', '고3', '기타']
 
-const GRADE_COLORS = {
-  '중1': { bg: 'bg-rose-50',    text: 'text-rose-600',    accent: 'bg-rose-100',    bar: 'bg-rose-400',    back: 'text-rose-600 bg-rose-50' },
-  '중2': { bg: 'bg-orange-50',  text: 'text-orange-600',  accent: 'bg-orange-100',  bar: 'bg-orange-400',  back: 'text-orange-600 bg-orange-50' },
-  '중3': { bg: 'bg-amber-50',   text: 'text-amber-600',   accent: 'bg-amber-100',   bar: 'bg-amber-400',   back: 'text-amber-600 bg-amber-50' },
-  '고1': { bg: 'bg-secondary-50', text: 'text-secondary-600', accent: 'bg-secondary-100', bar: 'bg-secondary-400', back: 'text-secondary-600 bg-secondary-50' },
-  '고2': { bg: 'bg-primary-50',    text: 'text-primary-600',    accent: 'bg-primary-100',    bar: 'bg-primary-400',    back: 'text-primary-600 bg-primary-50' },
-  '고3': { bg: 'bg-primary-50',  text: 'text-primary-600',  accent: 'bg-primary-100',  bar: 'bg-primary-400',  back: 'text-primary-600 bg-primary-50' },
-  '기타': { bg: 'bg-gray-50',   text: 'text-gray-500',    accent: 'bg-gray-100',    bar: 'bg-gray-400',    back: 'text-gray-600 bg-gray-50' },
-}
-
-function getGradeKey(ageGroup) {
-  if (!ageGroup) return '기타'
-  const match = ageGroup.match(/^(중[123]|고[123])/)
-  return match ? match[1] : '기타'
-}
-
-function getGradeColor(grade) {
-  return GRADE_COLORS[grade] || GRADE_COLORS['기타']
-}
+function getGradeKey(value) { return gradeKey(value) || '기타' }
+function getGradeColor(value) { const tone = gradeClasses(value); return { ...tone, bg: tone.light } }
 
 function AttendanceRecords(props) {
   return <div className="admin-attendance-records min-w-0"><RecordViews {...props} /></div>
@@ -237,7 +222,7 @@ function GradeGridPanel({ gradeGroups, gradeList, onSelectGrade, viewMode }) {
     <div className="flex flex-col gap-3">
       <h2 className="text-lg font-bold text-gray-900 px-1">학년별 현황</h2>
       <AttendanceRecords mode={viewMode} rows={gradeList} rowKey={g => g.grade} onRowClick={g => onSelectGrade(g.grade)} columns={[
-        { label: '학년', render: g => g.grade },
+        { label: '학년', render: g => <GradeLabel value={g.grade} /> },
         { label: '전체', render: g => `${g.total}명` },
         { label: '출석', render: g => `${g.present}명` },
         { label: '결석', render: g => `${g.absent}명` },
@@ -303,7 +288,7 @@ function AbsentListPanel({ date, viewMode }) {
       </div>
       <AttendanceRecords mode={viewMode} rows={absentList} rowKey={(s, index) => `${s.ageGroup}:${s.classGroupName}:${s.studentName}:${index}`} columns={[
         { label: '학생', render: s => s.studentName },
-        { label: '학년', render: s => s.ageGroup },
+        { label: '학년', render: s => <GradeLabel value={s.ageGroup} /> },
         { label: '반', render: s => s.classGroupName },
         { label: '출석', render: s => <AttendanceStatus status={s.status} /> },
         { label: '결석 사유', render: s => s.absentReason },

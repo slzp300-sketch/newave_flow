@@ -1,3 +1,4 @@
+import GradeLabel from '../components/common/GradeLabel'
 import FitLabel from '../components/common/FitLabel'
 import './MeetingMinutesAdminPage.css'
 import { Collapse, CollapsePanel } from '../components/common/Motion'
@@ -290,7 +291,7 @@ function MinuteStatusViews({ mode, rows }) {
     {label:'회의록 확인',render:row=><ConfirmationStatus row={row}/>},
   ]}>
     <div className="space-y-5">{grades.map(grade=><section key={grade} className="space-y-3">
-      <h4 className="text-base font-bold text-gray-900">{grade}</h4>
+      <h4 className="text-base font-bold text-gray-900"><GradeLabel value={grade} /></h4>
       {grouped[grade].map(row=><div key={row.teacherId} className="min-w-0 space-y-3 rounded-xl border border-gray-200 bg-white p-3">
         <p className="text-base font-bold leading-relaxed text-gray-900">{row.teacherName}</p>
         <AttendanceBadge status={row.attendanceStatus}/>
