@@ -416,8 +416,8 @@ export default function EventAttendanceAdminPage() {
                         onClick={() => setExpandedClassId(expandedClassId === cls.classGroupId ? null : cls.classGroupId)}
                       >
                         <div className="contents">
-                          <div className="w-10 h-10 rounded-2xl bg-primary-50 flex items-center justify-center">
-                            <Users size={18} className="text-primary-600" />
+                          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${getGradeStyle(selectedGrade).accent}`}>
+                            <Users size={18} />
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-gray-900 text-base"><FitLabel>{cls.classGroupName}</FitLabel></p>

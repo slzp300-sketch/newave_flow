@@ -1133,7 +1133,6 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
 
   const [fullStudents, setFullStudents] = useState(cls.students)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
-  const [viewMode, setViewMode] = useViewMode('roster-students', 'large', STUDENT_ROSTER_MODES)
 
   useEffect(() => {
     let isMounted = true
@@ -1183,7 +1182,6 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
                 <span className="text-xs px-2.5 py-1 rounded-full bg-secondary-50 text-secondary-600 font-bold">세례 {baptizedCount}명</span>
                 <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 font-bold">미세례 {unbaptizedCount}명</span>
                 {unknownCount > 0 && <span className="text-xs px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-600 font-bold">미확인 {unknownCount}명</span>}
-                <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} allowedModes={STUDENT_ROSTER_MODES} labels={{ large: '4분할', list: '목록형' }} /></div>
               </div>
             )}
           </div>
@@ -1194,7 +1192,7 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
               </div>
             )}
             {count === 0 ? <EmptyStudentState colors={colors} /> : (
-              <StudentList students={fullStudents} colors={colors} mode={viewMode} />
+              <StudentList students={fullStudents} colors={colors} />
             )}
           </div>
         </motion.div>
@@ -1203,48 +1201,11 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
   )
 }
 
-function StudentList({ students, colors, mode }) {
-  if (mode === 'list') {
-    return (
-      <div className="divide-y divide-gray-50">
-        {students.map((s, idx) => (
-          <motion.div key={s.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-            className="flex items-center gap-3 px-5 py-2.5">
-            <StudentAvatar student={s} className="w-8 h-8 rounded-lg" />
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="font-bold text-gray-900 text-sm">{s.name}</span>
-                {s.baptism === true && <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-secondary-100 text-secondary-600">세례</span>}
-              </div>
-              <p className="text-xs text-gray-400 people-text">
-                {[s.school, s.birthDate && `만 ${calcAge(s.birthDate)}세`].filter(Boolean).join(' · ')}
-              </p>
-            </div>
-            {s.phone && (
-              <a href={`tel:${s.phone}`} className="brand-action w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 active:text-primary-600 flex-shrink-0">
-                <Phone size={14} />
-              </a>
-            )}
-          </motion.div>
-        ))}
-      </div>
-    )
-  }
+function StudentList({ students, colors }) {
 
   return (
     <div className="roster-four-grid gap-3 p-4">
       {students.map((student, idx) => <StudentRow key={student.id} student={student} colors={colors} idx={idx} />)}
-    </div>
-  )
-}
-
-function StudentAvatar({ student, className }) {
-  return (
-    <div className={`${student.gender === '여' ? 'bg-pink-400' : 'bg-primary-400'} flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden ${className}`}>
-      {student.profileImage
-        ? <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
-        : <span className="text-white font-bold text-sm">{student.name[0]}</span>
-      }
     </div>
   )
 }
