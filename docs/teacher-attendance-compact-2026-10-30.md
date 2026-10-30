@@ -20,5 +20,5 @@
 
 ## 배포 상태
 - 운영 배포·운영 DB 변경·push·PR은 하지 않았다.
-- 향후 배포 시 V015 다음에 V016__teacher_profile_gender.sql을 적용해야 한다.
+- 향후 배포 시 V015 다음에 V018__teacher_profile_gender.sql을 적용해야 한다.
 - 미리보기는 localhost:5195와 합성 자료 전용 localhost:8089를 사용한다.

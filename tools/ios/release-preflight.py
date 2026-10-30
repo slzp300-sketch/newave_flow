@@ -21,6 +21,7 @@ def validate_inputs(env):
     require(re.fullmatch(r'[1-9][0-9]{0,3}\.(?:0|[1-9][0-9]{0,1})\.(?:0|[1-9][0-9]{0,1})', env.get('RELEASE_VERSION', '')) is not None, 'Use a numeric version such as 1.0.0')
     require(re.fullmatch(r'[1-9][0-9]{0,3}', env.get('RELEASE_BUILD', '')) is not None, 'Use an unused build number between 1 and 9999')
     require(env.get('APPLE_LOGIN') in ('true', 'false'), 'Explicit Apple login choice required')
+    require(env.get('PUSH_NOTIFICATIONS', 'false') in ('true', 'false'), 'Invalid push notification choice')
     require(env.get('UPLOAD') in ('true', 'false'), 'Explicit upload choice required')
     if env['UPLOAD'] == 'true':
         require(env.get('UPLOAD_CONFIRMATION') == 'UPLOAD TO TESTFLIGHT', 'Upload confirmation is missing')
@@ -37,7 +38,7 @@ def decode_secret(env, key):
     return result
 
 
-def validate_profile(profile, team_id, apple_login, now=None):
+def validate_profile(profile, team_id, apple_login, now=None, push_notifications=False):
     require(re.fullmatch(r'[A-Z0-9]{10}', team_id) is not None, 'Invalid Apple team identifier')
     require(profile.get('TeamIdentifier') == [team_id], 'Provisioning profile belongs to a different team')
     entitlements = profile.get('Entitlements', {})
@@ -54,10 +55,21 @@ def validate_profile(profile, team_id, apple_login, now=None):
     require(bool(profile.get('DeveloperCertificates')), 'Profile has no signing certificates')
     if apple_login:
         require(entitlements.get('com.apple.developer.applesignin') == ['Default'], 'Enable Sign in with Apple and regenerate the profile')
+    if push_notifications:
+        require(entitlements.get('aps-environment') == 'production', 'Enable Push Notifications and regenerate the distribution profile')
     return profile['UUID']
 
 
-def verify_signed_entitlements(entitlements, team_id, apple_login):
+def release_entitlements(apple_login, push_notifications=False):
+    result = {}
+    if apple_login:
+        result['com.apple.developer.applesignin'] = ['Default']
+    if push_notifications:
+        result['aps-environment'] = 'production'
+    return result
+
+
+def verify_signed_entitlements(entitlements, team_id, apple_login, push_notifications=False):
     require(entitlements.get('application-identifier') == f'{team_id}.{BUNDLE_ID}', 'Signed app identifier mismatch')
     require(entitlements.get('com.apple.developer.team-identifier') == team_id, 'Signed app team mismatch')
     require(entitlements.get('get-task-allow', False) is False, 'Signed app enables debugging')
@@ -65,6 +77,10 @@ def verify_signed_entitlements(entitlements, team_id, apple_login):
         require(entitlements.get('com.apple.developer.applesignin') == ['Default'], 'Signed app lacks Apple login entitlement')
     else:
         require(not entitlements.get('com.apple.developer.applesignin'), 'Disabled Apple login must not request its entitlement')
+    if push_notifications:
+        require(entitlements.get('aps-environment') == 'production', 'Signed app lacks production push entitlement')
+    else:
+        require(not entitlements.get('aps-environment'), 'Disabled push must not request its entitlement')
 
 
 if __name__ == '__main__':

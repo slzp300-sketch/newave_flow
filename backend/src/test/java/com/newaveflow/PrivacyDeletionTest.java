@@ -66,6 +66,25 @@ class PrivacyDeletionTest {
                   VALUES('11111111-1111-4111-8111-111111111111',1,'2026-10-01',repeat('d',64),'REQUESTED',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '7 days',false);
                 """);
             // Recreate old constraints then validate the actual additive migration, including rollback.
+            s.execute("""
+                ALTER TABLE push_devices ADD FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE;
+                ALTER TABLE notification_preferences ADD FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE;
+                ALTER TABLE tts_linked_snapshots ADD FOREIGN KEY(teacher_id) REFERENCES users(id) ON DELETE CASCADE;
+                ALTER TABLE push_deliveries ADD FOREIGN KEY(notification_id) REFERENCES notifications(id) ON DELETE CASCADE;
+                ALTER TABLE push_deliveries ADD FOREIGN KEY(installation_id) REFERENCES push_devices(installation_id) ON DELETE CASCADE;
+                INSERT INTO notifications(id,user_id,type,title,content,is_read,created_at) VALUES
+                  (1,1,'SYSTEM','Synthetic notice','Synthetic notice',false,CURRENT_TIMESTAMP),
+                  (2,2,'SYSTEM','Other notice','Other notice',false,CURRENT_TIMESTAMP);
+                INSERT INTO notification_preferences(user_id,push_enabled) VALUES(1,true),(2,true);
+                INSERT INTO push_devices(installation_id,user_id,platform,token,token_hash,active,updated_at) VALUES
+                  ('11111111-1111-4111-8111-111111111111',1,'IOS','synthetic-token-one',repeat('a',64),true,CURRENT_TIMESTAMP),
+                  ('22222222-2222-4222-8222-222222222222',2,'IOS','synthetic-token-two',repeat('b',64),true,CURRENT_TIMESTAMP);
+                INSERT INTO push_deliveries(id,notification_id,installation_id,status,attempts,next_attempt_at,expires_at) VALUES
+                  (1,1,'11111111-1111-4111-8111-111111111111','PENDING',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '1 day'),
+                  (2,2,'22222222-2222-4222-8222-222222222222','PENDING',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '1 day');
+                INSERT INTO tts_linked_snapshots(id,teacher_id,week_start,link_type,checked) VALUES
+                  (1,1,'2026-03-29','SAT_MEETING',false),(2,2,'2026-03-29','SAT_MEETING',true);
+                """);
             s.execute("INSERT INTO community_agreements(user_id,policy_version,accepted_at) VALUES(1,'2026-10-14-v1',CURRENT_TIMESTAMP)");
             s.execute("""
                 INSERT INTO content_reports(id,revision,reporter_id,request_id,target_type,content_type,target_id,subject,reason,details,status,action,moderator_id,created_at,updated_at) VALUES
@@ -167,7 +186,7 @@ class PrivacyDeletionTest {
             // Restore replay must remain compatible with backups made before V012/V013.
             c.setAutoCommit(false);
             try {
-                s.execute("DROP TABLE user_status_events; DROP TABLE moderated_photos; ALTER TABLE content_reports DROP COLUMN assigned_to_id");
+                s.execute("DROP TABLE user_status_events; DROP TABLE moderated_photos; ALTER TABLE content_reports DROP COLUMN assigned_to_id; DROP TABLE push_deliveries; DROP TABLE push_devices; DROP TABLE notification_preferences; DROP TABLE tts_linked_snapshots");
                 s.execute(inputs+review+namesakeReview); s.execute(deletion);
                 assertEquals("0",scalar(c,"SELECT count(*) FROM users WHERE id=1"));
             } finally { c.rollback(); c.setAutoCommit(true); }
@@ -265,6 +284,12 @@ class PrivacyDeletionTest {
             String preservedNotificationSubjects=scalar(c,preservedNotificationSubjectsSql);
             String preservedNotificationReceipts=scalar(c,preservedNotificationReceiptsSql);
             String preservedOtherMemo=scalar(c,"SELECT to_jsonb(m)::text FROM student_memos m WHERE id=2");
+            var otherPush = new java.util.LinkedHashMap<String,String>();
+            for(String table:List.of("push_devices","notification_preferences","tts_linked_snapshots","push_deliveries"))
+                otherPush.put(table,scalar(c,"SELECT to_jsonb(t)::text FROM "+table+" t WHERE "+(table.equals("tts_linked_snapshots")?"teacher_id":table.equals("push_deliveries")?"notification_id":"user_id")+"=2"));
+            assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
+                "ALTER TABLE events ADD COLUMN unreviewed_push varchar(36) REFERENCES push_devices(installation_id) ON DELETE CASCADE; UPDATE events SET unreviewed_push='11111111-1111-4111-8111-111111111111';",
+                "Unreviewed push lifecycle");
             var userRepo=app.getBean(UserRepository.class);
             assertTrue(userRepo.findById(1L).isPresent());
             var tokens=app.getBean(JwtTokenProvider.class);
@@ -276,6 +301,11 @@ class PrivacyDeletionTest {
             assertEquals(200,http.send(me,java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode());
             c.setAutoCommit(false);s.execute(inputs+review+namesakeReview);s.execute(deletion);c.commit();c.setAutoCommit(true);
             assertTrue(userRepo.findById(1L).isEmpty(),"JWT/refresh both require an existing user row");
+            for(var entry:otherPush.entrySet()) {
+                String table=entry.getKey();
+                assertEquals("1",scalar(c,"SELECT count(*) FROM "+table),table+" must erase only the deleted account's data");
+                assertEquals(entry.getValue(),scalar(c,"SELECT to_jsonb(t)::text FROM "+table+" t"),table+" must preserve the other account exactly");
+            }
             assertEquals(401,http.send(me,java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode());
             assertThrows(com.newaveflow.exception.AppException.class,()->app.getBean(com.newaveflow.service.AuthService.class).refresh(refresh));
             assertTrue(app.getBean(AdminUserService.class).getPendingUsers().stream().noneMatch(u->u.id().equals(1L)));

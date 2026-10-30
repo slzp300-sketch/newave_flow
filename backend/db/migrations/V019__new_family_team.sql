@@ -2,8 +2,8 @@
 BEGIN;
 SELECT pg_advisory_xact_lock(hashtext('newave_flow_schema'));
 DO $$ BEGIN
-  IF EXISTS(SELECT 1 FROM schema_migrations WHERE version='V017__new_family_team') THEN RAISE EXCEPTION 'V017 already applied'; END IF;
-  IF NOT EXISTS(SELECT 1 FROM schema_migrations WHERE version='V016__teacher_profile_gender') THEN RAISE EXCEPTION 'V016 required'; END IF;
+  IF EXISTS(SELECT 1 FROM schema_migrations WHERE version='V019__new_family_team') THEN RAISE EXCEPTION 'V019 already applied'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM schema_migrations WHERE version='V018__teacher_profile_gender') THEN RAISE EXCEPTION 'V018 required'; END IF;
 END $$;
 ALTER TABLE users ADD COLUMN new_family_team boolean NOT NULL DEFAULT false;
 ALTER TABLE students ALTER COLUMN class_group_id DROP NOT NULL;
@@ -34,5 +34,5 @@ CREATE TABLE new_family_references(
 );
 CREATE INDEX ix_new_family_checks_date ON new_family_checks(worship_date);
 CREATE INDEX ix_new_family_references_date ON new_family_references(report_date);
-INSERT INTO schema_migrations(version) VALUES('V017__new_family_team');
+INSERT INTO schema_migrations(version) VALUES('V019__new_family_team');
 COMMIT;

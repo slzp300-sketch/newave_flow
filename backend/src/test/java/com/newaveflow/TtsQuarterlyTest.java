@@ -5,10 +5,15 @@ import com.newaveflow.exception.AppException;
 import com.newaveflow.repository.*;
 import com.newaveflow.service.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,6 +27,11 @@ class TtsQuarterlyTest {
     @Autowired TtsQuestionRepository questions;
     @Autowired TtsRecordRepository records;
     @Autowired TtsLegacyScoreRepository legacy;
+
+    @BeforeEach void importDuringItsOriginalQuarter() {
+        ReflectionTestUtils.setField(importer, "clock", Clock.fixed(Instant.parse("2026-10-20T03:00:00Z"), TtsPeriod.ZONE));
+    }
+    @AfterEach void restoreClock() { ReflectionTestUtils.setField(importer, "clock", Clock.system(TtsPeriod.ZONE)); }
 
     User teacher(String name, String email, boolean active) {
         return users.saveAndFlush(User.builder().name(name).email(email + "@example.invalid")

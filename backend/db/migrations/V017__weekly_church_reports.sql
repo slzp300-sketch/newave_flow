@@ -3,8 +3,8 @@
 BEGIN;
 SELECT pg_advisory_xact_lock(hashtext('newave_flow_schema'));
 DO $$ BEGIN
-  IF EXISTS(SELECT 1 FROM schema_migrations WHERE version='V015__weekly_church_reports') THEN RAISE EXCEPTION 'V015 is already applied'; END IF;
-  IF NOT EXISTS(SELECT 1 FROM schema_migrations WHERE version='V014__apple_passwordless') THEN RAISE EXCEPTION 'V014 must be applied before V015'; END IF;
+  IF EXISTS(SELECT 1 FROM schema_migrations WHERE version='V017__weekly_church_reports') THEN RAISE EXCEPTION 'V017 is already applied'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM schema_migrations WHERE version='V016__tts_calendar_quarters') THEN RAISE EXCEPTION 'V016 must be applied before V017'; END IF;
 END $$;
 ALTER TABLE daily_reports ADD COLUMN submitted_data text;
 ALTER TABLE daily_reports ADD COLUMN submission_revision bigint NOT NULL DEFAULT 0;
@@ -31,5 +31,5 @@ CREATE TABLE weekly_report_exports (
   source_hash varchar(64) NOT NULL, template_version varchar(50) NOT NULL, created_at timestamp NOT NULL, created_by varchar(100) NOT NULL
 );
 CREATE INDEX ix_weekly_report_exports_date ON weekly_report_exports(report_date,created_at DESC);
-INSERT INTO schema_migrations(version) VALUES('V015__weekly_church_reports');
+INSERT INTO schema_migrations(version) VALUES('V017__weekly_church_reports');
 COMMIT;

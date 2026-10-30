@@ -54,7 +54,7 @@ public class TtsQuestionPolicy {
                 baseline.capture(q); history.add(revisions.save(baseline));
             }
         }
-        LocalDate effective = TtsService.weekSunday(LocalDate.now()).plusWeeks(1);
+        LocalDate effective = TtsService.weekSunday(TtsPeriod.today()).plusWeeks(1);
         var changes = new ArrayList<>(requested);
         old.stream().filter(q -> !requestedIds.contains(q.getId())).forEach(q -> { q.setActive(false); changes.add(q); });
         for (var q : changes) {

@@ -16,6 +16,7 @@ import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import NotificationPreferences from '../components/notifications/NotificationPreferences'
 
 const ROLE_MAP = {
   PASTOR:    { label: '목사님',  bg: 'bg-primary-100    text-primary-700' },
@@ -451,6 +452,7 @@ export default function ProfilePage() {
           </div>
         </Card>
 
+        <NotificationPreferences />
 
         {/* 앱 정보 */}
         <Card className="!p-0 overflow-hidden">

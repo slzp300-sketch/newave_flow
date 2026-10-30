@@ -11,10 +11,12 @@ import { appleNative } from '../auth/apple'
 import { startAppleSessionMonitor } from '../auth/appleSessionMonitor'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
+import { startPushNotifications, refreshPushNotifications } from './pushNotifications'
 
 export default function NativeRuntime({ router }) {
   const [storageError, setStorageError] = useState(false)
   const [appleNotice, setAppleNotice] = useState('')
+  useEffect(() => startPushNotifications(router), [router])
   useEffect(() => {
     if (nativePlatform !== 'ios') return
     return startAppleSessionMonitor({ native: appleNative, app: NativeApp, store: useAuthStore,
@@ -41,7 +43,7 @@ export default function NativeRuntime({ router }) {
     }
     void register('appStateChange', ({ isActive }) => {
       focusManager.setFocused(isActive)
-      if (isActive) void restorePendingAuthViewport()
+      if (isActive) { void restorePendingAuthViewport(); void refreshPushNotifications() }
     })
     if (nativePlatform === 'ios') void Browser.addListener('browserFinished', () => { void finishExternalAuthViewport(false) }).then(handle => { if (disposed) void handle.remove(); else handles.push(handle) }).catch(() => {})
     const openKakao = ({ url }) => { const path = nativeKakaoDestination(url); if (path) void router.navigate(path) }

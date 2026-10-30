@@ -4,6 +4,8 @@ COPY build.gradle settings.gradle ./
 COPY src/main/java ./src/main/java
 COPY src/main/resources/application.yml ./src/main/resources/application.yml
 COPY src/main/resources/META-INF ./src/main/resources/META-INF
+COPY src/main/resources/report-fonts ./src/main/resources/report-fonts
+COPY src/main/resources/report-templates ./src/main/resources/report-templates
 # Actual roster JSON is deliberately absent from the build context/image.
 RUN gradle bootReviewJar --no-daemon -x test
 

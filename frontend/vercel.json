@@ -1,4 +1,5 @@
 {
+  "git": { "deploymentEnabled": { "codex/post-release-improvements": false } },
   "rewrites": [
     {
       "source": "/privacy",

@@ -145,14 +145,51 @@ final class NewaveKeychainTests: XCTestCase {
 
     @MainActor
     func testPackagedWebViewHandlesFreshStorageAndKakaoDeviceProof() async throws {
+        let startupDeadline = Date().addingTimeInterval(60)
+        let activeScene = {
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                .first { $0.activationState == .foregroundActive }
+        }
+        while activeScene() == nil && Date() < startupDeadline {
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        let windowScene = try XCTUnwrap(
+            activeScene(),
+            "The packaged WebView test requires an active application window scene within 60 seconds"
+        )
+        let previousKeyWindow = windowScene.windows.first { $0.isKeyWindow }
         let controller = NewaveBridgeViewController()
+        let testWindow = UIWindow(windowScene: windowScene)
+        testWindow.frame = windowScene.coordinateSpace.bounds
+        defer {
+            // Keep the bridge and its window alive across every awaited WebKit operation.
+            withExtendedLifetime((controller, testWindow)) {
+                controller.webView?.stopLoading()
+                testWindow.isHidden = true
+                testWindow.rootViewController = nil
+                previousKeyWindow?.makeKeyAndVisible()
+            }
+        }
+        // An offscreen WKWebView may suspend its JavaScript and native bridge callbacks.
+        testWindow.rootViewController = controller
+        testWindow.makeKeyAndVisible()
         controller.loadViewIfNeeded()
+        testWindow.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
         XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveSecureStorage"))
         XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveReportExport"))
         let webView = try XCTUnwrap(controller.webView)
-        let deadline = Date().addingTimeInterval(15)
-        while webView.isLoading && Date() < deadline {
+        guard webView.window === testWindow, testWindow.isKeyWindow, !testWindow.isHidden,
+              webView.bounds.width > 0, webView.bounds.height > 0 else {
+            XCTFail("The packaged WebView must be attached to a visible window with valid bounds")
+            return
+        }
+        while (webView.isLoading || webView.url?.scheme != "capacitor") && Date() < startupDeadline {
             try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        guard !webView.isLoading, webView.url?.scheme == "capacitor" else {
+            XCTFail("The packaged WebView startup did not finish within 60 seconds; JavaScript checks were not started")
+            return
         }
         XCTAssertEqual(webView.url?.scheme, "capacitor")
         let result = try await webView.callAsyncJavaScript("""

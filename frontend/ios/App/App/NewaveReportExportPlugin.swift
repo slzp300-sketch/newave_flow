@@ -48,7 +48,7 @@ struct NewaveReportFile {
 public class NewaveReportExportPlugin: CAPPlugin, CAPBridgedPlugin, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
     public let identifier = "NewaveReportExportPlugin"
     public let jsName = "NewaveReportExport"
-    public let pluginMethods = [CAPPluginMethod(name: "save", returnType: CAPPluginReturnPromise)]
+    public let pluginMethods: [CAPPluginMethod] = [CAPPluginMethod(name: "save", returnType: CAPPluginReturnPromise)]
     private var pendingCall: CAPPluginCall?
     private var temporaryFile: URL?
 
