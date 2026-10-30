@@ -23,7 +23,8 @@ def verify(app, apple_login=False, device=False):
     require(info.get('CFBundleIdentifier') == BUNDLE_ID, 'Unexpected app identifier')
     require(info.get('CFBundleDisplayName') == '뉴웨이브 플로우', 'App name is missing')
     require(info.get('UIDeviceFamily') == [1], 'Review iPad assets before changing supported devices')
-    require(float(info.get('MinimumOSVersion', '0')) >= 15, 'Unsupported minimum iOS version')
+    minimum = tuple(int(part) for part in info.get('MinimumOSVersion', '0').split('.')[:2])
+    require(minimum >= (15, 4), 'App dialogs and selections require iOS 15.4 or later')
     expected_platform = 'iPhoneOS' if device else 'iPhoneSimulator'
     require(expected_platform in info.get('CFBundleSupportedPlatforms', []), 'Wrong build platform')
     require(info.get('NewaveAppleSignInEnabled') == ('YES' if apple_login else 'NO'), 'Apple login setting mismatch')

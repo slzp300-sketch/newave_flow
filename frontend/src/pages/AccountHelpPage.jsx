@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { Link } from 'react-router-dom'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -8,7 +9,7 @@ const SUBJECT = encodeURIComponent('Newave Flow 계정 삭제 요청')
 const BODY = encodeURIComponent('Newave Flow 계정과 개인정보 삭제를 요청합니다.\n\n가입한 이메일: \n이름: \n\n※ 비밀번호, 주민등록번호, 신분증 사진은 보내지 마세요.')
 
 export default function AccountHelpPage({ deletion = false }) {
-  return <div className="min-h-screen bg-surface max-w-mobile mx-auto pb-10">
+  return <div className="supporting-readable readable-content min-h-screen bg-surface max-w-mobile mx-auto pb-10">
     <Header title={deletion ? '계정 삭제 요청' : '고객지원'} showBack showNotification={false} onBack={() => window.history.length > 1 ? window.history.back() : window.location.assign('/login')} />
     <div className="px-4 py-6 space-y-4">
       <div><p className="text-primary-700 text-xs font-bold tracking-widest">NEWAVE FLOW</p>

@@ -16,6 +16,8 @@ public class EvangelismDto {
 
     public record GroupMembersRequest(List<Long> teacherIds) {}
 
+    public record TeacherMoveRequest(Long teacherId, Long fromGroupId, Long toGroupId) {}
+
     public record ScheduleRequest(
         LocalDate scheduledDate,
         List<Long> teacherIds,
@@ -55,7 +57,9 @@ public class EvangelismDto {
         Long id,
         LocalDate scheduledDate,
         String status,
-        List<AssignmentResponse> assignments
+        List<AssignmentResponse> assignments,
+        Long groupId,
+        String groupName
     ) {
         public static ScheduleResponse from(EvangelismSchedule s) {
             String status = s.getStatus();
@@ -65,7 +69,9 @@ public class EvangelismDto {
             List<AssignmentResponse> assignments = s.getAssignments().stream()
                 .map(AssignmentResponse::from)
                 .toList();
-            return new ScheduleResponse(s.getId(), s.getScheduledDate(), status, assignments);
+            EvangelismGroup group = s.getResponsibleGroup();
+            return new ScheduleResponse(s.getId(), s.getScheduledDate(), status, assignments,
+                group == null ? null : group.getId(), group == null ? null : group.getName());
         }
 
         private static String resolveStatus(LocalDate date) {

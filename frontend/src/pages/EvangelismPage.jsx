@@ -2,36 +2,45 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Users, Calendar, AlertCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useId } from 'react'
+import FitLabel from '../components/common/FitLabel'
+import QueryNotice from '../components/common/QueryNotice'
+import { hasQueryData } from '../utils/queryReadState'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
-import LoadingSpinner from '../components/common/LoadingSpinner'
 import { evangelismApi } from '../api/evangelism'
 import { getGroupColor } from './EvangelismAdminPage'
 
 export default function EvangelismPage() {
   const navigate = useNavigate()
 
-  const { data: status, isLoading: statusLoading } = useQuery({
+  const statusQuery = useQuery({
     queryKey: ['evangelism-status'],
     queryFn: () => evangelismApi.getMyStatus().then(r => r.data),
   })
 
-  const { data: allSchedules = [], isLoading: schedulesLoading } = useQuery({
+  const schedulesQuery = useQuery({
     queryKey: ['evangelism-schedules-all-teacher'],
     queryFn: () => evangelismApi.getSchedules(false).then(r => r.data),
   })
 
-  const { data: allGroups = [] } = useQuery({
+  const groupsQuery = useQuery({
     queryKey: ['evangelism-groups'],
     queryFn: () => evangelismApi.getGroups().then(r => r.data),
   })
 
-  if (statusLoading || schedulesLoading) return <LoadingSpinner />
+  const queries = [statusQuery, schedulesQuery, groupsQuery]
+  const { data: status } = statusQuery
+  const { data: allSchedules = [] } = schedulesQuery
+  const { data: allGroups = [] } = groupsQuery
+  if (!hasQueryData(queries)) return <div className="min-h-screen pb-20">
+    <Header title="전도 로테이션" showBack onBack={() => navigate('/')} />
+    <div className="p-4"><QueryNotice queries={queries} label="전도 로테이션 현황" /></div>
+  </div>
 
   const myGroupId = status?.myGroup?.id
   const nextSchedule = status?.nextSchedule
@@ -45,6 +54,7 @@ export default function EvangelismPage() {
 
       <div className="px-4 pt-4 flex flex-col gap-4">
 
+        {queries.some(q => q.isError) && <QueryNotice queries={queries} label="최신 전도 로테이션 현황" />}
         {/* 내 다음 차례 배너 */}
         <NextScheduleBanner nextSchedule={nextSchedule} myGroupId={myGroupId} allGroups={allGroups} />
 
@@ -53,13 +63,13 @@ export default function EvangelismPage() {
 
         {/* 전체 전도 일정 */}
         <div className="flex items-center gap-2 px-1">
-          <Calendar size={12} className="text-gray-400" />
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">전도 일정</p>
+          <Calendar size={18} className="text-gray-600" />
+          <h2 className="text-lg font-bold text-gray-900">전도 일정</h2>
         </div>
 
         {upcoming.length === 0 ? (
           <Card className="py-8 flex items-center justify-center">
-            <p className="text-sm text-gray-400 font-medium">등록된 전도 일정이 없습니다</p>
+            <p className="text-base text-gray-600 font-medium">등록된 전도 일정이 없습니다</p>
           </Card>
         ) : (
           upcoming.map((s, i) => (
@@ -69,7 +79,7 @@ export default function EvangelismPage() {
 
         {past.length > 0 && (
           <>
-            <p className="text-xs font-bold text-gray-300 uppercase tracking-[0.2em] px-1 mt-1">지난 일정</p>
+            <h2 className="text-lg font-bold text-gray-900 px-1 mt-1">지난 일정</h2>
             {past.map((s, i) => (
               <ScheduleCard key={s.id} schedule={s} index={i} myGroupId={myGroupId} allGroups={allGroups} past />
             ))}
@@ -85,12 +95,12 @@ function NextScheduleBanner({ nextSchedule, myGroupId, allGroups }) {
   if (!myGroupId) {
     return (
       <Card className="p-5 flex items-center gap-4">
-        <div className="w-11 h-11 rounded-2xl bg-gray-100 flex items-center justify-center">
-          <AlertCircle size={22} className="text-gray-400" />
+        <div className="w-11 h-11 shrink-0 rounded-2xl bg-gray-100 flex items-center justify-center">
+          <AlertCircle size={22} className="text-gray-600" />
         </div>
         <div>
-          <p className="font-bold text-gray-900 text-sm">조 배정 없음</p>
-          <p className="text-xs text-gray-400 mt-0.5">아직 전도 조에 배정되지 않았습니다</p>
+          <p className="font-bold text-gray-900 text-base">조 배정 없음</p>
+          <p className="text-sm text-gray-600 mt-0.5">아직 전도 조에 배정되지 않았습니다</p>
         </div>
       </Card>
     )
@@ -99,12 +109,12 @@ function NextScheduleBanner({ nextSchedule, myGroupId, allGroups }) {
   if (!nextSchedule) {
     return (
       <Card className="p-5 flex items-center gap-4">
-        <div className="w-11 h-11 rounded-2xl bg-gray-100 flex items-center justify-center">
-          <AlertCircle size={22} className="text-gray-400" />
+        <div className="w-11 h-11 shrink-0 rounded-2xl bg-gray-100 flex items-center justify-center">
+          <AlertCircle size={22} className="text-gray-600" />
         </div>
         <div>
-          <p className="font-bold text-gray-900 text-sm">예정된 전도 없음</p>
-          <p className="text-xs text-gray-400 mt-0.5">현재 배정된 전도 일정이 없습니다</p>
+          <p className="font-bold text-gray-900 text-base">예정된 전도 없음</p>
+          <p className="text-sm text-gray-600 mt-0.5">현재 배정된 전도 일정이 없습니다</p>
         </div>
       </Card>
     )
@@ -117,17 +127,17 @@ function NextScheduleBanner({ nextSchedule, myGroupId, allGroups }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-      <Card className={`p-5 flex items-center gap-4 ${isActive ? 'border border-red-200 bg-red-50/60' : ''}`}>
-        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${isActive ? 'bg-red-100' : c.bg}`}>
+      <Card className={`p-5 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 ${isActive ? 'border border-red-200 bg-red-50/60' : ''}`}>
+        <div className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center ${isActive ? 'bg-red-100' : c.bg}`}>
           <Calendar size={22} className={isActive ? 'text-red-500' : c.text} />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className={`font-bold text-sm ${isActive ? 'text-red-600' : 'text-gray-900'}`}>
+        <div className="flex-1 min-w-0 w-full">
+          <p className={`font-bold text-lg ${isActive ? 'text-red-600' : 'text-gray-900'}`}>
             {isActive ? '이번 주 전도 당번입니다' : '다음 전도 일정'}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
+          <p className="text-base text-gray-700 mt-1 leading-relaxed">{dateStr}</p>
         </div>
-        <Badge variant={isActive ? 'danger' : 'warning'} className="text-xs flex-shrink-0">
+        <Badge variant={isActive ? 'danger' : 'warning'} className="text-sm col-start-2 justify-self-start">
           {isActive ? '당번' : 'D-' + daysUntil(nextSchedule.scheduledDate)}
         </Badge>
       </Card>
@@ -150,24 +160,23 @@ function ScheduleCard({ schedule, index, myGroupId, allGroups, past = false }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.04 }}
     >
-      <Card className={`flex items-center gap-4 py-4 px-5 ${past ? 'opacity-50' : ''} ${isMyGroup && !past ? `border-l-4 ${c.border}` : ''}`}>
-        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDot(schedule.status)}`} />
-        <div className="flex-1 min-w-0">
+      <Card className={`flex flex-col gap-3 py-4 px-5 ${isMyGroup && !past ? `border-l-4 ${c.border}` : ''}`}>
+        <div className="flex-1 min-w-0 w-full">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-gray-900 text-sm">{dateStr}</p>
+            <p className="font-bold text-gray-900 text-lg">{dateStr}</p>
             {isMyGroup && !past && (
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${c.bg} ${c.text}`}>내 조</span>
+              <span className={`text-sm font-bold px-2 py-0.5 rounded-lg ${c.bg} ${c.text}`}>내 조</span>
             )}
           </div>
           {groupName ? (
-            <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-lg ${groupIdx >= 0 ? c.bg + ' ' + c.text : 'bg-gray-100 text-gray-500'}`}>
+            <span className={`inline-block max-w-full break-keep [overflow-wrap:anywhere] mt-2 text-base font-semibold px-2 py-0.5 rounded-lg ${groupIdx >= 0 ? c.bg + ' ' + c.text : 'bg-gray-100 text-gray-500'}`}>
               {groupName}
             </span>
           ) : (
-            <p className="text-xs text-gray-400 mt-0.5">담당 조 없음</p>
+            <p className="text-sm text-gray-600 mt-0.5">담당 조 없음</p>
           )}
         </div>
-        <StatusBadge status={schedule.status} />
+        <div className="flex flex-wrap items-center gap-2 text-sm"><span className="text-gray-600">진행 상태</span><StatusBadge status={schedule.status} /></div>
       </Card>
     </motion.div>
   )
@@ -175,43 +184,45 @@ function ScheduleCard({ schedule, index, myGroupId, allGroups, past = false }) {
 
 // ── 전체 조 편성표 ──────────────────────────────────────────────────────────
 function AllGroupsSection({ allGroups, myGroupId }) {
+  const panelId = useId()
   const myIdx = allGroups.findIndex(g => g.id === myGroupId)
   const [selectedIdx, setSelectedIdx] = usePersistedState('selectedIdx', myIdx >= 0 ? myIdx : 0)
 
   if (allGroups.length === 0) return null
 
-  const selectedGroup = allGroups[selectedIdx]
-  const color = getGroupColor(selectedIdx)
+  const safeIdx = allGroups[selectedIdx] ? selectedIdx : Math.max(0, myIdx)
+  const selectedGroup = allGroups[safeIdx]
+  const color = getGroupColor(safeIdx)
   const isMyGroup = selectedGroup?.id === myGroupId
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-2">
-          <Users size={12} className="text-gray-400" />
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">전체 조 편성표</p>
+          <Users size={18} className="text-gray-600" />
+          <h2 className="text-lg font-bold text-gray-900">전체 조 편성표</h2>
         </div>
-        <p className="text-xs text-gray-400 font-bold">총 {allGroups.reduce((s, g) => s + (g.members?.length ?? 0), 0)}명</p>
+        <p className="text-sm text-gray-600 font-bold">총 {allGroups.reduce((s, g) => s + (g.members?.length ?? 0), 0)}명</p>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <div role="group" aria-label="전도 조 선택" className="readable-card-grid gap-3">
         {allGroups.map((g, idx) => {
           const c = getGroupColor(idx)
-          const isSelected = idx === selectedIdx
+          const isSelected = idx === safeIdx
           const isMine = g.id === myGroupId
           return (
-            <button aria-pressed={isSelected}
+            <button type="button" aria-pressed={isSelected} aria-controls={panelId}
               key={g.id}
               onClick={() => setSelectedIdx(idx)}
-              className={`flex-shrink-0 flex flex-col items-center gap-0.5 px-4 py-2.5 rounded-2xl border-2 transition-all active:scale-95 ${
+              className={`min-w-0 min-h-24 flex flex-col items-center justify-center gap-2 px-3 py-3 rounded-2xl border-2 transition-colors focus-visible:ring-2 focus-visible:ring-primary-300 active:scale-95 ${
                 isSelected ? `${c.bg} ${c.border}` : 'bg-gray-50 border-transparent'
               }`}
             >
-              <div className="flex items-center gap-1.5">
-                <span className={`text-xs font-bold whitespace-nowrap ${isSelected ? c.text : 'text-gray-500'}`}>{g.name}</span>
-                {isMine && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-primary-600 text-white">내 조</span>}
+              <div className="flex flex-col w-full min-w-0 items-center gap-1.5">
+                <span className={`w-full min-w-0 text-base font-bold ${isSelected ? c.text : 'text-gray-700'}`}><FitLabel>{g.name}</FitLabel></span>
+                {isMine && <span className="text-sm font-bold px-1.5 py-0.5 rounded-md bg-primary-600 text-white">내 조</span>}
               </div>
-              <span className={`text-xs font-bold ${isSelected ? c.text : 'text-gray-300'}`}>{g.members?.length ?? 0}명</span>
+              <span className={`text-sm font-bold ${isSelected ? c.text : 'text-gray-600'}`}>{g.members?.length ?? 0}명</span>
             </button>
           )
         })}
@@ -220,29 +231,32 @@ function AllGroupsSection({ allGroups, myGroupId }) {
       {selectedGroup && (
         <motion.div
           key={selectedGroup.id}
+          id={panelId}
+          role="region"
+          aria-label={`${selectedGroup.name} 조원`}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           className={`brand-card rounded-3xl border-2 ${color.border} overflow-hidden`}
         >
-          <div className={`${color.light} px-5 py-3 flex items-center justify-between`}>
-            <div className="flex items-center gap-2">
+          <div className={`${color.light} px-4 py-3 flex flex-wrap items-center justify-between gap-2`}>
+            <div className="flex flex-wrap min-w-0 items-center gap-2">
               <div className={`w-2.5 h-2.5 rounded-full ${color.dot}`} />
-              <p className={`font-bold text-sm ${color.text}`}>{selectedGroup.name}</p>
-              {isMyGroup && <span className="text-[0.6875rem] font-bold px-2 py-0.5 rounded-lg bg-primary-600 text-white">내 조</span>}
+              <p className={`font-bold text-base ${color.text}`}>{selectedGroup.name}</p>
+              {isMyGroup && <span className="text-sm font-bold px-2 py-0.5 rounded-lg bg-primary-600 text-white">내 조</span>}
             </div>
-            <p className={`text-xs font-bold ${color.text}`}>{selectedGroup.members?.length ?? 0}명</p>
+            <p className={`text-sm font-bold ${color.text}`}>{selectedGroup.members?.length ?? 0}명</p>
           </div>
           <div className="bg-white px-4 py-3">
             {selectedGroup.members?.length === 0 ? (
-              <p className="text-xs text-gray-300 text-center py-3">배정된 교사가 없습니다</p>
+              <p className="text-sm text-gray-600 text-center py-3">배정된 교사가 없습니다</p>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
                 {selectedGroup.members.map(m => (
-                  <div key={m.id} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${color.bg}`}>
-                    <div className={`w-7 h-7 rounded-lg ${color.bg} ${color.text} flex items-center justify-center text-xs font-bold flex-shrink-0`}>
+                  <div key={m.id} className={`flex min-w-0 items-center gap-3 px-3 py-3 rounded-xl ${color.bg}`}>
+                    <div className={`w-7 h-7 rounded-lg ${color.bg} ${color.text} flex items-center justify-center text-sm font-bold flex-shrink-0`}>
                       {m.teacherName[0]}
                     </div>
-                    <span className="text-xs font-bold text-gray-700 truncate">{m.teacherName}</span>
+                    <span className="min-w-0 text-base font-semibold text-gray-900 leading-relaxed [overflow-wrap:anywhere]">{m.teacherName}</span>
                   </div>
                 ))}
               </div>
@@ -255,16 +269,10 @@ function AllGroupsSection({ allGroups, myGroupId }) {
 }
 
 function StatusBadge({ status }) {
-  if (status === 'ACTIVE')    return <Badge variant="danger"  className="text-[0.6875rem]">당번</Badge>
-  if (status === 'UPCOMING')  return <Badge variant="warning" className="text-[0.6875rem]">예정</Badge>
-  if (status === 'CANCELED')  return <Badge className="text-[0.6875rem] bg-gray-100 text-gray-400 border-none">취소</Badge>
-  return                             <Badge variant="success" className="text-[0.6875rem]">완료</Badge>
-}
-
-function statusDot(status) {
-  if (status === 'ACTIVE')   return 'bg-red-500'
-  if (status === 'UPCOMING') return 'bg-amber-400'
-  return 'bg-gray-300'
+  if (status === 'ACTIVE')    return <Badge variant="danger"  className="text-sm">당번</Badge>
+  if (status === 'UPCOMING')  return <Badge variant="warning" className="text-sm">예정</Badge>
+  if (status === 'CANCELED')  return <Badge className="text-sm bg-gray-100 text-gray-600 border-none">취소</Badge>
+  return                             <Badge variant="success" className="text-sm">완료</Badge>
 }
 
 function formatScheduleDate(dateStr) {

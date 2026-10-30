@@ -23,6 +23,7 @@
 		F09558D6AEB4412889183B35 /* AppTests.mdimporter in Copy Files */ = {isa = PBXBuildFile; fileRef = F72C53C3BB504125BE84052F /* AppTests.mdimporter */; };
 		F86B41DE28F040EFAAE87420 /* NewaveKeychainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086E2F8F3CBF4E4CBDF955B5 /* NewaveKeychainTests.swift */; };
 		D5964ABB07754E4597209794 /* NewaveAppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */; };
+		EB1B538C3C2947179EBD3401 /* NewaveReportExportPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B538C3C2947179EBD3402 /* NewaveReportExportPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 		F72C53C3BB504125BE84052F /* AppTests.mdimporter */ = {isa = PBXFileReference; name = "AppTests.xctest"; path = "AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; explicitFileType = "wrapper.cfbundle"; includeInIndex = 0; };
 		086E2F8F3CBF4E4CBDF955B5 /* NewaveKeychainTests.swift */ = {isa = PBXFileReference; name = "NewaveKeychainTests.swift"; path = "NewaveKeychainTests.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; includeInIndex = 0; };
 		DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */ = {isa = PBXFileReference; name = "NewaveAppleSignInPlugin.swift"; path = "NewaveAppleSignInPlugin.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; includeInIndex = 0; };
+		EB1B538C3C2947179EBD3402 /* NewaveReportExportPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewaveReportExportPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +103,7 @@
 				3D9ACDA8DA0B47DABEBC08BA /* NewaveBridgeViewController.swift */,
 				5A6E2D997F2641ECB260C8E6 /* PrivacyInfo.xcprivacy */,
 				DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */,
+				EB1B538C3C2947179EBD3402 /* NewaveReportExportPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -231,6 +234,7 @@
 				3406CF4E3C864734B39BCF9D /* NewaveSecureStoragePlugin.swift in Sources */,
 				B58B412DC3794F64B06E2C10 /* NewaveBridgeViewController.swift in Sources */,
 				D5964ABB07754E4597209794 /* NewaveAppleSignInPlugin.swift in Sources */,
+				EB1B538C3C2947179EBD3401 /* NewaveReportExportPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -313,7 +317,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -364,7 +368,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -381,7 +385,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -404,7 +408,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -434,7 +438,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				SWIFT_VERSION = 5.0;
 				SDKROOT = iphoneos;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/App.app/App";
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -452,7 +456,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				SWIFT_VERSION = 5.0;
 				SDKROOT = iphoneos;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/App.app/App";
 				BUNDLE_LOADER = "$(TEST_HOST)";

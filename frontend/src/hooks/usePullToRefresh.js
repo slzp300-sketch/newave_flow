@@ -9,16 +9,18 @@ export default function usePullToRefresh() {
   useEffect(() => {
     let startY = 0
     let pulling = false
+    let refreshing = false
+    let disposed = false
 
     const handleStart = (pageY) => {
-      if (window.scrollY <= 0) {
+      if (!refreshing && window.scrollY <= 0) {
         startY = pageY
         pulling = true
       }
     }
 
     const handleMove = (e, pageY) => {
-      if (!pulling) return
+      if (!pulling || refreshing) return
       const diff = pageY - startY
       
       if (diff > 0 && window.scrollY <= 0) {
@@ -31,22 +33,21 @@ export default function usePullToRefresh() {
     }
 
     const handleEnd = async (pageY) => {
-      if (!pulling) return
+      if (!pulling || refreshing) return
+      pulling = false
       const diff = pageY - startY
       const resistance = 0.5
       const distance = diff * resistance
 
       if (distance > 70 && window.scrollY <= 0) {
+        refreshing = true
         setIsRefreshing(true)
         setPullDistance(70) // 로딩 중 위치 고정
         try {
-          await queryClient.refetchQueries()
-          if (window.navigator.vibrate) {
-            window.navigator.vibrate(10)
-          }
+          await queryClient.refetchQueries({ type: 'active' })
         } finally {
-          setIsRefreshing(false)
-          setPullDistance(0)
+          refreshing = false
+          if (!disposed) { setIsRefreshing(false); setPullDistance(0) }
         }
       } else {
         setPullDistance(0)
@@ -54,11 +55,13 @@ export default function usePullToRefresh() {
       pulling = false
     }
 
-    const onTouchStart = (e) => handleStart(e.touches[0].pageY)
+    const canPull = (e) => !e.target?.closest?.('input, textarea, select, [contenteditable="true"], dialog, [role="dialog"]')
+    const cancel = () => { pulling = false; if (!refreshing) setPullDistance(0) }
+    const onTouchStart = (e) => { if (e.touches.length === 1 && canPull(e)) handleStart(e.touches[0].pageY); else cancel() }
     const onTouchMove = (e) => handleMove(e, e.touches[0].pageY)
     const onTouchEnd = (e) => handleEnd(e.changedTouches[0].pageY)
 
-    const onMouseDown = (e) => handleStart(e.pageY)
+    const onMouseDown = (e) => { if (e.button === 0 && canPull(e)) handleStart(e.pageY) }
     const onMouseMove = (e) => handleMove(e, e.pageY)
     const onMouseUp = (e) => handleEnd(e.pageY)
 
@@ -66,15 +69,18 @@ export default function usePullToRefresh() {
     window.addEventListener('touchstart', onTouchStart, { passive: false })
     window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('touchend', onTouchEnd)
+    window.addEventListener('touchcancel', cancel)
     
     window.addEventListener('mousedown', onMouseDown)
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
 
     return () => {
+      disposed = true
       window.removeEventListener('touchstart', onTouchStart)
       window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('touchend', onTouchEnd)
+      window.removeEventListener('touchcancel', cancel)
       window.removeEventListener('mousedown', onMouseDown)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)

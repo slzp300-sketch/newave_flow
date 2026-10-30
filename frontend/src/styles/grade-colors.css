@@ -1,0 +1,16 @@
+/* Canonical grade colors. Exact colors identify grades; soft surfaces use the same hue. */
+.grade-m1 { --grade-color: #1750ec; --grade-on-color: #ffffff; }
+.grade-m2 { --grade-color: #f2f56f; --grade-on-color: #111827; }
+.grade-m3 { --grade-color: #f8b4cc; --grade-on-color: #111827; }
+.grade-h1 { --grade-color: #6fb6f5; --grade-on-color: #111827; }
+.grade-h2 { --grade-color: #6ff5dc; --grade-on-color: #111827; }
+.grade-h3 { --grade-color: #e44343; --grade-on-color: #000000; }
+.grade-neutral { --grade-color: #64748b; --grade-on-color: #ffffff; }
+
+:root .grade-solid, :root .grade-bar { background-color: var(--grade-color) !important; color: var(--grade-on-color) !important; --surface-bg: var(--grade-color); --surface-ink: var(--grade-on-color); }
+:root .grade-soft { background-color: color-mix(in srgb, var(--grade-color) 14%, white) !important; --surface-bg: color-mix(in srgb, var(--grade-color) 14%, white); }
+:root .grade-ink:not(.grade-solid), :root .grade-soft { color: #1f2937 !important; --surface-ink: #1f2937; }
+:root .grade-border { border-color: var(--grade-color); }
+:root .grade-hover:hover { border-color: var(--grade-color); }
+:root .grade-solid > .text-white, :root .grade-solid .grade-ink { color: var(--grade-on-color) !important; }
+:root .grade-label { display: inline-block; max-width: 100%; padding: .15em .5em; border-radius: .45em; font-size: inherit; font-weight: 700; line-height: 1.5; white-space: normal; word-break: keep-all; overflow-wrap: anywhere; vertical-align: baseline; }

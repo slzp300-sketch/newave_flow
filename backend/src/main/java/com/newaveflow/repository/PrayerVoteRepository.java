@@ -11,6 +11,9 @@ import java.util.Optional;
 
 public interface PrayerVoteRepository extends JpaRepository<PrayerVote, Long> {
 
+    @Query("SELECT v.teacher.id FROM PrayerVote v WHERE v.id = :id")
+    Optional<Long> findTeacherIdById(@Param("id") Long id);
+
     @Query("SELECT v FROM PrayerVote v JOIN FETCH v.teacher t LEFT JOIN FETCH t.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE v.id = :id")
     Optional<PrayerVote> findByIdWithTeacher(@Param("id") Long id);
 
@@ -38,4 +41,7 @@ public interface PrayerVoteRepository extends JpaRepository<PrayerVote, Long> {
     List<PrayerVote> findAllByWeekStart(@Param("weekStart") LocalDate weekStart);
 
     List<PrayerVote> findByWeekStartBetween(LocalDate from, LocalDate to);
+
+    @Query("SELECT DISTINCT v FROM PrayerVote v JOIN FETCH v.teacher t LEFT JOIN FETCH t.teacherClasses tc LEFT JOIN FETCH tc.classGroup WHERE v.weekStart BETWEEN :from AND :to")
+    List<PrayerVote> findWithTeacherByWeekStartBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 }

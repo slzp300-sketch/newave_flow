@@ -24,7 +24,6 @@ const EvangelismAdminPage = lazy(() => import('../pages/EvangelismAdminPage'))
 const MeetingMinutesPage = lazy(() => import('../pages/MeetingMinutesPage'))
 const MeetingMinutesAdminPage = lazy(() => import('../pages/MeetingMinutesAdminPage'))
 const PrayerAbsentAdminPage = lazy(() => import('../pages/PrayerAbsentAdminPage'))
-const WeeklyCheckPage = lazy(() => import('../pages/WeeklyCheckPage'))
 const RosterPage = lazy(() => import('../pages/RosterPage'))
 const EventAttendanceListPage = lazy(() => import('../pages/EventAttendanceListPage'))
 const EventAttendancePage = lazy(() => import('../pages/EventAttendancePage'))
@@ -33,16 +32,18 @@ const AdminMeetingAttendancePage = lazy(() => import('../pages/AdminMeetingAtten
 const ClassManagePage = lazy(() => import('../pages/ClassManagePage'))
 const DeactivationRequestsAdminPage = lazy(() => import('../pages/DeactivationRequestsAdminPage'))
 const TtsAdminPage = lazy(() => import('../pages/TtsAdminPage'))
-const MenuPage = lazy(() => import('../pages/MenuPage'))
 const AdminTeacherManagePage = lazy(() => import('../pages/AdminTeacherManagePage'))
 const AdminClassManagePage = lazy(() => import('../pages/AdminClassManagePage'))
 const AdminStudentManagePage = lazy(() => import('../pages/AdminStudentManagePage'))
 const AdminPendingUsersPage = lazy(() => import('../pages/AdminPendingUsersPage'))
 const AdminStudentAttendancePage = lazy(() => import('../pages/AdminStudentAttendancePage'))
+const AdminWeeklyReportPage = lazy(() => import('../pages/AdminWeeklyReportPage'))
+const NewFamilyPage = lazy(() => import('../pages/NewFamilyPage'))
 const ManualPreviewPage = lazy(() => import('../pages/ManualPreviewPage'))
 const AppGuidePage = lazy(() => import('../pages/AppGuidePage'))
 const ProfilePage = lazy(() => import('../pages/ProfilePage'))
 const NotificationPage = lazy(() => import('../pages/NotificationPage'))
+const AccountConnectionsPage = lazy(() => import('../pages/AccountConnectionsPage'))
 const AccountHelpPage = lazy(() => import('../pages/AccountHelpPage'))
 const PrivacyPage = lazy(() => import('../pages/PrivacyPage'))
 const CommunityPolicyPage = lazy(() => import('../pages/CommunityPolicyPage'))
@@ -216,10 +217,11 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
         element: <AppLayout />,
         children: [
           { path: '/',           element: <Home /> },
-          { path: '/menu',       element: <MenuPage /> },
+          { path: '/menu',       element: <Navigate to="/" replace /> },
           { path: '/attendance', element: <AttendancePage /> },
+          { path: '/new-family', element: <NewFamilyPage /> },
           { path: '/calendar',   element: <CalendarPage /> },
-          { path: '/checklist',  element: <WeeklyCheckPage /> },
+          { path: '/checklist',  element: <Navigate to="/" replace /> },
           { path: '/tts',        element: <TTSPage /> },
           { path: '/meeting/prayer',  element: <PrayerMeetingPage /> },
           { path: '/meeting/sat',     element: <SatMeetingPage /> },
@@ -233,6 +235,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
           { path: '/class-manage',         element: <ClassManagePage /> },
           { path: '/notifications',        element: <NotificationPage /> },
           { path: '/profile',              element: <ProfilePage /> },
+          { path: '/profile/connections', element: <AccountConnectionsPage /> },
           { path: '/safety/report', element: <ContentReportPage /> },
           {
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
@@ -250,6 +253,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
               { path: '/admin/deactivation-requests', element: <DeactivationRequestsAdminPage /> },
               { path: '/admin/tts',              element: <TtsAdminPage /> },
               { path: '/admin/student-attendance', element: <AdminStudentAttendancePage /> },
+              { path: '/admin/weekly-report', element: <AdminWeeklyReportPage /> },
               { path: '/admin/class-assignment', element: <AdminClassManagePage /> },
                 { path: '/admin/students',               element: <AdminStudentManagePage /> },
                 { path: '/admin/pending-users',          element: <AdminPendingUsersPage /> },

@@ -20,6 +20,11 @@ public class TtsResponse {
     private int score;
     private Integer importedScore; // 시트의 확정 총점. 세부 체크 내역은 추정하지 않는다.
     private boolean importedPeriod;
+    private LocalDate serverToday;
+    private List<String> editableDays;
+    private LocalDate attendanceDate;
+    private boolean attendanceEditable;
+    private boolean closedQuarter;
 
     @Data
     @Builder

@@ -58,6 +58,7 @@ public class UserController {
         result.put("birthDate", u.getBirthDate() != null ? u.getBirthDate().toString() : null);
         result.put("phone", u.getPhone());
         result.put("name", u.getName());
+        result.put("gender", u.getGender());
         result.put("churchPosition", u.getChurchPosition());
         return ResponseEntity.ok(result);
     }
@@ -66,13 +67,13 @@ public class UserController {
     @Transactional(readOnly = true)
     public ResponseEntity<List<UserInfo>> getTeachers() {
         List<UserInfo> teachers = userRepository.findByIsActiveTrue().stream()
-            .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+            .filter(User::participatesInTeacherActivities)
             .map(u -> UserInfo.from(u, resolveGrade(u)))
             .toList();
         return ResponseEntity.ok(teachers);
     }
 
-    /** 교사 교적부: 목사님/임원/교사 전원 + 반 배정 + 프로필 이미지 + 태그 */
+    /** 교사 교적부: 관리자/목사님/임원/교사 전원 + 반 배정 + 프로필 이미지 + 태그 */
     @GetMapping("/teachers/roster")
     @Transactional(readOnly = true)
     public ResponseEntity<List<TeacherRosterItem>> getTeacherRoster() {
@@ -94,14 +95,13 @@ public class UserController {
         );
 
         List<TeacherRosterItem> result = userRepository.findByIsActiveTrue().stream()
-            .filter(u -> u.getRole() != User.Role.ADMIN)
             .map(u -> new TeacherRosterItem(
                 u.getId(), u.getName(), u.getRole().name(), u.getPhone(),
                 u.getBirthDate() != null ? u.getBirthDate().toString() : null,
                 u.getProfileImage(),
                 classMap.get(u.getId()),
                 tagsMap.getOrDefault(u.getId(), List.of()),
-                u.getChurchPosition()
+                u.getChurchPosition(), u.getGender()
             ))
             .toList();
         return ResponseEntity.ok(result);
@@ -112,7 +112,6 @@ public class UserController {
     public ResponseEntity<List<UserInfo>> getAllUsers() {
         List<UserInfo> users = userRepository.findByIsActiveTrue()
             .stream()
-            .filter(u -> u.getRole() != User.Role.ADMIN)
             .map(u -> UserInfo.from(u, resolveGrade(u)))
             .toList();
         return ResponseEntity.ok(users);
@@ -134,6 +133,12 @@ public class UserController {
         String approvedImage=photos.submit(com.newaveflow.entity.ModeratedPhoto.TargetType.USER,user.getId(),
             user.getProfileImage(),request.profileImage(),currentUser.getId());
         user.updateProfile(request.name(), request.phone(), birthDate, approvedImage, request.churchPosition());
+        // Older clients omit this field; keep the saved value in that case.
+        if (request.gender() != null) {
+            String gender = request.gender().trim();
+            if (!Set.of("", "남", "여").contains(gender)) throw com.newaveflow.exception.AppException.badRequest("성별을 확인해주세요.");
+            user.updateGender(gender.isEmpty() ? null : gender);
+        }
         userRepository.save(user);
         return ResponseEntity.ok().build();
     }
@@ -180,5 +185,5 @@ public class UserController {
     public record RoleRequest(String role) {}
     public record PasswordChangeRequest(String currentPassword, String newPassword) {}
     public record SettingsRequest(boolean largeFont) {}
-    public record ProfileRequest(String name, String phone, String birthDate, String profileImage, String churchPosition) {}
+    public record ProfileRequest(String name, String phone, String birthDate, String profileImage, String churchPosition, String gender) {}
 }

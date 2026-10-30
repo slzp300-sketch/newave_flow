@@ -25,8 +25,16 @@ public class Student {
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_group_id", nullable = false)
+    @JoinColumn(name = "class_group_id")
     private ClassGroup classGroup;
+
+    private LocalDate classEffectiveDate;
+
+    public boolean belongsToClassOn(LocalDate date) {
+        return classGroup != null && (classEffectiveDate == null || !classEffectiveDate.isAfter(date));
+    }
+
+    public void admitToClass(ClassGroup group, LocalDate date) { classGroup=group; classEffectiveDate=date; }
 
     @Column(length = 20)
     private String grade;

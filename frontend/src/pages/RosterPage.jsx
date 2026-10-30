@@ -1,3 +1,6 @@
+import { gradeClasses } from '../utils/gradeColors'
+import { STUDENT_ROSTER_MODES } from '../utils/viewModes'
+import './PeopleReadability.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePersistedState } from '../hooks/usePersistedState'
@@ -8,7 +11,7 @@ import {
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
-import ViewModeToggle, { useViewMode, DetailTable } from '../components/common/ViewModeToggle'
+import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
 import { classesApi } from '../api/classes'
 import { usersApi } from '../api/users'
 import { tagsApi } from '../api/tags'
@@ -19,15 +22,7 @@ import ReportLink from '../components/common/ReportLink'
 const GRADES = ['전체', '중1', '중2', '중3', '고1', '고2', '고3']
 const GRADE_ORDER = ['중1', '중2', '중3', '고1', '고2', '고3']
 
-const GRADE_COLORS = {
-  '전체': { bg: 'bg-gray-700',    light: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-400'    },
-  '중1': { bg: 'bg-primary-500',    light: 'bg-primary-50',    text: 'text-primary-600',    border: 'border-primary-300'    },
-  '중2': { bg: 'bg-primary-500',  light: 'bg-primary-50',  text: 'text-primary-600',  border: 'border-primary-300'  },
-  '중3': { bg: 'bg-primary-500',  light: 'bg-primary-50',  text: 'text-primary-600',  border: 'border-primary-300'  },
-  '고1': { bg: 'bg-secondary-500', light: 'bg-secondary-50', text: 'text-secondary-600', border: 'border-secondary-300' },
-  '고2': { bg: 'bg-amber-500',   light: 'bg-amber-50',   text: 'text-amber-600',   border: 'border-amber-300'   },
-  '고3': { bg: 'bg-rose-500',    light: 'bg-rose-50',    text: 'text-rose-600',    border: 'border-rose-300'    },
-}
+const GRADE_COLORS = Object.fromEntries(['전체', ...GRADE_ORDER].map(grade => [grade, gradeClasses(grade)]))
 
 const TAG_COLORS = [
   'bg-red-500 text-white border-red-600',
@@ -60,6 +55,7 @@ const TAG_COLORS = [
 ]
 
 const ROLE_CONFIG = {
+  ADMIN:    { label: '관리자', bg: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500' },
   PASTOR:    { label: '목사님', bg: 'bg-primary-100 text-primary-700',     dot: 'bg-primary-500'    },
   EXECUTIVE: { label: '임원',   bg: 'bg-amber-100 text-amber-700',   dot: 'bg-amber-500'   },
   TEACHER:   { label: '교사',   bg: 'bg-secondary-100 text-secondary-700', dot: 'bg-secondary-500' },
@@ -86,7 +82,7 @@ export default function RosterPage() {
 
   if (activeRoster === 'student') {
     return (
-      <div className="flex flex-col min-h-screen pb-24">
+      <div className="people-readable readable-content flex flex-col min-h-screen pb-24">
         <Header title="학생 교적부" showBack onBack={() => setActiveRoster(null)} />
         <StudentRoster />
       </div>
@@ -95,7 +91,7 @@ export default function RosterPage() {
 
   if (activeRoster === 'teacher') {
     return (
-      <div className="flex flex-col min-h-screen pb-24">
+      <div className="people-readable readable-content flex flex-col min-h-screen pb-24">
         <Header title="교사 교적부" showBack onBack={() => setActiveRoster(null)} />
         <TeacherRoster />
       </div>
@@ -103,7 +99,7 @@ export default function RosterPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen pb-24">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-24">
       <Header title="교적부" showBack />
       <RosterLanding onSelect={setActiveRoster} />
     </div>
@@ -146,7 +142,7 @@ function RosterLanding({ onSelect }) {
           <p className="text-xs text-gray-400 font-medium mt-0.5">
             전체 {rosterData.length}반 · {totalStudents}명
           </p>
-          <p className="text-xs text-primary-500 font-bold mt-1.5">학년별 반 구성 · 학생 정보 조회</p>
+
         </div>
         <ChevronRight size={20} className="text-gray-300 flex-shrink-0" />
       </motion.button>
@@ -167,7 +163,7 @@ function RosterLanding({ onSelect }) {
           <p className="text-xs text-gray-400 font-medium mt-0.5">
             총 {totalTeachers}명
           </p>
-          <p className="text-xs text-secondary-700 font-bold mt-1.5">목사님 · 임원 · 교사 정보 조회</p>
+
         </div>
         <ChevronRight size={20} className="text-gray-300 flex-shrink-0" />
       </motion.button>
@@ -179,7 +175,7 @@ function RosterLanding({ onSelect }) {
 function StudentRoster() {
   const [selectedGrade, setSelectedGrade] = usePersistedState('selectedGrade', '전체')
   const [selectedClass, setSelectedClass] = usePersistedState('selectedClass', null)
-  const [viewMode, setViewMode] = useViewMode('roster-classes', 'large')
+  const [viewMode, setViewMode] = useViewMode('roster-classes', 'large', STUDENT_ROSTER_MODES)
   const { data: rawClasses = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['roster'],
     queryFn: () => classesApi.getRoster().then(r => r.data),
@@ -231,21 +227,21 @@ function StudentRoster() {
               <button aria-pressed={isActive} key={grade}
                 onClick={() => { setSelectedGrade(grade); setSelectedClass(null) }}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all active:scale-95 ${
-                  isActive ? `${gc.bg} text-white shadow-md` : 'bg-gray-100 text-gray-500'
+                  isActive ? `${gc.bg} shadow-md` : `${gc.light} ${gc.text}`
                 }`}
               >{grade}</button>
             )
           })}
         </div>
         <motion.div key={selectedGrade} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-          className={`mx-4 mb-3 pl-4 pr-1.5 py-1.5 rounded-xl ${colors.light} flex items-center gap-2`}>
+          className={`mx-4 mb-3 pl-4 pr-1.5 py-1.5 rounded-xl ${colors.light} flex flex-wrap items-center gap-2`}>
           <BookOpen size={13} className={colors.text} />
           <span className={`text-xs font-bold ${colors.text}`}>{selectedGrade === '전체' ? '전체 학년' : selectedGrade}</span>
           <span className="text-gray-300 text-xs">·</span>
           <span className="text-xs text-gray-600 font-semibold">총 {classes.length}반</span>
           <span className="text-gray-300 text-xs">·</span>
           <span className="text-xs text-gray-600 font-semibold">{totalStudents}명</span>
-          <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} /></div>
+          <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} allowedModes={STUDENT_ROSTER_MODES} labels={{ large: '4분할', list: '목록형' }} /></div>
         </motion.div>
       </div>
 
@@ -297,7 +293,6 @@ function TeacherRoster() {
   const [activeTab, setActiveTab] = useState('executive')
   const [activeGrade, setActiveGrade] = useState('전체')
   const [showTagPool, setShowTagPool] = useState(false)
-  const [viewMode, setViewMode] = useViewMode('roster-teachers', 'small')
 
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ['teacher-roster'],
@@ -315,11 +310,12 @@ function TeacherRoster() {
     return <div className="flex-1 flex items-center justify-center mt-20"><Loader2 className="w-8 h-8 text-secondary-700 animate-spin" /></div>
   }
 
+  const admins     = teachers.filter(t => t.role === 'ADMIN')
   const pastors    = teachers.filter(t => t.role === 'PASTOR')
   const executives = teachers.filter(t => t.role === 'EXECUTIVE')
   const pureTeachers = teachers.filter(t => t.role === 'TEACHER')
-  // 목사님 제외한 모든 교사 (임원 포함, 반 배정 여부 무관)
-  const teacherTabList = [...pureTeachers, ...executives]
+  // 목사님 제외한 모든 교사 (관리자·임원 포함, 반 배정 여부 무관)
+  const teacherTabList = [...pureTeachers, ...executives, ...admins]
     .filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
 
   // 교사 탭 – 학년별 그룹화
@@ -343,11 +339,11 @@ function TeacherRoster() {
       const bHead = b.churchPosition?.includes('학년부장')
       if (aHead && !bHead) return -1
       if (!aHead && bHead) return 1
-      
+
       const aClass = getClassNum(a.className)
       const bClass = getClassNum(b.className)
       if (aClass !== bClass) return aClass - bClass
-      
+
       return a.name.localeCompare(b.name)
     })
   })
@@ -375,7 +371,7 @@ function TeacherRoster() {
               className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all ${
                 activeTab === 'executive' ? 'border-amber-400 text-amber-600' : 'border-transparent text-gray-400'
               }`}
-            >목사님 · 임원</button>
+            >관리자 · 목사님 · 임원</button>
             <button aria-pressed={activeTab === 'teacher'}
               onClick={() => { setActiveTab('teacher'); setActiveGrade('전체') }}
               className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all ${
@@ -385,19 +381,18 @@ function TeacherRoster() {
           </div>
         </div>
 
-        
+
         {/* 총 인원 및 태그 관리 */}
         <div className="px-4 pt-3 pb-0 flex flex-col gap-2">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-gray-500">
               {activeTab === 'executive'
-                ? `총 ${pastors.length + executives.length}명`
+                ? `총 ${admins.length + pastors.length + executives.length}명`
                 : activeGrade === '전체'
                   ? `총 ${teacherTabList.length}명`
                   : `총 ${teachersByGrade[activeGrade]?.length || 0}명`
               }
             </span>
-            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
           </div>
           {canManageTags && (
             <div className="flex justify-end gap-2">
@@ -427,15 +422,19 @@ function TeacherRoster() {
           {activeTab === 'executive' && (
             <motion.div key="exec-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col gap-6 px-4 pt-4">
+              {admins.length > 0 && (
+                <RosterSection title="관리자" dotColor="bg-rose-500"
+                  count={admins.length} teachers={admins} onSelect={setSelectedTeacher} context="executive" />
+              )}
               {pastors.length > 0 && (
-                <RosterSection title="목사님" dotColor="bg-primary-500" mode={viewMode}
+                <RosterSection title="목사님" dotColor="bg-primary-500"
                   count={pastors.length} teachers={pastors} onSelect={setSelectedTeacher} context="executive" />
               )}
               {executives.length > 0 && (
-                <RosterSection title="임원" dotColor="bg-amber-500" mode={viewMode}
+                <RosterSection title="임원" dotColor="bg-amber-500"
                   count={executives.length} teachers={executives} onSelect={setSelectedTeacher} context="executive" />
               )}
-              {pastors.length === 0 && executives.length === 0 && (
+              {admins.length === 0 && pastors.length === 0 && executives.length === 0 && (
                 <div className="py-20 flex flex-col items-center gap-3 text-gray-300">
                   <Users size={40} />
                   <p className="text-sm font-bold">임원 정보가 없습니다</p>
@@ -478,7 +477,7 @@ function TeacherRoster() {
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${gc.bg} text-white`}>{grade}</span>
                         <span className="text-xs text-gray-400 font-medium">{list.length}명</span>
                       </div>
-                      <TeacherList teachers={list} mode={viewMode} onSelect={setSelectedTeacher} context="teacher" />
+                      <TeacherList teachers={list} onSelect={setSelectedTeacher} context="teacher" />
                     </div>
                   )
                 })}
@@ -518,7 +517,7 @@ function TeacherRoster() {
   )
 }
 
-function RosterSection({ title, dotColor, count, teachers, onSelect, context, mode }) {
+function RosterSection({ title, dotColor, count, teachers, onSelect, context }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -526,7 +525,7 @@ function RosterSection({ title, dotColor, count, teachers, onSelect, context, mo
         <span className="text-sm font-bold text-gray-900">{title}</span>
         <span className="text-xs text-gray-400 font-medium">{count}명</span>
       </div>
-      <TeacherList teachers={teachers} mode={mode} onSelect={onSelect} context={context} />
+      <TeacherList teachers={teachers} onSelect={onSelect} context={context} />
     </div>
   )
 }
@@ -534,31 +533,18 @@ function RosterSection({ title, dotColor, count, teachers, onSelect, context, mo
 // 카드에 표시할 구분 배지 (교사 탭에서는 학년부장/교사로 표시)
 function teacherBadge(teacher, context) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
-  if (context === 'teacher') {
+  if (context === 'teacher' && teacher.role !== 'ADMIN') {
     if (teacher.churchPosition?.includes('학년부장')) return { label: '학년부장', bg: 'bg-secondary-100 text-secondary-700' }
     if (teacher.role === 'TEACHER') return { label: '교사', bg: 'bg-gray-100 text-gray-600' }
   }
   return { label: roleCfg.label, bg: roleCfg.bg }
 }
 
-function TeacherList({ teachers, mode, onSelect, context }) {
-  if (mode === 'detail') {
-    return (
-      <DetailTable rows={teachers} onRowClick={onSelect} columns={[
-        { label: '이름', render: t => t.name },
-        { label: '구분', render: t => teacherBadge(t, context).label },
-        { label: '담당 반', render: t => t.className || null },
-        { label: '직분', render: t => t.churchPosition || null },
-        { label: '연락처', render: t => t.phone || null },
-        { label: '태그', render: t => t.tags?.map(tag => tag.name).join(', ') || null },
-      ]} />
-    )
-  }
-  const wrap = { large: 'grid grid-cols-2 gap-2', small: 'grid grid-cols-4 gap-1.5', list: 'flex flex-col gap-2' }[mode]
+function TeacherList({ teachers, onSelect, context }) {
   return (
-    <div className={wrap}>
-      {teachers.map((t, idx) => (
-        <TeacherCard key={t.id} teacher={t} idx={idx} onSelect={onSelect} context={context} mode={mode} />
+    <div className="flex flex-col gap-2">
+      {teachers.map((teacher, idx) => (
+        <TeacherRow key={teacher.id} teacher={teacher} idx={idx} onSelect={onSelect} context={context} />
       ))}
     </div>
   )
@@ -580,7 +566,7 @@ function TeacherTags({ tags, className = '' }) {
   return (
     <div className={`flex flex-wrap gap-0.5 ${className}`}>
       {tags.map(t => (
-        <span key={t.id} className={`font-bold px-1 py-0.5 rounded-sm truncate text-[0.6875rem] ${t.color || 'bg-primary-50 text-primary-600'}`} style={{ maxWidth: '100%' }}>
+        <span key={t.id} className={`font-bold px-1 py-0.5 rounded-sm people-text text-[0.6875rem] ${t.color || 'bg-primary-50 text-primary-600'}`} style={{ maxWidth: '100%' }}>
           {t.name}
         </span>
       ))}
@@ -588,91 +574,43 @@ function TeacherTags({ tags, className = '' }) {
   )
 }
 
-function TeacherCard({ teacher, idx, onSelect, context = 'default', mode = 'small' }) {
+function TeacherRow({ teacher, idx, onSelect, context = 'default' }) {
   const { label: displayLabel, bg: displayBg } = teacherBadge(teacher, context)
-  const motionProps = {
-    initial: { opacity: 0, y: 8 },
-    animate: { opacity: 1, y: 0 },
-    transition: { delay: Math.min(idx * 0.03, 0.3) },
-    onClick: () => onSelect(teacher),
-  }
-
-  if (mode === 'large') {
-    return (
-      <motion.button {...motionProps}
-        className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.97] transition-all text-center">
-        <TeacherAvatar teacher={teacher} className="w-16 h-16" textClass="text-2xl" />
-        <p className="font-bold text-gray-900 text-sm leading-tight w-full truncate mt-0.5">{teacher.name}</p>
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${displayBg}`}>{displayLabel}</span>
-        {teacher.className && <p className="text-xs text-gray-500 font-medium">{teacher.className}</p>}
-        <TeacherTags tags={teacher.tags} className="justify-center w-full" />
-      </motion.button>
-    )
-  }
-
-  if (mode === 'list') {
-    return (
-      <motion.button {...motionProps}
-        className="w-full flex items-center gap-3 px-3 py-2.5 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.98] transition-all text-left">
-        <TeacherAvatar teacher={teacher} className="w-10 h-10" textClass="text-base" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="font-bold text-gray-900 text-sm truncate">{teacher.name}</p>
-            <span className={`text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${displayBg}`}>{displayLabel}</span>
-          </div>
-          <p className="text-xs text-gray-400 font-medium truncate mt-0.5">
-            {[teacher.className, teacher.churchPosition].filter(Boolean).join(' · ') || '담당 반 없음'}
-          </p>
-          <TeacherTags tags={teacher.tags} className="mt-1 max-h-[18px] overflow-hidden" />
-        </div>
-        <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
-      </motion.button>
-    )
-  }
 
   return (
     <motion.button
+      type="button"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.03 }}
+      transition={{ delay: Math.min(idx * 0.03, 0.3) }}
       onClick={() => onSelect(teacher)}
-      className="flex flex-col items-center gap-1 p-2 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.95] transition-all text-center"
+      className="w-full flex items-center gap-3 px-3 py-2.5 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.98] transition-all text-left"
     >
-      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-        {teacher.profileImage
-          ? <img src={teacher.profileImage} alt={teacher.name} className="w-full h-full object-cover" />
-          : <span className="font-bold text-gray-600 text-base">{teacher.name?.[0]}</span>
-        }
-      </div>
-      <p className="font-bold text-gray-900 text-xs leading-tight w-full truncate mt-0.5">{teacher.name}</p>
-      
-      <span className={`text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-full ${displayBg}`}>
-        {displayLabel}
-      </span>
-      
-      {teacher.tags?.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-0.5 mt-0.5 w-full max-h-[30px] overflow-hidden">
-          {teacher.tags.map(t => (
-            <span key={t.id} className={`font-bold px-1 py-0.5 rounded-sm truncate ${
-              t.category === 'EXECUTIVE' ? 'text-[8px]' : 'text-[7px]'
-            } ${t.color || "bg-primary-50 text-primary-600"}`} style={{ maxWidth: '100%' }}>
-              {t.name}
-            </span>
-          ))}
+      <TeacherAvatar teacher={teacher} className="w-10 h-10" textClass="text-base" />
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="font-bold text-gray-900 text-sm people-text">{teacher.name}</p>
+          <span className={'text-[0.6875rem] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ' + displayBg}>{displayLabel}</span>
         </div>
-      )}
+        <p className="text-xs text-gray-400 font-medium people-text mt-0.5">
+          {[teacher.className, teacher.churchPosition].filter(Boolean).join(' · ') || '담당 반 없음'}
+        </p>
+        <TeacherTags tags={teacher.tags} className="mt-1" />
+      </div>
+      <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
     </motion.button>
   )
 }
+
 function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManageTags, onClose, onTagChanged, context }) {
   const roleCfg = ROLE_CONFIG[teacher.role] ?? ROLE_CONFIG.TEACHER
   const age = calcAge(teacher.birthDate)
-  
+
   const isGradeHead = teacher.churchPosition?.includes('학년부장')
   let displayLabel = roleCfg.label
   let displayBg = roleCfg.bg
-  
-  if (context === 'teacher') {
+
+  if (context === 'teacher' && teacher.role !== 'ADMIN') {
     if (isGradeHead) {
       displayLabel = '학년부장'
       displayBg = 'bg-secondary-100 text-secondary-700'
@@ -732,7 +670,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
           style={{ maxHeight: 'min(85vh, var(--safe-overlay-height))' }}
         >
           <div className="flex justify-end px-4 pt-4 pb-0">
-            <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
+            <button aria-label="상세 닫기" onClick={onClose} className="shrink-0 min-h-11 min-w-11 p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
               <X size={16} className="text-gray-500" />
             </button>
           </div>
@@ -770,6 +708,7 @@ function TeacherDetailSheet({ teacher, allTags, execTags, teacherTags, canManage
             <ReportLink targetType="USER" targetId={teacher.id} label="이 사용자 신고" />
             {teacher.profileImage && <ReportLink contentType="USER_PROFILE_PHOTO" targetId={teacher.id} label="프로필 사진 신고" />}
             {teacher.className && <InfoRow label="담당 반" value={teacher.className} icon="📚" />}
+            {teacher.gender && <InfoRow label="성별" value={teacher.gender} icon="👤" />}
             {teacher.birthDate && (
               <InfoRow label="나이"
                 value={`${age ? `만 ${age}세` : ''} (${formatBirth(teacher.birthDate)})`}
@@ -909,9 +848,9 @@ function TagPoolModal({ tags, execTags, teacherTags, onClose, onChanged }) {
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <div>
                 <p className="font-bold text-gray-900">태그 관리</p>
-                <p className="text-xs text-gray-400 font-medium mt-0.5">태그를 만들고 임원·교사에게 부여하세요</p>
+
               </div>
-              <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
+              <button aria-label="상세 닫기" onClick={onClose} className="shrink-0 min-h-11 min-w-11 p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
                 <X size={16} className="text-gray-500" />
               </button>
             </div>
@@ -1060,18 +999,7 @@ function InfoRow({ label, value, icon, isPhone = false }) {
 
 // ── 학생 교적부 컴포넌트 ─────────────────────────────────
 function ClassList({ classes, grade, colors, mode, selectedId, onSelect }) {
-  if (mode === 'detail') {
-    return (
-      <DetailTable rows={classes} onRowClick={onSelect} columns={[
-        { label: '반', render: c => `${grade} ${c.name}` },
-        { label: '성별', render: c => c.gender || null },
-        { label: '담당', render: c => c.teacherName || null },
-        { label: '인원', render: c => `${c.students.length}명` },
-        { label: '세례', render: c => `${c.students.filter(s => s.baptism === true).length}명` },
-      ]} />
-    )
-  }
-  const wrap = { large: 'grid grid-cols-2 gap-3', small: 'grid grid-cols-4 gap-2', list: 'flex flex-col gap-2' }[mode]
+  const wrap = { large: 'roster-four-grid gap-3', small: 'readable-card-grid gap-2', list: 'flex flex-col gap-2' }[mode]
   return (
     <div className={wrap}>
       {classes.map((cls, idx) => (
@@ -1087,36 +1015,22 @@ function ClassCard({ cls, grade, colors, idx, isSelected, onClick, mode = 'large
   const baptizedCount = cls.students.filter(s => s.baptism === true).length
   const genderText = cls.gender === '여' ? 'text-pink-500' : 'text-primary-500'
 
-  if (mode === 'small') {
-    return (
-      <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-        onClick={onClick}
-        className={`glass-card rounded-2xl p-2 flex flex-col items-center gap-1 border-2 active:scale-95 transition-all ${isSelected ? colors.border : 'border-transparent'}`}>
-        <div className={`w-9 h-9 rounded-xl ${colors.bg} flex items-center justify-center shadow-sm`}>
-          <span className="text-white font-bold text-xs">{cls.name.replace('반', '')}</span>
-        </div>
-        <p className="text-xs font-bold text-gray-900 leading-tight">{cls.name}</p>
-        <p className={`text-xs font-bold ${genderText}`}>{cls.gender} · {count}명</p>
-      </motion.button>
-    )
-  }
-
   if (mode === 'list') {
     return (
       <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
         onClick={onClick}
         className={`glass-card w-full rounded-2xl px-3 py-2.5 flex items-center gap-3 border-2 text-left active:scale-[0.98] transition-all ${isSelected ? colors.border : 'border-transparent'}`}>
-        <div className={`w-9 h-9 rounded-xl ${colors.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
-          <span className="text-white font-bold text-xs">{cls.name.replace('반', '')}</span>
+        <div className={`people-class-symbol rounded-xl ${colors.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
+          <span className="text-white font-bold text-xs">{/^\d+반$/.test(cls.name) ? cls.name.replace('반', '') : <BookOpen size={18} aria-hidden="true" />}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <p className="font-bold text-gray-900 text-sm">{grade} {cls.name}</p>
             <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
               cls.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
             }`}>{cls.gender}</span>
           </div>
-          <p className="text-xs text-gray-400 font-medium truncate mt-0.5">
+          <p className="text-xs text-gray-400 font-medium people-text mt-0.5">
             {cls.teacherName ? `${cls.teacherName} 선생님 · ` : ''}{count}명{count > 0 ? ` · 세례 ${baptizedCount}` : ''}
           </p>
         </div>
@@ -1129,8 +1043,8 @@ function ClassCard({ cls, grade, colors, idx, isSelected, onClick, mode = 'large
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
       <Card onClick={onClick} className={`border-2 transition-all ${isSelected ? colors.border : 'border-transparent'}`}>
         <div className="flex items-start justify-between mb-3">
-          <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center shadow-sm`}>
-            <span className="text-white font-bold text-sm">{cls.name.replace('반', '')}</span>
+          <div className={`people-class-symbol rounded-xl ${colors.bg} flex items-center justify-center shadow-sm`}>
+            <span className="text-white font-bold text-sm">{/^\d+반$/.test(cls.name) ? cls.name.replace('반', '') : <BookOpen size={18} aria-hidden="true" />}</span>
           </div>
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
             cls.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
@@ -1163,7 +1077,6 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
 
   const [fullStudents, setFullStudents] = useState(cls.students)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
-  const [viewMode, setViewMode] = useViewMode('roster-students', 'large')
 
   useEffect(() => {
     let isMounted = true
@@ -1189,13 +1102,13 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
           style={{ maxHeight: 'min(82vh, var(--safe-overlay-height))' }}
         >
           <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
-                  <span className="text-white font-bold text-sm">{cls.name.replace('반', '')}</span>
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+              <div className="people-class-heading flex min-w-0 flex-1 items-start gap-3">
+                <div className={`people-class-symbol rounded-xl ${colors.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
+                  <span className="text-white font-bold text-sm">{/^\d+반$/.test(cls.name) ? cls.name.replace('반', '') : <BookOpen size={18} aria-hidden="true" />}</span>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="font-bold text-gray-900">{grade} {cls.name}</p>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                       cls.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
@@ -1204,7 +1117,7 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
                   <p className="text-xs text-gray-400">{cls.teacherName ? `${cls.teacherName} 선생님 · ` : ''}총 {count}명</p>
                 </div>
               </div>
-              <button onClick={onClose} className="p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
+              <button aria-label="상세 닫기" onClick={onClose} className="shrink-0 min-h-11 min-w-11 p-2 rounded-full bg-gray-100 active:scale-90 transition-transform">
                 <X size={16} className="text-gray-500" />
               </button>
             </div>
@@ -1213,7 +1126,6 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
                 <span className="text-xs px-2.5 py-1 rounded-full bg-secondary-50 text-secondary-600 font-bold">세례 {baptizedCount}명</span>
                 <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 font-bold">미세례 {unbaptizedCount}명</span>
                 {unknownCount > 0 && <span className="text-xs px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-600 font-bold">미확인 {unknownCount}명</span>}
-                <div className="ml-auto"><ViewModeToggle mode={viewMode} onChange={setViewMode} /></div>
               </div>
             )}
           </div>
@@ -1224,7 +1136,7 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
               </div>
             )}
             {count === 0 ? <EmptyStudentState colors={colors} /> : (
-              <StudentList students={fullStudents} colors={colors} mode={viewMode} />
+              <StudentList students={fullStudents} colors={colors} />
             )}
           </div>
         </motion.div>
@@ -1233,81 +1145,11 @@ function ClassDetailSheet({ cls, grade, colors, onClose }) {
   )
 }
 
-function StudentList({ students, colors, mode }) {
-  if (mode === 'detail') {
-    const parent = (name, phone) => [name, phone].filter(Boolean).join(' ') || null
-    return (
-      <div className="p-3">
-        <DetailTable rows={students} columns={[
-          { label: '이름', render: s => s.name },
-          { label: '세례', render: s => s.baptism === true ? '세례' : s.baptism === false ? '미세례' : null },
-          { label: '학교', render: s => s.school || null },
-          { label: '생년월일', render: s => s.birthDate ? `${formatBirth(s.birthDate)} (만 ${calcAge(s.birthDate)}세)` : null },
-          { label: '연락처', render: s => s.phone ? <a href={`tel:${s.phone}`} className="text-primary-600">{s.phone}</a> : null },
-          { label: '아버지', render: s => parent(s.fatherName, s.fatherPhone) },
-          { label: '어머니', render: s => parent(s.motherName, s.motherPhone) },
-          { label: '주소', render: s => s.address || null },
-        ]} />
-      </div>
-    )
-  }
-
-  if (mode === 'small') {
-    return (
-      <div className="grid grid-cols-4 gap-2 p-4">
-        {students.map((s, idx) => (
-          <motion.div key={s.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-            className="flex flex-col items-center gap-1">
-            <StudentAvatar student={s} className="w-12 h-12 rounded-2xl" />
-            <p className="text-xs font-bold text-gray-900 truncate w-full text-center">{s.name}</p>
-            {s.baptism === true && <span className="text-[0.6875rem] font-bold px-1.5 rounded-full bg-secondary-100 text-secondary-600">세례</span>}
-          </motion.div>
-        ))}
-      </div>
-    )
-  }
-
-  if (mode === 'list') {
-    return (
-      <div className="divide-y divide-gray-50">
-        {students.map((s, idx) => (
-          <motion.div key={s.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-            className="flex items-center gap-3 px-5 py-2.5">
-            <StudentAvatar student={s} className="w-8 h-8 rounded-lg" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-gray-900 text-sm">{s.name}</span>
-                {s.baptism === true && <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-secondary-100 text-secondary-600">세례</span>}
-              </div>
-              <p className="text-xs text-gray-400 truncate">
-                {[s.school, s.birthDate && `만 ${calcAge(s.birthDate)}세`].filter(Boolean).join(' · ')}
-              </p>
-            </div>
-            {s.phone && (
-              <a href={`tel:${s.phone}`} className="brand-action w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 active:text-primary-600 flex-shrink-0">
-                <Phone size={14} />
-              </a>
-            )}
-          </motion.div>
-        ))}
-      </div>
-    )
-  }
+function StudentList({ students, colors }) {
 
   return (
-    <div className="divide-y divide-gray-50">
+    <div className="roster-four-grid gap-3 p-4">
       {students.map((student, idx) => <StudentRow key={student.id} student={student} colors={colors} idx={idx} />)}
-    </div>
-  )
-}
-
-function StudentAvatar({ student, className }) {
-  return (
-    <div className={`${student.gender === '여' ? 'bg-pink-400' : 'bg-primary-400'} flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden ${className}`}>
-      {student.profileImage
-        ? <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
-        : <span className="text-white font-bold text-sm">{student.name[0]}</span>
-      }
     </div>
   )
 }
@@ -1316,7 +1158,7 @@ function StudentRow({ student, colors, idx }) {
   const age = calcAge(student.birthDate)
   return (
     <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
-      className="flex items-start gap-3 px-5 py-3.5">
+      className="people-student-row flex items-start gap-3 px-5 py-3.5">
       <div className={`w-9 h-9 rounded-xl ${student.gender === '여' ? 'bg-pink-400' : 'bg-primary-400'} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm overflow-hidden`}>
         {student.profileImage
           ? <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />

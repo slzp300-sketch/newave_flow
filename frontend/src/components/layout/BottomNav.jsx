@@ -5,12 +5,10 @@ import { LayoutGroup, motion } from 'framer-motion'
 import { useMotionPreference } from '../common/Motion'
 import FeatureIcon from '../common/FeatureIcon'
 
-// 모든 권한 공통 하단 탭 (관리 화면은 '전체' 탭 안에 카드로 들어 있음)
+// All roles share three tabs; feature and management menus live on Home.
 const navItems = [
   { to: '/',         label: '홈' },
-  { to: '/checklist', label: '체크' },
   { to: '/calendar', label: '일정' },
-  { to: '/menu',     label: '전체' },
   { to: '/profile',  label: '내 정보' },
 ]
 
@@ -33,8 +31,8 @@ export default function BottomNav() {
               }
             >
                 <>
-                  {isActive && <motion.span aria-hidden="true" layoutId="active-tab" initial={false}
-                    transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 430, damping: 34 }}
+                  {isActive && <motion.span aria-hidden="true" layoutId={reduced ? undefined : 'active-tab'} initial={reduced ? { opacity: 0 } : false} animate={{ opacity: 1 }}
+                    transition={reduced ? { duration: 0.16, ease: 'easeOut' } : { type: 'spring', stiffness: 430, damping: 34 }}
                     className="brand-nav-indicator absolute inset-1 -z-10 rounded-xl" />}
                   <motion.span animate={{ y: !reduced && isActive ? -1 : 0, scale: !reduced && isActive ? 1.06 : 1 }}>
                     {to === '/' ? <Home size={22} strokeWidth={isActive ? 2 : 1.7} aria-hidden="true" /> : <FeatureIcon path={to} size={22} />}

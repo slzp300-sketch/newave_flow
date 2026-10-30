@@ -28,14 +28,14 @@
   }
 
   /* Use the actual UI state, which persists after mouse/touch release. */
-  :root :is(button, .brand-action, summary):is([aria-pressed='true'], [aria-checked='true'], [aria-selected='true'], [aria-current='page'], [aria-current='location'], [data-checked='true']):not(.brand-color-swatch),
-  :root details[open] > summary {
+  :root :is(button, .brand-action, summary):is([aria-expanded='true'], [aria-pressed='true'], [aria-checked='true'], [aria-selected='true'], [aria-current='page'], [aria-current='location'], [data-checked='true']):not(.brand-color-swatch),
+  :root details[open] > summary:not(.brand-color-swatch) {
     --surface-bg: theme('colors.secondary.50');
     --surface-border: theme('colors.secondary.400');
     --surface-ink: theme('colors.secondary.800');
     box-shadow: inset 0 0 0 1px var(--surface-border);
   }
-  :root :is(button, .brand-action).text-white:is([aria-pressed='true'], [aria-checked='true'], [aria-selected='true'], [aria-current='page'], [aria-current='location'], [data-checked='true']):not(.brand-color-swatch) {
+  :root :is(button, .brand-action).text-white:is([aria-expanded='true'], [aria-pressed='true'], [aria-checked='true'], [aria-selected='true'], [aria-current='page'], [aria-current='location'], [data-checked='true']):not(.brand-color-swatch) {
     --surface-bg: theme('colors.secondary.700');
     --surface-border: theme('colors.secondary.700');
     --surface-ink: white;

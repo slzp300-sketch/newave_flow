@@ -1,3 +1,5 @@
+import AppSelect from '../components/common/AppSelect'
+import { CollapsePanel } from '../components/common/Motion'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
 import { useState } from 'react'
@@ -14,8 +16,7 @@ import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
-import KakaoConnection from '../components/common/KakaoConnection'
-import AppleConnection from '../components/common/AppleConnection'
+import NotificationPreferences from '../components/notifications/NotificationPreferences'
 
 const ROLE_MAP = {
   PASTOR:    { label: '목사님',  bg: 'bg-primary-100    text-primary-700' },
@@ -68,6 +69,7 @@ export default function ProfilePage() {
   const form = profileForm ?? {
     name:          user?.name ?? '',
     phone:         myProfile?.phone ?? user?.phone ?? '',
+    gender:        myProfile?.gender ?? '',
     birthDate:     myProfile?.birthDate ?? user?.birthDate ?? '',
     profileImage:  myProfile?.profileImage ?? '',
     churchPosition: myProfile?.churchPosition ?? user?.churchPosition ?? '',
@@ -79,6 +81,7 @@ export default function ProfilePage() {
     mutationFn: () => usersApi.updateProfile({
       name:           form.name,
       phone:          form.phone,
+      gender:         form.gender,
       birthDate:      form.birthDate || null,
       profileImage:   form.profileImage || null,
       churchPosition: form.churchPosition || null,
@@ -86,6 +89,9 @@ export default function ProfilePage() {
     onSuccess: () => {
       updateUserSettings({ name: form.name, phone: form.phone, birthDate: form.birthDate, churchPosition: form.churchPosition })
       queryClient.invalidateQueries({ queryKey: ['my-profile'] })
+      queryClient.invalidateQueries({ queryKey: ['teacher-roster'] })
+      queryClient.invalidateQueries({ queryKey: ['weekly-worship'] })
+      queryClient.invalidateQueries({ queryKey: ['weekly-report'] })
       queryClient.invalidateQueries({ queryKey: ['photo-review-status'] })
       queryClient.invalidateQueries({ queryKey: ['safety-summary'] })
       setProfileResult({ ok: true, msg: '프로필이 저장되었습니다.' })
@@ -154,61 +160,62 @@ export default function ProfilePage() {
       <Header title="내 정보" />
 
       {/* 프로필 헤더 */}
-      <div className="bg-primary-900 px-6 pt-8 pb-14">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur flex items-center justify-center border-2 border-white/40 overflow-hidden">
+      <div className="bg-primary-900 px-6 pt-6 pb-12">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 shrink-0 rounded-full bg-white/20 backdrop-blur flex items-center justify-center border-2 border-white/40 overflow-hidden">
             {profileImage
               ? <img src={profileImage} alt={user?.name} className="w-full h-full object-cover" />
               : <span className="text-white text-3xl font-bold">{user?.name?.[0] ?? '?'}</span>
             }
           </div>
-          <div className="text-center">
-            <h2 className="text-white text-xl font-bold">{user?.name}</h2>
-            <span className={`inline-block mt-1.5 text-xs font-bold px-3 py-1 rounded-full ${roleCfg.bg}`}>
+          <div className="min-w-0">
+            <h2 className="text-white text-xl font-bold leading-snug break-words">{user?.name}</h2>
+            <span className={`inline-block mt-1.5 text-sm font-semibold px-3 py-1 rounded-full ${roleCfg.bg}`}>
               {roleCfg.label}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="px-4 -mt-6 flex flex-col gap-3 pb-10">
+      <div className="px-4 -mt-6 flex flex-col gap-4 pb-10">
         {/* 계정 정보 */}
         <Card className="flex flex-col gap-0 overflow-hidden !p-0">
-          <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">계정 정보</p>
+          <h2 className="text-base font-bold text-gray-900 px-4 pt-4 pb-3">계정 정보</h2>
           <InfoRow icon={User}   label="이름"  value={user?.name} />
           <InfoRow icon={Mail}   label="이메일" value={user?.email}   divider />
           {user?.passwordLoginEnabled === false && <InfoRow icon={Lock} label="로그인 방법" value="Apple로 로그인" divider />}
           <InfoRow icon={Shield} label="권한"  value={roleCfg.label} divider />
         </Card>
 
-        <KakaoConnection />
-        <AppleConnection />
+        <Card className="!p-0 overflow-hidden">
+          <button type="button" onClick={() => navigate('/profile/connections')} className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-4 text-left text-base font-bold text-gray-900">
+            <span>계정 연결 관리</span><ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </Card>
 
         {/* 내 프로필 편집 */}
         <Card className="!p-0 overflow-hidden">
           <button
-            onClick={() => { setProfileOpen(v => !v); setProfileResult(null) }}
-            className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
+            aria-expanded={profileOpen} aria-controls="profile-editor" onClick={() => { setProfileOpen(v => !v); setProfileResult(null) }}
+            className="w-full flex items-center justify-between gap-3 px-4 py-4 active:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-secondary-50 flex items-center justify-center flex-shrink-0">
                 <PenLine size={15} className="text-secondary-700" />
               </div>
               <div className="text-left">
-                <span className="text-sm font-bold text-gray-800">프로필 정보 수정</span>
-                <p className="text-xs text-gray-400 font-medium mt-0.5">
-                  교사 교적부에 표시되는 정보를 입력해 주세요
-                </p>
+                <span className="text-base font-bold text-gray-900">프로필 정보 수정</span>
+
               </div>
             </div>
             <motion.div animate={{ rotate: profileOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronRight size={18} className="text-gray-300" />
+              <ChevronRight size={18} className="text-gray-500" />
             </motion.div>
           </button>
 
           <AnimatePresence>
             {profileOpen && (
-              <motion.div
+              <CollapsePanel id="profile-editor"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -222,16 +229,16 @@ export default function ProfilePage() {
                       <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
                         {form.profileImage
                           ? <img src={form.profileImage} alt="preview" className="w-full h-full object-cover" />
-                          : <Camera size={28} className="text-gray-300" />
+                          : <Camera size={28} className="text-gray-500" />
                         }
                       </div>
-                      <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center shadow-lg cursor-pointer active:scale-90 transition-all">
+                      <label className="absolute -bottom-1 -right-1 w-11 h-11 bg-primary-500 text-white rounded-full flex items-center justify-center shadow-lg cursor-pointer focus-within:ring-2 focus-within:ring-primary-300 focus-within:ring-offset-2 active:scale-90 transition-all">
                         <ImageIcon size={14} />
                         <input
                           type="file"
                           accept="image/jpeg,image/png"
                           aria-label="내 프로필 사진 선택"
-                          className="hidden"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           onChange={e => {
                             const file = e.target.files[0]
                             if (file) {
@@ -243,36 +250,36 @@ export default function ProfilePage() {
                       </label>
                       {form.profileImage && (
                         <button
-                          onClick={() => setForm('profileImage', '')}
-                          className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md"
+                          aria-label="선택한 프로필 사진 삭제" onClick={() => setForm('profileImage', '')}
+                          className="absolute -top-4 -right-4 w-11 h-11 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md"
                         >
                           <X size={11} />
                         </button>
                       )}
                     </div>
-                    <PhotoReviewStatus targetType="USER" targetId={user?.id} onRemoved={() => setForm('profileImage', '')} />
+                    <PhotoReviewStatus textClassName="text-sm leading-relaxed text-gray-600" targetType="USER" targetId={user?.id} onRemoved={() => setForm('profileImage', '')} />
                   </div>
 
                   {/* 이름 */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                    <label htmlFor="profile-name" className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
                       <User size={12} /> 이름
                     </label>
                     <input
-                      type="text"
+                      id="profile-name" type="text"
                       value={form.name}
                       onChange={e => setForm('name', e.target.value)}
-                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary-300"
+                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 outline-none focus:ring-2 focus:ring-primary-300"
                     />
                   </div>
 
                   {/* 전화번호 */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                    <label htmlFor="profile-phone" className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
                       <Phone size={12} /> 전화번호
                     </label>
                     <input
-                      type="tel"
+                      id="profile-phone" type="tel"
                       value={form.phone}
                       onChange={e => {
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 11)
@@ -282,23 +289,31 @@ export default function ProfilePage() {
                         setForm('phone', formatted)
                       }}
                       placeholder="010-0000-0000"
-                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary-300"
+                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 outline-none focus:ring-2 focus:ring-primary-300"
                     />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="profile-gender" className="text-sm font-semibold text-gray-600">성별</label>
+                    <AppSelect aria-label="성별" id="profile-gender" value={form.gender} onChange={e => setForm('gender', e.target.value)} className="w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900">
+                      <option value="">미등록</option><option value="남">남</option><option value="여">여</option>
+                    </AppSelect>
+
                   </div>
 
                   {/* 생년월일 */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                    <label htmlFor="profile-birthDate" className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
                       <Calendar size={12} /> 생년월일
                     </label>
                     <input
-                      type="date"
+                      id="profile-birthDate" type="date"
                       value={form.birthDate}
                       onChange={e => setForm('birthDate', e.target.value)}
-                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary-300"
+                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 outline-none focus:ring-2 focus:ring-primary-300"
                     />
                     {form.birthDate && (
-                      <p className="text-xs text-primary-500 font-medium px-1">
+                      <p className="text-sm text-primary-700 font-medium px-1">
                         만 {calcAge(form.birthDate)}세
                       </p>
                     )}
@@ -306,23 +321,23 @@ export default function ProfilePage() {
 
                   {/* 직분 */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-                      🙏 직분 <span className="font-normal text-gray-400">(선택)</span>
+                    <label htmlFor="profile-position" className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+                      🙏 직분 <span className="font-normal text-gray-600">(선택)</span>
                     </label>
-                    <select
+                    <AppSelect aria-label="직분" id="profile-position"
                       value={form.churchPosition}
                       onChange={e => setForm('churchPosition', e.target.value)}
-                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary-300 appearance-none"
+                      className="w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 outline-none focus:ring-2 focus:ring-primary-300 appearance-none"
                     >
                       {CHURCH_POSITIONS.map(p => (
                         <option key={p} value={p}>{p || '선택 안 함'}</option>
                       ))}
-                    </select>
-                    <p className="text-xs text-gray-400 px-1">교사 교적부 상세 정보에 표시됩니다</p>
+                    </AppSelect>
+
                   </div>
 
                   {profileResult && (
-                    <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold ${
+                    <div role="status" className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold ${
                       profileResult.ok ? 'bg-secondary-50 text-secondary-700' : 'bg-red-50 text-red-600'
                     }`}>
                       {profileResult.ok && <CheckCircle2 size={14} />}
@@ -334,20 +349,20 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => { setProfileOpen(false); setProfileForm(null); setProfileResult(null) }}
-                      className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-semibold text-sm active:bg-gray-200 transition-colors"
+                      className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-semibold text-base active:bg-gray-200 transition-colors"
                     >
                       취소
                     </button>
                     <button
                       onClick={() => profileMutation.mutate()}
                       disabled={profileMutation.isPending}
-                      className="flex-1 py-3 rounded-xl bg-primary-500 text-white font-bold text-sm active:bg-primary-600 disabled:opacity-50 transition-colors"
+                      className="flex-1 py-3 rounded-xl bg-primary-500 text-white font-bold text-base active:bg-primary-600 disabled:opacity-50 transition-colors"
                     >
                       {profileMutation.isPending ? '저장 중...' : '저장하기'}
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </CollapsePanel>
             )}
           </AnimatePresence>
         </Card>
@@ -355,30 +370,30 @@ export default function ProfilePage() {
         {/* 비밀번호 변경 */}
         {user?.passwordLoginEnabled !== false && <Card className="!p-0 overflow-hidden">
           <button
-            onClick={() => { setPwOpen(v => !v); setPwResult(null) }}
-            className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
+            aria-expanded={pwOpen} aria-controls="password-editor" onClick={() => { setPwOpen(v => !v); setPwResult(null) }}
+            className="w-full flex items-center justify-between gap-3 px-4 py-4 active:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
                 <Lock size={15} className="text-primary-500" />
               </div>
-              <span className="text-sm font-bold text-gray-800">비밀번호 변경</span>
+              <span className="text-base font-bold text-gray-900">비밀번호 변경</span>
             </div>
             <motion.div animate={{ rotate: pwOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronRight size={18} className="text-gray-300" />
+              <ChevronRight size={18} className="text-gray-500" />
             </motion.div>
           </button>
 
           <AnimatePresence>
             {pwOpen && (
-              <motion.div
+              <CollapsePanel id="password-editor"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <form onSubmit={handlePwSubmit} className="px-4 pb-5 pt-1 flex flex-col gap-3 border-t border-gray-50">
+                <form onSubmit={handlePwSubmit} className="px-4 pb-5 pt-4 flex flex-col gap-4 border-t border-gray-50">
                   <PwInput label="현재 비밀번호" value={currentPw} onChange={setCurrentPw}
                     show={showCurrent} onToggle={() => setShowCurrent(v => !v)} id="current-pw" autoComplete="current-password" />
                   <PwInput label="새 비밀번호 (8자 이상)" value={newPw} onChange={setNewPw}
@@ -386,37 +401,37 @@ export default function ProfilePage() {
                   <PwInput label="새 비밀번호 확인" value={confirmPw} onChange={setConfirmPw}
                     show={showConfirm} onToggle={() => setShowConfirm(v => !v)} id="confirm-pw" autoComplete="new-password" />
                   {pwResult && (
-                    <p className={`text-xs font-bold px-1 ${pwResult.ok ? 'text-secondary-600' : 'text-red-500'}`}>
+                    <p role="alert" className={`text-sm font-semibold px-1 ${pwResult.ok ? 'text-secondary-600' : 'text-red-500'}`}>
                       {pwResult.msg}
                     </p>
                   )}
                   <div className="flex gap-2 mt-1">
                     <button type="button" onClick={closePwPanel}
-                      className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-semibold text-sm active:bg-gray-200 transition-colors">
+                      className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-semibold text-base active:bg-gray-200 transition-colors">
                       취소
                     </button>
                     <button type="submit" disabled={pwMutation.isPending || !currentPw || !newPw || !confirmPw}
-                      className="flex-1 py-3 rounded-xl bg-primary-500 text-white font-bold text-sm active:bg-primary-600 disabled:opacity-50 transition-colors">
+                      className="flex-1 py-3 rounded-xl bg-primary-500 text-white font-bold text-base active:bg-primary-600 disabled:opacity-50 transition-colors">
                       {pwMutation.isPending ? '변경 중...' : '변경하기'}
                     </button>
                   </div>
                 </form>
-              </motion.div>
+              </CollapsePanel>
             )}
           </AnimatePresence>
         </Card>}
 
         {/* 화면 설정 */}
         <Card className="!p-0 overflow-hidden">
-          <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">화면 설정</p>
-          <div className="flex items-center justify-between px-4 py-3.5 border-t border-gray-50">
+          <h2 className="text-base font-bold text-gray-900 px-4 pt-4 pb-3">화면 설정</h2>
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5 border-t border-gray-50">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
                 <Type size={15} className="text-primary-500" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800">큰 글씨 모드</p>
-                <p className="text-xs text-gray-400 font-medium mt-0.5">글자 크기를 키워드립니다</p>
+                <p className="text-base font-bold text-gray-900">큰 글씨 모드</p>
+
               </div>
             </div>
             <button
@@ -437,24 +452,29 @@ export default function ProfilePage() {
           </div>
         </Card>
 
+        <NotificationPreferences />
+
         {/* 앱 정보 */}
         <Card className="!p-0 overflow-hidden">
-          <p className="text-xs font-bold text-gray-400 px-4 pt-4 pb-2 uppercase tracking-widest">앱 정보</p>
-          <div className="flex items-center justify-between px-4 py-3.5 border-t border-gray-50">
-            <span className="text-sm text-gray-700">버전</span>
-            <span className="text-xs text-gray-400 break-all">{__APP_BUILD_ID__}</span>
+          <h2 className="text-base font-bold text-gray-900 px-4 pt-4 pb-3">앱 정보</h2>
+          <div className="flex flex-col gap-1 px-4 py-3.5 border-t border-gray-50">
+            <span className="text-sm font-semibold text-gray-700">버전</span>
+            <span className="min-w-0 text-sm text-gray-600 break-all">{__APP_BUILD_ID__}</span>
           </div>
-          <div className="flex items-center justify-between px-4 py-3.5 border-t border-gray-50">
+          <div className="flex flex-col gap-1 px-4 py-3.5 border-t border-gray-50">
             <span className="text-sm text-gray-700">Newave Flow</span>
-            <span className="text-sm text-gray-400">교회 교육부 관리 시스템</span>
+            <span className="text-sm text-gray-600">교회 교육부 관리 시스템</span>
           </div>
         </Card>
 
-        {/* 로그아웃 */}
+        {/* 이용 안내 */}
         <Card className="!p-0 overflow-hidden">
-          <button className="w-full px-4 py-4 text-left text-sm font-semibold" onClick={() => navigate('/privacy')}>개인정보처리방침</button>
-          <button className="w-full px-4 py-4 text-left text-sm font-semibold border-t border-gray-100" onClick={() => navigate('/support')}>고객지원</button>
-          <button className="w-full px-4 py-4 text-left text-sm font-semibold border-t border-gray-100" onClick={() => navigate('/account-deletion')}>회원 탈퇴·계정 삭제 요청</button>
+          <h2 className="px-4 pt-4 pb-2 text-sm font-semibold text-gray-600">이용 안내</h2>
+          <button className="w-full px-4 py-4 text-left text-base font-semibold text-gray-800" onClick={() => navigate('/safety/report')}>콘텐츠·사용자 신고</button>
+          <button className="w-full px-4 py-4 text-left text-base font-semibold text-gray-800 border-t border-gray-100" onClick={() => navigate('/community-guidelines')}>이용수칙</button>
+          <button className="w-full px-4 py-4 text-left text-base font-semibold text-gray-800 border-t border-gray-100" onClick={() => navigate('/privacy')}>개인정보처리방침</button>
+          <button className="w-full px-4 py-4 text-left text-base font-bold text-gray-900 border-t border-gray-100" onClick={() => navigate('/support')}>고객지원</button>
+          <button className="w-full px-4 py-4 text-left text-base font-bold text-gray-900 border-t border-gray-100" onClick={() => navigate('/account-deletion')}>회원 탈퇴·계정 삭제 요청</button>
         </Card>
         {!logoutConfirm ? (
           <button
@@ -465,14 +485,14 @@ export default function ProfilePage() {
           </button>
         ) : (
           <Card className="flex flex-col gap-3 border border-red-100 bg-red-50">
-            <p className="text-center font-semibold text-gray-800 text-sm">정말 로그아웃 하시겠어요?</p>
+            <p className="text-center font-semibold text-gray-900 text-base">정말 로그아웃 하시겠어요?</p>
             <div className="flex gap-2">
               <button onClick={() => setLogoutConfirm(false)}
-                className="flex-1 py-3 rounded-xl bg-white border border-gray-200 text-gray-600 font-semibold text-sm active:bg-gray-50">
+                className="flex-1 py-3 rounded-xl bg-white border border-gray-200 text-gray-600 font-semibold text-base active:bg-gray-50">
                 취소
               </button>
               <button onClick={handleLogout} disabled={logoutLoading}
-                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm active:bg-red-600 disabled:opacity-60">
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-base active:bg-red-600 disabled:opacity-60">
                 {logoutLoading ? '처리 중...' : '로그아웃'}
               </button>
             </div>
@@ -490,8 +510,8 @@ function InfoRow({ icon: Icon, label, value, divider = false }) {
         <Icon size={15} className="text-gray-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-        <p className="text-sm font-semibold text-gray-800 break-all">{value ?? '-'}</p>
+        <p className="text-sm text-gray-600 mb-1">{label}</p>
+        <p className="text-base font-semibold text-gray-900 break-words [overflow-wrap:anywhere]">{value ?? '-'}</p>
       </div>
     </div>
   )
@@ -500,18 +520,18 @@ function InfoRow({ icon: Icon, label, value, divider = false }) {
 function PwInput({ label, value, onChange, show, onToggle, id, autoComplete = 'off' }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-semibold text-gray-500">{label}</label>
-      <div className="relative flex items-center bg-gray-50 border border-gray-100 rounded-xl">
+      <label htmlFor={id} className="text-sm font-semibold text-gray-600">{label}</label>
+      <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded-xl">
         <input
           id={id}
           type={show ? 'text' : 'password'}
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="flex-1 bg-transparent px-3.5 py-3 pr-10 text-sm text-gray-800 outline-none rounded-xl"
+          className="w-full min-w-0 flex-1 bg-transparent px-3.5 py-3 pr-12 text-base text-gray-900 outline-none focus:ring-2 focus:ring-primary-300 rounded-xl"
           placeholder="••••••••"
           autoComplete={autoComplete}
         />
-        <button type="button" onClick={onToggle} className="absolute right-3 text-gray-400 p-1">
+        <button type="button" onClick={onToggle} aria-label={`${label} ${show ? '숨기기' : '보기'}`} aria-pressed={show} className="absolute right-0.5 min-w-11 min-h-11 flex items-center justify-center text-gray-600 rounded-lg focus-visible:ring-2 focus-visible:ring-primary-300">
           {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>

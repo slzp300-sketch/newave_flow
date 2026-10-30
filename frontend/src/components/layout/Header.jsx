@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { parentPath } from '../../utils/navigation'
-import { ChevronLeft, LogOut, Bell, Flag } from 'lucide-react'
+import { ChevronLeft, LogOut, Bell } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '../../store/authStore'
 import { notificationApi } from '../../api/notifications'
 import { authApi } from '../../api/auth'
+import FitLabel from '../common/FitLabel'
 import Brand from '../common/Brand'
 import FeatureIcon from '../common/FeatureIcon'
 import ReviewEnvironmentNotice from '../common/ReviewEnvironmentNotice'
@@ -57,17 +58,13 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
       )}
       <h1 className="flex flex-1 min-w-0 items-center gap-2 py-2 text-lg font-semibold text-gray-900 tracking-tight">
         {title === 'Newave Flow' ? <Brand /> : <>
-          <span className="brand-heading-icon"><FeatureIcon path={location.pathname} size={20} /></span>
-          <span className="min-w-0 break-keep">{title}</span>
+          <span aria-hidden="true" className="brand-heading-icon"><FeatureIcon path={location.pathname} size={20} /></span>
+          <FitLabel maxLines={1}>{title}</FitLabel>
         </>}
       </h1>
       
       <div className="flex items-center gap-1 shrink-0">
         {right}
-        {user && !location.pathname.startsWith('/safety/') && location.pathname !== '/community-guidelines' && (
-          <button onClick={() => navigate('/safety/report', { state: { subject: title } })}
-            className="icon-button" aria-label="콘텐츠·사용자 신고" title="콘텐츠·사용자 신고"><Flag size={19} /></button>
-        )}
         {user && showNotification && (
           <button
             onClick={() => navigate('/notifications')}

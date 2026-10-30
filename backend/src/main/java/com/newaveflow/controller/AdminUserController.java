@@ -41,6 +41,18 @@ public class AdminUserController {
         return ResponseEntity.ok().build();
     }
 
+    public record BulkApprovalRequest(
+        @jakarta.validation.constraints.NotEmpty
+        @jakarta.validation.constraints.Size(max = 100)
+        List<@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Positive Long> userIds) {}
+
+    @PatchMapping("/approve")
+    public ResponseEntity<Void> approveUsers(@jakarta.validation.Valid @RequestBody BulkApprovalRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.newaveflow.entity.User actor) {
+        adminUserService.approveUsers(actor, request.userIds());
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/suspended")
     public ResponseEntity<List<AdminUserService.SuspendedUser>> getSuspendedUsers() {
         return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(adminUserService.getSuspendedUsers());

@@ -2,13 +2,15 @@ import {
   UserRoundCheck, Ticket, BookOpen, CalendarDays, HandHeart, Presentation,
   ContactRound, School, NotebookPen, Route, Bell, ListChecks, ShieldCheck,
   BadgeCheck, KeyRound, GraduationCap, Network, UserRoundMinus, LayoutGrid,
-  UserRound, ShieldAlert,
+  UserRound, ShieldAlert, UsersRound, FileText,
 } from 'lucide-react'
 
 // Page identity only. Save, completion, warning and input-state icons stay independent.
 const SYMBOLS = {
   safety: ShieldAlert,
   attendance: UserRoundCheck,
+  newFamily: UsersRound,
+  weeklyReport: FileText,
   eventAttendance: Ticket,
   tts: BookOpen,
   calendar: CalendarDays,
@@ -35,6 +37,8 @@ const ROUTES = Object.entries({
   '/community-guidelines': 'safety',
   '/admin/content-reports': 'safety',
   '/attendance': 'attendance',
+  '/new-family': 'newFamily',
+  '/admin/weekly-report': 'weeklyReport',
   '/event-attendance': 'eventAttendance',
   '/tts': 'tts',
   '/calendar': 'calendar',

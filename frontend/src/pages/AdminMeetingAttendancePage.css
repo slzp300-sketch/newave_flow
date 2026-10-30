@@ -1,0 +1,11 @@
+.admin-meeting-attendance-page { min-height: 100vh; padding-bottom: 6rem; }
+.meeting-admin-body { display: flex; flex-direction: column; gap: .875rem; padding: .75rem; }
+.meeting-admin-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
+.meeting-date-select, .meeting-list-filters select { min-height: 3rem; width: 100%; min-width: 0; border: 1px solid var(--newave-line); border-radius: .75rem; padding: .5rem; background: white; font-size: .8125rem; }
+.meeting-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.meeting-counts dd small { margin-left: .125rem; font-size: .75rem; font-weight: 400; }
+.meeting-help { color: var(--newave-muted); font-size: .75rem; margin-top: .5rem; }
+.meeting-admin-roster { display: flex; min-width: 0; flex-direction: column; gap: .625rem; }
+.meeting-list-filters { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: .5rem; align-items: center; }
+.meeting-empty { background: white; border: 1px solid var(--newave-line); border-radius: 1rem; padding: 1.5rem .75rem; text-align: center; color: var(--newave-muted); font-size: .875rem; }
+@media (max-width: 359px) { .meeting-list-filters { grid-template-columns: minmax(0, 1fr); } }

@@ -38,6 +38,7 @@ public class StudentService {
     private final ClassGroupRepository classGroupRepository;
     private final ClassAccessService classAccessService;
     private final PhotoModerationService photos;
+    private final com.newaveflow.repository.NewFamilyMemberRepository newFamilyMembers;
 
     public StudentDto getStudentById(Long id, com.newaveflow.entity.User actor) {
         Student student = studentRepository.findById(id)
@@ -71,6 +72,7 @@ public class StudentService {
                 .collect(Collectors.toMap(m -> m.getStudent().getId(), m -> m));
 
         return students.stream()
+                .filter(s -> s.belongsToClassOn(LocalDate.now()))
                 .map(s -> {
                     StudentMemo memo = memoMap.get(s.getId());
                     return StudentDto.from(
@@ -155,6 +157,7 @@ public class StudentService {
     // 관리자: 학생 반 배정 변경
     @Transactional
     public AdminStudentDto assignStudentToClass(Long studentId, Long classGroupId) {
+        requireOrdinaryAssignment(studentId);
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> AppException.notFound("학생을 찾을 수 없습니다."));
         ClassGroup classGroup = classGroupRepository.findById(classGroupId)
@@ -190,12 +193,18 @@ public class StudentService {
         }
 
         if (request.classGroupId() != null) {
+            if(student.getClassGroup()==null||!request.classGroupId().equals(student.getClassGroup().getId()))requireOrdinaryAssignment(id);
             ClassGroup classGroup = classGroupRepository.findById(request.classGroupId())
                     .orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
             student.assignClass(classGroup);
         }
 
         return AdminStudentDto.from(studentRepository.save(student));
+    }
+
+    private void requireOrdinaryAssignment(Long id) {
+        newFamilyMembers.findByStudentId(id).ifPresent(m->{if(!m.getStudent().belongsToClassOn(LocalDate.now()))
+            throw AppException.badRequest("새가족팀의 등반·반 배정에서 판단과 적용일을 먼저 확정해주세요.");});
     }
 
     // 관리자: 학년 일괄 진급 (연도 개편)

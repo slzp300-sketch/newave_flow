@@ -5,10 +5,11 @@ import { queryClient } from './queryClient'
 import App from './App'
 import './index.css'
 import useAuthStore, { assertAuthHydrated } from './store/authStore'
-import { isNativeApp, flushAuthStorage } from './native/platform'
+import { isNativeApp, nativePlatform, flushAuthStorage } from './native/platform'
 
 async function prepare() {
   if (isNativeApp) {
+    document.documentElement.dataset.nativePlatform = nativePlatform
     await useAuthStore.persist.rehydrate()
     assertAuthHydrated()
     await flushAuthStorage()

@@ -17,6 +17,23 @@ import java.util.List;
 public class EvangelismController {
 
     private final EvangelismService evangelismService;
+    private final com.newaveflow.service.OperationService operations;
+
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    @PostMapping("/groups/moves")
+    public ResponseEntity<Integer> moveTeachers(@RequestBody List<TeacherMoveRequest> requests,
+            @RequestHeader("Idempotency-Key") String key, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(operations.execute(user.getId(), key, "evangelism-moves", requests,
+            new com.fasterxml.jackson.core.type.TypeReference<Integer>() {}, () -> evangelismService.moveTeachers(requests)));
+    }
+
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    @PostMapping("/schedules/bulk")
+    public ResponseEntity<List<ScheduleResponse>> createSchedules(@RequestBody List<ScheduleRequest> requests,
+            @RequestHeader("Idempotency-Key") String key, @AuthenticationPrincipal User user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(operations.execute(user.getId(), key, "evangelism-schedules", requests,
+            new com.fasterxml.jackson.core.type.TypeReference<List<ScheduleResponse>>() {}, () -> evangelismService.createSchedules(requests)));
+    }
 
     public record MoveRequest(Long fromGroupId, Long toGroupId) {}
 

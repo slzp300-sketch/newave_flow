@@ -27,6 +27,7 @@ public class AttendanceService {
     private final DailyReportRepository dailyReportRepository;
     private final TeacherClassRepository teacherClassRepository;
     private final ClassAccessService classAccessService;
+    private final WeeklyReportSourceService weeklySources;
 
     public List<AttendanceResponse> getByClassAndDate(Long classId, LocalDate date) {
         return attendanceRepository.findByClassAndDate(classId, date)
@@ -63,7 +64,7 @@ public class AttendanceService {
         for (AttendanceBatchRequest.Record rec : request.records()) {
             Student target = existingMap.containsKey(rec.studentId())
                     ? existingMap.get(rec.studentId()).getStudent() : studentMap.get(rec.studentId());
-            if (target == null || !target.isActive() || target.getClassGroup() == null
+            if (target == null || !target.isActive() || !target.belongsToClassOn(request.attendanceDate())
                     || !target.getClassGroup().getId().equals(classGroup.getId())) {
                 throw AppException.badRequest("해당 반의 활성 학생만 출석을 저장할 수 있습니다.");
             }
@@ -106,6 +107,7 @@ public class AttendanceService {
         
         report.recordEditor(teacher);
         report.submit();
+        weeklySources.capture(report);
     }
 
     private void updateDailyReport(ClassGroup classGroup, User teacher, LocalDate date) {

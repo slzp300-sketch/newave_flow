@@ -1,3 +1,5 @@
+import GradeLabel from '../components/common/GradeLabel'
+import './PeopleReadability.css'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -9,9 +11,11 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
 import ReportLink from '../components/common/ReportLink'
+import { newFamilyApi } from '../api/newFamily'
 
 export default function StudentDetailPage() {
   const { id } = useParams()
+  const handoff = useQuery({queryKey:['new-family-handoff',id],queryFn:()=>newFamilyApi.handoff(id)})
 
   const { data: student, isLoading: loadingStudent } = useQuery({
     queryKey: ['student', id],
@@ -28,7 +32,7 @@ export default function StudentDetailPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen pb-10">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-10">
       <Header title="학생 상세 정보" showBack />
 
       <div className="px-4 py-6 flex flex-col gap-6">
@@ -47,7 +51,7 @@ export default function StudentDetailPage() {
           </div>
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900">{student?.name}</h2>
-            <p className="text-primary-600 font-bold text-sm">{[student?.grade, student?.school].filter(Boolean).join(' · ')}</p>
+            <p className="text-primary-600 font-bold text-sm"><GradeLabel value={student?.grade} />{student?.school && ` · ${student.school}`}</p>
           </div>
           {student?.profileImage && <ReportLink contentType="STUDENT_PHOTO" targetId={student.id} label="학생 사진 신고" />}
         </motion.div>
@@ -60,10 +64,10 @@ export default function StudentDetailPage() {
             { label: '모', name: student?.motherName, phone: student?.motherPhone },
           ].filter(p => p.name || p.phone).map(p => (
             <Card key={p.label} className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
+              <div className="w-10 h-10 shrink-0 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
                 <Phone size={18} />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400">{p.label} {p.name ?? ''}</p>
                 <p className="font-bold text-gray-900">{p.phone ?? '연락처 없음'}</p>
               </div>
@@ -71,13 +75,14 @@ export default function StudentDetailPage() {
           ))}
         </div>
 
+        {handoff.data && <Card><SectionLabel>새가족팀 인계</SectionLabel><p className="text-sm">첫 방문 {handoff.data.firstVisit} · 등록 {handoff.data.enrolledOn}<br />등반 {handoff.data.graduatedOn} · 반 적용 {handoff.data.effectiveDate}</p>{handoff.data.memo && <p className="mt-2 text-sm whitespace-pre-wrap">{handoff.data.memo}</p>}</Card>}
         {/* 출석 히스토리 */}
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-end">
             <SectionLabel>출석 이력</SectionLabel>
             <span className="text-xs font-bold text-gray-400 mb-1">최근 순</span>
           </div>
-          
+
           {history.length === 0 ? (
             <Card className="py-10 text-center text-gray-400 text-sm">출석 기록이 없습니다</Card>
           ) : (
@@ -89,7 +94,7 @@ export default function StudentDetailPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
                 >
-                  <Card className="flex items-center justify-between py-3">
+                  <Card className="flex flex-wrap gap-2 items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-secondary-500' : 'bg-red-400'}`} />
                       <span className="text-sm font-semibold text-gray-700">{formatDate(record.attendanceDate)}</span>

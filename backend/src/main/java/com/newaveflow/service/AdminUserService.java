@@ -53,16 +53,36 @@ public class AdminUserService {
         var locked = lockAccounts();
         requireActor(locked, identity, false);
         User user = target(locked, userId);
-        if (user.isSuspended()) throw AppException.conflict("이용 정지 계정은 가입 승인으로 복구할 수 없습니다. 이용 정지 목록에서 복구해주세요.");
-        if (user.isActive()) throw AppException.conflict("이미 승인된 계정입니다.");
-        if (user.getRole() != User.Role.TEACHER) throw AppException.conflict("일반 교사 신규 가입만 승인할 수 있습니다. 기존 계정 상태를 확인해주세요.");
-        if (deletions.existsByUserId(userId)) throw AppException.conflict("계정 삭제 요청이 진행 중입니다.");
+        requirePendingApproval(user);
         if (request != null && request.getClassGroupId() != null) {
             ClassGroup group = classGroupRepository.findById(request.getClassGroupId())
                 .orElseThrow(() -> AppException.notFound("반을 찾을 수 없습니다."));
             teacherClassRepository.save(TeacherClass.builder().teacher(user).classGroup(group).isPrimary(true).build());
         }
         user.approve();
+    }
+
+    @Transactional
+    public void approveUsers(User actor, List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty() || userIds.size() > 100
+                || userIds.stream().anyMatch(id -> id == null || id <= 0)
+                || new java.util.HashSet<>(userIds).size() != userIds.size())
+            throw AppException.badRequest("승인할 교사를 중복 없이 1명에서 100명까지 선택해주세요.");
+        var identity = identity(actor);
+        var locked = lockAccounts();
+        requireActor(locked, identity, false);
+        var candidates = userIds.stream().map(id -> target(locked, id)).toList();
+        // Validate the whole selection before changing any account. A stale, deleted
+        // or restricted target must never leave the other accounts partially approved.
+        candidates.forEach(this::requirePendingApproval);
+        candidates.forEach(User::approve);
+    }
+
+    private void requirePendingApproval(User user) {
+        if (user.isSuspended()) throw AppException.conflict("이용 정지 계정은 가입 승인으로 복구할 수 없습니다. 이용 정지 목록에서 복구해주세요.");
+        if (user.isActive()) throw AppException.conflict("이미 승인된 계정입니다. 목록을 새로고침해주세요.");
+        if (user.getRole() != User.Role.TEACHER) throw AppException.conflict("일반 교사 신규 가입만 승인할 수 있습니다. 기존 계정 상태를 확인해주세요.");
+        if (deletions.existsByUserId(user.getId())) throw AppException.conflict("계정 삭제 요청이 진행 중입니다.");
     }
 
     /** Called from the same transaction as a report resolution. */

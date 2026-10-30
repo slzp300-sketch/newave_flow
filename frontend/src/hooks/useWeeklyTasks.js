@@ -9,27 +9,31 @@ import { classesApi } from '../api/classes'
 import client from '../api/client'
 import { toApiDate } from '../utils/date'
 import { eventCheckState, summarizeChecks } from '../utils/checkProgress'
-import { knownRead, attendanceTaskState } from '../utils/attention'
+import { knownRead, attendanceTaskState, minutesTaskState } from '../utils/attention'
+import { ttsToday } from '../utils/ttsPeriod'
 import { eventAttendanceState, eventToday } from '../utils/eventAttendance'
 
 const checkState = (query, done) => knownRead(query) ? (done ? 'done' : 'pending') : 'unknown'
 
 export default function useWeeklyTasks() {
-  const { user } = useAuthStore()
-  const today = useToday()
+  const { user, apiEnvironment } = useAuthStore()
+  const today = useToday(ttsToday)
   const eventDate = useToday(eventToday)
   const date = new Date(today + 'T12:00:00')
   const sunday = toApiDate(startOfWeek(date, { weekStartsOn: 0 }))
   const monday = startOfWeek(date, { weekStartsOn: 1 })
   const weekMonday = toApiDate(monday)
   const satDate = toApiDate(addDays(monday, 5))
-  const fresh = { staleTime: 60_000, refetchInterval: 60_000, enabled: !!user }
+  const fresh = { staleTime: 60_000, refetchInterval: 60_000, enabled: !!user,
+    refetchOnMount: 'always', refetchOnWindowFocus: 'always' }
   const prayer = useQuery({ ...fresh, queryKey: ['prayer-vote', weekMonday, user?.id],
     queryFn: () => prayerVoteApi.getMine(weekMonday).then(r => r.data) })
   const meeting = useQuery({ ...fresh, queryKey: ['meeting-attendance', satDate, user?.id],
     queryFn: () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data) })
   const weekly = useQuery({ ...fresh, queryKey: ['weekly-status', sunday, user?.id],
     queryFn: () => weeklyStatusApi.getStatus().then(r => r.data) })
+  const minutes = useQuery({ ...fresh, queryKey: ['meeting-minutes', apiEnvironment, user?.id],
+    queryFn: ({ signal }) => client.get('/minutes', { signal }).then(r => r.data) })
   const classes = useQuery({ ...fresh, queryKey: ['my-classes', user?.id],
     queryFn: () => classesApi.getMyClasses().then(r => r.data) })
   const eventQuery = useQuery({ ...fresh, queryKey: ['attendance-required-events'],
@@ -53,14 +57,13 @@ export default function useWeeklyTasks() {
     { id: 'attendance', title: '우리 반 출석', desc: '담임·부담임 공동 출결보고', path: '/attendance', state: attendanceTaskState(weekly, classes) },
     { id: 'prayer', title: '기도모임 투표', desc: '이번 주 참석 여부', path: '/meeting/prayer', state: checkState(prayer, !!prayer.data) },
     { id: 'meeting', title: '교사회의 체크', desc: '이번 주 교사회의 참석', path: '/meeting/sat', state: checkState(meeting, !!meeting.data?.status) },
-    ...(meeting.data?.status === 'ABSENT' ? [{ id: 'minutes', title: '회의록 및 영상', path: '/minutes',
+    { id: 'minutes', title: '회의록 및 영상', path: '/minutes',
       desc: weekly.data?.currentWeekMinutesExists ? '회의 내용과 영상 확인' : '회의록 등록 대기',
-      state: !knownRead(weekly) ? 'unknown' : !weekly.data?.currentWeekMinutesExists ? 'none'
-        : checkState(weekly, weekly.data?.currentWeekMinutesConfirmed) }] : []),
+      state: minutesTaskState(minutes, today) },
     { id: 'event', title: '행사 출석', desc: eventState === 'none' ? '현재 제출할 행사 없음' : '내 출석과 우리 반 참석',
       path: events.length === 1 ? `/event-attendance/${events[0].id}` : '/event-attendance', state: eventState },
   ]
-  const reads = [weekly, classes, prayer, meeting, ...eventReads]
+  const reads = [weekly, classes, prayer, meeting, minutes, ...eventReads]
   return { tasks, reads, summary: summarizeChecks(tasks),
     needsAction: path => tasks.some(t => t.state === 'pending' &&
       (t.path === path || (path === '/event-attendance' && t.id === 'event'))) }

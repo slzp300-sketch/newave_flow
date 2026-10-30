@@ -13,6 +13,7 @@ import { beginKakao } from '../auth/kakao'
 import { appleAvailability, beginApple, clearApplePending, isAppleCancellation } from '../auth/apple'
 import { flushAuthStorage, nativePlatform } from '../native/platform'
 import AuthServiceStatus from '../components/common/AuthServiceStatus'
+import { Collapse } from '../components/common/Motion'
 import { appleSessionIdentity } from '../auth/authIdentity'
 
 export default function Login() {
@@ -32,6 +33,8 @@ export default function Login() {
   const [appleLoading, setAppleLoading] = useState(false)
   const [appleRegistration, setAppleRegistration] = useState(false)
   const [accountEnvironment, setAccountEnvironment] = useState('production')
+  const [showAccountOptions, setShowAccountOptions] = useState(false)
+  const chooseEnvironment = value => { setAccountEnvironment(value); setError(''); setForm(f => ({ ...f, password: '' })) }
   const publicConfig = { apiEnvironment: 'production', skipAuth: true }
   const appleQuery = useQuery({ queryKey: ['apple-availability', 'login', accountEnvironment], queryFn: () => appleAvailability(publicConfig), enabled: nativePlatform === 'ios' && accountEnvironment === 'production', retry: false, staleTime: 60000 })
   const kakaoQuery = useQuery({ queryKey: ['kakao-config', 'login', accountEnvironment], queryFn: () => authApi.kakaoConfig(publicConfig).then(r => r.data), enabled: accountEnvironment === 'production', retry: false, staleTime: 60000 })
@@ -65,8 +68,8 @@ export default function Login() {
   if (user) return <Navigate to="/" replace />
   if (appleRegistration) return <div className="safe-page-top min-h-screen max-w-mobile mx-auto bg-white px-6 pb-10" style={{ '--safe-page-space': '2.5rem' }}>
     <h1 className="text-xl font-semibold">계정 연결 또는 가입 신청</h1>
-    <p className="mt-4 text-sm leading-relaxed text-gray-600">Apple 인증을 완료했어요. 기존 회원은 이메일로 로그인한 뒤 ‘내 정보 → Apple 계정 연결’을 이용해 주세요.</p>
-    <p className="mt-3 text-xs leading-relaxed text-gray-500">이메일이 같더라도 기존 계정과 자동으로 연결하지 않습니다. 반 배정과 기록을 이어가려면 기존 계정에서 연결해 주세요.</p>
+    <p className="mt-4 text-sm leading-relaxed text-gray-600">Apple 인증 완료 · 기존 회원은 이메일 로그인 후 내 정보에서 연결하세요.</p>
+    <p className="mt-3 text-xs leading-relaxed text-gray-500">자동 연결되지 않습니다. 기존 계정에서 연결하면 기록이 유지됩니다.</p>
     <button className="mt-6 min-h-12 w-full rounded-xl border border-gray-200 px-4 text-sm font-semibold" onClick={() => { clearApplePending(); setAppleRegistration(false) }}>기존 이메일 계정으로 로그인</button>
     <Link to="/signup?apple=1" className="brand-action mt-4 flex min-h-12 items-center justify-center rounded-xl px-4 text-sm font-semibold">처음이에요 · 가입 신청</Link>
     <p className="mt-3 text-xs leading-relaxed text-gray-500">새로 가입하면 관리자의 승인 후 이용할 수 있어요.</p>
@@ -99,16 +102,11 @@ export default function Login() {
       <div className="motion-enter px-6 pt-7 pb-8" style={{ animationDelay: '100ms' }}>
         <h1 className="sr-only">뉴웨이브 로그인</h1>
         <p className="text-sm text-gray-500 mb-6">뉴웨이브 청소년부 교사 공간</p>
-        <fieldset disabled={busy} className="mb-5 min-w-0 rounded-xl border border-gray-200 p-4">
-          <legend className="px-1 text-sm font-bold">로그인할 계정 종류</legend>
-          <div className="flex flex-wrap gap-4 text-sm">
-            {[['production', '일반 계정'], ['review', '가상 자료 계정']].map(([value, label]) => <label key={value} className="flex min-h-11 items-center gap-2">
-              <input type="radio" name="account-environment" value={value} checked={accountEnvironment === value} onChange={() => { setAccountEnvironment(value); setError(''); setForm(f => ({ ...f, password: '' })) }} />{label}
-            </label>)}
-          </div>
-          <p className="break-keep text-sm leading-6 text-gray-600">{accountEnvironment === 'review' ? '실제 회원·학생 자료와 분리된 가상 자료입니다. 제공된 교사 또는 관리자 계정으로 로그인해 주세요.' : '승인된 교사·사역 담당자의 실제 업무 자료를 이용합니다.'}</p>
-          <Link to="/app-guide" className="inline-flex min-h-11 items-center text-sm font-semibold underline text-primary-700">전체 기능·계정별 이용 안내</Link>
-        </fieldset>
+        {accountEnvironment === 'review' && <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          <p className="font-semibold">가상 자료 계정 로그인</p>
+          <p className="mt-1">실제 회원·학생 자료와 분리된 가상 자료입니다.</p>
+          <button type="button" disabled={busy} onClick={() => chooseEnvironment('production')} className="mt-1 min-h-11 text-sm font-semibold underline">일반 로그인으로 돌아가기</button>
+        </div>}
         {error && <div role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
         <form onSubmit={handleSubmit} className="min-w-0">
           <fieldset disabled={busy} className="flex min-w-0 flex-col gap-4">
@@ -129,7 +127,7 @@ export default function Login() {
               </button>
             </div>
           </div>
-          <Button type="submit" size="lg" loading={loading} disabled={busy} className="mt-1">{accountEnvironment === 'review' ? '가상 자료 계정 로그인' : '일반 계정 로그인'}</Button>
+          <Button type="submit" size="lg" loading={loading} disabled={busy} className="mt-1">{accountEnvironment === 'review' ? '가상 자료 계정 로그인' : '로그인'}</Button>
           </fieldset>
         </form>
         <div className="mt-5 border-t border-gray-200 pt-5 space-y-3">
@@ -141,9 +139,9 @@ export default function Login() {
             {!kakaoEnabled && accountEnvironment !== 'review' && <AuthServiceStatus provider="카카오" environment={accountEnvironment} query={kakaoQuery} onRetry={() => kakaoQuery.refetch()} />}
           </div>
           {accountEnvironment === 'review' && <AuthServiceStatus provider="Apple·카카오" environment="review" query={{}} />}
-          <p className="text-sm leading-6 text-gray-600">기존 회원은 이메일 로그인 후 내 정보에서 외부 계정을 연결해 주세요.</p>
+          <p className="text-sm leading-6 text-gray-600">기존 회원: 이메일 로그인 → 내 정보에서 계정 연결</p>
         </div>
-        {accountEnvironment === 'review' && <p className="mt-4 text-sm leading-6 text-amber-900">아래 회원가입·계정 찾기는 일반 서비스를 위한 기능입니다. 가상 계정은 별도로 제공된 로그인 정보를 사용합니다.</p>}
+        {accountEnvironment === 'review' && <p className="mt-4 text-sm leading-6 text-amber-900">가입·계정 찾기: 일반 계정용 · 가상 계정은 제공된 정보로 로그인</p>}
         <nav aria-label="회원가입 및 계정 찾기" className="mt-4 flex flex-wrap items-center justify-center gap-x-1 border-t border-gray-200 pt-3 text-xs text-gray-500">
           <Link to="/signup" className="inline-flex min-h-11 items-center px-2 py-2 font-semibold text-primary-700">회원가입</Link>
           <span aria-hidden="true" className="text-gray-300">·</span>
@@ -151,6 +149,21 @@ export default function Login() {
           <span aria-hidden="true" className="text-gray-300">·</span>
           <Link to="/find-account?tab=pw" className="inline-flex min-h-11 items-center px-2 py-2">비밀번호 찾기</Link>
         </nav>
+        <section aria-label="가상 자료 계정 지원" className="mt-3 border-t border-gray-100 pt-2">
+          <button type="button" disabled={busy} aria-expanded={showAccountOptions} aria-controls="account-environment-options" onClick={() => setShowAccountOptions(v => !v)} className="flex min-h-11 w-full items-center justify-between gap-3 px-2 text-left text-xs text-gray-500">
+            <span>가상 자료 계정 이용</span><span aria-hidden="true">{showAccountOptions ? '−' : '+'}</span>
+          </button>
+          <Collapse open={showAccountOptions} id="account-environment-options">
+            <fieldset disabled={busy} className="min-w-0 rounded-xl border border-gray-200 p-3">
+              <legend className="px-1 text-sm font-semibold">로그인할 계정 종류</legend>
+              <p className="text-sm leading-6 text-gray-600">교사: 일반 계정 · 체험·검수: 제공된 가상 계정</p>
+              <div className="flex flex-wrap gap-4 text-sm">{[['production','일반 계정'],['review','가상 자료 계정']].map(([value,label]) => <label key={value} className="flex min-h-11 items-center gap-2">
+                <input type="radio" name="account-environment" value={value} checked={accountEnvironment === value} onChange={() => chooseEnvironment(value)} />{label}
+              </label>)}</div>
+            </fieldset>
+          </Collapse>
+          <Link to="/app-guide" className="inline-flex min-h-11 items-center px-2 text-xs text-gray-500 underline">전체 기능·계정별 이용 안내</Link>
+        </section>
         <nav aria-label="이용 지원" className="mt-1 flex flex-wrap justify-center gap-x-4 text-[11px] text-gray-500">
           <Link className="inline-flex min-h-11 items-center px-2 py-2" to="/privacy">개인정보처리방침</Link>
           <Link className="inline-flex min-h-11 items-center px-2 py-2" to="/support">고객지원</Link>

@@ -61,11 +61,7 @@ public class EventService {
         roster.capture(saved);
 
         // 새 일정 등록 시 교사들에게 알림 (SYSTEM 또는 EVENT)
-        List<Long> activeUserIds = userRepository.findByIsActiveTrue().stream().map(User::getId).toList();
-        notificationService.createNotificationForUsers(activeUserIds, 
-                "새로운 부서 일정", 
-                "새로운 일정 '" + request.title() + "' 이(가) 등록되었습니다.", 
-                Notification.NotificationType.EVENT);
+        notifyNewEvent(saved);
 
         return EventDto.EventResponse.from(saved);
     }
@@ -76,9 +72,16 @@ public class EventService {
         List<Event> events = requests.stream().map(this::buildEvent).toList();
         List<Event> saved = eventRepository.saveAll(events);
         saved.forEach(roster::capture);
+        saved.forEach(this::notifyNewEvent);
         return saved.stream()
                 .map(EventDto.EventResponse::from)
                 .toList();
+    }
+
+    private void notifyNewEvent(Event event) {
+        userRepository.findByIsActiveTrue().forEach(user -> notificationService.enqueue(user.getId(),
+                "event-new:"+event.getId(),"새로운 부서 일정","새로운 부서 일정이 등록되었습니다. 일정을 확인해주세요.",
+                Notification.NotificationType.EVENT,"/calendar"));
     }
 
     private Event buildEvent(EventDto.EventCreateRequest request) {

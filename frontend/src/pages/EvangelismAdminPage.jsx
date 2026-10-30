@@ -1,733 +1,97 @@
-import SegmentedControl from '../components/common/SegmentedControl'
-import { AdminIntro } from '../components/common/AdminTools'
-import AdminReadGuard from '../components/common/AdminReadGuard'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
-import { format, parseISO, nextSaturday } from 'date-fns'
-import { ko } from 'date-fns/locale'
-import {
-  Plus, Trash2, Edit2, X, AlertTriangle,
-  Search, Shuffle, ChevronRight, Check, ArrowRight
-} from 'lucide-react'
-import {
-  DndContext, DragOverlay, PointerSensor, TouchSensor,
-  useSensor, useSensors, useDroppable, useDraggable,
-  closestCenter,
-} from '@dnd-kit/core'
+import {useState,useRef} from 'react'
+import {useQuery,useQueryClient} from '@tanstack/react-query'
+import {Plus,ChevronRight,Users,Shuffle,RefreshCw} from 'lucide-react'
 import Header from '../components/layout/Header'
-import Card from '../components/common/Card'
-import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
-import RecordViews from '../components/common/RecordViews'
-import Badge from '../components/common/Badge'
-import LoadingSpinner from '../components/common/LoadingSpinner'
-import { evangelismApi, usersApi } from '../api/evangelism'
+import SegmentedControl from '../components/common/SegmentedControl'
+import AdminReadGuard from '../components/common/AdminReadGuard'
+import SearchField from '../components/common/SearchField'
+import Button from '../components/common/Button'
+import CompactSelect from '../components/common/CompactSelect'
+import EvangelismDialog from '../components/evangelism/EvangelismDialog'
+import EvangelismSchedules from '../components/evangelism/EvangelismSchedules'
+import {evangelismApi,usersApi} from '../api/evangelism'
+import useAuthStore from '../store/authStore'
+import {evangelismPeople,balancedMoves} from '../utils/evangelismAdmin'
+import './EvangelismAdminPage.css'
 
-const TABS = ['조 관리', '일정 관리']
-
-const GROUP_COLORS = [
-  { bg: 'bg-primary-100', text: 'text-primary-700', border: 'border-primary-200', dot: 'bg-primary-500', light: 'bg-primary-50' },
-  { bg: 'bg-primary-100',   text: 'text-primary-700',   border: 'border-primary-200',   dot: 'bg-primary-500',   light: 'bg-primary-50'   },
-  { bg: 'bg-secondary-100',text: 'text-secondary-700',border: 'border-secondary-200',dot: 'bg-secondary-500',light: 'bg-secondary-50'},
-  { bg: 'bg-amber-100',  text: 'text-amber-700',  border: 'border-amber-200',  dot: 'bg-amber-500',  light: 'bg-amber-50'  },
-  { bg: 'bg-rose-100',   text: 'text-rose-700',   border: 'border-rose-200',   dot: 'bg-rose-500',   light: 'bg-rose-50'   },
-  { bg: 'bg-primary-100',   text: 'text-primary-700',   border: 'border-primary-200',   dot: 'bg-primary-500',   light: 'bg-primary-50'   },
-  { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', light: 'bg-orange-50' },
+// Retained for the teacher-facing rotation page.
+const GROUP_COLORS=[
+ {bg:'bg-primary-100',text:'text-primary-700',border:'border-primary-200',dot:'bg-primary-500',light:'bg-primary-50'},
+ {bg:'bg-primary-100',text:'text-primary-700',border:'border-primary-200',dot:'bg-primary-500',light:'bg-primary-50'},
+ {bg:'bg-secondary-100',text:'text-secondary-700',border:'border-secondary-200',dot:'bg-secondary-500',light:'bg-secondary-50'},
+ {bg:'bg-amber-100',text:'text-amber-700',border:'border-amber-200',dot:'bg-amber-500',light:'bg-amber-50'},
+ {bg:'bg-rose-100',text:'text-rose-700',border:'border-rose-200',dot:'bg-rose-500',light:'bg-rose-50'},
+ {bg:'bg-primary-100',text:'text-primary-700',border:'border-primary-200',dot:'bg-primary-500',light:'bg-primary-50'},
+ {bg:'bg-orange-100',text:'text-orange-700',border:'border-orange-200',dot:'bg-orange-500',light:'bg-orange-50'},
 ]
-export const getGroupColor = (idx) => GROUP_COLORS[idx % GROUP_COLORS.length]
-
-export default function EvangelismAdminPage() {
-  const navigate = useNavigate()
-  const [tab, setTab] = useState(0)
-
-  const teachersQuery = useQuery({
-    queryKey: ['teachers'],
-    queryFn: () => usersApi.getTeachers().then(r => r.data),
-  })
-  const { data: teachers = [], isLoading: teachersLoading } = teachersQuery
-
-
-
-  return (
-    <div className="flex flex-col min-h-screen pb-20">
-      <Header title="전도 로테이션 관리" showBack />
-
-      <div className="flex flex-col gap-4 px-4 pt-5">
-        <AdminIntro title="전도 팀과 일정을 연결해요" description="교사를 조에 배정하고 조별 전도 순서를 관리하세요." />
-        <SegmentedControl label="전도 관리 화면" value={tab} onChange={setTab} selectedClassName="text-gray-900"
-          options={TABS.map((label, value) => ({ value, label }))} />
-      </div>
-
-      <div className="pt-4">
-        <AdminReadGuard queries={[teachersQuery]} label="전도 담당 교사 명단">
-        <AnimatePresence mode="wait">
-          {tab === 0
-            ? <GroupManagementTab key="groups" teachers={teachers} />
-            : <ScheduleManagementTab key="schedules" teachers={teachers} />
-          }
-        </AnimatePresence>
-        </AdminReadGuard>
-      </div>
-    </div>
-  )
+export const getGroupColor=index=>GROUP_COLORS[index%GROUP_COLORS.length]
+export default function EvangelismAdminPage(){
+ const {user,apiEnvironment}=useAuthStore()
+ return <EvangelismAdmin key={apiEnvironment+':'+user?.id} scope={apiEnvironment+':'+user?.id}/>
 }
-
-// ── 조 관리 탭 ──────────────────────────────────────────────────────────
-function GroupManagementTab({ teachers }) {
-  const [viewMode, setViewMode] = useViewMode('admin-evangelism-groups', 'large')
-  const qc = useQueryClient()
-  const [moveSheet, setMoveSheet]       = useState(null)
-  const [showAddGroup, setShowAddGroup] = useState(false)
-  const [newGroupName, setNewGroupName] = useState('')
-  const [editingId, setEditingId]       = useState(null)
-  const [editingName, setEditingName]   = useState('')
-  const [search, setSearch]             = useState('')
-  const [moving, setMoving]             = useState(false)
-  const [activeItem, setActiveItem]     = useState(null)
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor,   { activationConstraint: { delay: 200, tolerance: 8 } }),
-  )
-
-  const { data: groups = [], isLoading } = useQuery({
-    queryKey: ['evangelism-groups'],
-    queryFn: () => evangelismApi.getGroups().then(r => r.data),
-  })
-
-  const createGroup = useMutation({
-    mutationFn: (data) => evangelismApi.createGroup(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evangelism-groups'] }); setShowAddGroup(false); setNewGroupName('') },
-  })
-  const deleteGroup = useMutation({
-    mutationFn: (id) => evangelismApi.deleteGroup(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['evangelism-groups'] }),
-  })
-  const updateGroupMeta = useMutation({
-    mutationFn: ({ id, data }) => evangelismApi.updateGroup(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evangelism-groups'] }); setEditingId(null) },
-  })
-
-  if (isLoading) return <LoadingSpinner />
-
-  const assignedIds = new Set(groups.flatMap(g => g.members?.map(m => m.teacherId) || []))
-  const pool = teachers.filter(t => !assignedIds.has(t.id))
-  const filteredPool = pool.filter(t => t.name.includes(search))
-
-  const moveTeacher = async (teacherId, fromGroupId, toGroupId) => {
-    if (fromGroupId === toGroupId) return
-    setMoving(true)
-    try {
-      await evangelismApi.moveTeacher(teacherId, { fromGroupId, toGroupId })
-    } catch (err) {
-      alert(err.response?.data?.message || '이동 결과를 확인하지 못했습니다. 목록을 확인해주세요.')
-    } finally {
-      await qc.invalidateQueries({ predicate: query => String(query.queryKey[0]).startsWith('evangelism-') })
-      setMoving(false)
-      setMoveSheet(null)
-    }
-  }
-
-  const autoBalance = async () => {
-    if (groups.length === 0 || pool.length === 0) return
-    setMoving(true)
-    try {
-      const shuffled = [...pool].sort(() => Math.random() - 0.5)
-      const groupsCopy = groups.map(g => ({ id: g.id, pendingIds: g.members?.map(m => m.teacherId) || [] }))
-      shuffled.forEach((t, i) => groupsCopy[i % groupsCopy.length].pendingIds.push(t.id))
-      for (const g of groupsCopy) {
-        await evangelismApi.updateGroupMembers(g.id, { teacherIds: g.pendingIds })
-      }
-      await qc.invalidateQueries({ queryKey: ['evangelism-groups'] })
-    } finally {
-      setMoving(false)
-    }
-  }
-
-  const handleDragStart = (event) => {
-    setActiveItem(event.active.data.current)
-  }
-
-  const handleDragEnd = (event) => {
-    setActiveItem(null)
-
-    const { active, over } = event
-    if (!over) return
-    const { teacherId, fromGroupId } = active.data.current
-    const toGroupId = over.id === 'pool' ? null : over.id
-    moveTeacher(teacherId, fromGroupId, toGroupId)
-  }
-
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-5 pb-4">
-
-        {/* ── 헤더 ── */}
-        <div className="px-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">조 편성 관리</p>
-            <p className="text-xs text-gray-500 font-bold mt-0.5">
-              총 {teachers.length}명 · {assignedIds.size}명 배정 · {pool.length}명 대기
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {pool.length > 0 && (
-              <button onClick={autoBalance} disabled={moving}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50 text-primary-700 text-xs font-bold border border-primary-100 active:scale-95 disabled:opacity-50">
-                <Shuffle size={12} /> 자동 배분
-              </button>
-            )}
-            <button onClick={() => setShowAddGroup(true)}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold active:scale-95">
-              <Plus size={13} /> 조 추가
-            </button>
-          </div>
-        </div>
-
-        {/* ── 조 추가 폼 ── */}
-        <AnimatePresence>
-          {showAddGroup && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="px-4">
-              <Card className="flex items-center gap-2 p-3">
-                <input autoFocus
-                  className="flex-1 text-sm px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-300"
-                  placeholder="조 이름 (예: 1조)"
-                  value={newGroupName}
-                  onChange={e => setNewGroupName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && newGroupName) createGroup.mutate({ name: newGroupName }) }}
-                />
-                <button disabled={!newGroupName || createGroup.isPending}
-                  onClick={() => createGroup.mutate({ name: newGroupName })}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">추가</button>
-                <button onClick={() => { setShowAddGroup(false); setNewGroupName('') }} className="p-2 text-gray-400"><X size={16} /></button>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── 전체 조 카드 (2열 그리드) ── */}
-        <div className="px-4"><ViewModeToggle mode={viewMode} onChange={setViewMode} label="전도 조 보기 방식" /></div>
-        <div className={viewMode === 'large' ? '' : 'px-4'}>
-        <RecordViews mode={viewMode} rows={groups} columns={[
-          { label: '전도 조', render: g => g.name },
-          { label: '인원', render: g => `${g.members?.length ?? 0}명` },
-          { label: '조원', action: true, render: g => <div className="flex flex-wrap gap-1.5">{g.members?.length ? g.members.map(m => <button type="button" key={m.id} disabled={moving} onClick={() => setMoveSheet({ teacherId: m.teacherId, teacherName: m.teacherName, fromGroupId: g.id })} className="min-h-11 rounded-xl bg-primary-50 px-3">{m.teacherName} · 이동</button>) : '비어 있음'}</div> },
-          { label: '조 관리', action: true, render: g => <div className="flex flex-wrap gap-2">
-            {editingId === g.id ? <><input aria-label={`${g.name} 새 이름`} className="min-h-11 w-full rounded-xl border p-2" value={editingName} onChange={e => setEditingName(e.target.value)} />
-              <button type="button" disabled={updateGroupMeta.isPending || !editingName.trim()} onClick={() => updateGroupMeta.mutate({ id: g.id, data: { name: editingName } })} className="min-h-11 rounded-xl border px-3">이름 저장</button></>
-              : <button type="button" onClick={() => { setEditingId(g.id); setEditingName(g.name) }} className="min-h-11 rounded-xl border px-3">이름 수정</button>}
-            <button type="button" disabled={deleteGroup.isPending} onClick={() => { if (window.confirm(`${g.name}을(를) 삭제할까요?`)) deleteGroup.mutate(g.id) }} className="min-h-11 rounded-xl border px-3 text-red-600">조 삭제</button>
-          </div> },
-        ]}>
-        <div className="px-4 grid grid-cols-2 gap-3">
-          {groups.map((g, idx) => {
-            const c = getGroupColor(idx)
-            return (
-              <GroupDropZone key={g.id} groupId={g.id} color={c}>
-                {/* 조 헤더 */}
-                <div className={`${c.light} px-3 py-2.5 flex items-center justify-between`}>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
-                    {editingId === g.id ? (
-                      <input autoFocus
-                        className="text-xs font-bold bg-transparent border-b border-current focus:outline-none w-14"
-                        value={editingName}
-                        onChange={e => setEditingName(e.target.value)}
-                        onBlur={() => updateGroupMeta.mutate({ id: g.id, data: { name: editingName } })}
-                        onKeyDown={e => { if (e.key === 'Enter') updateGroupMeta.mutate({ id: g.id, data: { name: editingName } }) }}
-                      />
-                    ) : (
-                      <span className={`text-xs font-bold truncate ${c.text}`}>{g.name}</span>
-                    )}
-                    <span className={`text-xs font-bold ${c.text} opacity-60 flex-shrink-0`}>{g.members?.length ?? 0}</span>
-                  </div>
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <button onClick={() => { setEditingId(g.id); setEditingName(g.name) }}
-                      className="p-1 rounded-md bg-white/60 text-gray-400 active:scale-95"><Edit2 size={11} /></button>
-                    <button onClick={() => { if (window.confirm(`${g.name}을(를) 삭제할까요?`)) deleteGroup.mutate(g.id) }}
-                      className="p-1 rounded-md bg-white/60 text-gray-400 active:scale-95"><Trash2 size={11} /></button>
-                  </div>
-                </div>
-
-                {/* 멤버 칩 */}
-                <div className="bg-white px-2.5 py-2.5 flex flex-wrap gap-1.5 flex-1 min-h-[48px]">
-                  {g.members?.length === 0 ? (
-                    <p className="w-full text-center text-xs text-gray-300 py-2">비어있음</p>
-                  ) : (
-                    g.members.map(m => (
-                      <MemberChip
-                        key={m.id}
-                        member={m}
-                        groupId={g.id}
-                        color={c}
-                        onTap={() => setMoveSheet({ teacherId: m.teacherId, teacherName: m.teacherName, fromGroupId: g.id })}
-                        onRemove={() => moveTeacher(m.teacherId, g.id, null)}
-                        disabled={moving}
-                      />
-                    ))
-                  )}
-                </div>
-              </GroupDropZone>
-            )
-          })}
-        </div>
-        </RecordViews>
-        </div>
-
-        {/* ── 배정 대기 풀 ── */}
-        <div className="px-4">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">배정 대기 ({pool.length}명)</p>
-          </div>
-          {pool.length > 0 && (
-            <div className="mb-2 relative">
-              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300" />
-              <input
-                className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-gray-50 border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-primary-200"
-                placeholder="교사 이름 검색"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-          )}
-
-          <PoolDropZone>
-            {pool.length === 0 ? (
-              <div className="flex items-center justify-center py-3 gap-2 text-secondary-700">
-                <Check size={15} /><p className="text-xs font-bold">모든 교사가 배정되었습니다</p>
-              </div>
-            ) : filteredPool.length === 0 ? (
-              <p className="text-center text-xs text-gray-300 py-3">검색 결과 없음</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {filteredPool.map(t => (
-                  <PoolChip
-                    key={t.id}
-                    teacher={t}
-                    onTap={() => setMoveSheet({ teacherId: t.id, teacherName: t.name, fromGroupId: null })}
-                  />
-                ))}
-              </div>
-            )}
-          </PoolDropZone>
-        </div>
-
-        {/* ── 이동 Bottom Sheet ── */}
-        <AnimatePresence>
-          {moveSheet && (
-            <MoveSheet
-              teacherName={moveSheet.teacherName}
-              fromGroupId={moveSheet.fromGroupId}
-              groups={groups}
-              moving={moving}
-              onMove={(toGroupId) => moveTeacher(moveSheet.teacherId, moveSheet.fromGroupId, toGroupId)}
-              onUnassign={() => moveTeacher(moveSheet.teacherId, moveSheet.fromGroupId, null)}
-              onClose={() => setMoveSheet(null)}
-            />
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* dropAnimation={null} — 드롭 후 복귀 애니메이션 제거 */}
-      <DragOverlay dropAnimation={null}>
-        {activeItem && (
-          <div className="px-2.5 py-1.5 rounded-lg bg-white shadow-lg border border-gray-200 text-xs font-bold text-gray-700">
-            {activeItem.teacherName}
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
-  )
+function EvangelismAdmin({scope}){
+ const [tab,setTab]=useState('groups'),[editor,setEditor]=useState(null),[meta,setMeta]=useState(null),[balance,setBalance]=useState(null)
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
+ const lock=useRef(false),attempt=useRef(null),qc=useQueryClient()
+ const teachersQuery=useQuery({queryKey:['teachers','evangelism',scope],queryFn:()=>usersApi.getTeachers().then(r=>r.data)})
+ const groupsQuery=useQuery({queryKey:['evangelism-groups',scope],queryFn:()=>evangelismApi.getGroups().then(r=>r.data),refetchOnMount:'always'})
+ const groups=groupsQuery.data||[],people=evangelismPeople(teachersQuery.data||[],groups),pool=people.filter(p=>p.groupId==null)
+ const refresh=()=>qc.invalidateQueries({predicate:q=>String(q.queryKey[0]).startsWith('evangelism-')})
+ const perform=async(action,payload,work,done)=>{
+  if(lock.current)return false
+  const signature=JSON.stringify([action,payload])
+  if(attempt.current?.signature!==signature)attempt.current={signature,key:crypto.randomUUID()}
+  lock.current=true;setBusy(true);setError('');setNotice('')
+  try{await work(attempt.current.key);attempt.current=null;await refresh();done?.();setNotice('저장 완료');return true}
+  catch(e){setError(e.response?.data?.message||'저장 결과를 확인하지 못했습니다. 같은 내용으로 다시 시도해주세요.');await refresh();return false}
+  finally{lock.current=false;setBusy(false)}
+ }
+ const openEditor=filter=>{setError('');setNotice('');setEditor(filter)}
+ return <div className="admin-evangelism-page">
+  <Header title="전도 관리" showBack/>
+  <div className="ev-tabs"><SegmentedControl label="전도 관리 화면" value={tab} onChange={setTab} disabled={busy} options={[{value:'groups',label:'조 편성'},{value:'schedules',label:'일정 관리'}]}/></div>
+  {notice&&<p className="ev-notice" role="status">{notice}</p>}
+  {error&&!editor&&!meta&&!balance&&tab==='groups'&&<p className="ev-error" role="alert">{error}</p>}
+  {tab==='groups'?<section className="ev-body" aria-label="전도 조 편성">
+   <AdminReadGuard queries={[teachersQuery,groupsQuery]} label="전도 조 명단" reserveStatusSpace={false}>
+    <div className="ev-metrics"><span>전체 <strong>{people.length}</strong></span><span>배정 <strong>{people.length-pool.length}</strong></span><span>미배정 <strong>{pool.length}</strong></span></div>
+    <div className="ev-actions"><Button size="sm" onClick={()=>openEditor('pool')}><Users size={16}/>교사 배정</Button><Button size="sm" variant="secondary" onClick={()=>{setError('');setMeta({id:null,name:''})}}><Plus size={16}/>조 추가</Button><button className="ev-icon" type="button" aria-label="조 명단 새로고침" disabled={busy||groupsQuery.isFetching} onClick={()=>{void groupsQuery.refetch();void teachersQuery.refetch()}}><RefreshCw size={17}/></button></div>
+    <div className="ev-grid">{groups.map(g=><button type="button" className="ev-card" key={g.id} onClick={()=>openEditor(String(g.id))} aria-label={g.name+' 조 편성 보기'}><span className="ev-card-heading"><strong>{g.name}</strong><span>{g.members?.length||0}명</span></span><span className="ev-card-names">{g.members?.map(m=>m.teacherName).join(' · ')||'조원 없음'}</span><span className="ev-card-bottom">조원 관리<ChevronRight size={16}/></span></button>)}</div>
+    {!groups.length&&<p className="ev-empty">전도 조를 추가해주세요.</p>}
+    <div className="ev-heading"><strong className="ui-section-title">미배정 {pool.length}명</strong><button type="button" className="ev-small" disabled={!pool.length||!groups.length} onClick={()=>{setError('');setBalance(balancedMoves(people,groups))}}><Shuffle size={16}/>자동 배분</button></div>
+    <div className="ev-chips">{pool.map(p=><button key={p.id} type="button" onClick={()=>openEditor('pool')} aria-label={p.name+' 배정하기'}>{p.name}</button>)}</div>
+   </AdminReadGuard>
+  </section>:<EvangelismSchedules groups={groups} groupsQuery={groupsQuery} scope={scope} busy={busy} error={error} clearError={()=>setError('')} perform={perform}/>}
+  {editor!==null&&<GroupEditor key={editor} initialFilter={editor} people={people} groups={groups} busy={busy} error={error} onClose={()=>{setEditor(null);setError('')}} onMeta={g=>{setEditor(null);setError('');setMeta(g)}} onMove={moves=>perform('move',moves,key=>evangelismApi.moveTeachers(moves,key))}/>}
+  {meta&&<GroupMeta group={meta} busy={busy} error={error} onClose={()=>{setMeta(null);setError('')}} onSave={name=>perform('group-name',{id:meta.id,name},()=>meta.id?evangelismApi.updateGroup(meta.id,{name}):evangelismApi.createGroup({name}),()=>setMeta(null))} onDelete={()=>perform('group-delete',meta.id,()=>evangelismApi.deleteGroup(meta.id),()=>setMeta(null))}/>}
+  {balance&&<EvangelismDialog title="미배정 자동 배분" busy={busy} onClose={()=>{setBalance(null);setError('')}}><div className="ev-rows">{groups.map(g=><div key={g.id} className="ev-preview-row"><strong>{g.name}</strong><span>{g.members?.length||0}명 → {(g.members?.length||0)+balance.filter(m=>m.toGroupId===g.id).length}명</span></div>)}</div><p className="ev-muted">기존 조원은 유지됩니다.</p>{error&&<p className="ev-error" role="alert">{error}</p>}<Button loading={busy} onClick={()=>perform('balance',balance,key=>evangelismApi.moveTeachers(balance,key),()=>setBalance(null))}>{balance.length}명 배분 확정</Button></EvangelismDialog>}
+ </div>
 }
-
-// ── 조 드롭 영역 ──────────────────────────────────────────────────────────
-function GroupDropZone({ groupId, color, children }) {
-  const { setNodeRef, isOver } = useDroppable({ id: groupId })
-  return (
-    <div
-      ref={setNodeRef}
-      className={`brand-card rounded-2xl border-2 ${color.border} overflow-hidden flex flex-col transition-all ${isOver ? 'ring-2 ring-offset-1 ring-primary-400 scale-[1.02]' : ''}`}
-    >
-      {children}
-    </div>
-  )
+function GroupEditor({initialFilter,people,groups,busy,error,onClose,onMove,onMeta}){
+ const [filter,setFilter]=useState(initialFilter),[search,setSearch]=useState(''),[selected,setSelected]=useState([]),[target,setTarget]=useState(''),[message,setMessage]=useState('')
+ const rows=people.filter(p=>(filter==='all'||filter==='pool'&&p.groupId==null||String(p.groupId)===filter)&&(!search.trim()||(p.name+' '+p.grade).includes(search.trim())))
+ const current=groups.find(g=>String(g.id)===filter)
+ const groupOptions=groups.map(g=>({value:String(g.id),label:g.name,detail:(g.members?.length||0)+'명'}))
+ const toggle=p=>{setMessage('');setSelected(prev=>prev.some(s=>s.id===p.id)?prev.filter(s=>s.id!==p.id):[...prev,{...p}])}
+ const allSelected=rows.length>0&&rows.every(p=>selected.some(s=>s.id===p.id))
+ const move=async()=>{
+  const to=target==='pool'?null:Number(target)
+  const moves=selected.filter(p=>p.groupId!==to).map(p=>({teacherId:p.id,fromGroupId:p.groupId,toGroupId:to}))
+  if(!moves.length){setMessage('이미 선택한 조에 속해 있습니다.');return}
+  if(await onMove(moves)){setSelected([]);setTarget('');setMessage(moves.length+'명 이동 완료')}
+ }
+ return <EvangelismDialog title="교사 조 편성" busy={busy} onClose={onClose}>
+  <CompactSelect id="ev-source" label="현재 조" disabled={busy} value={filter} onChange={setFilter} options={[{value:'pool',label:'미배정'},{value:'all',label:'전체 교사'},...groupOptions]}/>
+  {current&&<button type="button" className="ev-small" disabled={busy} onClick={()=>onMeta(current)}>조 이름 수정·삭제</button>}
+  <SearchField label="전도 교사 검색" value={search} onChange={setSearch} placeholder="이름·학년 검색"/>
+  <div className="ev-heading"><span className="ev-muted">{rows.length}명 · 선택 {selected.length}명</span><button type="button" className="ev-small" disabled={busy||!rows.length} onClick={()=>setSelected(prev=>allSelected?prev.filter(p=>!rows.some(r=>r.id===p.id)):[...prev,...rows.filter(p=>!prev.some(s=>s.id===p.id))])}>{allSelected?'표시된 선택 해제':'표시된 교사 선택'}</button></div>
+  <fieldset disabled={busy} className="ev-people">{rows.map(p=><label className="ev-person" key={p.id}><input type="checkbox" checked={selected.some(s=>s.id===p.id)} onChange={()=>toggle(p)} aria-label={p.name+' 선택'}/><span><strong>{p.name}</strong><small>{[p.grade,p.groupName].filter(Boolean).join(' · ')}</small></span></label>)}</fieldset>
+  {!rows.length&&<p className="ev-empty">해당 교사가 없습니다.</p>}
+  {!!selected.length&&<div className="ev-selection"><p className="ev-muted">{selected.map(p=>p.name).join(' · ')}</p><CompactSelect id="ev-destination" label="이동할 조" value={target} disabled={busy} onChange={setTarget} placeholder="담당 조 선택" options={[{value:'pool',label:'배정 해제'},...groupOptions]}/><div className="ev-actions"><Button size="sm" loading={busy} disabled={!target} onClick={move}>{selected.length}명 {target==='pool'?'배정 해제':'이동'}</Button><button type="button" className="ev-small" disabled={busy} onClick={()=>setSelected([])}>선택 해제</button></div></div>}
+  {message&&<p role="status" className="ev-success">{message}</p>}{error&&<p role="alert" className="ev-error">{error}</p>}
+ </EvangelismDialog>
 }
-
-// ── 배정대기 드롭 영역 ────────────────────────────────────────────────────
-function PoolDropZone({ children }) {
-  const { setNodeRef, isOver } = useDroppable({ id: 'pool' })
-  return (
-    <div
-      ref={setNodeRef}
-      className={`rounded-2xl border border-dashed p-3 min-h-[52px] transition-all ${isOver ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-300' : 'border-gray-200 bg-gray-50'}`}
-    >
-      {children}
-    </div>
-  )
-}
-
-// ── 조원 칩 (드래그 가능 + X 버튼) ──────────────────────────────────────
-function MemberChip({ member, groupId, color, onTap, onRemove, disabled }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `member-${member.teacherId}`,
-    data: { teacherId: member.teacherId, teacherName: member.teacherName, fromGroupId: groupId },
-  })
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ opacity: isDragging ? 0.3 : 1 }}
-      className={`flex items-center gap-1 pl-2 pr-1 py-1 rounded-lg ${color.bg} ${color.text} text-xs font-bold`}
-    >
-      {/* 드래그 핸들 + 이름 (탭 시 이동 시트) */}
-      <button
-        onClick={onTap}
-        disabled={disabled}
-        className="flex items-center gap-1 min-w-0"
-      >
-        <span {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing touch-none">
-          {member.teacherName}
-        </span>
-        <ArrowRight size={9} className="opacity-60 flex-shrink-0" />
-      </button>
-      {/* X 버튼 */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onRemove() }}
-        disabled={disabled}
-        className={`w-4 h-4 rounded-md flex items-center justify-center ${color.bg} opacity-70 hover:opacity-100 flex-shrink-0`}
-      >
-        <X size={9} />
-      </button>
-    </div>
-  )
-}
-
-// ── 배정대기 칩 (드래그 가능) ────────────────────────────────────────────
-function PoolChip({ teacher, onTap }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `pool-${teacher.id}`,
-    data: { teacherId: teacher.id, teacherName: teacher.name, fromGroupId: null },
-  })
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ opacity: isDragging ? 0.3 : 1 }}
-      className="bg-white rounded-xl shadow-sm border border-gray-100"
-    >
-      <button onClick={onTap} className="flex items-center gap-1.5 px-3 py-2 active:scale-95">
-        <span {...listeners} {...attributes} className="text-xs font-bold text-gray-700 cursor-grab active:cursor-grabbing touch-none">
-          {teacher.name}
-        </span>
-        <Plus size={11} className="text-gray-400 flex-shrink-0" />
-      </button>
-    </div>
-  )
-}
-
-// ── 이동 시트 ──────────────────────────────────────────────────────────
-function MoveSheet({ teacherName, fromGroupId, groups, moving, onMove, onUnassign, onClose }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="safe-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: 80 }}
-        animate={{ y: 0 }}
-        exit={{ y: 80 }}
-        onClick={e => e.stopPropagation()}
-        className="safe-modal-panel w-full max-w-mobile bg-white rounded-t-3xl p-6 flex flex-col gap-4"
-      >
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-1" />
-        <div>
-          <p className="font-bold text-gray-900 text-base">{teacherName}</p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {fromGroupId ? `현재: ${groups.find(g => g.id === fromGroupId)?.name}` : '현재: 배정 없음'}
-          </p>
-        </div>
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">이동할 조 선택</p>
-        <div className="flex flex-col gap-2">
-          {groups
-            .filter(g => g.id !== fromGroupId)
-            .map((g) => {
-              const realIdx = groups.findIndex(gr => gr.id === g.id)
-              const c = getGroupColor(realIdx)
-              return (
-                <button
-                  key={g.id}
-                  onClick={() => onMove(g.id)}
-                  disabled={moving}
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 ${c.border} ${c.light} active:scale-[0.98] transition-transform disabled:opacity-50`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
-                    <span className={`font-bold text-sm ${c.text}`}>{g.name}</span>
-                    <span className={`text-xs font-bold ${c.text} opacity-60`}>{g.members?.length ?? 0}명</span>
-                  </div>
-                  <ChevronRight size={16} className={c.text} />
-                </button>
-              )
-            })}
-        </div>
-        {fromGroupId && (
-          <button onClick={onUnassign} disabled={moving}
-            className="w-full py-3 rounded-2xl bg-gray-100 text-gray-500 font-bold text-sm active:scale-[0.98] disabled:opacity-50">
-            {moving ? '처리 중...' : '조 배정 해제'}
-          </button>
-        )}
-        <button onClick={onClose} disabled={moving} className="w-full py-3 text-gray-400 font-bold text-sm">취소</button>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-// ── 일정 관리 탭 ──────────────────────────────────────────────────────────
-function ScheduleManagementTab({ teachers }) {
-  const [viewMode, setViewMode] = useViewMode('admin-evangelism-schedules', 'large')
-  const qc = useQueryClient()
-  const [showForm, setShowForm]       = useState(false)
-  const [editTarget, setEditTarget]   = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
-  const [form, setForm] = useState({ scheduledDate: '', groupId: '' })
-
-  const { data: groups = [] } = useQuery({
-    queryKey: ['evangelism-groups'],
-    queryFn: () => evangelismApi.getGroups().then(r => r.data),
-  })
-
-  const { data: schedules = [], isLoading } = useQuery({
-    queryKey: ['evangelism-schedules-all'],
-    queryFn: () => evangelismApi.getSchedules(false).then(r => r.data),
-  })
-
-  const createMutation = useMutation({
-    mutationFn: (data) => evangelismApi.createSchedule(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evangelism-schedules-all'] }); closeForm() },
-  })
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => evangelismApi.updateSchedule(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evangelism-schedules-all'] }); closeForm() },
-  })
-  const deleteMutation = useMutation({
-    mutationFn: (id) => evangelismApi.deleteSchedule(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evangelism-schedules-all'] }); setDeleteTarget(null) },
-  })
-  const cancelMutation = useMutation({
-    mutationFn: (id) => evangelismApi.cancelSchedule(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['evangelism-schedules-all'] }),
-  })
-
-  if (isLoading) return <LoadingSpinner />
-
-  const openCreate = () => {
-    setEditTarget(null)
-    setForm({ scheduledDate: format(nextSaturday(new Date()), 'yyyy-MM-dd'), groupId: '' })
-    setShowForm(true)
-  }
-  const openEdit = (s) => {
-    setEditTarget(s.id)
-    setForm({ scheduledDate: s.scheduledDate, groupId: String(s.assignments?.[0]?.groupId ?? '') })
-    setShowForm(true)
-  }
-  const closeForm = () => { setShowForm(false); setEditTarget(null) }
-  const handleSubmit = () => {
-    if (!form.scheduledDate) return
-    const payload = { scheduledDate: form.scheduledDate, groupId: form.groupId ? parseInt(form.groupId) : null }
-    if (editTarget) updateMutation.mutate({ id: editTarget, data: payload })
-    else            createMutation.mutate(payload)
-  }
-
-  const upcoming = schedules.filter(s => s.status !== 'COMPLETED' && s.status !== 'CANCELED')
-  const past     = schedules.filter(s => s.status === 'COMPLETED' || s.status === 'CANCELED')
-  const isPending = createMutation.isPending || updateMutation.isPending
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 flex flex-col gap-3 pb-4">
-      <button
-        onClick={openCreate}
-        className="flex items-center justify-center gap-2 py-3.5 px-5 bg-primary-600 text-white rounded-2xl font-bold text-sm active:scale-[0.98] transition-transform"
-      >
-        <Plus size={18} /> 새 전도 일정 등록
-      </button>
-
-      <AnimatePresence>
-        {showForm && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            <Card className="p-6 flex flex-col gap-5 border-2 border-primary-100 shadow-xl shadow-primary-50">
-              <div className="flex items-center justify-between">
-                <p className="font-bold text-gray-900 text-sm">{editTarget ? '일정 수정' : '새 일정 등록'}</p>
-                <button onClick={closeForm} className="text-gray-400"><X size={18} /></button>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">전도 날짜 (토요일)</label>
-                <input type="date" className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold focus:ring-2 focus:ring-primary-400 outline-none" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">담당 조</label>
-                <div className="flex flex-col gap-2">
-                  {groups.map((g, idx) => (
-                    <button aria-pressed={form.groupId === String(g.id)}
-                      key={g.id}
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, groupId: String(g.id) }))}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all ${
-                        form.groupId === String(g.id)
-                          ? 'border-primary-400 bg-primary-50 text-primary-700'
-                          : 'border-gray-100 bg-gray-50 text-gray-600'
-                      }`}
-                    >
-                      <span>{g.name}</span>
-                      <span className="text-xs text-gray-400">{g.members?.map(m => m.teacherName).join(', ') || '없음'}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={handleSubmit} disabled={!form.scheduledDate || !form.groupId || isPending} className="flex-1 py-3 bg-primary-600 text-white rounded-xl font-bold text-sm disabled:opacity-50">
-                  {isPending ? '저장 중...' : (editTarget ? '수정 완료' : '등록')}
-                </button>
-                <button onClick={closeForm} className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-sm">취소</button>
-              </div>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] px-1 mt-1">예정 일정</p>
-      <ViewModeToggle mode={viewMode} onChange={setViewMode} label="전도 일정 보기 방식" />
-      {upcoming.length === 0 && !showForm && (
-        <Card className="py-8 flex items-center justify-center">
-          <p className="text-sm text-gray-400">등록된 예정 일정이 없습니다</p>
-        </Card>
-      )}
-      <RecordViews mode={viewMode} rows={[...upcoming, ...past]} columns={[
-        { label: '전도 일자', render: s => fmtDate(s.scheduledDate) },
-        { label: '담당 조', render: s => s.assignments?.[0]?.groupName || '담당 없음' },
-        { label: '상태', render: s => ({ ACTIVE: '당번', CANCELED: '취소됨', UPCOMING: '예정', COMPLETED: '완료' }[s.status] || s.status) },
-        { label: '관리', action: true, render: s => <div className="flex flex-wrap gap-2">
-          {s.status !== 'CANCELED' && <><button type="button" onClick={() => openEdit(s)} className="min-h-11 rounded-xl border px-3">수정</button>
-            <button type="button" disabled={cancelMutation.isPending} onClick={() => { if (window.confirm('일정을 취소하시겠습니까?')) cancelMutation.mutate(s.id) }} className="min-h-11 rounded-xl border px-3">일정 취소</button></>}
-          <button type="button" onClick={() => setDeleteTarget(s)} className="min-h-11 rounded-xl border px-3 text-red-600">삭제</button>
-        </div> },
-      ]}>
-      {upcoming.map((s, i) => (
-        <ScheduleAdminCard key={s.id} schedule={s} index={i} groups={groups}
-          onEdit={() => openEdit(s)}
-          onDelete={() => setDeleteTarget(s)}
-          onCancel={() => { if (window.confirm('일정을 취소하시겠습니까?')) cancelMutation.mutate(s.id) }}
-        />
-      ))}
-
-      {past.length > 0 && (
-        <>
-          <p className="text-xs font-bold text-gray-300 uppercase tracking-[0.2em] px-1 mt-2">지난 일정</p>
-          {past.map((s, i) => (
-            <ScheduleAdminCard key={s.id} schedule={s} index={i} groups={groups} past
-              onEdit={() => openEdit(s)} onDelete={() => setDeleteTarget(s)} onCancel={() => cancelMutation.mutate(s.id)}
-            />
-          ))}
-        </>
-      )}
-      </RecordViews>
-
-      <AnimatePresence>
-        {deleteTarget && (
-          <DeleteConfirmModal
-            schedule={deleteTarget}
-            isPending={deleteMutation.isPending}
-            onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
-            onCancel={() => setDeleteTarget(null)}
-          />
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
-}
-
-function ScheduleAdminCard({ schedule, index, groups, past, onEdit, onDelete, onCancel }) {
-  const dateStr = fmtDate(schedule.scheduledDate)
-  const groupId = schedule.assignments?.[0]?.groupId
-  const groupIdx = groups.findIndex(g => g.id === groupId)
-  const color = getGroupColor(groupIdx >= 0 ? groupIdx : 0)
-  const groupName = schedule.assignments?.[0]?.groupName || '담당 없음'
-  const memberCount = groups.find(g => g.id === groupId)?.members?.length
-
-  return (
-    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.04 }}>
-      <Card className={`flex items-center gap-3 py-4 px-4 ${past ? 'opacity-50' : ''}`}>
-        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${schedule.status === 'ACTIVE' ? 'bg-red-500' : schedule.status === 'CANCELED' ? 'bg-gray-300' : 'bg-amber-400'}`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-gray-900 text-sm">{dateStr}</p>
-            {schedule.status === 'ACTIVE' && <Badge variant="danger" className="text-[0.6875rem]">당번</Badge>}
-            {schedule.status === 'CANCELED' && <Badge variant="gray" className="text-[0.6875rem] bg-gray-200 text-gray-500 border-none">취소됨</Badge>}
-          </div>
-          {groupId ? (
-            <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-lg ${color.bg} ${color.text}`}>
-              {groupName} {memberCount != null ? `· ${memberCount}명` : ''}
-            </span>
-          ) : (
-            <p className="text-xs text-gray-400 mt-0.5">담당 조 없음</p>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {schedule.status !== 'CANCELED' && (
-            <>
-              <button onClick={onEdit} className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center active:scale-95">
-                <Edit2 size={13} className="text-gray-500" />
-              </button>
-              <button onClick={onCancel} className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center active:scale-95">
-                <X size={13} className="text-amber-600" />
-              </button>
-            </>
-          )}
-          <button onClick={onDelete} className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center active:scale-95">
-            <Trash2 size={13} className="text-red-400" />
-          </button>
-        </div>
-      </Card>
-    </motion.div>
-  )
-}
-
-function DeleteConfirmModal({ schedule, isPending, onConfirm, onCancel }) {
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="safe-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm"
-      onClick={onCancel}
-    >
-      <motion.div initial={{ y: 60 }} animate={{ y: 0 }} exit={{ y: 60 }} onClick={e => e.stopPropagation()}
-        className="safe-modal-panel w-full max-w-mobile bg-white rounded-t-3xl p-6 flex flex-col gap-4"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-red-100 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={20} className="text-red-500" />
-          </div>
-          <div>
-            <p className="font-bold text-gray-900">일정을 삭제할까요?</p>
-            <p className="text-xs text-gray-400 mt-0.5">{fmtDate(schedule.scheduledDate)} 전도 일정</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={onConfirm} disabled={isPending} className="flex-1 py-3.5 bg-red-500 text-white rounded-2xl font-bold text-sm disabled:opacity-50">
-            {isPending ? '삭제 중...' : '삭제'}
-          </button>
-          <button onClick={onCancel} className="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-2xl font-bold text-sm">취소</button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-function fmtDate(dateStr) {
-  try { return format(parseISO(dateStr), 'M월 d일 (eee)', { locale: ko }) }
-  catch { return dateStr }
+function GroupMeta({group,busy,error,onClose,onSave,onDelete}){
+ const [name,setName]=useState(group.name),[confirm,setConfirm]=useState(false)
+ return <EvangelismDialog title={group.id?'조 설정':'조 추가'} busy={busy} onClose={onClose}><form onSubmit={e=>{e.preventDefault();if(name.trim())onSave(name.trim())}}><div className="ev-field"><label htmlFor="ev-group-name">조 이름</label><input id="ev-group-name" maxLength={100} value={name} disabled={busy} onChange={e=>setName(e.target.value)}/></div><div className="ev-actions mt-3"><Button type="submit" size="sm" loading={busy} disabled={!name.trim()}>저장</Button>{group.id&&<button type="button" className="ev-small" disabled={busy} onClick={()=>setConfirm(true)}>조 삭제</button>}</div></form>{confirm&&<div className="ev-confirm"><p>{group.name}를 삭제할까요? 조원은 미배정으로 이동합니다.</p><p className="ev-muted">기존 전도 일정은 유지됩니다.</p><div className="ev-actions"><Button size="sm" disabled={busy} onClick={onDelete}>삭제 확인</Button><button type="button" className="ev-small" disabled={busy} onClick={()=>setConfirm(false)}>취소</button></div></div>}{error&&<p role="alert" className="ev-error">{error}</p>}</EvangelismDialog>
 }

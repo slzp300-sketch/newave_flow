@@ -22,6 +22,7 @@ public class PrayerVoteService {
     private final PrayerVoteRepository prayerVoteRepository;
     private final UserRepository userRepository;
     private final com.newaveflow.repository.TeacherClassRepository teacherClassRepository;
+    private final TtsService ttsService;
 
     // 해당 날짜가 속한 주의 월요일
     public static LocalDate getWeekStart(LocalDate date) {
@@ -45,6 +46,8 @@ public class PrayerVoteService {
                 .orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
 
         PrayerVote.Status status = PrayerVote.Status.valueOf(statusStr);
+        ttsService.preserveClosedLinkedScore(teacherId, weekStart,
+                com.newaveflow.entity.TtsQuestion.TtsLinkType.PRAYER_MEETING);
 
         PrayerVote vote = prayerVoteRepository.findByTeacherIdAndWeekStart(teacherId, weekStart)
                 .orElseGet(() -> PrayerVote.builder()
@@ -84,12 +87,4 @@ public class PrayerVoteService {
         }).toList();
     }
 
-    @Transactional
-    public PrayerVote toggleScriptureSubmitted(Long voteId, boolean submitted) {
-        PrayerVote vote = prayerVoteRepository.findByIdWithTeacher(voteId)
-                .orElseThrow(() -> AppException.notFound("투표 기록을 찾을 수 없습니다."));
-        if (submitted) vote.markScriptureSubmitted();
-        else vote.unmarkScriptureSubmitted();
-        return prayerVoteRepository.save(vote);
-    }
 }

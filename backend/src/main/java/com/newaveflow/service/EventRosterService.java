@@ -20,11 +20,10 @@ public class EventRosterService {
     @Transactional
     public void capture(Event event) {
         if (!event.isAttendanceRequired() || event.getRosterCapturedAt() != null) return;
-        participants.saveAll(students.findAllActiveWithClassGroup().stream().map(s -> EventParticipant.builder()
+        participants.saveAll(students.findAllActiveWithClassGroup().stream().filter(s->s.belongsToClassOn(java.time.LocalDate.now())).map(s -> EventParticipant.builder()
                 .eventId(event.getId()).kind("STUDENT").personId(s.getId()).name(s.getName()).grade(s.getGrade())
                 .classGroupId(s.getClassGroup().getId()).classGroupName(s.getClassGroup().getName()).build()).toList());
         participants.saveAll(users.findAllActiveWithClasses().stream()
-                .filter(u -> u.getRole() != User.Role.ADMIN)
                 .map(u -> teacherSnapshot(event.getId(), u)).toList());
         event.setRosterCapturedAt(java.time.LocalDateTime.now());
     }
@@ -39,9 +38,14 @@ public class EventRosterService {
 
     @Transactional
     public void captureExtraTeacher(Long eventId, User user) {
-        if (user.getRole() != User.Role.ADMIN && participants.findByEventIdAndKindAndPersonId(eventId,"TEACHER",user.getId()).isEmpty()) {
-            throw com.newaveflow.exception.AppException.badRequest("행사 등록 당시 교사 명단에 없습니다. 관리자에게 문의해주세요.");
+        if (participants.findByEventIdAndKindAndPersonId(eventId,"TEACHER",user.getId()).isPresent()) return;
+        if (user.getRole() == User.Role.ADMIN) {
+            // Existing event snapshots excluded administrators. Register only when they
+            // actually submit their own attendance; the event is locked by the caller.
+            participants.save(teacherSnapshot(eventId, user));
+            return;
         }
+        throw com.newaveflow.exception.AppException.badRequest("행사 등록 당시 교사 명단에 없습니다. 관리자에게 문의해주세요.");
     }
 
     public EventParticipant student(Long eventId, Long studentId) {

@@ -21,7 +21,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest(showSql = false) @ActiveProfiles("test")
-@Import({AttendanceService.class, ReportService.class, ClassAccessService.class, EventService.class, EventRosterService.class,
+@Import({AttendanceService.class, ReportService.class, WeeklyReportSourceService.class, NewFamilyService.class, ClassAccessService.class, EventService.class, EventRosterService.class,
         TtsService.class, TtsQuestionPolicy.class, HistoryAndReportingTest.JsonConfig.class})
 class HistoryAndReportingTest {
     @TestConfiguration static class JsonConfig { @Bean ObjectMapper mapper() { return new ObjectMapper().findAndRegisterModules(); } }
@@ -80,7 +80,10 @@ class HistoryAndReportingTest {
         var linked=questions.saveAndFlush(TtsQuestion.builder().title("검증 회의").type(TtsQuestion.TtsQuestionType.ATTEND).points(10)
                 .linkType(TtsQuestion.TtsLinkType.SAT_MEETING).displayOrder(2).build());
         meetings.saveAndFlush(MeetingAttendance.builder().teacher(teacher).meetingDate(sunday.plusDays(6)).status("ATTEND").build());
-        tts.saveAnswer(teacher,new TtsAnswerRequest(sunday,daily.getId(),"{\"월\":true}"));
+        // Existing historical records remain readable even when last week is now a closed quarter.
+        var priorRecord=TtsRecord.builder().teacher(teacher).infoYear(TtsService.weekYear(sunday)).weekNum(TtsService.weekNum(sunday)).build();
+        priorRecord.addAnswer(TtsAnswer.builder().question(daily).answerData("{\"월\":true}").build());
+        records.saveAndFlush(priorRecord);
         assertEquals(15,tts.getWeek(teacher,sunday).getScore());
         tts.updateQuestions(List.of(TtsQuestion.builder().id(daily.getId()).title("변경 매일").type(TtsQuestion.TtsQuestionType.DAYS).points(50).displayOrder(1).build(),
                 TtsQuestion.builder().id(linked.getId()).title("변경 회의").type(TtsQuestion.TtsQuestionType.ATTEND).points(100).linkType(TtsQuestion.TtsLinkType.SAT_MEETING).displayOrder(2).build()));

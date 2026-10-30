@@ -1,3 +1,4 @@
+import './PeopleReadability.css'
 import SearchField from '../components/common/SearchField'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
 import { matchesAdminSearch } from '../utils/adminSearch'
@@ -39,11 +40,11 @@ export default function DeactivationRequestsAdminPage() {
   const filtered = requests.filter(req => matchesAdminSearch(search, req.studentName, req.studentGrade, req.classGroupName, req.teacherName))
 
   return (
-    <div className="flex flex-col min-h-screen pb-24">
+    <div className="people-readable readable-content flex flex-col min-h-screen pb-24">
       <Header title="제적 승인 관리" showBack />
 
       <div className="flex flex-col gap-4 px-4 py-5">
-        <AdminIntro title="제적 신청을 확인하세요" description="학생 정보와 신청 사유를 확인한 뒤 승인 또는 반려해 주세요." />
+        <AdminIntro title="제적 신청" />
         <SearchField label="제적 신청 검색" value={search} onChange={setSearch} placeholder="학생, 반 또는 담임 이름 검색" />
         <ViewModeToggle mode={viewMode} onChange={setViewMode} />
       </div>
@@ -59,7 +60,7 @@ export default function DeactivationRequestsAdminPage() {
             <CheckCircle2 size={28} className="text-secondary-700" />
           </div>
           <p className="font-bold text-gray-700">대기 중인 제적 신청이 없습니다</p>
-          <p className="text-xs text-gray-400">새로운 제적 신청이 들어오면 여기에 표시됩니다</p>
+
         </div>
       ) : (
         <div className="px-4 py-4 flex flex-col gap-3">

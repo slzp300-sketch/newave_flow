@@ -30,8 +30,8 @@ public class ClassController {
     }
 
     @GetMapping("/{id}/students")
-    public ResponseEntity<List<StudentDto>> getStudents(@PathVariable Long id, @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(classService.getStudentsInClass(id, currentUser));
+    public ResponseEntity<List<StudentDto>> getStudents(@PathVariable Long id, @RequestParam(required=false) java.time.LocalDate date, @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(classService.getStudentsInClass(id, currentUser,date==null?java.time.LocalDate.now():date));
     }
 
     @PostMapping("/{classId}/assign-teacher/{userId}")

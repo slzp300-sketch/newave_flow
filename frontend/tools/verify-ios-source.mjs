@@ -39,9 +39,12 @@ assert.equal(appTarget.firstTarget.dependencies.length, 0, 'App must not depend 
 assert.ok(tests[1].dependencies.some(d => objects.PBXTargetDependency[d.value].target === appTarget.uuid))
 const sources = objects.PBXSourcesBuildPhase[appTarget.firstTarget.buildPhases.find(p => p.comment === 'Sources').value]
 const sourceNames = sources.files.map(f => objects.PBXFileReference[objects.PBXBuildFile[f.value].fileRef].path.replaceAll('"', ''))
-for (const name of ['NewaveBridgeViewController.swift','NewaveKeychainStore.swift','NewaveSecureStoragePlugin.swift','NewaveAppleSignInPlugin.swift']) assert.ok(sourceNames.includes(name), `${name} must compile in App`)
+for (const name of ['NewaveBridgeViewController.swift','NewaveKeychainStore.swift','NewaveSecureStoragePlugin.swift','NewaveAppleSignInPlugin.swift','NewaveReportExportPlugin.swift']) assert.ok(sourceNames.includes(name), `${name} must compile in App`)
+assert.ok(fs.readFileSync(path.join(app, 'NewaveBridgeViewController.swift'), 'utf8').includes('registerPluginInstance(NewaveReportExportPlugin())'))
 assert.equal(info.NewaveAppleSignInEnabled, '$(NEWAVE_APPLE_SIGN_IN_ENABLED)')
 for (const configuration of Object.values(objects.XCBuildConfiguration)) {
+  const minimum = configuration?.buildSettings?.IPHONEOS_DEPLOYMENT_TARGET
+  if (minimum) assert.ok(Number(minimum) >= 15.4, 'Dialog, Array.at and crypto.randomUUID require iOS 15.4 or later')
   if (configuration?.buildSettings?.PRODUCT_BUNDLE_IDENTIFIER === 'app.newaveflow.mobile') {
     assert.equal(configuration.buildSettings.NEWAVE_APPLE_SIGN_IN_ENABLED, 'NO', 'Apple login requires an explicit signed-device build opt-in')
     assert.equal(configuration.buildSettings.CODE_SIGN_ENTITLEMENTS, undefined, 'Simulator CI must not require an Apple provisioning profile')

@@ -1,3 +1,4 @@
+import './SupportingReadability.css'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, User, Lock, CheckCircle, Copy } from 'lucide-react'
@@ -21,14 +22,14 @@ export default function FindAccountPage() {
   const [tab, setTab] = useState(searchParams.get('tab') === 'pw' ? TAB_PW : TAB_ID)
 
   return (
-    <div className="safe-page-top min-h-screen bg-primary-900 flex flex-col items-center justify-center px-5 pb-8 max-w-mobile mx-auto" style={{ '--safe-page-space': '2rem' }}>
+    <div className="supporting-readable readable-content safe-page-top min-h-screen bg-primary-900 flex flex-col items-center justify-center px-5 pb-8 max-w-mobile mx-auto" style={{ '--safe-page-space': '2rem' }}>
       <div className="mb-8 text-center animate-[fadeIn_0.5s_ease]">
         <h1><Brand emblem light /></h1>
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-3xl border border-gray-200 overflow-hidden animate-[slideUp_0.4s_ease]">
         {/* 탭 */}
-        <div className="flex">
+        <div className="account-tabs flex">
           <button aria-pressed={tab === TAB_ID}
             type="button"
             onClick={() => setTab(TAB_ID)}
@@ -55,7 +56,7 @@ export default function FindAccountPage() {
           </button>
         </div>
 
-        <div className="p-7">
+        <div className="account-form p-7">
           {tab === TAB_ID ? <FindIdTab /> : <FindPasswordTab />}
         </div>
       </div>
@@ -152,7 +153,7 @@ function FindIdTab() {
 function FindPasswordTab() {
   return <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
     <p className="font-bold text-gray-900">관리자에게 비밀번호 재설정을 요청해주세요.</p>
-    <p>부서 관리자가 본인 여부를 확인한 뒤 임시 비밀번호를 전달합니다.</p>
-    <p>임시 비밀번호로 로그인한 후 내 정보에서 새 비밀번호로 변경해주세요.</p>
+    <p>관리자 본인 확인 후 임시 비밀번호 발급</p>
+    <p>로그인 후 내 정보에서 비밀번호를 변경하세요.</p>
   </div>
 }

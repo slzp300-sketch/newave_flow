@@ -37,6 +37,7 @@ public class MeetingMinute {
     @Builder.Default
     @Column(nullable = false, columnDefinition = "boolean default true not null")
     private boolean isActive = true;
+    @org.hibernate.annotations.ColumnDefault("false") @Column(nullable=false) private boolean notificationPublished;
 
     @CreatedDate
     @Column(updatable = false)
