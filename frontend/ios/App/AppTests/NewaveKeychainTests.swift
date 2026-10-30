@@ -40,10 +40,20 @@ final class NewaveKeychainTests: XCTestCase {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         let previousKeyWindow = scene.windows.first { $0.isKeyWindow }
         let window = UIWindow(windowScene: scene)
+        window.frame = scene.coordinateSpace.bounds
         window.rootViewController = controller
         window.makeKeyAndVisible()
-        defer { window.isHidden = true; previousKeyWindow?.makeKeyAndVisible() }
+        defer {
+            withExtendedLifetime((controller, window)) {
+                controller.webView?.stopLoading()
+                window.isHidden = true
+                window.rootViewController = nil
+                previousKeyWindow?.makeKeyAndVisible()
+            }
+        }
         controller.loadViewIfNeeded()
+        window.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
         let webView = try XCTUnwrap(controller.webView)
         let deadline = Date().addingTimeInterval(15)
         while (webView.isLoading || webView.url == nil) && Date() < deadline {
@@ -56,13 +66,16 @@ final class NewaveKeychainTests: XCTestCase {
                     """, arguments: ["filename": "청소년부 주간보고서 (2026-10-25).\(format)", "base64": data.base64EncodedString()], in: nil, contentWorld: .page)
             }
             let presentedBy = Date().addingTimeInterval(10)
-            while controller.presentedViewController == nil && Date() < presentedBy {
+            while (controller.presentedViewController == nil || controller.presentedViewController?.isBeingPresented == true) && Date() < presentedBy {
                 try await Task.sleep(nanoseconds: 100_000_000)
             }
             let picker = try XCTUnwrap(controller.presentedViewController as? UIDocumentPickerViewController)
-            XCTAssertTrue(picker.shouldShowFileExtensions)
+            XCTAssertTrue(picker.delegate === controller.bridge?.plugin(withName: "NewaveReportExport"))
             picker.delegate?.documentPickerWasCancelled?(picker)
-            picker.dismiss(animated: false)
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                picker.dismiss(animated: false) { continuation.resume() }
+            }
+            XCTAssertNil(controller.presentedViewController)
             let result = try await pending.value as? [String: Any]
             XCTAssertEqual(result?["cancelled"] as? Bool, true)
         }
