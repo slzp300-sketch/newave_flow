@@ -15,10 +15,10 @@
 .tts-ranking-period select { min-height:44px; max-width:calc(100% - 3.5rem); font-size:1rem; font-weight:650; padding:.5rem .7rem; border:1px solid #d7dce7; border-radius:.65rem; background:white; color:#182949; }
 :root body .tts-ranking-page .tts-ranking-refresh { --surface-bg:transparent; display:flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; }
 .tts-ranking-range { margin:0; font-size:.75rem; color:#647086; }
-.tts-ranking-summary { padding:.65rem .8rem; border:1px solid #e3e7ee; border-radius:.75rem; background:white; }
+.tts-ranking-summary { padding:.5rem .625rem; border:1px solid var(--newave-line); border-radius:1rem; background:white; }
 .tts-ranking-summary > div { display:flex; flex-wrap:wrap; align-items:baseline; gap:.3rem .55rem; }
-.tts-ranking-summary strong { font-size:.9rem; }
-.tts-ranking-summary b { font-size:1.2rem; color:#12358b; }
+.tts-ranking-summary strong { font-size:.875rem; }
+.tts-ranking-summary b { font-size:1.25rem; color:var(--newave-navy); }
 .tts-ranking-summary span, .tts-ranking-summary p { font-size:.75rem; color:#647086; line-height:1.6; }
 .tts-ranking-summary p { margin:.25rem 0 0; }
 .tts-ranking-filters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.3rem; }

@@ -1,3 +1,4 @@
+import AppSelect from '../common/AppSelect'
 import { useMemo, useState } from 'react'
 import './TtsStats.css'
 import { useQuery } from '@tanstack/react-query'
@@ -58,10 +59,10 @@ export default function TtsStats() {
     </section>
     <div className="tts-ranking-content">
       <div className="tts-ranking-period">
-        <select aria-label="통계 분기 선택" value={`${year}-${quarter}`} onChange={event => {
+        <AppSelect aria-label="통계 분기 선택" value={`${year}-${quarter}`} onChange={event => {
           const [nextYear, nextQuarter] = event.target.value.split('-').map(Number)
           setYear(nextYear); setQuarter(nextQuarter); setSelected(null)
-        }}>{ttsYears().flatMap(value => quartersForYear(value).map(period => <option key={`${value}-${period.q}`} value={`${value}-${period.q}`}>{value}년 {period.q}분기</option>))}</select>
+        }}>{ttsYears().flatMap(value => quartersForYear(value).map(period => <option key={`${value}-${period.q}`} value={`${value}-${period.q}`}>{value}년 {period.q}분기</option>))}</AppSelect>
         <button type="button" onClick={() => stats.refetch()} disabled={stats.isFetching || readState === 'offline'} aria-label="분기 순위 새로고침" className="tts-ranking-refresh">
           <RefreshCw size={18} className={stats.isFetching ? 'refresh-spinner' : ''} />
         </button>
@@ -69,7 +70,7 @@ export default function TtsStats() {
       <p className="tts-ranking-range">{quarterDateLabel(year, quarter)}</p>
       <section className="tts-ranking-summary" aria-label="분기 통과 기준">
         <div><strong>전체 평균</strong><b>{ready ? quarterAverageText(assessment.average) : '—'}점</b><span>{ready ? `기록 ${assessment.count}명` : '조회 완료 후 표시'}</span></div>
-        <p>평균 이상 통과 · 기록 없음은 평균에서 제외</p>
+
       </section>
       <SearchField label="교사 이름 검색" placeholder="이름으로 검색" value={search} onChange={setSearch} />
       <div role="group" aria-label="분기 판정 필터" className="tts-ranking-filters">
@@ -82,12 +83,12 @@ export default function TtsStats() {
         : futureQuarter ? <Empty>아직 시작하지 않은 분기입니다.</Empty>
         : calendarDataMissing ? <Card className="p-4 text-center text-gray-600"><p role="status">통계 정보를 새로 불러와 주세요.</p><button type="button" onClick={() => stats.refetch()} className="min-h-11 px-4 mt-2">다시 불러오기</button></Card>
         : <>
-          <div className="tts-ranking-list-caption"><p role="status">{filtered.length}명 표시 / 전체 {people.length}명</p><span>이름을 누르면 체크 기록</span></div>
+          <div className="tts-ranking-list-caption"><p role="status">{filtered.length}명 표시 / 전체 {people.length}명</p></div>
           <TtsRankingList people={filtered} assessment={assessment} onSelect={open} mineKey={mine?.key}>
             {!filtered.length && <Empty>{!people.length ? '아직 분기 기록이 없습니다.' : search.trim() ? '선택한 조건에 맞는 이름이 없습니다.' : '선택한 상태의 교사가 없습니다.'}
               {people.length > 0 && <button type="button" onClick={() => { setSearch(''); setStatusFilter('all') }} className="mt-3 block mx-auto min-h-11 rounded-xl border px-4 py-2 font-semibold">전체 보기</button>}</Empty>}
           </TtsRankingList>
-          <p className="tts-ranking-footnote">내 순위는 검색·필터와 관계없이 위에 고정됩니다.<br />평균과 순위는 전체 인원 기준입니다.</p>
+
         </>}
     </div>
     {activePerson && <TtsRankingHistory key={`${scope}:${year}:${quarter}:${activePerson.key}`} person={activePerson} year={year} quarter={quarter} scope={scope} onClose={() => setSelected(null)} />}

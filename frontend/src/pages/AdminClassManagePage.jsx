@@ -1,5 +1,6 @@
 import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
+import './AdminClassManagePage.css'
 import SearchField from '../components/common/SearchField'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
 import { matchesAdminSearch } from '../utils/adminSearch'
@@ -10,9 +11,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserPlus, X, Loader2, UserMinus, CheckCircle2, Search, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
-import Card from '../components/common/Card'
-import ViewModeToggle, { useViewMode } from '../components/common/ViewModeToggle'
-import RecordViews from '../components/common/RecordViews'
 import Button from '../components/common/Button'
 import { classesApi } from '../api/classes'
 import { usersApi } from '../api/users'
@@ -20,7 +18,6 @@ import { usersApi } from '../api/users'
 export default function AdminClassManagePage() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
-  const [viewMode, setViewMode] = useViewMode('admin-class-assignment', 'large')
   const [selectedClassId, setSelectedClassId] = usePersistedState('selectedClassId', null)
   const [activeGrade, setActiveGrade] = usePersistedState('activeGrade', '전체')
 
@@ -49,7 +46,7 @@ export default function AdminClassManagePage() {
     const priority = { '중': 1, '고': 2 }
     const aPrefix = a[0]
     const bPrefix = b[0]
-    
+
     if (priority[aPrefix] !== priority[bPrefix]) {
       return priority[aPrefix] - priority[bPrefix]
     }
@@ -74,13 +71,12 @@ export default function AdminClassManagePage() {
   )
 
   return (
-    <div className="people-readable readable-content flex flex-col min-h-screen pb-24 bg-gray-50/50">
+    <div className="admin-class-assignment-page people-readable readable-content flex flex-col min-h-screen pb-24 bg-gray-50/50">
       <Header title="반 담임/부담임 관리" showBack />
 
       <div className="flex flex-col gap-4 px-4 py-5">
-        <AdminIntro title="반마다 담당 교사를 연결해요" description="반을 선택해 담임·부담임을 배정하거나 변경하세요." />
+        <AdminIntro title="반별 교사 배정" />
         <SearchField label="반과 담당 교사 검색" value={search} onChange={setSearch} placeholder="학년, 반 또는 교사 이름 검색" />
-        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
       </div>
       {!isLoading && (
         <div className="bg-white border-b border-gray-100 flex overflow-x-auto no-scrollbar px-4 py-2 gap-2 ">
@@ -106,43 +102,24 @@ export default function AdminClassManagePage() {
           <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
         </div>
       ) : (
-        <div className="px-4 py-6 flex flex-col gap-8">
+        <div className="class-assignment-content">
           <FilterResults count={resultCount} total={roster.length} unit="반" filtered={!!search.trim() || activeGrade !== '전체'} onReset={() => { setSearch(''); setActiveGrade('전체') }} />
           {!resultCount && <AdminEmpty />}
-          <RecordViews mode={viewMode} rows={displayedEntries.flatMap(([, classes]) => classes)} onRowClick={cls => setSelectedClassId(cls.id)} columns={[
-            { label: '반', render: cls => cls.name },
-            { label: '학년', render: cls => <GradeLabel value={cls.grade} /> },
-            { label: '담당 교사', render: cls => cls.teachers?.map(t => t.name).join(', ') || '미배정' },
-            { label: '학생 수', render: cls => `${cls.students?.length ?? 0}명` },
-          ]}>
-          {displayedEntries.map(([grade, classes], gIdx) => (
-            <motion.div 
-              key={grade}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: gIdx * 0.1 }}
-              className="flex flex-col gap-3"
-            >
-              <div className="flex items-center gap-2 px-1">
-                 <div className="w-1 h-4 bg-primary-500 rounded-full" />
-                 <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]"><GradeLabel value={grade} /></p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
-                {classes.map(cls => (
-                  <ClassAssignmentCard 
-                    key={cls.id} 
-                    cls={cls} 
-                    onManage={() => setSelectedClassId(cls.id)}
-                  />
-                ))}
-              </div>
-            </motion.div>
+          {displayedEntries.map(([grade, classes], index) => (
+            <section key={grade} className="class-assignment-group" aria-labelledby={`class-grade-${index}`}>
+              <h2 id={`class-grade-${index}`} className="class-assignment-grade">
+                <GradeLabel value={grade} /><span>{classes.length}개 반</span>
+              </h2>
+              <ul className="class-assignment-list" aria-label={`${grade} 반 목록`}>
+                {classes.map(cls => <li key={cls.id}>
+                  <ClassAssignmentCard cls={cls} onManage={() => setSelectedClassId(cls.id)} />
+                </li>)}
+              </ul>
+            </section>
           ))}
-          </RecordViews>
         </div>
       )}
-      
+
       <AnimatePresence>
         {activeClass && (
           <AssignmentModal 
@@ -162,47 +139,25 @@ export default function AdminClassManagePage() {
 }
 
 function ClassAssignmentCard({ cls, onManage }) {
-  const primaryTeacher = (cls.teachers || []).find(t => t.isPrimary)
-  const subTeachers = (cls.teachers || []).filter(t => !t.isPrimary)
+  const primaryTeacher = (cls.teachers || []).find(teacher => teacher.isPrimary)
+  const subTeachers = (cls.teachers || []).filter(teacher => !teacher.isPrimary)
 
-  return (
-    <Card onClick={onManage} className="p-5 flex items-center justify-between group hover:border-primary-500 border border-transparent transition-all bg-white shadow-sm overflow-hidden min-h-[100px]">
-      <div className="flex flex-col gap-4 flex-1 min-w-0">
-        {/* 상단: 반 이름 */}
-        <div className="flex flex-wrap items-center gap-2">
-           <span className="text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md"><GradeLabel value={cls.grade} /></span>
-           <h3 className="text-lg font-bold text-gray-900">{cls.name}</h3>
-        </div>
-
-        {/* 하단: 담임 및 부담임 */}
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-gray-400 font-bold shrink-0 w-12">담임</span>
-            <span className="text-gray-900 font-bold">{primaryTeacher?.name || '미배정'}</span>
-          </div>
-          <div className="flex items-start gap-2 text-xs">
-            <span className="text-gray-400 font-bold shrink-0 w-12 pt-0.5">부담임</span>
-            <div className="flex flex-wrap gap-1 flex-1">
-              {subTeachers.length > 0 ? (
-                subTeachers.map(t => (
-                  <span key={t.id} className="text-gray-700 font-bold">{t.name}</span>
-                ))
-              ) : (
-                <span className="text-gray-300 font-bold">없음</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 최우측: 화살표 (수정 버튼 역할) */}
-      <div className="flex-shrink-0 ml-4">
-        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-primary-500 group-hover:text-white transition-all shadow-sm">
-          <ChevronRight size={16} />
-        </div>
-      </div>
-    </Card>
-  )
+  return <button type="button" className="class-assignment-row" onClick={onManage} aria-haspopup="dialog"
+    aria-label={`${cls.grade} ${cls.name} 교사 배정 관리`} aria-describedby={`class-teachers-${cls.id}`}>
+    <span className="class-assignment-info">
+      <span className="class-assignment-heading">
+        <span className="class-assignment-name">{cls.name}</span>
+        <span className="class-assignment-students">학생 {cls.students?.length ?? 0}명</span>
+      </span>
+      <span id={`class-teachers-${cls.id}`} className="class-assignment-teachers">
+        <span className="class-assignment-label">담임</span>
+        <span className={'class-assignment-value' + (!primaryTeacher ? ' class-assignment-unassigned' : '')}>{primaryTeacher?.name || '미배정'}</span>
+        <span className="class-assignment-label">부담임</span>
+        <span className="class-assignment-value">{subTeachers.map(teacher => teacher.name).join(', ') || '없음'}</span>
+      </span>
+    </span>
+    <ChevronRight size={18} className="class-assignment-chevron" aria-hidden="true" />
+  </button>
 }
 
 function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, onUpdated }) {
@@ -250,7 +205,7 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
       // 기존 담임들을 부담임으로 강등 (하나만 담임 가능)
       next = next.map(t => ({ ...t, isPrimary: false }))
     }
-    
+
     const existingIdx = next.findIndex(t => t.id === user.id)
     if (existingIdx > -1) {
       // 이미 목록에 있으면 역할만 변경
@@ -259,7 +214,7 @@ function AssignmentModal({ cls, allUsers, assignedOtherClassUserIds, onClose, on
       // 신규 추가
       next.push({ id: user.id, name: user.name, isPrimary })
     }
-    
+
     setLocalTeachers(next)
     setIsAdding(false)
     setSearch('')

@@ -23,6 +23,7 @@ public class ReportService {
     private final UserRepository         userRepository;
     private final StudentRepository      studentRepository;
     private final ClassAccessService classAccessService;
+    private final WeeklyReportSourceService weeklySources;
 
     @Transactional
     public DailyReport saveOrUpdate(ReportRequest request, Long teacherId) {
@@ -65,6 +66,7 @@ public class ReportService {
         classAccessService.requireClass(teacher, report.getClassGroup().getId());
         report.recordEditor(teacher);
         report.submit();
+        weeklySources.capture(report);
         return report;
     }
 
@@ -73,7 +75,7 @@ public class ReportService {
         
         // N+1 문제 해결: 모든 활성 교사와 그들의 반 배정 정보를 한 번의 쿼리로 가져옵니다.
         List<User> targetTeachers = userRepository.findAllActiveWithClasses().stream()
-                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+                .filter(User::participatesInTeacherActivities)
                 .toList();
 
         java.util.Set<Long> submittedClassIds = allReports.stream()

@@ -1,3 +1,4 @@
+import AppSelect from '../common/AppSelect'
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Upload } from 'lucide-react'
@@ -37,13 +38,13 @@ export default function LegacyImportCard() {
     <Card className="flex flex-col gap-3 mt-6">
       <p className="font-bold text-gray-900 text-sm">2026년 4분기 시트 점수 가져오기</p>
       <p className="text-xs text-gray-500 leading-relaxed">
-        이름과 40·41주차 제목을 포함한 표를 붙여넣으세요. 선택한 주차는 시트의 확정값을 사용하고, 42주차부터 앱으로 기록합니다.
+        이름·주차 제목 포함해 붙여넣기 · 40~41주차는 시트 기준
       </p>
-      <select aria-label="가져올 주차" value={scope} disabled={busy}
+      <AppSelect aria-label="가져올 주차" value={scope} disabled={busy}
         onChange={e => { setScope(e.target.value); reset() }}
         className="self-start text-xs font-bold bg-gray-100 px-3 py-2 rounded-xl">
         <option value="40-41">40~41주차</option><option value="40">40주차만</option><option value="41">41주차만</option>
-      </select>
+      </AppSelect>
       <textarea aria-label="시트 점수 표" rows={5} value={text} disabled={busy}
         onChange={e => { setText(e.target.value); reset() }} placeholder="이름과 주차 제목을 포함해 붙여넣기"
         className="w-full px-3 py-2 rounded-xl border border-gray-100 text-xs font-mono resize-none bg-gray-50" />
@@ -55,17 +56,17 @@ export default function LegacyImportCard() {
         <div className="flex flex-col gap-3 rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
           <p className="font-bold">{preview.names}명 · {preview.rows}건 · 합계 {preview.total.toLocaleString()}점</p>
           <p>0점 기록 {preview.zeroRows}건 · 빈칸 {preview.blankCells}칸 · 범위 밖 주차 열 {preview.excludedColumns}개 제외</p>
-          <p>선택한 주차의 기존 시트 기록 {preview.replacedRows}건을 위 내용으로 교체합니다. 빈칸은 기록 없음으로 유지합니다.</p>
+          <p>선택한 주차의 기존 시트 기록 {preview.replacedRows}건 교체 · 빈칸은 기록 없음</p>
           <p>앱과 다른 점수 {preview.conflicts.length}건은 시트 값으로 집계합니다.</p>
           {preview.conflicts.length > 0 && <Disclosure title="점수 차이 확인">
             {preview.conflicts.map((c,i) => <p key={i} className="mt-1">{c.name} · {c.weekNum}주차: 앱 {c.appScore} → 시트 {c.sheetScore}점</p>)}
           </Disclosure>}
           {preview.appOnly.length > 0 && <Disclosure title={`시트에 없는 앱 점수 ${preview.appOnly.length}건 확인`}>
-            <p className="mt-1">이 주차는 시트가 기준이므로 아래 점수는 집계에서 제외합니다. 원래 앱 기록은 보존합니다.</p>
+            <p className="mt-1">아래 앱 점수는 집계 제외 · 원본 보존</p>
             {preview.appOnly.map((c,i) => <p key={i} className="mt-1">{c.name} · {c.weekNum}주차 · {c.appScore}점</p>)}
           </Disclosure>}
           {(preview.unmatchedNames.length > 0 || preview.ambiguousNames.length > 0) && <Disclosure title="계정 연결 확인">
-            <p className="mt-1">미가입 {preview.unmatchedNames.length}명과 동명이인 {preview.ambiguousNames.length}명은 시트 이름으로 따로 보존하며, 계정을 자동 생성하거나 임의 연결하지 않습니다.</p>
+            <p className="mt-1">미가입 {preview.unmatchedNames.length}명과 동명이인 {preview.ambiguousNames.length}명은 이름만 보존 · 계정 생성·연결 없음</p>
             <p className="mt-1 break-words">{[...preview.unmatchedNames, ...preview.ambiguousNames].join(', ')}</p>
           </Disclosure>}
           {confirming ? (

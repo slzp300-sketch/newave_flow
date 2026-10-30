@@ -1,6 +1,9 @@
 export const eventRangeKey = (from, to) => ['events', from, to]
 
 const rules = [
+  [/^\/new-family/, ['new-family-', 'weekly-report', 'weekly-class-editor', 'students', 'student', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'attendance']],
+  [/^\/weekly-reports/, ['weekly-report', 'weekly-worship', 'weekly-class-editor', 'report-', 'attendance', 'admin-weekly-attendance', 'admin-absent']],
+  [/^\/attendance|^\/reports|^\/(admin\/)?students|^\/(admin\/)?classes|^\/(admin\/)?users|^\/safety/, ['weekly-report', 'weekly-class-editor', 'weekly-worship']],
   [/^\/safety/, ['safety-summary', 'content-report-', 'my-content-reports', 'report-target', 'photo-review-', 'my-profile', 'student', 'students', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'teachers', 'teacher-roster', 'meeting-minutes', 'admin-minute', 'events', 'event', 'weekly-events', 'attendance-required-events', 'report-', 'weekly-status', 'pending-users', 'suspended-users', 'admin-teachers']],
   [/^\/(admin\/)?students|^\/classes|^\/admin\/classes|deactivation-requests/, ['student', 'students', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'teachers', 'teacher-roster', 'my-classes', 'attendance', 'admin-attendance', 'admin-weekly-attendance', 'admin-absent', 'report-', 'weekly-status', 'deactivation-']],
   [/^\/events/, ['event', 'events', 'weekly-events', 'attendance-required-events', 'attendance-summary', 'teacher-attendance-summary']],

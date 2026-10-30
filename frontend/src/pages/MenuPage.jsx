@@ -101,7 +101,7 @@ export default function MenuPage() {
                   <AttentionDot show={attention(item.to)} label={item.to === '/events' ? '이번 주 새 일정이 있어요' : '해야 할 일이 있어요'} />
                   <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"><FeatureIcon path={item.to} /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-gray-900">{item.title}</span>
-                    <span className="mt-1 block text-xs leading-relaxed text-gray-500">{item.desc}</span></span>
+                    </span>
                   <ChevronRight size={17} aria-hidden="true" className="shrink-0 text-gray-400" />
                 </Link>
               ))}

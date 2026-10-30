@@ -24,6 +24,14 @@ import java.util.stream.Collectors;
 public class PrayerVoteController {
 
     private final PrayerVoteService prayerVoteService;
+    private final com.newaveflow.service.PrayerParticipationService participationService;
+
+    @GetMapping("/participation")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
+    public ResponseEntity<com.newaveflow.dto.prayer.PrayerParticipationResponse> getParticipation(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate week) {
+        return ResponseEntity.ok(participationService.get(week));
+    }
 
     // 투표 가능 여부 확인
     @GetMapping("/window")
@@ -99,14 +107,12 @@ public class PrayerVoteController {
         return ResponseEntity.ok(responses);
     }
 
-    // 관리자: 필사 제출 여부 토글
+    // Retired policy: keep the old route readably closed for older installed clients.
     @PatchMapping("/{id}/scripture")
     @PreAuthorize("hasAnyRole('ADMIN', 'PASTOR', 'EXECUTIVE')")
     public ResponseEntity<PrayerVoteResponse> toggleScripture(
             @PathVariable Long id,
             @RequestBody Map<String, Boolean> body) {
-        boolean submitted = Boolean.TRUE.equals(body.get("submitted"));
-        PrayerVote vote = prayerVoteService.toggleScriptureSubmitted(id, submitted);
-        return ResponseEntity.ok(new PrayerVoteResponse(vote));
+        throw new AppException(org.springframework.http.HttpStatus.GONE, "필사 제출 제도가 종료되었습니다.");
     }
 }

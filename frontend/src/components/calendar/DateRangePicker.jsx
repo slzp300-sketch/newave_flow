@@ -1,5 +1,5 @@
 import '../../pages/SupportingReadability.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import {
@@ -20,9 +20,10 @@ export function formatRange(start, end) {
 
 /**
  * 달력에서 날짜(기간)를 고르는 팝업.
- * 하루를 한 번 누르면 하루 일정, 두 날짜를 차례로 누르면 기간 일정.
+ * 하루 또는 시작일·종료일 선택
  */
-export default function DateRangePicker({ open, start, end, onConfirm, onClose }) {
+export default function DateRangePicker({ open, start, end, onConfirm, onClose, portalTarget }) {
+  const panel = useRef(null)
   const [s, setS] = useState(start)
   const [e, setE] = useState(end || start)
   const [pickingEnd, setPickingEnd] = useState(false)
@@ -35,6 +36,13 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
     setPickingEnd(false)
     setMonth(parseISO(start))
   }, [open, start, end])
+
+  useEffect(() => {
+    if (!open) return
+    const previous = document.activeElement
+    panel.current?.focus({ preventScroll: true })
+    return () => { if (previous?.isConnected) previous.focus({ preventScroll: true }) }
+  }, [open])
 
   if (!open) return null
 
@@ -59,7 +67,7 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
     <>
       <div className="fixed inset-0 z-[80] bg-black/50" onClick={onClose} />
       <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
-        <div className="supporting-readable readable-content date-range-readable safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl">
+        <div ref={panel} tabIndex={-1} role="dialog" aria-label="날짜 선택" onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onClose() } }} className="supporting-readable readable-content date-range-readable safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl">
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={() => setMonth(m => subMonths(m, 1))} className="p-2 rounded-lg active:bg-gray-100" aria-label="이전 달">
               <ChevronLeft size={18} />
@@ -121,17 +129,18 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose }
         </div>
       </div>
     </>,
-    document.body
+    (typeof portalTarget === 'function' ? portalTarget() : portalTarget) || document.body
   )
 }
 
 /** 누르면 달력 팝업이 뜨는 날짜 칸 */
-export function DateRangeField({ start, end, onChange, className = '' }) {
+export function DateRangeField({ start, end, onChange, className = '', portalTarget, label }) {
   const [open, setOpen] = useState(false)
   return (
     <>
       <button
         type="button"
+        aria-label={label}
         onClick={() => setOpen(true)}
         className={`flex items-center gap-2 text-left ${className}`}
       >
@@ -142,6 +151,7 @@ export function DateRangeField({ start, end, onChange, className = '' }) {
         open={open}
         start={start}
         end={end}
+        portalTarget={portalTarget}
         onClose={() => setOpen(false)}
         onConfirm={(s, e) => { onChange(s, e); setOpen(false) }}
       />

@@ -1,5 +1,7 @@
+import AppSelect from '../components/common/AppSelect'
 import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
+import './AdminStudentManagePage.css'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
 import SearchField from '../components/common/SearchField'
@@ -14,7 +16,6 @@ import { Users, UserPlus, X, Loader2, Search, ChevronRight, RefreshCw, Check, Us
 import Header from '../components/layout/Header'
 import { adminStudentsApi } from '../api/students'
 import { classesApi } from '../api/classes'
-import ViewModeToggle, { useViewMode, DetailTable } from '../components/common/ViewModeToggle'
 
 const GRADE_ORDER = ['유치', '초1', '초2', '초3', '초4', '초5', '초6', '중1', '중2', '중3', '고1', '고2', '고3', '미분류']
 
@@ -88,11 +89,11 @@ export default function AdminStudentManagePage() {
   }, [roster, allStudents])
 
   return (
-    <div className="people-readable readable-content flex flex-col min-h-screen pb-28 bg-gray-50/50">
+    <div className="admin-students-page people-readable readable-content flex flex-col min-h-screen pb-28 bg-gray-50/50">
       <Header title="아이 관리" showBack />
 
       <div className="flex flex-col gap-4 px-4 py-5">
-        <AdminIntro title="학생 명단과 반 배정" description="학생 정보를 확인하고 학년별 명단과 반 배정을 관리하세요." />
+        <AdminIntro title="학생 명단과 반 배정" />
         <SegmentedControl label="학생 관리 화면" value={tab} onChange={setTab}
           options={[{ value: 'list', label: '학년별 명단' }, { value: 'assign', label: '반 배정 현황' }]} />
       </div>
@@ -166,7 +167,6 @@ function StudentListTab({
   showDeactivated, setShowDeactivated,
   onAdd, onEdit, onAdvance, onRefresh, queryClient,
 }) {
-  const [viewMode, setViewMode] = useViewMode('admin-students', 'list')
 
   return (
     <>
@@ -201,7 +201,6 @@ function StudentListTab({
             표시 <span className="text-gray-800 font-bold">{students.length}</span>명
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <ViewModeToggle mode={viewMode} onChange={setViewMode} />
             <button
               aria-pressed={showDeactivated}
               onClick={() => setShowDeactivated(v => !v)}
@@ -225,42 +224,19 @@ function StudentListTab({
             <Users size={36} />
             <p className="text-sm font-bold">학생이 없습니다</p>
           </div>
-        ) : viewMode === 'detail' ? (
-          <DetailTable
-            rows={students}
-            onRowClick={onEdit}
-            rowClassName={s => s.isActive ? '' : 'opacity-50'}
-            columns={[
-              { label: '이름', render: s => s.name },
-              { label: '학년', render: s => <GradeLabel value={s.grade} /> },
-              { label: '반', render: s => s.classGroupName || null },
-              { label: '학교', render: s => s.school || null },
-              { label: '연락처', render: s => s.phone || null },
-              { label: '세례', render: s => s.baptism ? '세례' : null },
-              { label: '상태', render: s => s.isActive ? '재적' : '제적' },
-            ]}
-          />
         ) : (
-          <div className={{ large: 'readable-card-grid gap-3', small: 'readable-card-grid gap-2', list: 'flex flex-col gap-2' }[viewMode]}>
-            {students.map((s, idx) => (
-              <StudentCard
-                key={s.id}
-                student={s}
-                idx={idx}
-                mode={viewMode}
-                onEdit={() => onEdit(s)}
-                queryClient={queryClient}
-                onRefresh={onRefresh}
-              />
-            ))}
-          </div>
+          <ul className="student-management-list" aria-label="학생 관리 목록">
+            {students.map(student => <li key={student.id}>
+              <StudentCard student={student} onEdit={() => onEdit(student)} onRefresh={onRefresh} />
+            </li>)}
+          </ul>
         )}
       </div>
     </>
   )
 }
 
-function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = 'list' }) {
+function StudentCard({ student: s, onEdit, onRefresh }) {
   const deactivateMut = useMutation({
     mutationFn: () => adminStudentsApi.deactivate(s.id),
     onSuccess: onRefresh,
@@ -269,156 +245,45 @@ function StudentCard({ student: s, idx, onEdit, queryClient, onRefresh, mode = '
     mutationFn: () => adminStudentsApi.activate(s.id),
     onSuccess: onRefresh,
   })
+  const busy = deactivateMut.isPending || activateMut.isPending
 
-  const avatarColor = s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-primary-50 text-primary-500'
-  const avatarContent = s.profileImage
-    ? <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
-    : s.name[0]
-  const motionProps = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    transition: { delay: Math.min(idx * 0.03, 0.3) },
-  }
-
-  // 작은 카드: 사진 + 이름만, 누르면 수정 창
-  if (mode === 'small') {
-    return (
-      <motion.button {...motionProps} aria-label={`${s.name} 정보 수정`} onClick={onEdit}
-        className={`bg-white rounded-2xl border shadow-sm p-2 flex flex-col items-center gap-1 active:scale-95 transition-all ${
-          !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
-        }`}>
-        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-bold overflow-hidden ${avatarColor}`}>
-          {avatarContent}
-        </div>
-        <p className={`text-xs font-bold people-text w-full text-center ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
-        <p className="text-[0.6875rem] text-gray-400 font-bold people-text w-full text-center"><GradeLabel value={s.grade}>{s.classGroupName || s.grade || ''}</GradeLabel></p>
-      </motion.button>
-    )
-  }
-
-  // 큰 카드: 정보 + 수정/제적 버튼
-  if (mode === 'large') {
-    return (
-      <motion.div {...motionProps}
-        className={`brand-card bg-white rounded-2xl border shadow-sm p-3 flex flex-col items-center gap-1.5 text-center ${
-          !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
-        }`}>
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold overflow-hidden ${avatarColor}`}>
-          {avatarContent}
-        </div>
-        <p className={`font-bold text-sm ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>{s.name}</p>
-        <div className="flex flex-wrap justify-center gap-1">
-          {s.grade && <span className="text-xs text-primary-500 font-bold bg-primary-50 px-1.5 py-0.5 rounded-md"><GradeLabel value={s.grade} /></span>}
-          {!s.isActive && <span className="text-[0.6875rem] font-bold bg-red-100 text-red-400 px-1.5 py-0.5 rounded-md">제적</span>}
-          {s.baptism && <span className="text-[0.6875rem] font-bold bg-secondary-50 text-secondary-700 px-1.5 py-0.5 rounded-md">세례</span>}
-        </div>
-        <p className="text-xs text-gray-500 font-bold people-text w-full">{s.classGroupName || '반 미배정'}</p>
-        {s.school && <p className="text-xs text-gray-300 font-bold people-text w-full -mt-1">{s.school}</p>}
-        <div className="flex gap-1 w-full mt-1">
-          <button aria-label={`${s.name} 정보 수정`} onClick={onEdit}
-            className="flex-1 min-h-11 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center gap-1 text-xs font-bold">
-            <Pencil size={12} /> 수정
-          </button>
-          {s.isActive ? (
-            <button
-              onClick={() => {
-                if (confirm(`${s.name} 학생을 제적 처리하시겠어요?`)) deactivateMut.mutate()
-              }}
-              aria-label={`${s.name} 제적 처리`} disabled={deactivateMut.isPending}
-              className="w-11 h-11 rounded-xl bg-red-50 text-red-400 flex items-center justify-center disabled:opacity-50"
-            >
-              {deactivateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserMinus size={13} />}
-            </button>
-          ) : (
-            <button
-              onClick={() => activateMut.mutate()}
-              aria-label={`${s.name} 재적 복구`} disabled={activateMut.isPending}
-              className="w-11 h-11 rounded-xl bg-secondary-50 text-secondary-700 flex items-center justify-center disabled:opacity-50"
-            >
-              {activateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
-            </button>
-          )}
-        </div>
-      </motion.div>
-    )
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(idx * 0.03, 0.3) }}
-      className={`brand-card bg-white rounded-2xl border shadow-sm px-4 py-3.5 people-student-row flex flex-wrap items-center gap-3 ${
-        !s.isActive ? 'opacity-50 border-red-100' : 'border-gray-100'
-      }`}
-    >
-      {/* 아바타 */}
-      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden ${
-        s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-primary-50 text-primary-500'
-      }`}>
-        {s.profileImage ? (
-          <img src={s.profileImage} alt={s.name} className="w-full h-full object-cover" />
-        ) : (
-          s.name[0]
-        )}
-      </div>
-
-      {/* 정보 */}
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className={`font-bold text-sm ${!s.isActive ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-            {s.name}
-          </p>
-          {!s.isActive && (
-            <span className="text-[0.6875rem] font-bold bg-red-100 text-red-400 px-1.5 py-0.5 rounded-md">제적</span>
-          )}
-          {s.baptism && (
-            <span className="text-[0.6875rem] font-bold bg-secondary-50 text-secondary-700 px-1.5 py-0.5 rounded-md">세례</span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-          {s.grade && (
-            <span className="min-w-0 text-xs text-primary-500 font-bold bg-primary-50 px-2 py-0.5 rounded-md"><GradeLabel value={s.grade} /></span>
-          )}
-          {s.classGroupName && (
-            <span className="text-xs text-gray-500 font-bold">{s.classGroupName}</span>
-          )}
-          {s.school && (
-            <span className="basis-full text-xs text-gray-400 font-medium people-text">{s.school}</span>
-          )}
-        </div>
-      </div>
-
-      {/* 액션 */}
-      <div className="people-row-actions flex items-center gap-1 flex-shrink-0">
-        <button
-          aria-label={`${s.name} 정보 수정`} onClick={onEdit}
-          className="w-11 h-11 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center hover:bg-primary-50 hover:text-primary-500 transition-colors"
-        >
-          <Pencil size={13} />
-        </button>
-        {s.isActive ? (
-          <button
-            onClick={() => {
-              if (confirm(`${s.name} 학생을 제적 처리하시겠어요?`)) deactivateMut.mutate()
-            }}
-            aria-label={`${s.name} 제적 처리`} disabled={deactivateMut.isPending}
-            className="w-11 h-11 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-50"
-          >
-            {deactivateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserMinus size={13} />}
-          </button>
-        ) : (
-          <button
-            onClick={() => activateMut.mutate()}
-            aria-label={`${s.name} 재적 복구`} disabled={activateMut.isPending}
-            className="w-11 h-11 rounded-xl bg-secondary-50 text-secondary-700 flex items-center justify-center hover:bg-secondary-100 transition-colors disabled:opacity-50"
-          >
-            {activateMut.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
-          </button>
-        )}
-      </div>
-    </motion.div>
-  )
+  return <article className={'student-management-row' + (!s.isActive ? ' student-record-inactive' : '')} aria-busy={busy || undefined}>
+    <button type="button" className="student-record-edit" aria-label={`${s.name} 정보 수정`} aria-haspopup="dialog"
+      aria-describedby={`student-state-${s.id} student-info-${s.id}`} onClick={onEdit} disabled={busy}>
+      <span className={'student-record-avatar ' + (s.gender === '여' ? 'bg-pink-50 text-pink-500' : 'bg-primary-50 text-primary-500')} aria-hidden="true">
+        {s.profileImage ? <img src={s.profileImage} alt="" /> : s.name[0]}
+      </span>
+      <span className="student-record-content">
+        <span className="student-record-heading">
+          <span className="student-record-name">{s.name}</span>
+          <span id={`student-state-${s.id}`} className="student-record-badges">
+            <span className={'student-record-status ' + (s.isActive ? 'student-record-active' : 'student-record-deactivated')}>{s.isActive ? '재적' : '제적'}</span>
+            {s.baptism && <span className="student-record-baptism">세례</span>}
+          </span>
+          <Pencil size={14} className="student-record-pencil" aria-hidden="true" />
+        </span>
+        <span id={`student-info-${s.id}`} className="student-record-details">
+          <span className="student-record-label">소속</span>
+          <span className="student-record-value"><GradeLabel value={s.grade}>{s.grade || '학년 미지정'}</GradeLabel>{' · ' + (s.classGroupName || '반 미배정')}</span>
+          <span className="student-record-label">학교</span>
+          <span className="student-record-value">{s.school || '미등록'}</span>
+        </span>
+      </span>
+    </button>
+    <div className="student-record-actions">
+      {s.isActive ? <button type="button" className="student-record-status-action student-record-deactivate"
+        aria-label={`${s.name} 제적 처리`} disabled={busy} onClick={() => {
+          if (confirm(`${s.name} 학생을 제적 처리하시겠어요?`)) deactivateMut.mutate()
+        }}>
+        {busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <UserMinus size={16} aria-hidden="true" />}
+        <span>제적</span>
+      </button> : <button type="button" className="student-record-status-action student-record-activate"
+        aria-label={`${s.name} 재적 복구`} disabled={busy} onClick={() => activateMut.mutate()}>
+        {busy ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <UserCheck size={16} aria-hidden="true" />}
+        <span>복구</span>
+      </button>}
+    </div>
+  </article>
 }
 
 // ─── 반 배정 현황 탭 ──────────────────────────────────────────
@@ -793,20 +658,20 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
               </Field>
               <div className="people-form-grid gap-3">
                 <Field label="성별">
-                  <select value={form.gender} onChange={e => set('gender', e.target.value)} className={inputCls}>
+                  <AppSelect aria-label="성별" value={form.gender} onChange={e => set('gender', e.target.value)} className={inputCls}>
                     <option value="남">남</option>
                     <option value="여">여</option>
-                  </select>
+                  </AppSelect>
                 </Field>
                 <Field label="학년">
-                  <select value={form.grade} onChange={e => set('grade', e.target.value)} className={inputCls}>
+                  <AppSelect aria-label="학년" value={form.grade} onChange={e => set('grade', e.target.value)} className={inputCls}>
                     <option value="">선택</option>
                     {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
+                  </AppSelect>
                 </Field>
               </div>
               <Field label="반 배정 *">
-                <select
+                <AppSelect aria-label="반 배정"
                   value={form.classGroupId}
                   onChange={e => set('classGroupId', e.target.value)}
                   className={inputCls}
@@ -815,7 +680,7 @@ function StudentFormModal({ student, roster, onClose, onSuccess }) {
                   {roster.map(cls => (
                     <option key={cls.id} value={cls.id}>{cls.grade} {cls.name}</option>
                   ))}
-                </select>
+                </AppSelect>
                 {form.classGroupId && <p className="text-xs text-gray-600 mt-1">{roster.filter(cls => String(cls.id) === String(form.classGroupId)).map(cls => `${cls.grade} ${cls.name}`).join('')}</p>}
               </Field>
               <Field label="생년월일">
@@ -959,7 +824,7 @@ function GradeAdvanceModal({ grades, onClose, onSuccess }) {
                 </div>
                 <ArrowRight size={16} className="text-gray-300 flex-shrink-0" />
                 <div className="flex-1">
-                  <select
+                  <AppSelect aria-label={`${g} 진급 학년`}
                     value={gradeMap[g] || ''}
                     onChange={e => setGradeMap(prev => ({ ...prev, [g]: e.target.value }))}
                     className="w-full text-sm font-bold text-primary-600 bg-primary-50 border border-primary-100 px-3 py-1.5 rounded-xl outline-none"
@@ -967,7 +832,7 @@ function GradeAdvanceModal({ grades, onClose, onSuccess }) {
                     <option value="">변경 없음</option>
                     {GRADES.map(nextG => <option key={nextG} value={nextG}>{nextG}</option>)}
                     <option value="졸업(제적)">졸업(제적)</option>
-                  </select>
+                  </AppSelect>
                 </div>
               </div>
             ))}

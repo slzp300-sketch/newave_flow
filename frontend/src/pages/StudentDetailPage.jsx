@@ -11,9 +11,11 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
 import ReportLink from '../components/common/ReportLink'
+import { newFamilyApi } from '../api/newFamily'
 
 export default function StudentDetailPage() {
   const { id } = useParams()
+  const handoff = useQuery({queryKey:['new-family-handoff',id],queryFn:()=>newFamilyApi.handoff(id)})
 
   const { data: student, isLoading: loadingStudent } = useQuery({
     queryKey: ['student', id],
@@ -73,13 +75,14 @@ export default function StudentDetailPage() {
           ))}
         </div>
 
+        {handoff.data && <Card><SectionLabel>새가족팀 인계</SectionLabel><p className="text-sm">첫 방문 {handoff.data.firstVisit} · 등록 {handoff.data.enrolledOn}<br />등반 {handoff.data.graduatedOn} · 반 적용 {handoff.data.effectiveDate}</p>{handoff.data.memo && <p className="mt-2 text-sm whitespace-pre-wrap">{handoff.data.memo}</p>}</Card>}
         {/* 출석 히스토리 */}
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-end">
             <SectionLabel>출석 이력</SectionLabel>
             <span className="text-xs font-bold text-gray-400 mb-1">최근 순</span>
           </div>
-          
+
           {history.length === 0 ? (
             <Card className="py-10 text-center text-gray-400 text-sm">출석 기록이 없습니다</Card>
           ) : (

@@ -14,6 +14,7 @@ import { ko } from 'date-fns/locale'
 import { isEventAttendanceInactive, assertEventAttendanceOpen, eventAttendanceMessage, eventToday } from '../utils/eventAttendance'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import StatSummary from '../components/common/StatSummary'
 import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
@@ -233,7 +234,7 @@ export default function EventAttendancePage() {
                       onChange={setPendingTeacherStatus} multiDay={isMultiDay} />
                     <p className="text-sm text-gray-600" role="status">
                       {teacherAttendanceMutation.isPending ? '제출 중…' : pendingTeacherStatus
-                        ? '선택됨 · 아래 제출 버튼을 눌러 완료해 주세요' : '참석 여부를 선택해 주세요'}
+                        ? '선택됨 · 제출 필요' : '참석 여부를 선택해 주세요'}
                     </p>
 
                     {pendingTeacherStatus === 'PARTIAL' && (
@@ -281,26 +282,12 @@ export default function EventAttendancePage() {
 
         {/* 통계 */}
         {students.length > 0 && (
-          <div className={`grid gap-2 ${isMultiDay ? 'grid-cols-2' : 'grid-cols-3'}`}>
-            <Card className="text-center py-3">
-              <p className="text-xl font-bold text-gray-900">{students.length}</p>
-              <p className="text-sm font-bold text-gray-600 mt-0.5">전체</p>
-            </Card>
-            <Card className="text-center py-3">
-              <p className="text-xl font-bold text-secondary-700">{presentCount}</p>
-              <p className="text-sm font-bold text-gray-600 mt-0.5">참석</p>
-            </Card>
-            {isMultiDay && (
-              <Card className="text-center py-3">
-                <p className="text-xl font-bold text-amber-700">{partialCount}</p>
-                <p className="text-sm font-bold text-gray-600 mt-0.5">부분참석</p>
-              </Card>
-            )}
-            <Card className="text-center py-3">
-              <p className="text-xl font-bold text-red-700">{absentCount}</p>
-              <p className="text-sm font-bold text-gray-600 mt-0.5">불참</p>
-            </Card>
-          </div>
+          <StatSummary label="우리 반 행사 출석" items={[
+            { label: '전체', value: students.length },
+            { label: '참석', value: presentCount, color: 'text-secondary-700' },
+            ...(isMultiDay ? [{ label: '부분참석', value: partialCount, color: 'text-amber-700' }] : []),
+            { label: '불참', value: absentCount, color: 'text-red-700' },
+          ]} />
         )}
 
         {/* 제출 완료 배너 */}
@@ -329,7 +316,6 @@ export default function EventAttendancePage() {
             <p className="ui-section-title">우리 반 학생 참석</p>
           </div>
 
-          {isEditable && <p className="mb-3 px-1 text-sm text-gray-600">선택 후 학생 참석 여부를 제출해 주세요.</p>}
           {isLoading ? (
             <Card className="py-10 text-center text-sm text-gray-600">불러오는 중...</Card>
           ) : students.length === 0 ? (

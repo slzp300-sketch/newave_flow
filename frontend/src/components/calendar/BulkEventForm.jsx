@@ -52,14 +52,14 @@ export function AddEventChoice({ open, onClose, onSingle, onBulk }) {
             <CalendarPlus size={20} className="text-primary-500" />
             <div>
               <p className="text-sm font-bold text-gray-900">하나 추가</p>
-              <p className="text-xs text-gray-400">시간·설명까지 자세히 입력</p>
+
             </div>
           </button>
           <button type="button" className={item} onClick={() => { onClose(); onBulk() }}>
             <CalendarRange size={20} className="text-primary-500" />
             <div>
               <p className="text-sm font-bold text-gray-900">여러 개 한번에 추가</p>
-              <p className="text-xs text-gray-400">날짜와 제목만 빠르게 여러 줄</p>
+
             </div>
           </button>
           <button type="button" onClick={onClose} className="py-3 text-sm font-bold text-gray-400">취소</button>

@@ -51,7 +51,7 @@ public class PrayerVoteResponse {
         this.updatedAt = vote.getUpdatedAt() != null ? vote.getUpdatedAt() : vote.getCreatedAt();
     }
 
-    private String extractGrade(String className) {
+    public static String extractGrade(String className) {
         if (className == null || className.isBlank()) return "미분류";
         
         String clean = className.replaceAll("\\s+", "");

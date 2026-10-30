@@ -13,10 +13,35 @@
 .admin-accounts-page .account-history button { width:100%; padding:.75rem; border:1px solid #d1d5db; border-radius:.75rem; text-align:left; }
 .admin-accounts-page .account-history .text-xs { font-size:.875rem; line-height:1.7; }
 .admin-accounts-page .account-review-actions { display:flex; flex-direction:column; gap:.75rem; }
-.admin-accounts-page article h3 { font-size:1rem; line-height:1.5; }
-.admin-accounts-page article dl > div { flex-wrap:wrap; }
-.admin-accounts-page table { min-width:42rem; table-layout:fixed; white-space:normal; font-size:1rem; }
-.admin-accounts-page th { font-size:.875rem; padding:.875rem .75rem; }
-.admin-accounts-page td { padding:1rem .75rem; overflow-wrap:anywhere; vertical-align:top; }
-.admin-accounts-page th:first-child { width:9rem; }
-.admin-accounts-page td:first-child { z-index:1; }
+
+/* One list for both account tabs. Names and emails always wrap. */
+.admin-accounts-page .account-list { display:flex; flex-direction:column; gap:.5rem; margin:0; padding:0; list-style:none; }
+.admin-accounts-page .account-list-row { min-width:0; padding:.875rem; border:1px solid #e2e8f0; border-radius:1rem; background:#fff; }
+.admin-accounts-page .account-list-row .account-name { font-size:1rem; line-height:1.5; overflow-wrap:anywhere; }
+.admin-accounts-page .account-pending-row { display:grid; grid-template-columns:2.75rem minmax(0,1fr) auto; align-items:center; gap:.5rem; }
+.admin-accounts-page .account-select-person, .admin-accounts-page .account-select-all { display:flex; align-items:center; gap:.5rem; min-height:2.75rem; cursor:pointer; }
+.admin-accounts-page .account-select-person { justify-content:center; }
+.admin-accounts-page input[type=checkbox] { width:1.2rem; height:1.2rem; flex-shrink:0; accent-color:#1750ec; }
+.admin-accounts-page .account-selection-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem; }
+.admin-accounts-page .account-select-all { min-width:0; font-size:.875rem; font-weight:600; }
+.admin-accounts-page .account-list-row:not(.account-pending-row) { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:.5rem; }
+.admin-accounts-page .account-list-row .account-heading { min-width:0; gap:.5rem; }
+.admin-accounts-page .account-list-row .account-identity { min-width:0; flex-basis:8rem; }
+.admin-accounts-page .account-suspended-panel { grid-column:1/-1; padding-top:.75rem; border-top:1px solid #e2e8f0; }
+.admin-accounts-page .account-feedback { padding:.75rem 1rem; border-radius:1rem; background:#ecfdf5; color:#065f46; overflow-wrap:anywhere; }
+.admin-accounts-page .account-feedback-error { background:#fff1f2; color:#9f1239; }
+.account-approval-dialog { width:min(calc(100% - 2rem),28rem); max-height:calc(100dvh - 3rem); margin:auto; inset:0; padding:1.25rem; border:0; border-radius:1.5rem; overflow-y:auto; box-shadow:0 16px 64px #0003; }
+.account-approval-dialog::backdrop { background:rgb(0 0 0 / .4); }
+.account-dialog-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; margin-bottom:1.25rem; }
+.account-dialog-close { display:flex; align-items:center; justify-content:center; width:2.75rem; height:2.75rem; flex-shrink:0; border-radius:50%; background:#f1f5f9; }
+.account-assignment-step { display:flex; flex-direction:column; gap:1rem; }
+.account-assignment-question { font-size:1.125rem; line-height:1.6; font-weight:700; overflow-wrap:anywhere; word-break:keep-all; }
+.account-assignment-field { display:flex; flex-direction:column; gap:.5rem; font-weight:600; }
+.account-assignment-field select { width:100%; min-height:2.75rem; padding:.75rem; border:1px solid #cbd5e1; border-radius:.75rem; background:#fff; font-size:1rem; }
+.account-dialog-actions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:.25rem; }
+.account-dialog-actions > button { flex:1 1 9rem; }
+.account-skip-rest { display:block; width:100%; margin-top:.75rem; padding:.5rem; color:#475569; text-decoration:underline; text-underline-offset:.2em; }
+@media(max-width:359px) {
+  .admin-accounts-page .account-pending-row { grid-template-columns:2.5rem minmax(0,1fr); }
+  .admin-accounts-page .account-pending-row > button { grid-column:2; justify-self:end; }
+}

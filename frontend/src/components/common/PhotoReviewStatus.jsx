@@ -18,7 +18,7 @@ export default function PhotoReviewStatus({ targetType, targetId, onRemoved, tex
     qc.invalidateQueries(); onRemoved?.()
   } })
   return <div className={`w-full rounded-xl bg-gray-50 p-3 text-left ${textClassName}`}>
-    <p>새 사진은 저장 후 관리자 검토를 거쳐 게시됩니다. 승인 전에는 기존 사진이 표시됩니다. JPG·PNG, 2MB 이하, 가로·세로 4,096px 이하로 올려주세요.</p>
+    <p>관리자 승인 후 교체 · JPG·PNG / 2MB·4,096×4,096px 이하</p>
     {status.isError && <p role="alert" className="mt-2 text-red-700">사진 검토 상태를 불러오지 못했습니다. <button type="button" className="min-h-11 underline" onClick={() => status.refetch()}>다시 시도</button></p>}
     {status.data && <p className="mt-2 font-semibold">사진 상태: {PHOTO_STATUS[status.data.status]}{status.data.reviewNote && <span className="mt-1 block break-words font-normal">{status.data.reviewNote}</span>}</p>}
     {status.data?.status === 'PENDING' && <div className="mt-2">

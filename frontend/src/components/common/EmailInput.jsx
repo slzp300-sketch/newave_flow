@@ -1,3 +1,4 @@
+import AppSelect from './AppSelect'
 import { useState } from 'react'
 
 const DOMAINS = ['naver.com', 'gmail.com', 'kakao.com', 'hanmail.net', 'daum.net', 'nate.com']
@@ -72,7 +73,7 @@ export default function EmailInput({ onChange, status = 'idle' }) {
           className={`flex-1 min-w-0 ${base}`}
         />
         <span className="text-gray-400 font-medium shrink-0 select-none">@</span>
-        <select
+        <AppSelect
           aria-label="이메일 도메인"
           value={isCustom ? 'custom' : domain}
           onChange={handleDomain}
@@ -82,7 +83,7 @@ export default function EmailInput({ onChange, status = 'idle' }) {
             <option key={d} value={d}>{d}</option>
           ))}
           <option value="custom">직접입력</option>
-        </select>
+        </AppSelect>
       </div>
       {isCustom && (
         <input

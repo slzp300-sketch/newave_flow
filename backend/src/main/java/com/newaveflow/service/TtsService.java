@@ -238,7 +238,7 @@ public class TtsService {
 
     private List<User> activeTeachers() {
         return userRepository.findAllActiveWithClasses().stream()
-                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+                .filter(User::participatesInTeacherActivities)
                 .collect(Collectors.toList());
     }
 

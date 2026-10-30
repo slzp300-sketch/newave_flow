@@ -49,8 +49,17 @@ public class User {
     @Column(length = 20)
     private String phone;
 
+    @Column(length = 10)
+    private String gender;
+
     @Column(length = 20)
     private String grade;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean newFamilyTeam = false;
+
+    public void updateNewFamilyTeam(boolean enabled) { this.newFamilyTeam = enabled; }
 
     @Column(nullable = false)
     @Builder.Default
@@ -93,6 +102,10 @@ public class User {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    public boolean participatesInTeacherActivities() {
+        return role == Role.TEACHER || role == Role.EXECUTIVE || role == Role.ADMIN;
+    }
+
     public void updateRole(Role role) {
         if (this.role != role) revokeSessions();
         this.role = role;
@@ -129,6 +142,8 @@ public class User {
     public void updateLargeFont(boolean largeFont) {
         this.largeFont = largeFont;
     }
+
+    public void updateGender(String gender) { this.gender = gender; }
 
     public void updateProfile(String name, String phone, LocalDate birthDate, String profileImage, String churchPosition) {
         if (name != null && !name.isBlank()) this.name = name;

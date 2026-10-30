@@ -6,7 +6,7 @@ import { AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Mic2, MicOff, CheckCircle2, CalendarCheck,
-  MessageSquare, PenLine, GraduationCap, BookOpen
+  MessageSquare, PenLine, GraduationCap
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
@@ -60,6 +60,7 @@ export default function PrayerMeetingPage() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['prayer-vote', weekStart, user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['prayer-participation'] }),
         queryClient.invalidateQueries({ queryKey: ['tts-week'] }),
       ])
       setEditingPrayer(false)
@@ -144,9 +145,7 @@ export default function PrayerMeetingPage() {
             thuDate={thuDate}
           />
         )}
-        <p className="text-sm text-gray-600 leading-relaxed text-center mt-4">
-          화·목 참석으로 투표하면 TTS의 '줌 기도모임' 점수에 자동으로 반영돼요.
-        </p>
+
       </div>
     </div>
   )
@@ -256,21 +255,6 @@ function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
         <Row label="마이크 순서" value={<>🎤 <GradeLabel value={micLabel} /></>} muted />
         {vote?.updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(vote.updatedAt)} muted />}
       </div>
-      {isAbsent && (
-        <div className={`brand-card flex items-start gap-3 px-4 py-3 rounded-2xl border ${vote.scriptureCopySubmitted ? 'bg-secondary-50 border-secondary-200' : 'bg-amber-50 border-amber-200'}`}>
-          <BookOpen size={16} className={vote.scriptureCopySubmitted ? 'text-secondary-700 mt-0.5' : 'text-amber-700 mt-0.5'} />
-          <div>
-            <p className={`text-sm font-bold ${vote.scriptureCopySubmitted ? 'text-secondary-700' : 'text-amber-700'}`}>
-              {vote.scriptureCopySubmitted ? '필사 제출 완료' : '필사 제출 필요'}
-            </p>
-            <p className={`text-sm mt-0.5 font-medium ${vote.scriptureCopySubmitted ? 'text-secondary-700' : 'text-amber-700'}`}>
-              {vote.scriptureCopySubmitted
-                ? '관리자가 필사 제출을 확인했습니다'
-                : '둘 다 불참 시 그 주 필사를 제출해야 합니다'}
-            </p>
-          </div>
-        </div>
-      )}
     </Card>
   )
 }

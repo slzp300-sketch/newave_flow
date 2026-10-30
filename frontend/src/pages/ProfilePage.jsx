@@ -1,3 +1,4 @@
+import AppSelect from '../components/common/AppSelect'
 import { CollapsePanel } from '../components/common/Motion'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
 import { readProfilePhoto } from '../utils/profilePhoto'
@@ -67,6 +68,7 @@ export default function ProfilePage() {
   const form = profileForm ?? {
     name:          user?.name ?? '',
     phone:         myProfile?.phone ?? user?.phone ?? '',
+    gender:        myProfile?.gender ?? '',
     birthDate:     myProfile?.birthDate ?? user?.birthDate ?? '',
     profileImage:  myProfile?.profileImage ?? '',
     churchPosition: myProfile?.churchPosition ?? user?.churchPosition ?? '',
@@ -78,6 +80,7 @@ export default function ProfilePage() {
     mutationFn: () => usersApi.updateProfile({
       name:           form.name,
       phone:          form.phone,
+      gender:         form.gender,
       birthDate:      form.birthDate || null,
       profileImage:   form.profileImage || null,
       churchPosition: form.churchPosition || null,
@@ -85,6 +88,9 @@ export default function ProfilePage() {
     onSuccess: () => {
       updateUserSettings({ name: form.name, phone: form.phone, birthDate: form.birthDate, churchPosition: form.churchPosition })
       queryClient.invalidateQueries({ queryKey: ['my-profile'] })
+      queryClient.invalidateQueries({ queryKey: ['teacher-roster'] })
+      queryClient.invalidateQueries({ queryKey: ['weekly-worship'] })
+      queryClient.invalidateQueries({ queryKey: ['weekly-report'] })
       queryClient.invalidateQueries({ queryKey: ['photo-review-status'] })
       queryClient.invalidateQueries({ queryKey: ['safety-summary'] })
       setProfileResult({ ok: true, msg: '프로필이 저장되었습니다.' })
@@ -286,6 +292,14 @@ export default function ProfilePage() {
                     />
                   </div>
 
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="profile-gender" className="text-sm font-semibold text-gray-600">성별</label>
+                    <AppSelect aria-label="성별" id="profile-gender" value={form.gender} onChange={e => setForm('gender', e.target.value)} className="w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900">
+                      <option value="">미등록</option><option value="남">남</option><option value="여">여</option>
+                    </AppSelect>
+
+                  </div>
+
                   {/* 생년월일 */}
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="profile-birthDate" className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
@@ -309,7 +323,7 @@ export default function ProfilePage() {
                     <label htmlFor="profile-position" className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
                       🙏 직분 <span className="font-normal text-gray-600">(선택)</span>
                     </label>
-                    <select id="profile-position"
+                    <AppSelect aria-label="직분" id="profile-position"
                       value={form.churchPosition}
                       onChange={e => setForm('churchPosition', e.target.value)}
                       className="w-full px-3.5 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 outline-none focus:ring-2 focus:ring-primary-300 appearance-none"
@@ -317,7 +331,7 @@ export default function ProfilePage() {
                       {CHURCH_POSITIONS.map(p => (
                         <option key={p} value={p}>{p || '선택 안 함'}</option>
                       ))}
-                    </select>
+                    </AppSelect>
 
                   </div>
 

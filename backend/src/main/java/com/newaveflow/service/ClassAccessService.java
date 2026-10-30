@@ -22,6 +22,8 @@ public class ClassAccessService {
     }
 
     public void requireStudent(User user, Student student) {
+        if(user!=null&&user.getRole()==User.Role.TEACHER&&!student.belongsToClassOn(java.time.LocalDate.now()))
+            throw AppException.forbidden("반 배정 적용일부터 확인할 수 있습니다.");
         requireClass(user, student.getClassGroup() == null ? null : student.getClassGroup().getId());
     }
 }

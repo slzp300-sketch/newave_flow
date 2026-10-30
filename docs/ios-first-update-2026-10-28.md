@@ -1,5 +1,7 @@
 # iOS first update candidate — 2026-10-28
 
+2026-10-30: Subsequent attendance/report/new-family changes require coordinated backend migrations. For the current candidate, use [the updated audit and release order](ios-update-audit-2026-10-30.md); the frontend-only boundary below describes the earlier candidate.
+
 ## Release boundary
 - Base: approved iOS 1.0.0(4), commit 84354834d21aeb4f7a37ad53130d4def798895cd.
 - Candidate branch: codex/ios-first-update. Proposed version 1.0.1; build number must be checked in App Store Connect before signing.

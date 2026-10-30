@@ -2,7 +2,7 @@ import { memo, useCallback, useState, useMemo, useSyncExternalStore, useEffect, 
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient, useIsMutating, useMutationState, onlineManager } from '@tanstack/react-query'
-import { ttsFeedbackIndex, ttsCompletionMessage } from '../utils/ttsFeedback'
+import { ttsFeedbackIndex } from '../utils/ttsFeedback'
 import { Reveal, AnimatedValue, ProgressFill, SelectionMark, Collapse, Disclosure } from '../components/common/Motion'
 import { addDays, addWeeks, format, startOfWeek } from 'date-fns'
 import Header from '../components/layout/Header'
@@ -227,12 +227,12 @@ export function CheckTab({ embedded = false }) {
         <div className={embedded ? '' : 'px-4'}><QueryNotice queries={reads} label="TTS 기록" /></div>
       ) : week?.importedPeriod ? (
         <div className={embedded ? '' : 'px-4'}>
-          <Card className="text-center py-6">
+          <section className="ui-stat-panel text-center">
             <p className="text-xs font-bold text-gray-500">시트 확정 점수</p>
-            <p className="text-3xl font-bold text-primary-600 mt-2">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
-            <p className="text-xs text-gray-500 mt-3">당시 주간 총점을 보존한 기록입니다.</p>
-            <p className="text-xs text-gray-400 mt-1">{week.closedQuarter ? '마감된 분기로, 기록과 통계만 확인할 수 있어요.' : '수정이 필요하면 관리자에게 알려 주세요.'}</p>
-          </Card>
+            <p className="ui-stat-value text-primary-600 mt-1">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
+
+            <p className="text-xs text-gray-400 mt-1">{week.closedQuarter ? '마감 · 조회만 가능' : '수정: 관리자 문의'}</p>
+          </section>
         </div>
       ) : (
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
@@ -277,9 +277,6 @@ export function CheckTab({ embedded = false }) {
             score={score}
             maxScore={maxScore}
             items={summaryItems}
-            message={ttsCompletionMessage({ items: summaryItems,
-              todayLabel: offset === 0 && todayIdx >= 0 ? DAYS[todayIdx] : null,
-              remainingToday, saving, failed: !!saveError || feedback.kind === 'error' || !ready || offline })}
           />}
 
           <Collapse open={!embedded || showEditor} id={editorId} ref={editorRef} role="region" tabIndex={-1} aria-label="이번 주 기록 수정" className="scroll-mt-20 space-y-3 focus:outline-none">
@@ -288,7 +285,7 @@ export function CheckTab({ embedded = false }) {
             <button type="button" onClick={closeEditor} className="min-h-11 px-3 text-xs font-semibold text-primary-700">접기</button>
           </div>}
           {week?.closedQuarter && <p role="status" className="rounded-xl bg-gray-50 px-3 py-2 text-sm leading-relaxed text-gray-700">
-            마감된 분기예요. 저장된 기록과 통계만 확인할 수 있어요.
+            마감된 분기 · 기록·통계 조회만 가능
           </p>}
           {dayQuestions.length > 0 && (
             <DayGrid
@@ -337,11 +334,11 @@ export function CheckTab({ embedded = false }) {
             </Card>
           )}
 
-          <Disclosure title="이용 안내" className="rounded-xl border border-gray-200 px-4">
+          <Disclosure title="기록 기간" className="rounded-xl border border-gray-200 px-4">
             <div className="space-y-2 pb-3 text-sm leading-relaxed text-gray-700">
-              <p>체크한 내용은 자동 저장돼요. 예배·모임은 참여를 마친 뒤 체크해 주세요.</p>
-              <p>{quarterStart.slice(5).replace('-', '/')}부터 같은 분기의 지난 기록을 수정할 수 있어요. 다음 분기가 시작되면 마감돼요.</p>
-              <p>주간 항목은 이 주 토요일({format(addDays(sunday, 6), 'M/d')})이 속한 분기로 집계돼요.</p>
+
+              <p>{quarterStart.slice(5).replace('-', '/')}부터 수정 가능 · 다음 분기 시작 시 마감</p>
+              <p>주간 항목: {format(addDays(sunday, 6), 'M/d')} 토요일 기준</p>
             </div>
           </Disclosure>
           </Collapse>
@@ -350,21 +347,18 @@ export function CheckTab({ embedded = false }) {
     </>
   )
 }
-function ScoreCard({ score, maxScore, items, message, saveStatus }) {
+function ScoreCard({ score, maxScore, items, saveStatus }) {
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
   return (
-    <Reveal className="brand-card brand-card-accent rounded-2xl border border-primary-100 bg-primary-50 p-4">
+    <Reveal className="brand-card brand-card-accent ui-stat-panel">
       <div className="flex justify-between gap-3 items-center">
         <h2 className="brand-section-title text-sm font-semibold text-primary-800">주간 점수</h2>
-        <p className="shrink-0"><strong className="text-2xl font-bold tabular-nums"><AnimatedValue value={score} /></strong><span className="ml-1 text-sm text-gray-600">/ {maxScore}점</span></p>
+        <p className="shrink-0"><strong className="ui-stat-value"><AnimatedValue value={score} /></strong><span className="ml-1 text-sm text-gray-600">/ {maxScore}점</span></p>
       </div>
       <div className="h-1.5 rounded-full bg-primary-100 overflow-hidden mt-2">
         <ProgressFill className="bg-secondary-600" ratio={ratio} />
       </div>
-      <p className="mt-2 min-h-5 text-sm font-medium leading-5 text-gray-700" role="status" aria-live="polite">{saveStatus}</p>
-      {/* Keep two lines reserved while saving: the checklist must not jump under
-          a finger when completion text temporarily disappears. */}
-      <p className={`mt-1 min-h-10 text-sm leading-5 break-keep ${message?.done ? 'text-secondary-700' : 'text-primary-800'}`}>{message?.text || '\u00a0'}</p>
+      <p className="mt-1 min-h-5 text-xs font-medium leading-5 text-gray-700" role="status" aria-live="polite">{saveStatus}</p>
       {items.length === 0 && <p className="mt-3 text-sm text-gray-500">등록된 체크 항목이 없습니다.</p>}
     </Reveal>
   )

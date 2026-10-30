@@ -67,6 +67,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
     }
 
+    @ExceptionHandler({org.springframework.orm.ObjectOptimisticLockingFailureException.class, org.springframework.dao.DataIntegrityViolationException.class})
+    public ResponseEntity<Map<String,Object>> handleConcurrentWrite(Exception e) {
+        return buildResponse(HttpStatus.CONFLICT,"다른 변경 사항이 있습니다. 최신 내용을 확인한 뒤 다시 시도해주세요.");
+    }
+
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {
         Map<String, Object> body = new HashMap<>();
         body.put("status",    status.value());

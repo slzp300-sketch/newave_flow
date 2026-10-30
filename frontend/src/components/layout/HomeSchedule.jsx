@@ -55,7 +55,7 @@ export default function HomeSchedule() {
         <span className="brand-heading-icon"><FeatureIcon path="/calendar" size={20} /></span>이번 주 일정<ChevronRight size={16} aria-hidden="true" />
       </Link></h2>
     </div>
-    <p className="mb-3 text-xs text-gray-500">{format(dateOf(from), 'M.d')} – {format(dateOf(to), 'M.d')} · 새 일정은 눌러서 확인해 주세요</p>
+    <p className="mb-3 text-xs text-gray-500">{format(dateOf(from), 'M.d')} – {format(dateOf(to), 'M.d')} · 새 일정 확인</p>
     {!knownRead(query) && <QueryNotice queries={[query]} label="이번 주 일정" />}
     <EventReadNotice error={readError} retry={retryReads} />
     {isSaving && <p role="status" className="mb-2 text-xs text-gray-500">확인 상태 저장 중…</p>}

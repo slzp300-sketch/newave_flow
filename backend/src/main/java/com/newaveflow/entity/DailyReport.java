@@ -59,6 +59,20 @@ public class DailyReport {
 
     private LocalDateTime submittedAt;
 
+    @JsonIgnore @Column(columnDefinition="TEXT") private String submittedData;
+    @org.hibernate.annotations.ColumnDefault("0") @Builder.Default @Column(nullable=false) private long submissionRevision = 0;
+    @org.hibernate.annotations.ColumnDefault("false") @Builder.Default @Column(nullable=false) private boolean draftChanged = false;
+    @JsonIgnore @Column(length=600) private String correctionReason;
+    public void recordCorrection(String reason) { this.correctionReason = reason; }
+
+    public void markDraftChanged() { this.draftChanged = true; }
+    public void captureSubmission(String json) {
+        this.submittedData = json;
+        this.submissionRevision++;
+        this.draftChanged = false;
+        this.correctionReason = null;
+    }
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -76,6 +90,7 @@ public class DailyReport {
     }
 
     public void updateCounts(int total, int present, int absent, int late, String notes) {
+        this.draftChanged = true;
         this.totalStudents = total;
         this.presentCount  = present;
         this.absentCount   = absent;

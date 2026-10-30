@@ -1,3 +1,4 @@
+import AppSelect from '../components/common/AppSelect'
 import { Collapse, CollapsePanel } from '../components/common/Motion'
 import './CalendarPage.css'
 import ReportLink from '../components/common/ReportLink'
@@ -597,9 +598,9 @@ export default function CalendarPage() {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">구분</label>
-                  <select value={formData.eventType} onChange={e => setFormData({...formData, eventType: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none">
+                  <AppSelect aria-label="구분" value={formData.eventType} onChange={e => setFormData({...formData, eventType: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none">
                     {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
+                  </AppSelect>
                 </div>
 
                 {/* 하루종일 토글 */}
@@ -611,7 +612,7 @@ export default function CalendarPage() {
                 >
                   <div>
                     <p className={`text-sm font-bold ${formData.allDay ? 'text-secondary-700' : 'text-gray-500'}`}>하루종일</p>
-                    <p className="text-xs text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
+
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-secondary-700' : 'bg-gray-200'}`}>
                     <motion.div
@@ -686,7 +687,7 @@ export default function CalendarPage() {
                     <p className={`text-sm font-bold ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
                       출석 체크 활성화
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
+
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
                     formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'

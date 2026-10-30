@@ -37,6 +37,8 @@ const AdminClassManagePage = lazy(() => import('../pages/AdminClassManagePage'))
 const AdminStudentManagePage = lazy(() => import('../pages/AdminStudentManagePage'))
 const AdminPendingUsersPage = lazy(() => import('../pages/AdminPendingUsersPage'))
 const AdminStudentAttendancePage = lazy(() => import('../pages/AdminStudentAttendancePage'))
+const AdminWeeklyReportPage = lazy(() => import('../pages/AdminWeeklyReportPage'))
+const NewFamilyPage = lazy(() => import('../pages/NewFamilyPage'))
 const ManualPreviewPage = lazy(() => import('../pages/ManualPreviewPage'))
 const AppGuidePage = lazy(() => import('../pages/AppGuidePage'))
 const ProfilePage = lazy(() => import('../pages/ProfilePage'))
@@ -217,6 +219,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
           { path: '/',           element: <Home /> },
           { path: '/menu',       element: <Navigate to="/" replace /> },
           { path: '/attendance', element: <AttendancePage /> },
+          { path: '/new-family', element: <NewFamilyPage /> },
           { path: '/calendar',   element: <CalendarPage /> },
           { path: '/checklist',  element: <Navigate to="/" replace /> },
           { path: '/tts',        element: <TTSPage /> },
@@ -250,6 +253,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
               { path: '/admin/deactivation-requests', element: <DeactivationRequestsAdminPage /> },
               { path: '/admin/tts',              element: <TtsAdminPage /> },
               { path: '/admin/student-attendance', element: <AdminStudentAttendancePage /> },
+              { path: '/admin/weekly-report', element: <AdminWeeklyReportPage /> },
               { path: '/admin/class-assignment', element: <AdminClassManagePage /> },
                 { path: '/admin/students',               element: <AdminStudentManagePage /> },
                 { path: '/admin/pending-users',          element: <AdminPendingUsersPage /> },

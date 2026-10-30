@@ -119,7 +119,7 @@ public class MeetingMinuteController {
         MeetingMinute minutes = meetingMinuteRepository.findById(id)
             .orElseThrow(() -> AppException.notFound("회의록을 찾을 수 없습니다."));
         List<User> teachers = userRepository.findByIsActiveTrue().stream()
-            .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+            .filter(User::participatesInTeacherActivities)
             .toList();
         
         List<MeetingMinuteConfirm> confirms = meetingMinuteConfirmRepository.findAllByMinutes(minutes);

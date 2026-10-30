@@ -1,5 +1,4 @@
 import './QuarterAssessment.css'
-import Card from '../common/Card'
 import { quarterAverageText, quarterStatusLabel } from '../../utils/ttsQuarterAssessment'
 import { quartersForYear, ttsToday } from '../../utils/ttsPeriod'
 
@@ -7,17 +6,17 @@ export function QuarterCriteria({ assessment, year, quarter }) {
   const { average, count, passed, below, unrecorded } = assessment
   const period = quartersForYear(year).find(p => p.q === quarter)
   const ongoing = period && period.start <= ttsToday() && ttsToday() <= period.end
-  return <Card className="p-4 flex flex-col gap-2" aria-label="분기 통과 기준">
-    <p className="text-base font-bold text-gray-900">분기 평균 {quarterAverageText(average)}점</p>
+  return <section className="ui-stat-panel" aria-label="분기 통과 기준">
+    <div className="ui-stat-heading"><h3>분기 평균</h3><strong className="ui-stat-value">{quarterAverageText(average)}점</strong>{ongoing && <span className="ui-stat-note">진행 중</span>}</div>
     {count ? <>
-      <p className="text-sm text-gray-700 leading-relaxed">평균 이상 통과 · 평균 미만 미달<br />정수 점수 기준 {Math.ceil(average)}점부터 통과</p>
-      <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold">
-        <span className="text-secondary-800">통과 {passed}명</span><span className="text-red-700">미달 {below}명</span>
-        {unrecorded > 0 && <span className="text-gray-600">기록 없음 {unrecorded}명</span>}
-      </p>
-    </> : <p className="text-sm text-gray-600">분기 기록이 없어 아직 판정하지 않습니다.</p>}
-    <p className="text-sm text-gray-600 leading-relaxed">기록이 있는 {count}명의 분기 총점 기준입니다. 기록 없음은 평균에서 제외합니다.{ongoing && ' 진행 중인 분기로, 기록이 바뀌면 평균과 판정도 달라집니다.'}</p>
-  </Card>
+      <p className="ui-stat-note">통과 {Math.ceil(average)}점부터</p>
+      <dl className="ui-metrics grid-cols-3 mt-1">
+        <div><dt>통과</dt><dd className="text-secondary-700">{passed}<small>명</small></dd></div>
+        <div><dt>미달</dt><dd className="text-red-700">{below}<small>명</small></dd></div>
+        <div><dt>기록 없음</dt><dd>{unrecorded}<small>명</small></dd></div>
+      </dl>
+    </> : <p className="ui-stat-note">기록 없음</p>}
+  </section>
 }
 
 export function QuarterStatus({ score, assessment }) {

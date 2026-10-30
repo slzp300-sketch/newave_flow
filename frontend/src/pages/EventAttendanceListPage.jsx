@@ -16,6 +16,7 @@ import { ko } from 'date-fns/locale'
 import Header from '../components/layout/Header'
 import FeatureIcon from '../components/common/FeatureIcon'
 import Card from '../components/common/Card'
+import StatSummary from '../components/common/StatSummary'
 import Button from '../components/common/Button'
 import { eventApi } from '../api/event'
 import useAuthStore from '../store/authStore'
@@ -112,7 +113,7 @@ function TeacherSelfCheck({ event, userId }) {
         <div className="flex flex-col gap-3">
           <AttendanceChoice label="내 행사 참석" value={pending} onChange={setPending} multiDay={isMultiDay} />
           <p className="text-sm leading-5 text-gray-700" role="status">
-            {saveMutation.isPending ? '제출 중…' : pending ? '선택됨 · 제출 버튼을 눌러 완료해 주세요' : '참석 여부를 선택해 주세요'}
+            {saveMutation.isPending ? '제출 중…' : pending ? '선택됨 · 제출 필요' : '참석 여부를 선택해 주세요'}
           </p>
 
           {/* 불참 사유 입력 */}
@@ -247,20 +248,11 @@ function StudentAttendanceCheck({ event, userId }) {
 
       {/* 통계 */}
       {students.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          <Card className="text-center py-3">
-            <p className="text-lg font-bold text-gray-900">{students.length}</p>
-            <p className="text-sm font-bold text-gray-600 mt-0.5">전체</p>
-          </Card>
-          <Card className="text-center py-3">
-            <p className="text-lg font-bold text-secondary-700">{presentCount}</p>
-            <p className="text-sm font-bold text-gray-600 mt-0.5">출석</p>
-          </Card>
-          <Card className="text-center py-3">
-            <p className="text-lg font-bold text-red-700">{absentCount}</p>
-            <p className="text-sm font-bold text-gray-600 mt-0.5">결석</p>
-          </Card>
-        </div>
+        <StatSummary label="우리 반 행사 출석" items={[
+          { label: '전체', value: students.length },
+          { label: '출석', value: presentCount, color: 'text-secondary-700' },
+          { label: '결석', value: absentCount, color: 'text-red-700' },
+        ]} />
       )}
 
       {/* 제출 완료 배너 */}

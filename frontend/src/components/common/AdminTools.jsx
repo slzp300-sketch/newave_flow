@@ -4,7 +4,7 @@ export function AdminIntro({ title, description, action }) {
   return <div className="flex flex-wrap items-start justify-between gap-3">
     <div className="ui-admin-intro min-w-0 flex-1 basis-44">
       <h2 className="text-xl font-bold tracking-tight text-gray-900">{title}</h2>
-      <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{description}</p>
+      {description && <p className="mt-1.5 text-sm leading-relaxed text-gray-500">{description}</p>}
     </div>
     {action}
   </div>
@@ -22,10 +22,10 @@ export function FilterResults({ count, total, unit = '명', filtered, onReset })
   </div>
 }
 
-export function AdminEmpty({ title = '조건에 맞는 결과가 없습니다', description = '검색어나 필터를 바꿔 다시 확인해 주세요.' }) {
+export function AdminEmpty({ title = '조건에 맞는 결과가 없습니다', description }) {
   return <div className="brand-card rounded-2xl border border-gray-100 bg-white px-5 py-10 text-center">
     <SearchX size={28} className="mx-auto mb-3 text-gray-300" aria-hidden="true" />
     <p className="text-sm font-semibold text-gray-700">{title}</p>
-    <p className="mt-2 text-xs leading-relaxed text-gray-500">{description}</p>
+    {description && <p className="mt-2 text-xs leading-relaxed text-gray-500">{description}</p>}
   </div>
 }

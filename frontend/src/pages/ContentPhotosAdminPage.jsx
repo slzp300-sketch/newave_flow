@@ -1,3 +1,4 @@
+import AppSelect from '../components/common/AppSelect'
 import { Collapse } from '../components/common/Motion'
 import './SupportingReadability.css'
 import { useState } from 'react'
@@ -23,8 +24,8 @@ export default function ContentPhotosAdminPage() {
   return <div className="supporting-readable readable-content pb-8"><Header title="사진 게시 검토" showBack showNotification={false} />
     <div className="space-y-5 px-4 py-5">
       <SafetySummary />
-      <p className="text-sm leading-6 text-gray-600">새 사진은 승인 전까지 게시되지 않습니다. 초상권·개인정보 침해나 부적절한 내용이 없는지 확인하고 결과를 남겨주세요.</p>
-      <label className="block text-sm font-semibold">사진 상태<select aria-label="사진 상태 필터" className={field} value={status} onChange={e => { setStatus(e.target.value); setPage(0) }}>{Object.entries(PHOTO_STATUS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <p className="text-sm leading-6 text-gray-600">승인 후 게시 · 초상권·개인정보·부적절한 내용 확인</p>
+      <label className="block text-sm font-semibold">사진 상태<AppSelect aria-label="사진 상태 필터" className={field} value={status} onChange={e => { setStatus(e.target.value); setPage(0) }}>{Object.entries(PHOTO_STATUS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</AppSelect></label>
       {queue.isPending && <p role="status">불러오는 중…</p>}
       {queue.isError && <p role="alert" className="text-sm text-red-700">사진 목록을 불러오지 못했습니다. <button className="min-h-11 underline" onClick={() => queue.refetch()}>다시 시도</button></p>}
       {queue.data?.content.length === 0 && <p className="rounded-2xl bg-white p-6 text-center text-sm text-gray-500">이 상태의 사진이 없습니다.</p>}
@@ -52,7 +53,7 @@ function PhotoCard({ photo, onSaved, scope }) {
         {image.data && !currentImage && <p role="alert" className="text-sm text-red-700">사진이 변경되었습니다. <button className="min-h-11 underline" onClick={onSaved}>최신 요청 불러오기</button></p>}
       </Collapse>
       <form className="mt-4 space-y-4" onSubmit={e => { e.preventDefault(); save.mutate() }}>
-        <label className="block text-sm font-semibold">검토 결과<select className={field} required value={decision} onChange={e => { setDecision(e.target.value); setChecked(false) }}><option value="">결과 선택</option><option value="APPROVED">게시 승인</option><option value="REJECTED">게시 거절</option></select></label>
+        <label className="block text-sm font-semibold">검토 결과<AppSelect aria-label="검토 결과" className={field} required value={decision} onChange={e => { setDecision(e.target.value); setChecked(false) }}><option value="">결과 선택</option><option value="APPROVED">게시 승인</option><option value="REJECTED">게시 거절</option></AppSelect></label>
         <label className="block text-sm font-semibold">처리 안내<textarea required maxLength={2000} rows={3} className={field} value={note} onChange={e => setNote(e.target.value)} placeholder="확인 결과를 적어주세요. 사진 신청자에게 표시됩니다." /></label>
         {decision === 'APPROVED' && <label className="flex min-h-11 items-start gap-3 text-sm leading-6"><input type="checkbox" className="mt-1 h-5 w-5 shrink-0" disabled={!opened || !currentImage || image.isError} checked={checked} onChange={e => setChecked(e.target.checked)} /><span>위 사진을 확인했으며 게시를 승인합니다.</span></label>}
         {save.isError && <p role="alert" className="text-sm text-red-700">{save.error.response?.data?.message || '처리 결과를 저장하지 못했습니다.'}{save.error.response?.status === 409 && <button type="button" className="min-h-11 underline" onClick={onSaved}>최신 요청 불러오기</button>}</p>}

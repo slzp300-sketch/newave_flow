@@ -1,3 +1,4 @@
+import AppSelect from '../components/common/AppSelect'
 import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
 import PhotoReviewStatus from '../components/common/PhotoReviewStatus'
@@ -9,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, X, Loader2, PenLine, UserX, UserCheck, Save, Clock, StickyNote, Camera, Image as ImageIcon } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
+import StatSummary from '../components/common/StatSummary'
 import Button from '../components/common/Button'
 import { studentsApi } from '../api/students'
 import { classesApi } from '../api/classes'
@@ -80,24 +82,12 @@ export default function ClassManagePage() {
       ) : (
         <div className="px-4 py-4 flex flex-col gap-4">
           {/* 통계 */}
-          <div className="people-summary-grid gap-2">
-            <Card className="text-center py-3">
-              <p className="text-xl font-bold text-gray-900">{students.length}</p>
-              <p className="text-xs font-bold text-gray-400 mt-0.5">전체</p>
-            </Card>
-            <Card className="text-center py-3">
-              <p className="text-xl font-bold text-secondary-700">{activeStudents.length}</p>
-              <p className="text-xs font-bold text-gray-400 mt-0.5">재적</p>
-            </Card>
-            <Card className="text-center py-3">
-              <p className="text-xl font-bold text-amber-500">{pendingStudents.length}</p>
-              <p className="text-xs font-bold text-gray-400 mt-0.5">대기</p>
-            </Card>
-            <Card className="text-center py-3">
-              <p className="text-xl font-bold text-red-400">{inactiveStudents.length}</p>
-              <p className="text-xs font-bold text-gray-400 mt-0.5">제적</p>
-            </Card>
-          </div>
+          <StatSummary label="학생 현황" items={[
+            { label: '전체', value: students.length },
+            { label: '재적', value: activeStudents.length, color: 'text-secondary-700' },
+            { label: '대기', value: pendingStudents.length, color: 'text-amber-700' },
+            { label: '제적', value: inactiveStudents.length, color: 'text-red-700' },
+          ]} />
 
           {/* 재적 학생 */}
           {activeStudents.length > 0 && (
@@ -572,11 +562,11 @@ function EditStudentSheet({ student, onClose, onSaved }) {
                 className="field-input" />
             </FormField>
             <FormField label="세례 여부">
-              <select value={form.baptism} onChange={e => set('baptism', e.target.value)} className="field-input">
+              <AppSelect aria-label="세례 여부" value={form.baptism} onChange={e => set('baptism', e.target.value)} className="field-input">
                 <option value="">미확인</option>
                 <option value="true">세례</option>
                 <option value="false">미세례</option>
-              </select>
+              </AppSelect>
             </FormField>
           </div>
 

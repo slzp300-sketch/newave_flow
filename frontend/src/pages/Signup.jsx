@@ -216,13 +216,13 @@ export default function Signup() {
   return (
     <div className="supporting-readable readable-content min-h-screen bg-gray-50">
       <Header title="회원가입" showBack />
-      
+
       <div className="px-6 pt-6 pb-10">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">환영합니다!</h2>
         <p className="text-gray-500 text-sm mb-8">{isSocial ? `${socialName} 인증을 완료했어요. 가입 신청 후 관리자 승인을 기다려 주세요.` : '새로운 웨이브에 합류하세요'}</p>
         {isSocial && <p className="mb-5 rounded-xl border border-secondary-200 bg-secondary-50 p-3 text-sm leading-relaxed text-secondary-800">{isApple
-          ? 'Apple이 확인한 이메일로 가입합니다. 별도 비밀번호 없이 Apple로 로그인할 수 있어요. 관리자에게 표시할 교사 이름을 확인해 주세요.'
-          : '이메일로도 로그인할 수 있도록 이메일과 비밀번호를 함께 설정해 주세요.'} 이미 가입했다면 새로 신청하지 말고 기존 계정에서 {socialName} 계정을 연결해 주세요.</p>}
+          ? 'Apple 이메일로 가입 · 교사 이름을 확인하세요.'
+          : '이메일 로그인용 이메일·비밀번호 설정'} 이미 가입했다면 새로 신청하지 말고 기존 계정에서 {socialName} 계정을 연결해 주세요.</p>}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
@@ -248,7 +248,7 @@ export default function Signup() {
           {isApple ? <div>
             <p className="text-sm font-bold text-gray-700 mb-1.5">Apple에서 확인한 이메일</p>
             <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm break-all">{appleProfile?.email || 'Apple 인증을 다시 진행해 주세요.'}</p>
-            {appleProfile?.emailPrivate && <p className="mt-2 text-xs leading-5 text-gray-500">이메일 가리기로 만든 주소입니다. 이 주소를 그대로 사용하며 개인 이메일은 추가로 받지 않습니다.</p>}
+            {appleProfile?.emailPrivate && <p className="mt-2 text-xs leading-5 text-gray-500">Apple 가림 주소 사용 · 개인 이메일 추가 수집 없음</p>}
           </div> : <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">이메일 (아이디)</label>
             <EmailInput

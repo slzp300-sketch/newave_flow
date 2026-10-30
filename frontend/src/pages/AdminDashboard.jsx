@@ -21,7 +21,7 @@ export default function AdminDashboard() {
     <Header title="관리자 메뉴" showBack />
     <div className="flex flex-col gap-5 px-4 py-5">
       {!search && ['ADMIN', 'PASTOR'].includes(user?.role) && <AdminOverview />}
-      <AdminIntro title="관리할 업무를 찾아보세요" description="회원과 반 배정부터 출석·활동 기록까지 한곳에서 관리합니다." />
+      <AdminIntro title="관리 메뉴" />
       <SearchField label="관리자 메뉴 검색" value={search} onChange={setSearch} placeholder="교사, 출석, TTS 검색" />
       {search.trim() && <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <p role="status" className="text-gray-600">검색 결과 <strong className="text-gray-900">{count}개</strong></p>
@@ -29,7 +29,7 @@ export default function AdminDashboard() {
       </div>}
       {!count && <div className="brand-card rounded-2xl bg-white px-5 py-8 text-center">
         <p className="text-base font-semibold text-gray-900">찾는 메뉴가 없습니다</p>
-        <p className="mt-2 text-sm leading-relaxed text-gray-600">다른 검색어로 다시 확인해 주세요.</p>
+
       </div>}
       {groups.map((group, idx) => <Reveal key={group.title} delay={idx * 0.04}>
         <section className="brand-card overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
@@ -39,19 +39,17 @@ export default function AdminDashboard() {
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-bold leading-snug text-gray-900">{group.title}</h2>
-              <p className="mt-1 text-sm leading-relaxed text-gray-600">{group.desc}</p>
             </div>
             <span className="shrink-0 text-sm text-gray-600">{group.items.length}개</span>
           </div>
           <div className="divide-y divide-gray-50 px-2">
             {group.items.map(item => <Link key={item.to} to={item.to}
-              className="brand-action motion-tap flex min-h-20 items-center gap-3 rounded-2xl px-3 py-3.5 hover:bg-gray-50">
+              className="brand-action motion-tap flex min-h-14 items-center gap-3 rounded-2xl px-3 py-2 hover:bg-gray-50">
               <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl">
                 <FeatureIcon path={item.to} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-base font-bold text-gray-900"><FitLabel>{item.title}</FitLabel></p>
-                <p className="mt-1 text-sm leading-relaxed text-gray-600">{item.desc}</p>
               </div>
               <span aria-hidden="true" className="shrink-0 text-xl text-gray-500">›</span>
             </Link>)}

@@ -21,7 +21,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest(showSql = false) @ActiveProfiles("test")
-@Import({AttendanceService.class, ReportService.class, ClassAccessService.class, EventService.class, EventRosterService.class,
+@Import({AttendanceService.class, ReportService.class, WeeklyReportSourceService.class, NewFamilyService.class, ClassAccessService.class, EventService.class, EventRosterService.class,
         TtsService.class, TtsQuestionPolicy.class, HistoryAndReportingTest.JsonConfig.class})
 class HistoryAndReportingTest {
     @TestConfiguration static class JsonConfig { @Bean ObjectMapper mapper() { return new ObjectMapper().findAndRegisterModules(); } }

@@ -1,3 +1,4 @@
+import AppSelect from '../components/common/AppSelect'
 import './SupportingReadability.css'
 import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -36,17 +37,17 @@ export default function ContentReportPage() {
   return <div className="supporting-readable readable-content pb-8">
     <Header title="콘텐츠·사용자 신고" showBack showNotification={false} />
     <div className="space-y-6 px-4 py-5">
-      <div className="rounded-2xl bg-primary-50 p-4 text-sm leading-6 text-primary-900">문제가 있는 글·사진이나 사용자를 알려주세요. 신고는 본인과 담당 관리자만 확인할 수 있습니다. 비밀번호·인증번호 등 불필요한 개인정보는 입력하지 마세요.</div>
+      <div className="rounded-2xl bg-primary-50 p-4 text-sm leading-6 text-primary-900">본인·담당 관리자만 열람 · 비밀번호·인증번호 입력 금지</div>
       <form onSubmit={submit} className="space-y-5 rounded-2xl border border-gray-200 bg-white p-4">
         <label className="block text-sm font-semibold">신고 대상
-          <select aria-label="신고 대상" className={fieldClass} value={target.targetType} onChange={e => {
+          <AppSelect aria-label="신고 대상" className={fieldClass} value={target.targetType} onChange={e => {
             setTarget(e.target.value === 'USER' ? { targetType: 'USER', contentType: null, targetId: null } : { targetType: 'CONTENT', contentType: 'OTHER', targetId: null }); setSuccess(null)
-          }}><option value="CONTENT">글·사진 등 콘텐츠</option><option value="USER">사용자</option></select>
+          }}><option value="CONTENT">글·사진 등 콘텐츠</option><option value="USER">사용자</option></AppSelect>
         </label>
         {target.targetType === 'USER' ? <label className="block text-sm font-semibold">신고할 사용자
-          <select aria-label="신고할 사용자" required className={fieldClass} value={target.targetId || ''} onChange={e => setTarget({ ...target, targetId: Number(e.target.value) || null })}>
+          <AppSelect aria-label="신고할 사용자" required className={fieldClass} value={target.targetId || ''} onChange={e => setTarget({ ...target, targetId: Number(e.target.value) || null })}>
             <option value="">사용자 선택</option>{people.data?.map(person => <option value={person.id} key={person.id}>{person.name}</option>)}
-          </select>
+          </AppSelect>
           {target.targetId && <span className="mt-2 block text-sm font-normal text-gray-600">선택: {people.data?.find(person => person.id === target.targetId)?.name}</span>}
           {people.isError && <span role="alert" className="block text-red-700">사용자를 불러오지 못했습니다. <button type="button" onClick={() => people.refetch()} className="min-h-11 underline">다시 시도</button></span>}
         </label> : target.contentType === 'OTHER' ? <label className="block text-sm font-semibold">문제가 있는 화면·콘텐츠
@@ -54,19 +55,19 @@ export default function ContentReportPage() {
         </label> : <div className="rounded-xl bg-gray-50 p-3 text-sm">선택한 {CONTENT_LABELS[target.contentType]} 신고
           <button type="button" className="ml-2 min-h-11 text-primary-700 underline" onClick={() => setTarget({ targetType: 'CONTENT', contentType: 'OTHER', targetId: null })}>대상 변경</button></div>}
         <label className="block text-sm font-semibold">신고 사유
-          <select aria-label="신고 사유" required className={fieldClass} value={reason} onChange={e => setReason(e.target.value)}>
+          <AppSelect aria-label="신고 사유" required className={fieldClass} value={reason} onChange={e => setReason(e.target.value)}>
             <option value="">사유 선택</option>{Object.entries(REPORT_REASONS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
+          </AppSelect>
           {reason && <span className="mt-2 block text-sm font-normal text-gray-600">{REPORT_REASONS[reason]}</span>}
         </label>
         <label className="block text-sm font-semibold">상세 내용
           <textarea aria-label="상세 내용" required maxLength={2000} rows={5} className={fieldClass} value={details} onChange={e => setDetails(e.target.value)} placeholder="어떤 문제가 있는지, 관리자가 확인할 위치를 알려주세요." />
         </label>
-        <label className="flex min-h-11 items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm leading-6"><input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" /><span>현재 위협이나 개인정보 노출 등 빠른 확인이 필요합니다. 실제 긴급 상황에는 앱 신고와 별도로 담당자에게 즉시 알려주세요.</span></label>
+        <label className="flex min-h-11 items-start gap-3 rounded-xl bg-amber-50 p-3 text-sm leading-6"><input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" /><span>위협·개인정보 노출 등 긴급 상황은 담당자에게도 즉시 연락하세요.</span></label>
         {send.isError && <p role="alert" className="text-sm text-red-700">{send.error.response?.data?.message || '접수 결과를 확인하지 못했습니다. 같은 내용으로 다시 시도할 수 있습니다.'}</p>}
         <button disabled={send.isPending || !details.trim() || !reason || (target.targetType === 'USER' && !target.targetId)}
           className="min-h-12 w-full rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white disabled:opacity-40">{send.isPending ? '접수 중…' : '신고 접수하기'}</button>
-        {success && <p role="status" className="rounded-xl bg-green-50 p-3 text-sm text-green-800">신고가 접수됐습니다. 아래 내역에서 처리 상태를 확인할 수 있습니다.</p>}
+        {success && <p role="status" className="rounded-xl bg-green-50 p-3 text-sm text-green-800">신고 접수 완료 · 아래에서 처리 상태 확인</p>}
       </form>
       <section><h2 className="mb-3 text-lg font-semibold">내 신고 내역</h2>
         {history.isPending && <p role="status" className="text-sm text-gray-500">불러오는 중…</p>}

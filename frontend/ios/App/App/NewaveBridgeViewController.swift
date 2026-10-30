@@ -20,6 +20,7 @@ class NewaveBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(NewaveAuthViewportPlugin())
         bridge?.registerPluginInstance(NewaveSecureStoragePlugin())
         bridge?.registerPluginInstance(NewaveAppleSignInPlugin())
+        bridge?.registerPluginInstance(NewaveReportExportPlugin())
     }
 }
 

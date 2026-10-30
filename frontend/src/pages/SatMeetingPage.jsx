@@ -98,9 +98,7 @@ export default function SatMeetingPage() {
             satDateLabel={satDateLabel}
           />
         )}
-        <p className="text-sm text-gray-600 leading-relaxed text-center mt-4">
-          참석으로 체크하면 TTS의 '교사회의' 점수에 자동으로 반영돼요.
-        </p>
+
       </div>
     </div>
   )

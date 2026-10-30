@@ -15,6 +15,7 @@ import { ko } from 'date-fns/locale'
 import client from '../api/client'
 import FeatureIcon from '../components/common/FeatureIcon'
 import Card from '../components/common/Card'
+import StatSummary from '../components/common/StatSummary'
 import FitLabel from '../components/common/FitLabel'
 import useToday from '../hooks/useToday'
 
@@ -135,26 +136,7 @@ export default function AdminOverview() {
       )}
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 gap-3">
-        {STATS.map((stat, i) => {
-          const Icon = stat.icon
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="brand-card bg-white rounded-2xl p-4 border border-gray-200 flex flex-col items-center text-center"
-            >
-              <div className={`w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center mb-2`}>
-                <Icon size={16} className="text-primary-700" />
-              </div>
-              <p className={`text-2xl font-bold leading-none text-gray-900`}>{stat.value}</p>
-              <p className="w-full text-sm font-semibold text-gray-600 mt-2">{stat.label}</p>
-            </motion.div>
-          )
-        })}
-      </div>
+      <StatSummary label="관리 현황" items={STATS.map(stat => ({ ...stat, unit: stat.label.includes('일정') ? '건' : '명' }))} />
 
       {/* 바로가기 */}
       <div>

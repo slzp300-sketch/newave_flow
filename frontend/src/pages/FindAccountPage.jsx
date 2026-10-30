@@ -153,7 +153,7 @@ function FindIdTab() {
 function FindPasswordTab() {
   return <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
     <p className="font-bold text-gray-900">관리자에게 비밀번호 재설정을 요청해주세요.</p>
-    <p>부서 관리자가 본인 여부를 확인한 뒤 임시 비밀번호를 전달합니다.</p>
-    <p>임시 비밀번호로 로그인한 후 내 정보에서 새 비밀번호로 변경해주세요.</p>
+    <p>관리자 본인 확인 후 임시 비밀번호 발급</p>
+    <p>로그인 후 내 정보에서 비밀번호를 변경하세요.</p>
   </div>
 }

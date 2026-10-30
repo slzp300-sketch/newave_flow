@@ -1,5 +1,6 @@
 import { createContext, useContext, forwardRef, useId, useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback, useSyncExternalStore } from 'react'
 import { AnimatePresence, MotionConfig, motion, useIsPresent } from 'framer-motion'
+import { ChevronDown } from 'lucide-react'
 
 import { createDisclosureScroll, DISCLOSURE_SECONDS, disclosureEase } from '../../utils/disclosureScroll'
 import { installPressFeedback } from '../../utils/pressFeedback'
@@ -86,8 +87,8 @@ export function Disclosure({ title, children, className = '', defaultOpen = fals
   const [open, setOpen] = useState(defaultOpen)
   const id = useId()
   return <section className={className}>
-    <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)} className="flex min-h-11 w-full items-center justify-between gap-3 py-3 text-left text-sm font-semibold">
-      <span>{title}</span><span aria-hidden="true" className={`transition-transform duration-[280ms] ease-in-out ${open ? 'rotate-180' : ''}`}>⌄</span>
+    <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)} className="ui-disclosure-trigger">
+      <span className="ui-disclosure-label">{title}</span><ChevronDown size={18} className="ui-disclosure-chevron" aria-hidden="true" />
     </button>
     <Collapse open={open} id={id}>{children}</Collapse>
   </section>

@@ -174,7 +174,7 @@ class BuiltBundle(unittest.TestCase):
         self.app = Path(self.temp.name) / 'App.app'
         self.app.mkdir()
         self.info = {'CFBundleIdentifier': 'app.newaveflow.mobile', 'CFBundleDisplayName': '뉴웨이브 플로우',
-                     'UIDeviceFamily': [1], 'MinimumOSVersion': '15.0', 'CFBundleSupportedPlatforms': ['iPhoneSimulator'],
+                     'UIDeviceFamily': [1], 'MinimumOSVersion': '15.4', 'CFBundleSupportedPlatforms': ['iPhoneSimulator'],
                      'CFBundleShortVersionString': '1.0.0', 'CFBundleVersion': '1', 'NewaveAppleSignInEnabled': 'NO',
                      'ITSAppUsesNonExemptEncryption': False,
                      'CFBundleURLTypes': [{'CFBundleURLSchemes': ['newaveflow']}],
@@ -202,6 +202,13 @@ class BuiltBundle(unittest.TestCase):
 
     def test_complete_simulator_bundle(self):
         self.assertEqual(bundle['verify'](self.app)['privacyManifests'], 3)
+
+    def test_old_ios_versions_cannot_ship_dialogs_they_do_not_support(self):
+        for version in ('14.8', '15.0', '15.3'):
+            self.info['MinimumOSVersion'] = version
+            self.write_plist('Info.plist', self.info)
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                bundle['verify'](self.app)
 
     def test_missing_or_changed_encryption_declaration_requires_review(self):
         for value in (None, True, 'false'):

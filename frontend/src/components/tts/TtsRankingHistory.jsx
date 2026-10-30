@@ -48,7 +48,7 @@ export default function TtsRankingHistory({ person, year, quarter, scope, onClos
     </header>
     <div className="tts-ranking-sheet-body">
       {weeks.length ? <>
-        <p className="tts-ranking-detail-intro">체크한 날짜를 주차별로 확인해요.</p>
+
         {weeks.map(week => {
           const open = week.start === selectedWeek?.start
           const id = `${titleId}-${week.start}`
@@ -62,7 +62,7 @@ export default function TtsRankingHistory({ person, year, quarter, scope, onClos
             </AnimatePresence>
           </section>
         })}
-        <p className="tts-ranking-detail-note">체크 날짜는 선택한 요일이며, 최근 저장은 해당 주의 마지막 수정 시간입니다. 주간 항목은 날짜를 구분하지 않습니다.</p>
+
       </> : <p className="tts-ranking-empty">이 분기에 체크한 기록이 없습니다.</p>}
     </div>
   </motion.dialog>, document.body)
@@ -86,15 +86,15 @@ function WeekRecord({ week, personKey, year, quarter, scope }) {
   })
   const state = useAdminStatsReadState(query)
   if (state !== 'ready') return <div className="tts-ranking-detail-notice" role={state === 'error' ? 'alert' : 'status'}>
-    <p>{state === 'offline' ? '인터넷 연결 대기 중입니다. 다시 연결되면 기록을 확인합니다.' : state === 'error' ? '체크 기록을 불러오지 못했습니다.' : '체크 기록을 확인하고 있습니다…'}</p>
+    <p>{state === 'offline' ? '연결 대기 · 복구 후 자동 조회' : state === 'error' ? '체크 기록을 불러오지 못했습니다.' : '체크 기록을 확인하고 있습니다…'}</p>
     {state === 'error' && <button type="button" onClick={() => query.refetch()} disabled={query.isFetching}>다시 시도</button>}
   </div>
   const detail = query.data
   if (!detail) return <p className="tts-ranking-detail-notice">해당 주에 조회할 수 있는 기록이 없습니다.</p>
-  if (detail.imported) return <p className="tts-ranking-detail-notice">시트에서 가져온 점수입니다. 날짜별 체크 기록은 제공되지 않습니다.</p>
+  if (detail.imported) return <p className="tts-ranking-detail-notice">시트 점수 · 날짜별 체크 기록 없음</p>
   const boundary = week.start < range.start || week.end > range.end
   return <>
-    {boundary && <p className="tts-ranking-detail-notice">분기를 걸친 주입니다. 날짜별 체크는 선택한 분기만, 주간 항목은 해당 주 전체를 표시합니다.</p>}
+    {boundary && <p className="tts-ranking-detail-notice">날짜별: 선택 분기 · 주간 항목: 해당 주 전체</p>}
     {detail.dates.map(row => <div className="tts-ranking-check-date" key={row.date}>
       <time dateTime={row.date}>{rankingDateLabel(row.date)}</time><span>{row.titles.join(' · ')}</span>
     </div>)}

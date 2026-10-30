@@ -7,10 +7,25 @@
 .admin-teachers-page .teacher-account-tools button { min-height:2.75rem; min-width:0; max-width:100%; width:100%; padding:.75rem; border:1px solid #d1d5db; border-radius:.75rem; font-size:1rem; line-height:1.5; white-space:normal; overflow-wrap:anywhere; text-align:left; }
 .admin-teachers-page .teacher-account-tools .text-gray-500 { color:#4b5563; }
 .admin-teachers-page [aria-live="polite"] > p:empty { display:none; }
-.admin-teachers-page table { min-width:42rem; table-layout:fixed; white-space:normal; font-size:1rem; }
-.admin-teachers-page th { font-size:.875rem; color:#4b5563; padding:.875rem .75rem; }
-.admin-teachers-page td { padding:1rem .75rem; overflow-wrap:anywhere; word-break:keep-all; vertical-align:top; }
-.admin-teachers-page th:first-child { width:9rem; }
-.admin-teachers-page td:first-child { z-index:1; }
-.admin-teachers-page td button { width:100%; overflow-wrap:anywhere; word-break:keep-all; }
 .admin-teachers-page .teacher-role-choice { flex-direction:column; gap:.25rem; }
+
+/* A compact, consistent list; account actions remain in each teacher's dialog. */
+.admin-teachers-page .teacher-history-link { display:flex; align-items:center; justify-content:space-between; gap:.75rem; min-height:2.75rem; padding:.625rem .875rem; border:1px solid #e2e8f0; border-radius:.875rem; background:#fff; font-size:.875rem; font-weight:600; }
+.admin-teachers-page .teacher-history-link svg { flex-shrink:0; }
+.admin-teachers-page .teacher-list-section { display:flex; flex-direction:column; gap:.625rem; }
+.admin-teachers-page .teacher-list-summary { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.25rem .75rem; padding:0 .125rem; }
+.admin-teachers-page .teacher-management-list { display:flex; flex-direction:column; gap:.5rem; margin:0; padding:0; list-style:none; }
+.admin-teachers-page .teacher-management-list > li { min-width:0; }
+.admin-teachers-page .teacher-list-row { display:grid; grid-template-columns:minmax(0,1fr) 1.125rem; align-items:center; gap:.625rem; width:100%; min-width:0; min-height:2.75rem; padding:.75rem; border:1px solid #dfe5ee; border-radius:.875rem; background:#fff; text-align:left; transition:border-color .15s,background-color .15s; }
+.admin-teachers-page .teacher-list-row:hover { border-color:#a5b4cf; background:#f8faff; }
+.admin-teachers-page .teacher-list-row:focus-visible { outline:2px solid #1750ec; outline-offset:2px; }
+.admin-teachers-page .teacher-list-content { display:flex; flex-direction:column; gap:.5rem; min-width:0; }
+.admin-teachers-page .teacher-list-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.25rem .5rem; min-width:0; }
+.admin-teachers-page .teacher-list-name { flex:1 1 6rem; min-width:0; font-size:1rem; font-weight:700; line-height:1.5; color:#111827; overflow-wrap:anywhere; }
+.admin-teachers-page .teacher-list-heading > span:last-child { display:flex; max-width:100%; }
+.admin-teachers-page .teacher-list-row .teacher-role { padding:.125rem .5rem; border-radius:.375rem; font-size:.75rem; line-height:1.5; }
+.admin-teachers-page .teacher-list-details { display:grid; grid-template-columns:2.5rem minmax(0,1fr); align-items:start; gap:.125rem .375rem; min-width:0; font-size:.8125rem; line-height:1.5; }
+.admin-teachers-page .teacher-list-label { color:#6b7280; }
+.admin-teachers-page .teacher-list-value { min-width:0; color:#4b5563; overflow-wrap:anywhere; }
+.admin-teachers-page .teacher-list-value.teacher-email { font-size:inherit; line-height:inherit; }
+.admin-teachers-page .teacher-list-chevron { color:#94a3b8; }

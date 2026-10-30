@@ -8,9 +8,14 @@ WHERE c.table_schema='public'
   AND c.table_name IN (
     'attendances','daily_reports','daily_reports_before_class_merge','deactivation_requests','student_memos',
     'event_student_attendances','events','meeting_minutes','checklist_items','tts_item',
-    'tts_question_revisions','evangelism_groups','content_reports','user_status_events','moderated_photos')
+    'tts_question_revisions','evangelism_groups','content_reports','user_status_events','moderated_photos',
+    'weekly_class_supplements','teacher_worship_attendances','weekly_department_reports','weekly_report_exports',
+    'new_family_members','new_family_checks','new_family_submissions','new_family_references')
   AND (c.table_name,c.column_name) NOT IN (
     ('attendances','status'),('daily_reports','status'),('daily_reports_before_class_merge','status'),
+    ('teacher_worship_attendances','gender'),('teacher_worship_attendances','status'),
+    ('weekly_report_exports','source_hash'),('weekly_report_exports','template_version'),
+    ('new_family_members','decision'),('new_family_checks','status'),('new_family_submissions','source_hash'),
     ('deactivation_requests','status'),('event_student_attendances','status'),
     ('events','start_time'),('events','end_time'),('events','color'),('events','event_type'),('events','attendance_target'),
     ('tts_item','q_type'),('tts_item','emoji'),('tts_item','link_type'),

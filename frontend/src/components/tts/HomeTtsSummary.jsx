@@ -8,13 +8,13 @@ export default function HomeTtsSummary({ score, maxScore, range, days, items, an
   const ratio = maxScore > 0 ? Math.max(0, Math.min(score / maxScore, 1)) : 0
   const daily = items.filter(item => item.daily)
   const meetings = items.filter(item => !item.daily)
-  return <section aria-label="이번 주 나의 영성 통계" className="mt-4 border-t border-primary-200 pt-4">
+  return <section aria-label="이번 주 나의 영성 통계" className="mt-2 border-t border-primary-200 pt-2">
     <div className="flex flex-wrap items-center justify-between gap-1">
       <h3 className="brand-section-title text-sm font-semibold">이번 주 나의 기록</h3>
       <span className="text-xs text-gray-500">{range}</span>
     </div>
-    <div className="mt-2 flex items-end justify-between gap-3">
-      <p className="text-primary-800"><strong className="text-3xl font-semibold tabular-nums"><AnimatedValue value={score} /></strong><span className="ml-1 text-xs text-gray-500">/ {maxScore}점</span></p>
+    <div className="mt-1 flex flex-wrap items-end justify-between gap-2">
+      <p className="text-primary-800"><strong className="ui-stat-value"><AnimatedValue value={score} /></strong><span className="ml-1 text-xs text-gray-500">/ {maxScore}점</span></p>
       <p className="text-right text-xs text-gray-500">주간 달성률 <strong className="ml-1 text-base font-semibold tabular-nums text-secondary-700">{maxScore > 0 ? `${Math.round(ratio * 100)}%` : '—'}</strong></p>
     </div>
     <div role="progressbar" aria-label="이번 주 전체 목표 대비 점수" aria-valuemin={0} aria-valuemax={maxScore || 1} aria-valuenow={score}

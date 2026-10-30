@@ -84,12 +84,4 @@ public class PrayerVoteService {
         }).toList();
     }
 
-    @Transactional
-    public PrayerVote toggleScriptureSubmitted(Long voteId, boolean submitted) {
-        PrayerVote vote = prayerVoteRepository.findByIdWithTeacher(voteId)
-                .orElseThrow(() -> AppException.notFound("투표 기록을 찾을 수 없습니다."));
-        if (submitted) vote.markScriptureSubmitted();
-        else vote.unmarkScriptureSubmitted();
-        return prayerVoteRepository.save(vote);
-    }
 }

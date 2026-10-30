@@ -105,6 +105,14 @@ class PrivacyDeletionTest {
                   (4,0,'STUDENT',2,NULL,1,CURRENT_TIMESTAMP,'APPROVED',1,CURRENT_TIMESTAMP,'Approved synthetic photograph');
                 """);
 
+            s.execute("""
+                INSERT INTO new_family_members(id,student_id,first_visit,course_json,decision,decision_reason,assignment_requested,memo,handoff_memo,introducer,updated_by,updated_at,revision)
+                  VALUES(1,1,'2026-10-11','[null,null,null,null]','REVIEW','',false,'삭제대상가상 상담 / 학생 과정 기록 보존','','','보존교사가상',CURRENT_TIMESTAMP,0);
+                INSERT INTO new_family_checks(id,member_id,worship_date,status,updated_by,updated_at)
+                  VALUES(1,1,'2026-10-11','PRESENT','삭제대상가상',CURRENT_TIMESTAMP);
+                INSERT INTO new_family_submissions(report_date,payload,source_hash,revision,submitted_at,submitted_by)
+                  VALUES('2026-10-11','{"present":1,"note":"학생 기록 보존"}',repeat('a',64),1,CURRENT_TIMESTAMP,'삭제대상가상');
+                """);
             String inputs=Files.readString(Path.of("db/privacy/request-tables.sql"))
                 +"CREATE TEMP TABLE privacy_content_scope ON COMMIT DROP AS "+Files.readString(Path.of("db/privacy/content-scope.sql"))+";";
             String deletion=Files.readString(Path.of("db/privacy/delete-account.sql"));
@@ -114,6 +122,9 @@ class PrivacyDeletionTest {
                 INSERT INTO privacy_redactions SELECT 'daily_reports','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports;
                 INSERT INTO privacy_redactions SELECT 'daily_reports_before_class_merge','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports_before_class_merge;
                 INSERT INTO privacy_redactions SELECT 'meeting_minutes','content',id,md5(content),'다른 사람 회의 결정' FROM meeting_minutes;
+                INSERT INTO privacy_redactions SELECT 'new_family_members','memo',id,md5(memo),'학생 과정 기록 보존' FROM new_family_members;
+                INSERT INTO privacy_redactions SELECT 'new_family_checks','updated_by',id,md5(updated_by),'삭제된 교사' FROM new_family_checks;
+                INSERT INTO privacy_redactions SELECT 'new_family_submissions','submitted_by',id,md5(submitted_by),'삭제된 교사' FROM new_family_submissions;
                 """+syntheticContentReview()+"UPDATE privacy_content_review SET decision='erase',reason='요청자 단독 작성 내용임을 가상 원본으로 확인함' WHERE (table_name='events' AND column_name='description') OR table_name='student_memos';";
             var original=EventReadMigrationTest.fingerprints(c);
             for(String unsafe:List.of(
@@ -277,6 +288,11 @@ class PrivacyDeletionTest {
             assertEquals("1",scalar(c,"SELECT count(*) FROM event_participants WHERE kind='STUDENT'"));
             assertEquals("PRESENT",scalar(c,"SELECT status FROM event_student_attendances WHERE id=1 AND teacher_id IS NULL"));
             assertEquals("SUBMITTED",scalar(c,"SELECT status FROM daily_reports WHERE teacher_id IS NULL"));
+            assertEquals("학생 과정 기록 보존",scalar(c,"SELECT memo FROM new_family_members WHERE id=1"));
+            assertEquals("PRESENT",scalar(c,"SELECT status FROM new_family_checks WHERE id=1"));
+            assertEquals("삭제된 교사",scalar(c,"SELECT updated_by FROM new_family_checks WHERE id=1"));
+            assertEquals("삭제된 교사",scalar(c,"SELECT submitted_by FROM new_family_submissions WHERE report_date='2026-10-11'"));
+            assertEquals("1",scalar(c,"SELECT payload::jsonb->>'present' FROM new_family_submissions WHERE report_date='2026-10-11'"));
             assertEquals("1",scalar(c,"SELECT present_count FROM daily_reports"));
             assertEquals("학생 기록 보존",scalar(c,"SELECT special_notes FROM daily_reports_before_class_merge"));
             assertEquals("0",scalar(c,"SELECT count(*) FROM student_memos WHERE id=1"),"Personal author-owned text must be removed even without any identifying string");

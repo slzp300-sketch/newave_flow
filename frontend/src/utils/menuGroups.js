@@ -22,7 +22,7 @@ export const MENU_GROUPS = [
     bg: 'bg-primary-50',
     desc: '기도모임, 교사회의, 회의록, 일정',
     items: [
-      { to: '/admin/prayer', title: '기도모임 관리', desc: '불참 명단 및 필사 제출 현황' },
+      { to: '/admin/prayer', title: '기도모임 관리', desc: '불참 명단·주간 참석률' },
       { to: '/admin/meeting-attendance', title: '교사회의 관리', desc: '토요일 교사회의 참석 현황' },
       { to: '/admin/minutes', title: '회의록 관리', desc: '교사 회의록 작성 및 공개 설정' },
       { to: '/admin/calendar', title: '일정 관리', desc: '월별 부서 일정 등록 및 수정' },
@@ -35,7 +35,7 @@ export const MENU_GROUPS = [
     bg: 'bg-primary-50',
     desc: '주간 출석, 행사 출석, TTS, 전도 관리',
     items: [
-      { to: '/admin/student-attendance', title: '출석 관리', desc: '주차별 학년/반/학생 출석 현황 확인' },
+      { to: '/admin/weekly-report', title: '출석 관리 · 주간보고서', desc: '자동 집계·보완·한글/PDF' },
       { to: '/admin/event-attendance', title: '행사 출석 관리', desc: '행사별 반 학생 출석 현황 확인' },
       { to: '/admin/tts', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
       { to: '/admin/evangelism', title: '전도 관리', desc: '전도 조 편성 및 일정 관리' },

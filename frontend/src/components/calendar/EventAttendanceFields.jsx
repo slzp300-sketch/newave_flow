@@ -11,7 +11,7 @@ export default function EventAttendanceFields({ value, onChange }) {
           <button key={target} type="button" aria-pressed={value.attendanceTarget === target}
             onClick={() => onChange({ attendanceTarget: target })} className="min-h-11 rounded-xl border px-2 py-2 text-xs font-semibold">{label}</button>)}
       </div>
-      <p className="mt-2 text-xs text-gray-500">교사는 본인 참석 여부를, 학생은 담당 교사가 반별로 체크합니다.</p>
+
     </div>
     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
       <div className="min-w-0">
@@ -27,6 +27,6 @@ export default function EventAttendanceFields({ value, onChange }) {
           className="min-h-11 w-full min-w-0 rounded-xl border border-primary-200 bg-white px-3 py-3 text-sm" />
       </div>
     </div>
-    <p className="text-xs leading-relaxed text-gray-500">한국 시간 기준 시작일 00:00부터 마감일 23:59까지 접수합니다. 접수 전·종료 후에는 기존 기록만 볼 수 있어요.</p>
+    <p className="text-xs leading-relaxed text-gray-500">한국 시간 00:00~마감일 23:59 · 기간 외 조회만 가능</p>
   </fieldset>
 }

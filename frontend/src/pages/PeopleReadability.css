@@ -28,8 +28,6 @@
 }
 .large-font .people-class-heading > .people-class-symbol { display: none; }
 
-.people-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.people-summary-grid > * { padding-inline: .25rem; }
 .people-memo-card { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) 1rem; gap: .75rem; }
 .people-memo-card > .flex-1 { display: contents; }
 .people-memo-card > div:first-child { grid-column: 1; grid-row: 1; }

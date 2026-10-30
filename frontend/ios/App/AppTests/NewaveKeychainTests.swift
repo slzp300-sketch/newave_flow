@@ -1,10 +1,72 @@
 import XCTest
+import UIKit
 import WebKit
 import AuthenticationServices
 @testable import App
 
 final class NewaveKeychainTests: XCTestCase {
     private var store: NewaveKeychainStore!
+
+    func testReportExportValidatesFileNamesAndDocumentBytes() throws {
+        let pdf = Data("%PDF-1.7 synthetic".utf8)
+        let valid = try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).pdf", base64: pdf.base64EncodedString())
+        XCTAssertEqual(valid.data, pdf)
+        let hwpx = Data([0x50, 0x4b, 0x03, 0x04, 0x00, 0xff])
+        XCTAssertEqual(try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).hwpx", base64: hwpx.base64EncodedString()).data, hwpx)
+        for filename in ["../report.pdf", "청소년부 주간보고서 (2026-10-25).html", "청소년부 주간보고서 (2026-10-25).pdf\n"] {
+            XCTAssertThrowsError(try NewaveReportFile(filename: filename, base64: pdf.base64EncodedString()))
+        }
+        for base64 in ["", "invalid!", Data("<html>error</html>".utf8).base64EncodedString(), hwpx.base64EncodedString()] {
+            XCTAssertThrowsError(try NewaveReportFile(filename: valid.filename, base64: base64))
+        }
+        XCTAssertThrowsError(try NewaveReportFile(filename: valid.filename, base64: Data(repeating: 65, count: NewaveReportFile.maxBytes + 1).base64EncodedString()))
+    }
+
+    func testReportTemporaryCopiesStaySeparateAndAreRemovedAfterExport() throws {
+        let report = try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).pdf", base64: Data("%PDF-1.7 synthetic".utf8).base64EncodedString())
+        let first = try report.writeTemporaryCopy()
+        let second = try report.writeTemporaryCopy()
+        defer { NewaveReportFile.removeTemporaryCopy(first); NewaveReportFile.removeTemporaryCopy(second) }
+        XCTAssertNotEqual(first, second)
+        XCTAssertEqual(try Data(contentsOf: first), report.data)
+        NewaveReportFile.removeTemporaryCopy(first)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.deletingLastPathComponent().path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: second.path))
+    }
+
+    @MainActor
+    func testReportBridgePresentsSaveDialogAndResolvesCancellation() async throws {
+        let controller = NewaveBridgeViewController()
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let previousKeyWindow = scene.windows.first { $0.isKeyWindow }
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true; previousKeyWindow?.makeKeyAndVisible() }
+        controller.loadViewIfNeeded()
+        let webView = try XCTUnwrap(controller.webView)
+        let deadline = Date().addingTimeInterval(15)
+        while (webView.isLoading || webView.url == nil) && Date() < deadline {
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        for (format, data) in [("pdf", Data("%PDF-1.7 synthetic".utf8)), ("hwpx", Data([0x50, 0x4b, 0x03, 0x04, 0x00]))] {
+            let pending = Task { @MainActor in
+                try await webView.callAsyncJavaScript("""
+                    return await Capacitor.nativePromise('NewaveReportExport', 'save', { filename, base64 });
+                    """, arguments: ["filename": "청소년부 주간보고서 (2026-10-25).\(format)", "base64": data.base64EncodedString()], in: nil, contentWorld: .page)
+            }
+            let presentedBy = Date().addingTimeInterval(10)
+            while controller.presentedViewController == nil && Date() < presentedBy {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+            let picker = try XCTUnwrap(controller.presentedViewController as? UIDocumentPickerViewController)
+            XCTAssertTrue(picker.shouldShowFileExtensions)
+            picker.delegate?.documentPickerWasCancelled?(picker)
+            picker.dismiss(animated: false)
+            let result = try await pending.value as? [String: Any]
+            XCTAssertEqual(result?["cancelled"] as? Bool, true)
+        }
+    }
 
     @MainActor func testAppleRevocationObserverRemovesNotificationSubscriptionOnRelease() {
         let center = NotificationCenter()
@@ -86,6 +148,7 @@ final class NewaveKeychainTests: XCTestCase {
         let controller = NewaveBridgeViewController()
         controller.loadViewIfNeeded()
         XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveSecureStorage"))
+        XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveReportExport"))
         let webView = try XCTUnwrap(controller.webView)
         let deadline = Date().addingTimeInterval(15)
         while webView.isLoading && Date() < deadline {

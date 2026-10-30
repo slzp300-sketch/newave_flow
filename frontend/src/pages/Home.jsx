@@ -15,6 +15,7 @@ import useToday from '../hooks/useToday'
 import { ttsToday } from '../utils/ttsPeriod'
 import { knownRead, hasRotationThisWeek } from '../utils/attention'
 import { MENU_GROUPS } from '../utils/menuGroups'
+import NewFamilyEntry from '../components/NewFamilyEntry'
 import { evangelismApi } from '../api/evangelism'
 
 const PERSONAL_GROUPS = [
@@ -93,6 +94,7 @@ export default function Home() {
           if (schedule.readError) schedule.retryReads()
         }}>다시 확인</button>}
       </div>}
+      <NewFamilyEntry />
       {PERSONAL_GROUPS.map((group, index) => <Reveal key={group.title} delay={index * .03}>
         <section aria-label={group.title}>
           <h2 className="ui-section-title mb-3 px-1">{group.title}</h2>

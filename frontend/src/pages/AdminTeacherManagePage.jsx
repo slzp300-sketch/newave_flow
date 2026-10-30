@@ -11,7 +11,6 @@ import { User as UserIcon, Check, Loader2, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import AdminPasswordReset from '../components/AdminPasswordReset'
-import ViewModeToggle, { useViewMode, DetailTable } from '../components/common/ViewModeToggle'
 import { usersApi } from '../api/users'
 import useAuthStore from '../store/authStore'
 import { Link } from 'react-router-dom'
@@ -19,8 +18,7 @@ import AccountStatusHistory from '../components/AccountStatusHistory'
 
 export default function AdminTeacherManagePage() {
   const [search, setSearch] = useState('')
-  const [viewMode, setViewMode] = useViewMode('admin-teachers', 'large')
-  const [selectedId, setSelectedId] = useState(null) // 작은 카드·목록·자세히에서 누른 교사 (권한 변경 창)
+  const [selectedId, setSelectedId] = useState(null)
   const queryClient = useQueryClient()
   const { user: currentUser } = useAuthStore()
 
@@ -40,11 +38,11 @@ export default function AdminTeacherManagePage() {
     onError: err => alert(err.response?.data?.message || '권한을 변경하지 못했습니다. 다시 시도해 주세요.'),
   })
 
-  // 기존 관리 대상 기준 유지: 본인과 ADMIN은 목록에서 제외한다.
+  // 본인은 제외하고, 다른 관리자 계정은 최종관리자에게만 표시한다.
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
       if (u.id === currentUser?.id) return false
-      if (u.role === 'ADMIN') return false
+      if (u.role === 'ADMIN' && currentUser?.role !== 'ADMIN') return false
       return matchesAdminSearch(search, u.name, u.email)
     })
   }, [users, search, currentUser])
@@ -54,9 +52,9 @@ export default function AdminTeacherManagePage() {
 
   const handleRoleChange = (id, newRole) => {
     if (mutation.isPending) return
-    if (newRole === 'PASTOR') {
+    if (newRole === 'PASTOR' || newRole === 'ADMIN') {
       const pastorOrAdminCount = users.filter(u => u.role === 'PASTOR' || u.role === 'ADMIN').length
-      if (pastorOrAdminCount >= 2) {
+      if (pastorOrAdminCount >= 2 && !['ADMIN', 'PASTOR'].includes(users.find(u => u.id === id)?.role)) {
         alert('최종관리자 및 목사님 권한은 최대 2명까지만 설정할 수 있습니다.')
         return
       }
@@ -71,10 +69,10 @@ export default function AdminTeacherManagePage() {
     <div className="admin-teachers-page flex flex-col min-h-screen bg-gray-50 pb-24">
       <Header title="교사 권한 관리" showBack />
 
-      <div className="px-4 py-6">
-        <div className="mb-5 flex flex-col gap-4">
-          <h2 className="text-lg font-bold text-gray-900">교사 · 권한 · 계정 정보</h2>
-          <Link to="/admin/pending-users?tab=suspended" className="teacher-action rounded-2xl border border-gray-200 bg-white text-primary-800"><FitLabel>이용 정지 계정·복구 이력</FitLabel><ChevronRight size={18} aria-hidden="true"/></Link>
+      <div className="px-4 py-5">
+        <div className="mb-4 flex flex-col gap-3">
+          <div><h2 className="text-lg font-bold text-gray-900">교사별 권한</h2></div>
+          <Link to="/admin/pending-users?tab=suspended" className="teacher-history-link text-primary-800"><FitLabel>이용 정지 계정·복구 이력</FitLabel><ChevronRight size={18} aria-hidden="true"/></Link>
           <SearchField label="교사 검색" value={search} onChange={setSearch} placeholder="이름 또는 이메일 검색" />
         </div>
 
@@ -85,41 +83,16 @@ export default function AdminTeacherManagePage() {
             <p className="text-base font-semibold text-gray-700">{search.trim() ? '검색 결과가 없습니다. 검색어를 바꿔 주세요.' : '관리 대상 교사가 없습니다.'}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-             <div className="px-1 mb-1 flex flex-wrap gap-2 items-center justify-between">
-                <p className="text-base font-semibold text-gray-700">관리 대상 {filteredUsers.length}명</p>
-                <ViewModeToggle mode={viewMode} onChange={setViewMode} label="교사 명단 보기 방식" />
-             </div>
-            {viewMode === 'large' ? (
-              <AnimatePresence mode="popLayout">
-                {filteredUsers.map((user) => (
-                  <UserManagementCard
-                    key={user.id}
-                    user={user}
-                    onUpdate={handleRoleChange}
-                    isUpdating={mutation.isPending && mutation.variables?.id === user.id}
-                    disabled={mutation.isPending}
-                  />
-                ))}
-              </AnimatePresence>
-            ) : viewMode === 'detail' ? (
-              <DetailTable
-                rows={filteredUsers}
-                onRowClick={u => setSelectedId(u.id)}
-                columns={[
-                  { label: '이름', render: u => u.name },
-                  { label: '권한', render: u => <RoleBadge role={u.role} /> },
-                  { label: '소속', render: u => <GradeLabel value={u.grade}>{u.grade || '소속 미지정'}</GradeLabel> },
-                  { label: '이메일', render: u => u.email },
-                ]}
-              />
-            ) : (
-              <div className={viewMode === 'small' ? 'readable-card-grid gap-3' : 'flex flex-col gap-2'}>
-                {filteredUsers.map((user, idx) => (
-                  <UserCompactItem key={user.id} user={user} idx={idx} mode={viewMode} onClick={() => setSelectedId(user.id)} />
-                ))}
-              </div>
-            )}
+          <div className="teacher-list-section">
+            <div className="teacher-list-summary">
+              <p className="text-sm font-semibold text-gray-700">{search.trim() ? '검색 결과' : '관리 대상'} <span className="text-primary-800">{filteredUsers.length}명</span></p>
+              <span className="text-sm text-gray-500">권한 · 계정 관리</span>
+            </div>
+            <ul className="teacher-management-list" aria-label="교사 권한 관리 목록">
+              {filteredUsers.map(user => <li key={user.id}>
+                <UserCompactItem user={user} onClick={() => setSelectedId(user.id)} />
+              </li>)}
+            </ul>
           </div>
         )}
         </AdminReadGuard>
@@ -157,19 +130,23 @@ export default function AdminTeacherManagePage() {
   )
 }
 
-function UserCompactItem({ user, idx, mode, onClick }) {
-  return <motion.button type="button" aria-label={`${user.name} 교사 관리`}
-    initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:Math.min(idx*.03,.3)}} onClick={onClick}
-    className={`min-w-0 w-full rounded-2xl border border-gray-200 bg-white p-3 text-left active:scale-[0.98] ${mode==='small'?'flex flex-col gap-3':'flex items-start gap-3'}`}>
-    <div className="h-10 w-10 shrink-0 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center text-base font-bold" aria-hidden="true">{user.name?.[0]}</div>
-    <div className="min-w-0 flex-1">
-      <p className="text-base font-bold text-gray-900">{user.name}</p>
-      <div className="mt-2"><RoleBadge role={user.role}/></div>
-      <p className="mt-2 text-sm text-gray-600"><GradeLabel value={user.grade}>{user.grade || '소속 미지정'}</GradeLabel></p>
-      {mode!=='small' && <p className="teacher-email mt-1 text-sm text-gray-600">{user.email}</p>}
-    </div>
-    {mode!=='small' && <ChevronRight size={18} className="mt-1 shrink-0 text-gray-600" aria-hidden="true"/>}
-  </motion.button>
+function UserCompactItem({ user, onClick }) {
+  return <button type="button" aria-label={`${user.name} 교사 관리`} aria-haspopup="dialog"
+    aria-describedby={`teacher-role-${user.id} teacher-info-${user.id}`} onClick={onClick} className="teacher-list-row">
+    <span className="teacher-list-content">
+      <span className="teacher-list-heading">
+        <span className="teacher-list-name">{user.name}</span>
+        <span id={`teacher-role-${user.id}`}><RoleBadge role={user.role} /></span>
+      </span>
+      <span id={`teacher-info-${user.id}`} className="teacher-list-details">
+        <span className="teacher-list-label">소속</span>
+        <span className="teacher-list-value"><GradeLabel value={user.grade}>{user.grade || '소속 미지정'}</GradeLabel></span>
+        <span className="teacher-list-label">이메일</span>
+        <span className="teacher-list-value teacher-email">{user.email || '이메일 미등록'}</span>
+      </span>
+    </span>
+    <ChevronRight size={18} className="teacher-list-chevron" aria-hidden="true" />
+  </button>
 }
 
 const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpdate, isUpdating, disabled }, ref) {
@@ -213,9 +190,9 @@ const UserManagementCard = forwardRef(function UserManagementCard({ user, onUpda
             variant="pastor"
             onClick={() => onUpdate(user.id, 'PASTOR')}
           />
-          {user.role === 'ADMIN' && (
+          {actor?.role === 'ADMIN' && (
             <RoleButton
-              active={true}
+              active={user.role === 'ADMIN'}
               label="최종관리자"
               variant="admin"
               onClick={() => onUpdate(user.id, 'ADMIN')}
