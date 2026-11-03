@@ -61,6 +61,19 @@ class WeeklyReportHttpTest {
         for(int i=0;i<cells.getLength();i++){var c=(org.w3c.dom.Element)cells.item(i);var a=(org.w3c.dom.Element)c.getElementsByTagNameNS("*","cellAddr").item(0);if(a.getAttribute("rowAddr").equals(""+row)&&a.getAttribute("colAddr").equals(""+col)){var t=c.getElementsByTagNameNS("*","t");StringBuilder s=new StringBuilder();for(int j=0;j<t.getLength();j++)s.append(t.item(j).getTextContent());return s.toString();}}
         throw new AssertionError("Missing cell "+row+":"+col);
     }
+    @Test void commonAttendanceCorrectionDoesNotExposeSecretaryDraftOrExports()throws Exception {
+        var exec=account("가상임원",User.Role.EXECUTIVE);var teacher=account("가상교사",User.Role.TEACHER);var c=group(teacher);var s=student(c,"가상학생","남");
+        var draft=weekly.get(DAY);weekly.saveDraft(DAY,new DraftInput(draft.draftRevision(),fields()));
+        http.perform(get("/api/weekly-reports/{date}/attendance",DAY).header("Authorization",auth(exec)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.fields").doesNotExist()).andExpect(jsonPath("$.exports").doesNotExist());
+        var editor=sources.editor(c.getId(),DAY,exec);
+        http.perform(put("/api/weekly-reports/{date}/classes/{id}/correction",DAY,c.getId()).header("Authorization",auth(exec)).contentType("application/json")
+            .content(json.writeValueAsString(new CorrectionInput(editor.supplement(),Map.of("student:"+s.getId(),"PRESENT"),"담당 교사 확인",editor.sourceHash()))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.classes[0].students[0].status").value("PRESENT"))
+            .andExpect(jsonPath("$.fields").doesNotExist()).andExpect(jsonPath("$.exports").doesNotExist()).andExpect(jsonPath("$.draftRevision").doesNotExist());
+        assertEquals("12000",weekly.get(DAY).fields().get("offering"));
+        http.perform(get("/api/weekly-reports/{date}",DAY).header("Authorization",auth(exec))).andExpect(status().isForbidden());
+    }
     @Test void submitsAggregatesCorrectsAndDownloadsOneImmutableReport()throws Exception {
         var admin=account("가상관리자",User.Role.ADMIN);var teacher=account("가상교사",User.Role.TEACHER);var c=group(teacher);
         assignments.saveAndFlush(TeacherClass.builder().teacher(admin).classGroup(c).isPrimary(false).build());

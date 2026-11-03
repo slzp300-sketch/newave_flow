@@ -2,12 +2,21 @@ import { FileText, CheckSquare, UserCog, ShieldCheck } from 'lucide-react'
 
 export const MENU_GROUPS = [
   {
+    title: '담당 업무', icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50',
+    items: [
+      { to: '/admin/weekly-report', title: '주간보고서 관리', desc: '자동 집계·보완·한글/PDF', capability: 'weeklyReport' },
+      { to: '/new-family', title: '새가족팀 관리', desc: '첫 방문·출결·과정·등반·반 배정', capability: 'newFamily' },
+      { to: '/praise', title: '찬양팀', desc: '명단·로테이션·콘티·기도회', capability: 'praise' },
+    ],
+  },
+  {
     title: '회원 및 조직 관리',
     icon: UserCog,
     color: 'text-primary-600',
     bg: 'bg-primary-50',
     desc: '신규가입, 권한, 반 배정, 제적 관리',
     items: [
+      { to: '/officers?view=organization', title: '임원 조직도', desc: '직책·담당자·활동연도' },
       { to: '/admin/pending-users', title: '가입 승인·이용 정지', desc: '신규 가입 승인과 정지 계정 확인' },
       { to: '/admin/teachers', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
       { to: '/admin/class-assignment', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
@@ -35,7 +44,7 @@ export const MENU_GROUPS = [
     bg: 'bg-primary-50',
     desc: '주간 출석, 행사 출석, TTS, 전도 관리',
     items: [
-      { to: '/admin/weekly-report', title: '출석 관리 · 주간보고서', desc: '자동 집계·보완·한글/PDF' },
+      { to: '/admin/attendance', title: '교사·학생 출석 관리', desc: '학년별 출석·미제출·보완' },
       { to: '/admin/event-attendance', title: '행사 출석 관리', desc: '행사별 반 학생 출석 현황 확인' },
       { to: '/admin/tts', title: 'TTS 점검 관리', desc: '주간 TTS 질문 항목 및 제출 현황' },
       { to: '/admin/evangelism', title: '전도 관리', desc: '전도 조 편성 및 일정 관리' },
@@ -51,4 +60,11 @@ export const MENU_GROUPS = [
     ],
   }
 ]
+
+export function managementMenuGroups(role, canManageNewFamily = false, canReport = false, canPraise = false) {
+  const canManageAll = ['ADMIN', 'PASTOR', 'EXECUTIVE'].includes(role)
+  return MENU_GROUPS.map(group => ({ ...group, items: group.items.filter(item =>
+    item.capability === 'newFamily' ? canManageNewFamily : item.capability === 'weeklyReport' ? canReport : item.capability === 'praise' ? canPraise : canManageAll
+  ) })).filter(group => group.items.length > 0)
+}
 

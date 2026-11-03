@@ -11,7 +11,7 @@ struct NewaveReportFile {
     let data: Data
 
     init(filename: String, base64: String) throws {
-        let pattern = #"\A청소년부 주간보고서 \([0-9]{4}-[0-9]{2}-[0-9]{2}\)\.(pdf|hwpx)\z"#
+        let pattern = #"\A(청소년부 주간보고서 \([0-9]{4}-[0-9]{2}-[0-9]{2}\)\.(pdf|hwpx)|찬양팀 콘티 \([0-9]{4}-[0-9]{2}-[0-9]{2}\) v[1-9][0-9]*\.pdf)\z"#
         guard filename.range(of: pattern, options: .regularExpression) != nil,
               base64.utf8.count <= ((Self.maxBytes + 2) / 3) * 4,
               let data = Data(base64Encoded: base64), !data.isEmpty, data.count <= Self.maxBytes else {

@@ -2,6 +2,11 @@
 .wr-body { padding:1rem; display:grid; gap:1rem; }
 .wr-panel,.wr-form { min-width:0; }
 .wr-panel { background:white; border:1px solid var(--newave-line); border-radius:1rem; padding:.75rem; }
+.wr-class { border-top:1px solid var(--newave-line); }
+.wr-class-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:.6rem; min-height:3rem; padding:.5rem 0; text-align:left; font-size:.875rem; }
+.wr-class-head strong { min-width:0; overflow-wrap:anywhere; }
+.wr-class-head span { flex-shrink:0; font-size:.75rem; color:var(--newave-muted); }
+.wr-class-head:disabled { opacity:.5; }
 .wr-body h2 { font-size:1rem; font-weight:700; letter-spacing:-.02em; }
 .wr-overview { padding:.5rem .625rem; }
 .wr-overview h2 { font-size:.875rem; }

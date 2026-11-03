@@ -2,12 +2,13 @@ import { CollapsePanel } from '../components/common/Motion'
 import { useState, useEffect, useId } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, CalendarCheck, MessageSquare, PenLine } from 'lucide-react'
+import { CheckCircle2, CalendarCheck, MessageSquare } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
+import VoteReceipt from '../components/common/VoteReceipt'
 import WeekNavigator from '../components/common/WeekNavigator'
-import { getWeekStartByOffset, formatUpdatedAt, toApiDate, weekLabels } from '../utils/date'
+import { getWeekStartByOffset, toApiDate, weekLabels } from '../utils/date'
 import { format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import client from '../api/client'
@@ -31,10 +32,13 @@ export default function SatMeetingPage() {
 
   const saveSatMutation = useMutation({
     mutationFn: (payload) => client.post('/meetings/attendance', payload).then(r => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meeting-attendance', satDate, user?.id] })
-      queryClient.invalidateQueries({ queryKey: ['tts-week'] })
+    onSuccess: async (savedVote, payload) => {
+      queryClient.setQueryData(['meeting-attendance', payload.meetingDate, user?.id], savedVote)
       setEditingSat(false)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['meeting-attendance', payload.meetingDate, user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['tts-week'] }),
+      ])
     },
     onError: (err) => alert(err.response?.data?.message || '저장 중 오류가 발생했습니다.'),
   })
@@ -50,7 +54,7 @@ export default function SatMeetingPage() {
       setSat({ status: null, reason: '' })
       setEditingSat(true)
     }
-  }, [satData])
+  }, [satData, satDate])
 
   const updateSat  = (patch) => setSat(d => ({ ...d, ...patch }))
   const submitSat  = () => {
@@ -83,7 +87,10 @@ export default function SatMeetingPage() {
         {satLoading ? (
           <Card className="py-8 text-center text-base text-gray-600">불러오는 중...</Card>
         ) : satSubmitted ? (
-          <SatSubmittedCard sat={sat} updatedAt={satData?.updatedAt} onEdit={() => setEditingSat(true)} />
+          <SatSubmittedCard sat={satData} dateLabel={satDateLabel} saving={saveSatMutation.isPending} onEdit={() => {
+            setSat({ status: satData.status, reason: satData.reason || '' })
+            setEditingSat(true)
+          }} />
         ) : (
           <SatForm
             sat={sat}
@@ -137,24 +144,13 @@ function SatForm({ sat, update, onSubmit, onCancel, valid, saving, satDateLabel 
   )
 }
 
-function SatSubmittedCard({ sat, updatedAt, onEdit }) {
+function SatSubmittedCard({ sat, dateLabel, onEdit, saving }) {
+  const isAbsent = sat.status === 'ABSENT'
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 size={18} className="text-primary-700 shrink-0" />
-          <span className="font-bold text-gray-900 text-base">교사회의 투표 완료</span>
-        </div>
-        <button onClick={onEdit} className="min-h-11 px-3 rounded-xl text-sm text-primary-700 font-bold flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary-300">
-          <PenLine size={16} /> 수정
-        </button>
-      </div>
-      <div className="bg-gray-50 rounded-xl px-4 py-4 flex flex-col gap-4">
-        <Row label="참석 여부" value={sat.status === 'ATTEND' ? '참석' : '불참'} tone={sat.status === 'ABSENT' ? 'absence' : 'present'} />
-        {sat.reason && <Row label="사유" value={sat.reason} />}
-        {updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(updatedAt)} muted />}
-      </div>
-    </Card>
+    <VoteReceipt title="교사회의" result={isAbsent ? '불참' : '참석'}
+      dateLabel={`${dateLabel}(토) · 교사회의`} absent={isAbsent}
+      details={isAbsent && sat.reason ? [{ label: '불참 사유', value: sat.reason }] : []}
+      updatedAt={sat.updatedAt} onEdit={onEdit} saving={saving} />
   )
 }
 
@@ -179,15 +175,6 @@ function ReasonInput({ value, onChange, placeholder, required, disabled }) {
         {required && <span className="text-sm text-red-700 font-semibold">(필수)</span>}
       </label>
       <textarea id={id} required={required} disabled={disabled} rows={3} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-base resize-y min-h-28 focus:outline-none focus:ring-2 focus:ring-red-200 text-gray-900 placeholder-gray-500 bg-gray-50" />
-    </div>
-  )
-}
-
-function Row({ label, value, muted, tone }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-gray-600">{label}</span>
-      <span className={`${muted ? 'text-sm font-medium text-gray-600' : 'text-base font-semibold'} ${tone === 'absence' ? 'text-red-700' : tone === 'present' ? 'text-secondary-800' : muted ? '' : 'text-gray-900'} leading-relaxed break-words [overflow-wrap:anywhere]`}>{value}</span>
     </div>
   )
 }

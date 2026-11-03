@@ -11,9 +11,10 @@ final class NewaveKeychainTests: XCTestCase {
         let pdf = Data("%PDF-1.7 synthetic".utf8)
         let valid = try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).pdf", base64: pdf.base64EncodedString())
         XCTAssertEqual(valid.data, pdf)
+        XCTAssertEqual(try NewaveReportFile(filename: "찬양팀 콘티 (2026-11-08) v2.pdf", base64: pdf.base64EncodedString()).data, pdf)
         let hwpx = Data([0x50, 0x4b, 0x03, 0x04, 0x00, 0xff])
         XCTAssertEqual(try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).hwpx", base64: hwpx.base64EncodedString()).data, hwpx)
-        for filename in ["../report.pdf", "청소년부 주간보고서 (2026-10-25).html", "청소년부 주간보고서 (2026-10-25).pdf\n"] {
+        for filename in ["../report.pdf", "청소년부 주간보고서 (2026-10-25).html", "청소년부 주간보고서 (2026-10-25).pdf\n", "찬양팀 콘티 (2026-11-08) v0.pdf", "찬양팀 콘티 (2026-11-08) v1.hwpx", "찬양팀 콘티 (2026-11-08) v1.pdf\n"] {
             XCTAssertThrowsError(try NewaveReportFile(filename: filename, base64: pdf.base64EncodedString()))
         }
         for base64 in ["", "invalid!", Data("<html>error</html>".utf8).base64EncodedString(), hwpx.base64EncodedString()] {
@@ -59,11 +60,11 @@ final class NewaveKeychainTests: XCTestCase {
         while (webView.isLoading || webView.url == nil) && Date() < deadline {
             try await Task.sleep(nanoseconds: 100_000_000)
         }
-        for (format, data) in [("pdf", Data("%PDF-1.7 synthetic".utf8)), ("hwpx", Data([0x50, 0x4b, 0x03, 0x04, 0x00]))] {
+        for (filename, data) in [("청소년부 주간보고서 (2026-10-25).pdf", Data("%PDF-1.7 synthetic".utf8)), ("청소년부 주간보고서 (2026-10-25).hwpx", Data([0x50, 0x4b, 0x03, 0x04, 0x00])), ("찬양팀 콘티 (2026-11-08) v2.pdf", Data("%PDF-1.7 synthetic".utf8))] {
             let pending = Task { @MainActor in
                 try await webView.callAsyncJavaScript("""
                     return await Capacitor.nativePromise('NewaveReportExport', 'save', { filename, base64 });
-                    """, arguments: ["filename": "청소년부 주간보고서 (2026-10-25).\(format)", "base64": data.base64EncodedString()], in: nil, contentWorld: .page)
+                    """, arguments: ["filename": filename, "base64": data.base64EncodedString()], in: nil, contentWorld: .page)
             }
             let presentedBy = Date().addingTimeInterval(10)
             while (controller.presentedViewController == nil || controller.presentedViewController?.isBeingPresented == true) && Date() < presentedBy {

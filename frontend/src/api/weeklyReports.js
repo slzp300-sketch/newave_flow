@@ -2,6 +2,7 @@ import client from './client'
 import { saveReportFile } from '../native/reportExport'
 
 export const weeklyReportsApi = {
+  attendance: date => client.get(`/weekly-reports/${date}/attendance`),
   get: date => client.get(`/weekly-reports/${date}`),
   preview: date => client.get(`/weekly-reports/${date}/preview`, { responseType: 'text' }),
   save: (date, revision, fields) => client.put(`/weekly-reports/${date}`, { revision, fields }),

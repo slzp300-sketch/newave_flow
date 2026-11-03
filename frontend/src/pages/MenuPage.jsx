@@ -4,8 +4,7 @@ import { Reveal } from '../components/common/Motion'
 import FeatureIcon from '../components/common/FeatureIcon'
 import { ChevronRight, SearchX } from 'lucide-react'
 import Header from '../components/layout/Header'
-import useAuthStore from '../store/authStore'
-import { MENU_GROUPS } from './AdminDashboard'
+import useManagementMenuGroups from '../hooks/useManagementMenuGroups'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { filterMenuGroups } from '../utils/navigation'
@@ -45,8 +44,6 @@ const COMMON_GROUPS = [
   },
 ]
 
-const ADMIN_ROLES = ['ADMIN', 'PASTOR', 'EXECUTIVE']
-
 const DESCRIPTIONS = {
   '/safety/report': '문제 신고와 내 처리 내역 확인',
   '/community-guidelines': '함께 지키는 기록·사진 이용수칙',
@@ -65,7 +62,7 @@ const DESCRIPTIONS = {
 }
 
 export default function MenuPage() {
-  const { user } = useAuthStore()
+  const managementGroups = useManagementMenuGroups()
   const tasks = useWeeklyTasks()
   const schedule = useWeeklyEvents()
   const tts = useTtsAttention()
@@ -76,9 +73,9 @@ export default function MenuPage() {
     : path === '/checklist' ? tasks.tasks.some(t => t.state === 'pending') : tasks.needsAction(path)
   const [search, setSearch] = useState('')
   const [scope, setScope] = useState('personal')
-  const canManage = ADMIN_ROLES.includes(user?.role)
+  const canManage = managementGroups.length > 0
   const common = COMMON_GROUPS.map(g => ({ ...g, items: g.items.map(i => ({ ...i, desc: DESCRIPTIONS[i.to] })) }))
-  const groups = canManage ? [...common, ...MENU_GROUPS.map(g => ({ ...g, title: `관리 · ${g.title}`, admin: true }))] : common
+  const groups = [...common, ...managementGroups.map(g => ({ ...g, title: `관리 · ${g.title}`, admin: true }))]
   const visibleGroups = filterMenuGroups(groups, search, canManage ? scope : 'all')
   const count = visibleGroups.reduce((n, g) => n + g.items.length, 0)
 

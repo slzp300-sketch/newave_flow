@@ -4,8 +4,7 @@ import { AdminIntro } from '../components/common/AdminTools'
 import { filterMenuGroups } from '../utils/navigation'
 import { Reveal } from '../components/common/Motion'
 import { Link } from 'react-router-dom'
-import { MENU_GROUPS } from '../utils/menuGroups'
-export { MENU_GROUPS } from '../utils/menuGroups'
+import useManagementMenuGroups from '../hooks/useManagementMenuGroups'
 import AdminOverview from './AdminOverview'
 import useAuthStore from '../store/authStore'
 import Header from '../components/layout/Header'
@@ -15,13 +14,15 @@ import FeatureIcon from '../components/common/FeatureIcon'
 export default function AdminDashboard() {
   const user = useAuthStore(s => s.user)
   const [search, setSearch] = useState('')
-  const groups = filterMenuGroups(MENU_GROUPS, search)
+  const managementGroups = useManagementMenuGroups()
+  const groups = filterMenuGroups(managementGroups, search)
   const count = groups.reduce((sum, group) => sum + group.items.length, 0)
   return <div className="flex min-h-screen flex-col bg-gray-50/50 pb-10">
     <Header title="관리자 메뉴" showBack />
     <div className="flex flex-col gap-5 px-4 py-5">
       {!search && ['ADMIN', 'PASTOR'].includes(user?.role) && <AdminOverview />}
       <AdminIntro title="관리 메뉴" />
+      <Link to="/officers" className="brand-action flex min-h-12 items-center justify-between rounded-xl px-3 font-semibold">임원 업무·조직도<span aria-hidden="true">›</span></Link>
       <SearchField label="관리자 메뉴 검색" value={search} onChange={setSearch} placeholder="교사, 출석, TTS 검색" />
       {search.trim() && <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <p role="status" className="text-gray-600">검색 결과 <strong className="text-gray-900">{count}개</strong></p>

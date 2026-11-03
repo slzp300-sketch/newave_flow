@@ -22,7 +22,9 @@ BEGIN
     'apple_notification_receipts','user_status_events','moderated_photos','schema_migrations',
     'notification_preferences','push_devices','push_deliveries','tts_linked_snapshots',
     'weekly_class_supplements','teacher_worship_attendances','weekly_department_reports','weekly_report_exports',
-    'new_family_registry','new_family_members','new_family_checks','new_family_submissions','new_family_references')) THEN
+    'new_family_registry','new_family_members','new_family_checks','new_family_submissions','new_family_references',
+    'officer_registry','officer_appointments','officer_changes',
+    'praise_terms','praise_members','praise_weeks','praise_responses','praise_prayers','praise_pdfs')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -38,7 +40,18 @@ BEGIN
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
         'deactivation_requests','event_student_attendances','kakao_auth_flows','apple_accounts','apple_auth_flows',
         'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
-        'user_status_events','moderated_photos','notification_preferences','push_devices','tts_linked_snapshots','teacher_worship_attendances'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'user_status_events','moderated_photos','notification_preferences','push_devices','tts_linked_snapshots','teacher_worship_attendances',
+        'officer_appointments','officer_changes','praise_members','praise_responses','praise_pdfs'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+  -- Binary scores may contain names even when another teacher uploaded them.
+  -- Require an exact reviewed file/hash inventory; never infer consent from the uploader.
+  IF to_regclass('public.praise_pdfs') IS NOT NULL THEN
+   IF EXISTS(SELECT 1 FROM praise_pdfs) THEN
+    IF to_regclass('pg_temp.privacy_praise_pdf_review') IS NULL THEN RAISE EXCEPTION 'Review praise PDF contents before account erasure'; END IF;
+    IF EXISTS(SELECT 1 FROM praise_pdfs p WHERE NOT EXISTS(SELECT 1 FROM privacy_praise_pdf_review r WHERE r.id=p.id AND r.content_md5=md5(p.content) AND r.decision IN ('KEEP_REVIEWED','DELETE')))
+       OR EXISTS(SELECT 1 FROM privacy_praise_pdf_review r WHERE NOT EXISTS(SELECT 1 FROM praise_pdfs p WHERE p.id=r.id AND md5(p.content)=r.content_md5)) THEN RAISE EXCEPTION 'Praise PDF review is incomplete or stale'; END IF;
+    DELETE FROM praise_pdfs p USING privacy_praise_pdf_review r WHERE p.id=r.id AND r.decision='DELETE';
+   END IF;
+  END IF;
   -- New lifecycle/photo tables are optional when replaying an older backup. New columns
   -- or edges in these reviewed tables must not silently bypass account erasure.
   IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND (
@@ -282,6 +295,22 @@ BEGIN
     -- Preserve only an anonymous status receipt; completion is committed with the actual erasure.
     UPDATE account_deletion_requests SET user_id=NULL,user_created_at=NULL,status='COMPLETED',completed_at=CURRENT_TIMESTAMP
       WHERE user_id=req.user_id AND id=req.request_id::text;
+  END IF;
+  -- Preserve office vacancies/history, without keeping deleted account identifiers or names.
+  IF to_regclass('public.officer_appointments') IS NOT NULL THEN
+    UPDATE officer_appointments SET user_id=NULL WHERE user_id=req.user_id;
+    UPDATE officer_registry SET revision=revision+1 WHERE id=1;
+  END IF;
+  IF to_regclass('public.officer_changes') IS NOT NULL THEN
+    UPDATE officer_changes SET previous_user_id=NULL WHERE previous_user_id=req.user_id;
+    UPDATE officer_changes SET next_user_id=NULL WHERE next_user_id=req.user_id;
+    UPDATE officer_changes SET actor_id=NULL WHERE actor_id=req.user_id;
+  END IF;
+  IF to_regclass('public.praise_members') IS NOT NULL THEN
+    UPDATE praise_terms SET revision=revision+1 WHERE id IN (SELECT term_id FROM praise_members WHERE user_id=req.user_id);
+    UPDATE praise_members SET active=false,user_id=NULL WHERE user_id=req.user_id;
+    DELETE FROM praise_responses WHERE user_id=req.user_id;
+    UPDATE praise_pdfs SET uploaded_by_id=NULL WHERE uploaded_by_id=req.user_id;
   END IF;
   DELETE FROM users WHERE id=req.user_id;
   GET DIAGNOSTICS changed=ROW_COUNT;

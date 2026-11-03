@@ -59,6 +59,10 @@ public class User {
     @Builder.Default
     private boolean newFamilyTeam = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean organizationExecutive = false;
+
     public void updateNewFamilyTeam(boolean enabled) { this.newFamilyTeam = enabled; }
 
     @Column(nullable = false)
@@ -109,6 +113,14 @@ public class User {
     public void updateRole(Role role) {
         if (this.role != role) revokeSessions();
         this.role = role;
+        this.organizationExecutive = false;
+    }
+
+    public void grantOrganizationExecutive() {
+        if (role == Role.TEACHER) { updateRole(Role.EXECUTIVE); organizationExecutive = true; }
+    }
+    public void releaseOrganizationExecutive() {
+        if (organizationExecutive) updateRole(Role.TEACHER);
     }
 
     public void updatePassword(String encodedPassword) {

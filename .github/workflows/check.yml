@@ -204,6 +204,19 @@ jobs:
           RUN_NEW_FAMILY_MIGRATION: 'true'
           NEW_FAMILY_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_new_family_ci
         run: bash gradlew test --tests com.newaveflow.NewFamilyMigrationTest --no-daemon
+      - name: Create isolated officer and praise migration databases
+        env:
+          PGPASSWORD: migration-ci-only
+        run: |
+          psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_officers_ci'
+          psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_praise_ci'
+      - name: Verify officer organization and praise team (V020-V021)
+        env:
+          RUN_OFFICER_MIGRATION: 'true'
+          OFFICER_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_officers_ci
+          RUN_PRAISE_MIGRATION: 'true'
+          PRAISE_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_praise_ci
+        run: bash gradlew test --tests com.newaveflow.OfficerOrganizationMigrationTest --tests com.newaveflow.PraiseMigrationTest --no-daemon
       - name: Create isolated post-release migration database
         env:
           PGPASSWORD: migration-ci-only

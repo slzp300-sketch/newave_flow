@@ -31,6 +31,7 @@ public class NewFamilyService {
     private final DailyReportRepository reports;
     private final ObjectMapper json;
     private final ClassAccessService classAccess;
+    private final OfficerAccessService officerAccess;
     private static final List<String> GRADES=List.of("중1","중2","중3","고1","고2","고3");
 
     public Handoff handoff(Long studentId,User actor) {
@@ -48,8 +49,8 @@ public class NewFamilyService {
         return u;
     }
     private boolean admin(User u){return u.getRole()==User.Role.ADMIN||u.getRole()==User.Role.PASTOR;}
-    public Capability capability(User actor){var u=current(actor);return new Capability(admin(u)||u.isNewFamilyTeam(),admin(u),admin(u));}
-    private User requireTeam(User actor){var u=current(actor);if(!admin(u)&&!u.isNewFamilyTeam())throw AppException.forbidden("새가족팀 담당자만 접근할 수 있습니다.");return u;}
+    public Capability capability(User actor){var u=current(actor);return new Capability(officerAccess.canNewFamily(u),admin(u),admin(u));}
+    private User requireTeam(User actor){var u=current(actor);if(!officerAccess.canNewFamily(u))throw AppException.forbidden("새가족팀 담당자만 접근할 수 있습니다.");return u;}
     private User requireAdmin(User actor){var u=current(actor);if(!admin(u))throw AppException.forbidden("관리자 또는 목사님만 확정할 수 있습니다.");return u;}
     private void lock(){var r=registry.lockRegistry().orElseGet(()->registry.saveAndFlush(new NewFamilyRegistry()));r.setChangeNumber(r.getChangeNumber()+1);}
     public List<TeamUser> team(User actor){requireAdmin(actor);return users.findByIsActiveTrue().stream().sorted(Comparator.comparing(User::getName)).map(u->new TeamUser(u.getId(),u.getName(),u.getRole().name(),u.isNewFamilyTeam())).toList();}

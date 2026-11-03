@@ -132,12 +132,14 @@ class PrivacyDeletionTest {
                 INSERT INTO new_family_submissions(report_date,payload,source_hash,revision,submitted_at,submitted_by)
                   VALUES('2026-10-11','{"present":1,"note":"학생 기록 보존"}',repeat('a',64),1,CURRENT_TIMESTAMP,'삭제대상가상');
                 """);
+            s.execute("INSERT INTO praise_terms(id,term_year,half,revision) VALUES(1,2026,2,0); INSERT INTO praise_members(id,term_id,user_id,parts,active) VALUES(1,1,1,'[]',true),(2,1,2,'[]',true); INSERT INTO praise_weeks(id,term_id,worship_date,practice_date,start_time,end_time,schedule_version,slots) VALUES(1,1,'2026-12-06','2026-12-05','17:00','19:00',0,'{}'); INSERT INTO praise_responses(term_id,user_id,response_month,dates,schedule_versions,submitted_at) VALUES(1,1,'2026-12','[]','{}',CURRENT_TIMESTAMP); INSERT INTO praise_pdfs(id,week_id,file_version,page_count,content,uploaded_by_id,uploaded_at) VALUES(1,1,1,1,decode('255044462d','hex'),2,CURRENT_TIMESTAMP)");
             String inputs=Files.readString(Path.of("db/privacy/request-tables.sql"))
                 +"CREATE TEMP TABLE privacy_content_scope ON COMMIT DROP AS "+Files.readString(Path.of("db/privacy/content-scope.sql"))+";";
             String deletion=Files.readString(Path.of("db/privacy/delete-account.sql"));
             String review="""
                 INSERT INTO privacy_request VALUES('11111111-1111-4111-8111-111111111111',1,'2026-10-01',true,true,true,true);
                 INSERT INTO privacy_legacy_decisions VALUES(1,true);
+                INSERT INTO privacy_praise_pdf_review SELECT id,md5(content),'KEEP_REVIEWED' FROM praise_pdfs;
                 INSERT INTO privacy_redactions SELECT 'daily_reports','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports;
                 INSERT INTO privacy_redactions SELECT 'daily_reports_before_class_merge','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports_before_class_merge;
                 INSERT INTO privacy_redactions SELECT 'meeting_minutes','content',id,md5(content),'다른 사람 회의 결정' FROM meeting_minutes;
@@ -152,6 +154,8 @@ class PrivacyDeletionTest {
                 review+"UPDATE privacy_request SET request_id='22222222-2222-4222-8222-222222222222';",
                 review+"UPDATE apple_accounts SET revoked_at=NULL,refresh_token_ciphertext='synthetic-unrevoked' WHERE user_id=1;",
                 review+"DELETE FROM privacy_legacy_decisions;",
+                review+"DELETE FROM privacy_praise_pdf_review;",
+                review+"UPDATE praise_pdfs SET content=decode('255044462d3031','hex');",
                 review+"DELETE FROM privacy_owned_student_memos;",
                 review+"UPDATE student_memos SET sketch='검토 이후 변경' WHERE id=1;",
                 review+"DELETE FROM privacy_content_review WHERE table_name='meeting_minutes' AND column_name='content';",
@@ -243,7 +247,7 @@ class PrivacyDeletionTest {
                 INSERT INTO apple_notification_receipts(jti_hash,subject_hash,payload_hash,received_at)
                   VALUES(repeat('9',64),repeat('e',64),repeat('a',64),CURRENT_TIMESTAMP);
                 """);
-            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true); INSERT INTO privacy_identifiers VALUES('iVB');"+syntheticContentReview();
+            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true); INSERT INTO privacy_identifiers VALUES('iVB'); INSERT INTO privacy_praise_pdf_review SELECT id,md5(content),'KEEP_REVIEWED' FROM praise_pdfs;"+syntheticContentReview();
             // Excluding reviewed hash fields must not exclude a future plaintext field in the same table.
             assertRejectedDeletionRestoresAllRows(c,inputs,collisionReview,deletion,
                 "ALTER TABLE apple_notification_subjects ADD COLUMN unreviewed_note text; UPDATE apple_notification_subjects SET unreviewed_note='Ada retained plaintext' WHERE user_id=2;",
@@ -309,6 +313,10 @@ class PrivacyDeletionTest {
             assertEquals(401,http.send(me,java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode());
             assertThrows(com.newaveflow.exception.AppException.class,()->app.getBean(com.newaveflow.service.AuthService.class).refresh(refresh));
             assertTrue(app.getBean(AdminUserService.class).getPendingUsers().stream().noneMatch(u->u.id().equals(1L)));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM praise_members WHERE user_id IS NULL AND active=false"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM praise_members WHERE user_id=2"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM praise_responses"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM praise_pdfs WHERE uploaded_by_id=2"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM tts_answers"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM tts_legacy_score WHERE id=2"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM tts_legacy_score WHERE id=3"));

@@ -6,13 +6,14 @@ import { AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Mic2, MicOff, CheckCircle2, CalendarCheck,
-  MessageSquare, PenLine, GraduationCap
+  MessageSquare, GraduationCap
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import Button from '../components/common/Button'
+import VoteReceipt from '../components/common/VoteReceipt'
 import WeekNavigator from '../components/common/WeekNavigator'
-import { getWeekStartByOffset, formatUpdatedAt, toApiDate, weekLabels } from '../utils/date'
+import { getWeekStartByOffset, toApiDate, weekLabels } from '../utils/date'
 import { getISOWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import { prayerVoteApi } from '../api/prayerVote'
@@ -57,13 +58,14 @@ export default function PrayerMeetingPage() {
 
   const saveMutation = useMutation({
     mutationFn: (payload) => prayerVoteApi.save(payload).then(r => r.data),
-    onSuccess: async () => {
+    onSuccess: async (savedVote, payload) => {
+      queryClient.setQueryData(['prayer-vote', payload.weekStart, user?.id], savedVote)
+      setEditingPrayer(false)
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['prayer-vote', weekStart, user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ['prayer-vote', payload.weekStart, user?.id] }),
         queryClient.invalidateQueries({ queryKey: ['prayer-participation'] }),
         queryClient.invalidateQueries({ queryKey: ['tts-week'] }),
       ])
-      setEditingPrayer(false)
     },
     onError: (err) => alert(err.response?.data?.message || '투표 저장 중 오류가 발생했습니다.'),
   })
@@ -127,9 +129,12 @@ export default function PrayerMeetingPage() {
         ) : prayerSubmitted ? (
           <PrayerSubmittedCard
             vote={voteData}
+            saving={saveMutation.isPending}
             micLabel={micGroup.label}
             onEdit={() => { setPrayer({ status: voteData.status, micAvailable: voteData.status === 'ABSENT' ? null : !voteData.reason, reason: voteData.status === 'ABSENT' ? voteData.reason || '' : '', micReason: voteData.status === 'ABSENT' ? '' : voteData.reason || '' }); setEditingPrayer(true) }}
             isMicTurn={isMicTurn}
+            tueDate={tueDate}
+            thuDate={thuDate}
           />
         ) : (
           <PrayerForm
@@ -235,27 +240,23 @@ function VoteButton({ active, onClick, label, sub, color }) {
   )
 }
 
-function PrayerSubmittedCard({ vote, micLabel, onEdit }) {
+function PrayerSubmittedCard({ vote, micLabel, onEdit, isMicTurn, tueDate, thuDate, saving }) {
   const statusMap = { TUE: '화요일 참석', THU: '목요일 참석', ABSENT: '둘 다 불참' }
   const isAbsent  = vote?.status === 'ABSENT'
+  const dateLabel = isAbsent
+    ? `${tueDate}(화) · ${thuDate}(목)`
+    : `${vote.status === 'TUE' ? `${tueDate}(화)` : `${thuDate}(목)`} · 온라인 기도모임`
+  const details = []
+  if (!isAbsent && (isMicTurn || vote.reason)) {
+    details.push({ label: '마이크', value: vote.reason ? '켜기 어려워요' : '켤 수 있어요' })
+  }
+  if (vote.reason) {
+    details.push({ label: isAbsent ? '불참 사유' : '마이크 사용이 어려운 사유', value: vote.reason })
+  }
+  details.push({ label: '마이크 순서', value: <GradeLabel value={micLabel} /> })
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 size={18} className="text-primary-500" />
-          <span className="font-bold text-gray-900 text-base">기도모임 투표 완료</span>
-        </div>
-        <button onClick={onEdit} className="min-h-11 px-3 rounded-xl text-sm text-primary-700 font-bold flex items-center gap-1.5">
-          <PenLine size={16} /> 수정
-        </button>
-      </div>
-      <div className="bg-gray-50 rounded-xl px-4 py-4 flex flex-col gap-4">
-        <Row label="투표 결과" value={statusMap[vote?.status]} absent={isAbsent} />
-        {vote?.reason && <Row label={isAbsent ? "불참 사유" : "마이크 사용이 어려운 사유"} value={vote.reason} />}
-        <Row label="마이크 순서" value={<>🎤 <GradeLabel value={micLabel} /></>} muted />
-        {vote?.updatedAt && <Row label="마지막 수정" value={formatUpdatedAt(vote.updatedAt)} muted />}
-      </div>
-    </Card>
+    <VoteReceipt title="기도모임" result={statusMap[vote.status]} dateLabel={dateLabel}
+      absent={isAbsent} details={details} updatedAt={vote.updatedAt} onEdit={onEdit} saving={saving} />
   )
 }
 
@@ -271,11 +272,4 @@ function ReasonInput({ value, onChange, placeholder, required, disabled, label }
       <textarea id={id} disabled={disabled} required={required} rows={3} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-base resize-y min-h-28 focus:outline-none focus:ring-2 focus:ring-red-200 text-gray-700 placeholder-gray-500 font-medium bg-gray-50" />
     </div>
   )
-}
-
-function Row({ label, value, muted, absent }) {
-  return <div className="flex flex-col gap-1 min-w-0">
-    <span className="text-sm font-medium text-gray-600">{label}</span>
-    <span className={`${muted ? 'text-sm text-gray-600' : absent ? 'text-base text-red-700' : 'text-base text-gray-900'} font-semibold leading-relaxed [overflow-wrap:anywhere]`}>{value}</span>
-  </div>
 }

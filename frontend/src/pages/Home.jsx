@@ -14,8 +14,7 @@ import useTtsAttention from '../hooks/useTtsAttention'
 import useToday from '../hooks/useToday'
 import { ttsToday } from '../utils/ttsPeriod'
 import { knownRead, hasRotationThisWeek } from '../utils/attention'
-import { MENU_GROUPS } from '../utils/menuGroups'
-import NewFamilyEntry from '../components/NewFamilyEntry'
+import useManagementMenuGroups from '../hooks/useManagementMenuGroups'
 import { evangelismApi } from '../api/evangelism'
 
 const PERSONAL_GROUPS = [
@@ -59,6 +58,7 @@ function MenuGrid({ items, states = {} }) {
 
 export default function Home() {
   const user = useAuthStore(s => s.user)
+  const managementGroups = useManagementMenuGroups()
   const today = useToday(ttsToday)
   const online = useSyncExternalStore(onlineManager.subscribe, () => onlineManager.isOnline())
   const weekly = useWeeklyTasks()
@@ -94,18 +94,18 @@ export default function Home() {
           if (schedule.readError) schedule.retryReads()
         }}>다시 확인</button>}
       </div>}
-      <NewFamilyEntry />
       {PERSONAL_GROUPS.map((group, index) => <Reveal key={group.title} delay={index * .03}>
         <section aria-label={group.title}>
           <h2 className="ui-section-title mb-3 px-1">{group.title}</h2>
           <MenuGrid items={group.items} states={states} />
         </section>
       </Reveal>)}
-      {canManage && <section aria-label="관리 메뉴" className="space-y-5 border-t border-gray-200 pt-5">
-        <Link to="/admin" className="brand-action flex min-h-12 items-center justify-between rounded-xl px-3 font-semibold">
-          관리 현황·메뉴 검색<ChevronRight size={18} aria-hidden="true" />
-        </Link>
-        {MENU_GROUPS.map(group => <section key={group.title} aria-label={`관리 · ${group.title}`}>
+      {managementGroups.length > 0 && <section aria-label="관리 메뉴" className="space-y-5 border-t border-gray-200 pt-5">
+        {canManage && <Link to="/officers" className="brand-action flex min-h-12 items-center justify-between rounded-xl px-3 font-semibold">임원 업무·조직도<ChevronRight size={18} aria-hidden="true" /></Link>}
+        {canManage ? <Link to="/admin" className="brand-action flex min-h-12 items-center justify-between rounded-xl px-3 font-semibold">
+          공통 관리·메뉴 검색<ChevronRight size={18} aria-hidden="true" />
+        </Link> : <h2 className="ui-section-title px-1">관리 메뉴</h2>}
+        {managementGroups.map(group => <section key={group.title} aria-label={`관리 · ${group.title}`}>
           <h3 className="ui-section-title mb-3 px-1">{group.title}</h3>
           <MenuGrid items={group.items} />
         </section>)}

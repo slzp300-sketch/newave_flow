@@ -10,17 +10,20 @@ import { weeklyReportsApi, downloadReport, reportError } from '../api/weeklyRepo
 import { supplementFromEditor, statusFromEditor, reportWeekLabel } from '../utils/weeklyReport'
 import ClassSupplementForm, { GenderSelect, StatusSelect } from '../components/weekly-report/ClassSupplementForm'
 import '../components/weekly-report/WeeklyReport.css'
+import useOfficerAccess from '../hooks/useOfficerAccess'
 
 const commonFields = { department: '부서명', author: '담당자', director: '교육부총괄', pastor: '담임목사', singer: '찬양 인도', prayer: '기도', scripture: '성경 본문', sermon: '설교 제목', preacher: '설교자', offering: '헌금 (원)' }
 const longFields = { notes: '부서 공통 특이사항', monthPlan: '이번 달 계획', nextPlan: '다음 달 계획' }
 
 export default function AdminWeeklyReportPage() {
+  const access = useOfficerAccess()
   const [offset, setOffset] = useState(0)
   const date = toApiDate(getWeekStartByOffset(offset, 0))
-  return <WeeklyReportWeek key={date} date={date} offset={offset} onOffset={setOffset} />
+  if (access.isError || !access.data?.canReport) return <div className="wr-page"><Header title="주간보고서 관리" showBack /><main className="wr-body"><p role="status">{access.isError ? '권한을 확인하지 못했습니다.' : !access.data ? '권한 확인 중…' : '서기·목사님·관리자가 이용할 수 있습니다.'}</p>{access.isError && <Button onClick={() => access.refetch()}>다시 확인</Button>}</main></div>
+  return <WeeklyReportWeek key={date} date={date} offset={offset} onOffset={setOffset} canNewFamily={access.data.canNewFamily} />
 }
 
-function WeeklyReportWeek({ date, offset, onOffset }) {
+function WeeklyReportWeek({ date, offset, onOffset, canNewFamily }) {
   const qc = useQueryClient()
   const [draft, setDraft] = useState(null)
   const [message, setMessage] = useState('')
@@ -48,12 +51,12 @@ function WeeklyReportWeek({ date, offset, onOffset }) {
       refresh(); setMessage(result.status === 'cancelled' ? '저장을 취소했습니다.' : `${format.toUpperCase()} ${result.status === 'saved' ? '저장 완료' : '다운로드 시작'}`)
     } catch (e) { setError(await reportError(e)); refresh() } finally { setDownloadBusy(false) }
   }
-  return <div className="wr-page"><Header title="출석 관리 · 주간보고서" showBack /><main className="wr-body">
+  return <div className="wr-page"><Header title="주간보고서 관리" showBack /><main className="wr-body">
     <WeekNavigator offset={offset} onChange={onOffset} disabled={busy || !!draft || activeClass != null} title={`${labels.monthWeek} 주간보고서`} sub={reportWeekLabel(date)} range={`${formatShort(date)} 주일 · 전체 예배 합산`} />
     <div className="wr-row"><Link to="/admin/student-attendance">학생별 출석 기록 보기</Link><Button variant="secondary" size="sm" disabled={busy} onClick={refresh}>최신 자료 확인</Button></div>
     {report.isError && <div className="wr-error" role="alert">집계를 불러오지 못했습니다. {report.error.response?.data?.message}<Button variant="secondary" size="sm" onClick={() => report.refetch()}>다시 시도</Button></div>}
     {!data ? <p role="status">집계 중…</p> : <>
-      <section className="wr-panel wr-overview"><div className="wr-row"><h2>청소년부 주간보고서</h2><Link className="wr-team-link" to="/new-family">새가족팀 관리</Link></div>
+      <section className="wr-panel wr-overview"><div className="wr-row"><h2>청소년부 주간보고서</h2>{canNewFamily && <Link className="wr-team-link" to="/new-family">새가족팀 관리</Link>}</div>
         <dl className="wr-progress ui-metrics" aria-label="주간보고서 취합 현황"><div><dt>반·팀 제출</dt><dd>{data.classes.filter(c => c.submitted && !c.changed).length}<small> / {data.classes.length}</small></dd></div><div><dt>교사 출석 확인</dt><dd>{data.teachers.filter(t => t.status !== 'UNKNOWN' && t.gender).length}<small> / {data.teachers.length}</small></dd></div><div><dt>보완할 항목</dt><dd>{data.issues.length}<small>개</small></dd></div></dl>
       </section>
       {data.issues.length > 0 && <details className="wr-issues"><DisclosureSummary>누락·수정 {data.issues.length}건</DisclosureSummary><ul>{data.issues.map((issue, i) => <li key={i}>{issue.message}</li>)}</ul><p>미제출 반은 합계 제외 · 보완 후 다운로드 가능</p></details>}
@@ -65,7 +68,7 @@ function WeeklyReportWeek({ date, offset, onOffset }) {
       </fieldset></details>
       <details className="wr-panel"><DisclosureSummary>반·새가족팀 제출 자료</DisclosureSummary>{data.classes.map(c => <div className="wr-table-row" key={c.classId}>
         <div className="wr-row"><div><strong>{c.grade} {c.className}</strong><p className="wr-muted">{c.teacherName || '담당 교사 미배정'} · {c.changed ? '수정 후 재제출 필요' : c.submitted ? '제출 완료' : '미제출'}{c.legacy ? ' · 이전 제출 자료' : ''}</p>{c.correctionReason && <p className="wr-help">보완: {c.correctionReason}</p>}</div><Button variant="secondary" size="sm" disabled={busy || (activeClass != null && activeClass !== c.classId)} onClick={() => setActiveClass(activeClass === c.classId ? null : c.classId)}>{activeClass === c.classId ? '닫기' : '내용 확인·보완'}</Button></div>
-        {activeClass === c.classId && (c.classId < 0 ? <div className="wr-form"><p className="wr-help">새가족팀에서 수정 후 재제출</p>{c.students.map(s=><p key={s.id}>{s.name} · {({FIRST:'금주 새 인원',FAMILY:'새가족',FOLLOWUP:'등록 미정 재방문'})[s.category]||s.category} · {({PRESENT:'출석',ABSENT:'불참',LATE:'지각',UNKNOWN:'미확인'})[s.status]}</p>)}<Link to="/new-family">새가족팀 관리로 이동</Link></div> : <ClassCorrection key={c.classId} source={c} date={date} onSaved={() => { setActiveClass(null); refresh() }} />)}
+        {activeClass === c.classId && (c.classId < 0 ? <div className="wr-form"><p className="wr-help">새가족팀에서 수정 후 재제출</p>{c.students.map(s=><p key={s.id}>{s.name} · {({FIRST:'금주 새 인원',FAMILY:'새가족',FOLLOWUP:'등록 미정 재방문'})[s.category]||s.category} · {({PRESENT:'출석',ABSENT:'불참',LATE:'지각',UNKNOWN:'미확인'})[s.status]}</p>)}{canNewFamily && <Link to="/new-family">새가족팀 관리로 이동</Link>}</div> : <ClassCorrection key={c.classId} source={c} date={date} onSaved={() => { setActiveClass(null); refresh() }} />)}
       </div>)}</details>
       <details className="wr-panel"><DisclosureSummary>청소년부 교사 출석</DisclosureSummary>{data.teachers.map(t => <TeacherCorrection key={`${t.id}:${t.revision}`} teacher={t} date={date} onSaved={refresh} />)}</details>
       {(draft || activeClass != null) && <p className="wr-issues">저장하거나 편집을 닫으면 다운로드할 수 있습니다.</p>}
@@ -80,7 +83,7 @@ function WeeklyReportWeek({ date, offset, onOffset }) {
   </main></div>
 }
 
-function ClassCorrection({ source, date, onSaved }) {
+export function ClassCorrection({ source, date, onSaved }) {
   const query = useQuery({ queryKey: ['weekly-class-editor', source.classId, date], queryFn: () => weeklyReportsApi.editor(source.classId, date).then(r => r.data) })
   const [draft, setDraft] = useState(null)
   const [attendance, setAttendance] = useState(null)
@@ -95,7 +98,7 @@ function ClassCorrection({ source, date, onSaved }) {
   const freeze = () => { if (!baseHash) { setBaseHash(query.data.sourceHash); setDraft(value); setAttendance(statuses) } }
   return <div><ClassSupplementForm editor={query.data} value={value} onChange={next => { freeze(); setDraft(next) }} attendance={statuses} onAttendance={next => { freeze(); setAttendance(next) }} disabled={save.isPending} /><fieldset className="wr-form" disabled={save.isPending}><label>관리자 보완 사유<input value={reason} maxLength={500} onChange={e => { freeze(); setReason(e.target.value) }} placeholder="예: 담당 교사 확인 후 누락 입력" /></label><Button size="sm" disabled={!reason.trim() || Object.values(statuses).some(s => s === 'UNKNOWN')} onClick={() => save.mutate()}>보완 저장·반 제출 완료</Button></fieldset>{error && <p className="wr-error" role="alert">{error}</p>}</div>
 }
-function TeacherCorrection({ teacher, date, onSaved }) {
+export function TeacherCorrection({ teacher, date, onSaved }) {
   const [data, setData] = useState({ gender: teacher.gender, status: teacher.status, reason: '' })
   const [error, setError] = useState('')
   const save = useMutation({ mutationFn: () => weeklyReportsApi.teacher(date, teacher.id, data), onSuccess: onSaved, onError: async e => setError(await reportError(e)) })

@@ -19,6 +19,7 @@ public class AdminUserService {
     private final UserStatusEventRepository statusEvents;
     private final AccountDeletionRequestRepository deletions;
     private final jakarta.persistence.EntityManager entityManager;
+    private final OfficerAccessService officerAccess;
     private record ActorIdentity(Long id, long authVersion) {}
 
     public record SuspendedUser(UserInfo user, LocalDateTime suspendedAt, long authVersion, String reason) {}
@@ -127,6 +128,8 @@ public class AdminUserService {
         var locked = lockAccounts();
         User currentActor = requireActor(locked, identity, false);
         User user = target(locked, userId);
+        if(newRole == User.Role.TEACHER && !officerAccess.positions(user).isEmpty())
+            throw AppException.conflict("조직도에서 현재 직책을 해제한 뒤 교사로 변경해주세요.");
         if (!user.isActive() || user.isSuspended()) throw AppException.conflict("이용 중인 계정만 권한을 변경할 수 있습니다.");
         if (currentActor.getRole() != User.Role.ADMIN && (newRole == User.Role.ADMIN || user.getRole() == User.Role.ADMIN))
             throw AppException.forbidden("최종관리자 권한은 최종관리자만 변경할 수 있습니다.");

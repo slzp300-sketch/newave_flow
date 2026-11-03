@@ -30,3 +30,9 @@ CREATE TEMP TABLE privacy_content_candidates (
   table_name text NOT NULL,column_name text NOT NULL,row_id bigint NOT NULL,before_md5 text NOT NULL,
   PRIMARY KEY(table_name,column_name,row_id)
 ) ON COMMIT DROP;
+-- Every stored praise score must be reviewed by content, including files uploaded by others.
+CREATE TEMP TABLE privacy_praise_pdf_review (
+ id bigint PRIMARY KEY,
+ content_md5 text NOT NULL,
+ decision text NOT NULL CHECK(decision IN ('KEEP_REVIEWED','DELETE'))
+) ON COMMIT DROP;

@@ -13,6 +13,9 @@ const FindAccountPage = lazy(() => import('../pages/FindAccountPage'))
 const Home = lazy(() => import('../pages/Home'))
 const AttendancePage = lazy(() => import('../pages/AttendancePage'))
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'))
+const OfficerPage = lazy(() => import('../pages/OfficerPage'))
+const PraisePage = lazy(() => import('../pages/PraisePage'))
+const AdminAttendanceOverviewPage = lazy(() => import('../pages/AdminAttendanceOverviewPage'))
 const CalendarPage = lazy(() => import('../pages/CalendarPage'))
 const CalendarAdminPage = lazy(() => import('../pages/CalendarAdminPage'))
 const PrayerMeetingPage = lazy(() => import('../pages/PrayerMeetingPage'))
@@ -220,6 +223,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
           { path: '/menu',       element: <Navigate to="/" replace /> },
           { path: '/attendance', element: <AttendancePage /> },
           { path: '/new-family', element: <NewFamilyPage /> },
+          { path: '/praise', element: <PraisePage /> },
           { path: '/calendar',   element: <CalendarPage /> },
           { path: '/checklist',  element: <Navigate to="/" replace /> },
           { path: '/tts',        element: <TTSPage /> },
@@ -241,6 +245,8 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
             children: [
               { path: '/admin',             element: <AdminDashboard /> },
+              { path: '/officers', element: <OfficerPage /> },
+              { path: '/admin/attendance', element: <AdminAttendanceOverviewPage /> },
               { path: '/admin/content-reports', element: <ContentReportsAdminPage /> },
               { path: '/admin/content-photos', element: <ContentPhotosAdminPage /> },
               { path: '/admin/teachers',    element: <AdminTeacherManagePage /> },
