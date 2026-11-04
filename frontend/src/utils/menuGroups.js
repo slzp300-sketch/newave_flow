@@ -2,21 +2,22 @@ import { FileText, CheckSquare, UserCog, ShieldCheck } from 'lucide-react'
 
 export const MENU_GROUPS = [
   {
-    title: '담당 업무', icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50',
+    title: '담당 업무', tone: 'violet', icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50',
     items: [
       { to: '/admin/weekly-report', title: '주간보고서 관리', desc: '자동 집계·보완·한글/PDF', capability: 'weeklyReport' },
       { to: '/new-family', title: '새가족팀 관리', desc: '첫 방문·출결·과정·등반·반 배정', capability: 'newFamily' },
       { to: '/praise', title: '찬양팀', desc: '명단·로테이션·콘티·기도회', capability: 'praise' },
+      { to: '/intercession', title: '중보기도팀', desc: '모임·기도제목·공유 자료', capability: 'intercession' },
     ],
   },
   {
-    title: '회원 및 조직 관리',
+    title: '회원 및 조직 관리', tone: 'blue',
     icon: UserCog,
     color: 'text-primary-600',
     bg: 'bg-primary-50',
     desc: '신규가입, 권한, 반 배정, 제적 관리',
     items: [
-      { to: '/officers?view=organization', title: '임원 조직도', desc: '직책·담당자·활동연도' },
+      { to: '/officers', title: '임원 업무·조직도', desc: '직책·담당자·활동연도' },
       { to: '/admin/pending-users', title: '가입 승인·이용 정지', desc: '신규 가입 승인과 정지 계정 확인' },
       { to: '/admin/teachers', title: '교사 권한 관리', desc: '일반/임원 교사 권한 부여 및 관리' },
       { to: '/admin/class-assignment', title: '반 담임/부담임 배정', desc: '가입된 교사를 학년/반에 배정' },
@@ -25,7 +26,7 @@ export const MENU_GROUPS = [
     ]
   },
   {
-    title: '모임 및 회의 관리',
+    title: '모임 및 회의 관리', tone: 'amber',
     icon: FileText,
     color: 'text-primary-600',
     bg: 'bg-primary-50',
@@ -38,7 +39,7 @@ export const MENU_GROUPS = [
     ]
   },
   {
-    title: '출석 및 활동 관리',
+    title: '출석 및 활동 관리', tone: 'teal',
     icon: CheckSquare,
     color: 'text-primary-600',
     bg: 'bg-primary-50',
@@ -51,7 +52,7 @@ export const MENU_GROUPS = [
     ]
   },
   {
-    title: '안전한 이용 관리', icon: ShieldCheck,
+    title: '안전한 이용 관리', tone: 'slate', icon: ShieldCheck,
     color: 'text-primary-600', bg: 'bg-primary-50',
     desc: '신고와 사진 게시 검토',
     items: [
@@ -61,10 +62,28 @@ export const MENU_GROUPS = [
   }
 ]
 
-export function managementMenuGroups(role, canManageNewFamily = false, canReport = false, canPraise = false) {
+export const PERSONAL_GROUPS = [
+  { title: '체크·참여', tone: 'teal', items: [
+    { to: '/tts', title: 'TTS', task: 'tts', pending: '미체크' },
+    { to: '/attendance', title: '주일 출석', task: 'attendance', pending: '미제출' },
+    { to: '/event-attendance', title: '행사 출석', task: 'event', pending: '미제출' },
+    { to: '/meeting/prayer', title: '기도모임', task: 'prayer', pending: '미응답' },
+    { to: '/meeting/sat', title: '교사회의', task: 'meeting', pending: '미응답' },
+  ] },
+  { title: '기록·일정', tone: 'amber', items: [
+    { to: '/minutes', title: '회의록·영상', task: 'minutes', pending: '미확인' },
+    { to: '/evangelism', title: '전도 로테이션', task: 'rotation' },
+    { to: '/calendar', title: '행사일정', task: 'schedule' },
+  ] },
+  { title: '학생·반', tone: 'blue', items: [
+    { to: '/roster', title: '교적부' }, { to: '/class-manage', title: '반 관리' },
+  ] },
+]
+
+export function managementMenuGroups(role, canManageNewFamily = false, canReport = false, canPraise = false, canIntercession = false) {
   const canManageAll = ['ADMIN', 'PASTOR', 'EXECUTIVE'].includes(role)
   return MENU_GROUPS.map(group => ({ ...group, items: group.items.filter(item =>
-    item.capability === 'newFamily' ? canManageNewFamily : item.capability === 'weeklyReport' ? canReport : item.capability === 'praise' ? canPraise : canManageAll
+    item.capability === 'newFamily' ? canManageNewFamily : item.capability === 'weeklyReport' ? canReport : item.capability === 'praise' ? canPraise : item.capability === 'intercession' ? canIntercession : canManageAll
   ) })).filter(group => group.items.length > 0)
 }
 

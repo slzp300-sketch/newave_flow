@@ -24,7 +24,8 @@ BEGIN
     'weekly_class_supplements','teacher_worship_attendances','weekly_department_reports','weekly_report_exports',
     'new_family_registry','new_family_members','new_family_checks','new_family_submissions','new_family_references',
     'officer_registry','officer_appointments','officer_changes',
-    'praise_terms','praise_members','praise_weeks','praise_responses','praise_prayers','praise_pdfs')) THEN
+    'praise_terms','praise_members','praise_weeks','praise_responses','praise_prayers','praise_pdfs',
+    'intercession_registry','intercession_members','intercession_requests','intercession_meetings')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -41,7 +42,8 @@ BEGIN
         'deactivation_requests','event_student_attendances','kakao_auth_flows','apple_accounts','apple_auth_flows',
         'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
         'user_status_events','moderated_photos','notification_preferences','push_devices','tts_linked_snapshots','teacher_worship_attendances',
-        'officer_appointments','officer_changes','praise_members','praise_responses','praise_pdfs'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'officer_appointments','officer_changes','praise_members','praise_responses','praise_pdfs',
+        'intercession_members','intercession_requests','intercession_meetings'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
   -- Binary scores may contain names even when another teacher uploaded them.
   -- Require an exact reviewed file/hash inventory; never infer consent from the uploader.
   IF to_regclass('public.praise_pdfs') IS NOT NULL THEN
@@ -312,7 +314,16 @@ BEGIN
     DELETE FROM praise_responses WHERE user_id=req.user_id;
     UPDATE praise_pdfs SET uploaded_by_id=NULL WHERE uploaded_by_id=req.user_id;
   END IF;
-  DELETE FROM users WHERE id=req.user_id;
+    IF to_regclass('public.intercession_members') IS NOT NULL THEN
+      DELETE FROM intercession_members WHERE id=req.user_id;
+      DELETE FROM intercession_requests WHERE author_id=req.user_id;
+      UPDATE intercession_registry SET revision=revision+1;
+      -- Discard prepared copies, including names embedded in previously shared text.
+      -- Other authors' free text remains covered by the reviewed redaction inventory above.
+      UPDATE intercession_meetings SET paper=NULL,prepared_at=NULL,revision=revision+1;
+      UPDATE intercession_meetings SET host_id=NULL,zoom_url='' WHERE host_id=req.user_id;
+    END IF;
+    DELETE FROM users WHERE id=req.user_id;
   GET DIAGNOSTICS changed=ROW_COUNT;
   IF changed<>1 THEN RAISE EXCEPTION 'Account delete count mismatch'; END IF;
 

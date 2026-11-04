@@ -3,6 +3,17 @@ import assert from 'node:assert/strict'
 import { QueryClient } from '@tanstack/react-query'
 import { eventRangeKey, invalidateAfterWrite } from '../src/api/queryPolicy.js'
 
+test('prayer votes and team changes refresh intercession views and access', async () => {
+  for (const url of ['/prayer-votes','/intercession/team','/officers/organization/2026/INTERCESSION']) {
+    const qc=new QueryClient()
+    for (const key of ['intercession','intercession-list','intercession-detail','tts-week']) qc.setQueryData([key],{})
+    await invalidateAfterWrite(qc,url)
+    for (const key of ['intercession','intercession-list','intercession-detail']) assert.equal(qc.getQueryState([key]).isInvalidated,true)
+    if (url==='/intercession/team') assert.equal(qc.getQueryState(['tts-week']).isInvalidated,false)
+    qc.clear()
+  }
+})
+
 test('Home and Calendar ranges fetch independently regardless of visit order', async () => {
   for (const reverse of [false,true]) {
     const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 300000 } } })

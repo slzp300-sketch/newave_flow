@@ -9,6 +9,7 @@ import OfficerOrganization from '../components/officers/OfficerOrganization'
 import useOfficerAccess from '../hooks/useOfficerAccess'
 import useManagementMenuGroups from '../hooks/useManagementMenuGroups'
 import { officerDuties } from '../utils/officers'
+import { featureTone } from '../utils/featureAppearance'
 import { weeklyReportsApi } from '../api/weeklyReports'
 import { getWeekStartByOffset, toApiDate } from '../utils/date'
 import './OfficerPage.css'
@@ -26,7 +27,7 @@ export default function OfficerPage() {
   </main></div>
 }
 export function OfficerLinks({ items }) {
-  return <div className="officer-grid">{items.map(item => <Link className="officer-link brand-action motion-tap" to={item.to} key={item.to}><FeatureIcon path={item.to.split('?')[0]} size={19} /><span><strong>{item.title}</strong>{item.detail && <small>{item.detail}</small>}</span><span aria-hidden="true">›</span></Link>)}</div>
+  return <div className="officer-grid">{items.map(item => <Link data-feature-tone={featureTone(item.to)} className="officer-link feature-menu-link brand-action motion-tap" to={item.to} key={item.to}><FeatureIcon path={item.to.split('?')[0]} size={19} /><span><strong>{item.title}</strong>{item.detail && <small>{item.detail}</small>}</span><span aria-hidden="true">›</span></Link>)}</div>
 }
 function OfficerDuties({ access }) {
   const date = toApiDate(getWeekStartByOffset(0, 0))

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { parentPath } from '../../utils/navigation'
+import { featureTone } from '../../utils/featureAppearance'
 import { ChevronLeft, LogOut, Bell } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '../../store/authStore'
@@ -45,7 +46,7 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
   }
 
   return (
-    <header ref={headerRef} className="app-header sticky top-0 z-40 bg-white border-b border-gray-200">
+    <header ref={headerRef} data-feature-tone={featureTone(location.pathname)} className="app-header sticky top-0 z-40 bg-white border-b border-gray-200">
       <div className="app-header-row px-4 flex items-center gap-2">
       {showBack && (
         <button
@@ -56,7 +57,7 @@ export default function Header({ title, showBack = false, onBack, showLogout = f
           <ChevronLeft size={22} className="text-gray-900" />
         </button>
       )}
-      <h1 className="flex flex-1 min-w-0 items-center gap-2 py-2 text-lg font-semibold text-gray-900 tracking-tight">
+      <h1 data-feature-title={title !== 'Newave Flow' || undefined} className="flex flex-1 min-w-0 items-center gap-2 py-2 text-lg font-semibold text-gray-900 tracking-tight">
         {title === 'Newave Flow' ? <Brand /> : <>
           <span aria-hidden="true" className="brand-heading-icon"><FeatureIcon path={location.pathname} size={20} /></span>
           <FitLabel maxLines={1}>{title}</FitLabel>

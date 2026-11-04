@@ -217,6 +217,15 @@ jobs:
           RUN_PRAISE_MIGRATION: 'true'
           PRAISE_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_praise_ci
         run: bash gradlew test --tests com.newaveflow.OfficerOrganizationMigrationTest --tests com.newaveflow.PraiseMigrationTest --no-daemon
+      - name: Create isolated intercession migration database
+        env:
+          PGPASSWORD: migration-ci-only
+        run: psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_intercession_ci'
+      - name: Verify intercession team and private request boundaries (V022)
+        env:
+          RUN_INTERCESSION_MIGRATION: 'true'
+          INTERCESSION_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_intercession_ci
+        run: bash gradlew test --tests com.newaveflow.IntercessionMigrationTest --no-daemon
       - name: Create isolated post-release migration database
         env:
           PGPASSWORD: migration-ci-only

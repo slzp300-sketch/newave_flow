@@ -8,41 +8,21 @@ import useManagementMenuGroups from '../hooks/useManagementMenuGroups'
 import SearchField from '../components/common/SearchField'
 import SegmentedControl from '../components/common/SegmentedControl'
 import { filterMenuGroups } from '../utils/navigation'
+import { featureTone } from '../utils/featureAppearance'
+import { PERSONAL_GROUPS } from '../utils/menuGroups'
 import useWeeklyTasks from '../hooks/useWeeklyTasks'
 import useWeeklyEvents from '../hooks/useWeeklyEvents'
 import useTtsAttention from '../hooks/useTtsAttention'
 import AttentionDot from '../components/common/AttentionDot'
 import useSafetyAttention from '../hooks/useSafetyAttention'
 
-const COMMON_GROUPS = [
-  {
-    title: '주간 체크',
-    items: [
-      { to: '/checklist',      title: '주간 체크 현황' },
-      { to: '/attendance',     title: '출석' },
-      { to: '/tts',            title: 'TTS' },
-      { to: '/meeting/prayer', title: '기도모임 투표' },
-      { to: '/meeting/sat',    title: '교사회의 체크' },
-    ],
-  },
-  {
-    title: '모임 및 일정',
-    items: [
-      { to: '/events',        title: '행사일정' },
-      { to: '/minutes',       title: '회의록 및 영상' },
-      { to: '/evangelism',    title: '전도 로테이션' },
-      { to: '/notifications', title: '알림' },
-    ],
-  },
-  {
-    title: '학생 및 반 관리',
-    items: [
-      { to: '/roster',           title: '교적부' },
-      { to: '/class-manage',     title: '반관리' },
-      { to: '/event-attendance', title: '행사 출석 체크' },
-    ],
-  },
-]
+const EXTRA_PERSONAL_MENUS = {
+  '체크·참여': [{ to: '/checklist', title: '주간 체크 현황' }],
+  '기록·일정': [{ to: '/notifications', title: '알림' }],
+}
+const COMMON_GROUPS = PERSONAL_GROUPS.map(group => ({ ...group,
+  items: [...group.items, ...(EXTRA_PERSONAL_MENUS[group.title] || [])],
+}))
 
 const DESCRIPTIONS = {
   '/safety/report': '문제 신고와 내 처리 내역 확인',
@@ -53,6 +33,7 @@ const DESCRIPTIONS = {
   '/meeting/prayer': '온라인 기도모임 참석 여부',
   '/meeting/sat': '토요일 교사회의 참석 기록',
   '/events': '달력과 목록으로 보는 교회 일정',
+  '/calendar': '달력과 목록으로 보는 교회 일정',
   '/minutes': '회의 내용과 영상 확인',
   '/evangelism': '이번 주 전도 담당과 순서',
   '/notifications': '새 소식과 확인할 알림',
@@ -67,7 +48,7 @@ export default function MenuPage() {
   const schedule = useWeeklyEvents()
   const tts = useTtsAttention()
   const safety = useSafetyAttention()
-  const attention = path => path === '/tts' ? tts.pending : path === '/events' ? schedule.hasNew
+  const attention = path => path === '/tts' ? tts.pending : ['/events', '/calendar'].includes(path) ? schedule.hasNew
     : path === '/admin/content-reports' ? (safety.data?.openCount || safety.data?.reviewingCount)
     : path === '/admin/content-photos' ? safety.data?.pendingPhotoCount
     : path === '/checklist' ? tasks.tasks.some(t => t.state === 'pending') : tasks.needsAction(path)
@@ -91,13 +72,13 @@ export default function MenuPage() {
         {search && <p role="status" className="text-sm text-gray-500">검색 결과 <strong className="text-gray-900">{count}개</strong></p>}
         {visibleGroups.map((group, gi) => (
           <Reveal key={group.title} delay={Math.min(gi * 0.04, 0.12)}>
-            <h2 className="ui-section-title mb-3 px-1">{group.title}</h2>
+            <h2 data-feature-tone={group.tone} className="menu-group-title ui-section-title mb-3 px-1">{group.title}</h2>
             <div className="ui-list">
               {group.items.map(item => (
-                <Link key={item.to} to={item.to} className="brand-action ui-list-row motion-tap relative">
-                  <AttentionDot show={attention(item.to)} label={item.to === '/events' ? '이번 주 새 일정이 있어요' : '해야 할 일이 있어요'} />
-                  <span className="brand-action-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"><FeatureIcon path={item.to} /></span>
-                  <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-gray-900">{item.title}</span>
+                <Link key={item.to} to={item.to} data-feature-tone={featureTone(item.to)} className="feature-menu-link brand-action ui-list-row motion-tap relative">
+                  <AttentionDot show={attention(item.to)} label={['/events', '/calendar'].includes(item.to) ? '이번 주 새 일정이 있어요' : '해야 할 일이 있어요'} />
+                  <span className="feature-menu-icon"><FeatureIcon path={item.to} /></span>
+                  <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{item.title}</span>
                     </span>
                   <ChevronRight size={17} aria-hidden="true" className="shrink-0 text-gray-400" />
                 </Link>

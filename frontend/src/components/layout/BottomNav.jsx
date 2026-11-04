@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Home } from 'lucide-react'
 import { navigationSection } from '../../utils/navigation'
+import { featureTone } from '../../utils/featureAppearance'
 import { LayoutGroup, motion } from 'framer-motion'
 import { useMotionPreference } from '../common/Motion'
 import FeatureIcon from '../common/FeatureIcon'
@@ -24,6 +25,7 @@ export default function BottomNav() {
           <li key={to} className="flex-1">
             <Link
               to={to}
+              data-feature-tone={featureTone(to)}
               aria-current={isActive ? 'location' : undefined}
               className={
                 `brand-nav-link motion-tap relative isolate flex min-h-[68px] flex-col justify-center items-center py-2 gap-1 text-xs font-medium

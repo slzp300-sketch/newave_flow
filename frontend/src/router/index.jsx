@@ -15,6 +15,7 @@ const AttendancePage = lazy(() => import('../pages/AttendancePage'))
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'))
 const OfficerPage = lazy(() => import('../pages/OfficerPage'))
 const PraisePage = lazy(() => import('../pages/PraisePage'))
+const IntercessionPage = lazy(() => import('../pages/IntercessionPage'))
 const AdminAttendanceOverviewPage = lazy(() => import('../pages/AdminAttendanceOverviewPage'))
 const CalendarPage = lazy(() => import('../pages/CalendarPage'))
 const CalendarAdminPage = lazy(() => import('../pages/CalendarAdminPage'))
@@ -224,6 +225,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
           { path: '/attendance', element: <AttendancePage /> },
           { path: '/new-family', element: <NewFamilyPage /> },
           { path: '/praise', element: <PraisePage /> },
+          { path: '/intercession', element: <IntercessionPage /> },
           { path: '/calendar',   element: <CalendarPage /> },
           { path: '/checklist',  element: <Navigate to="/" replace /> },
           { path: '/tts',        element: <TTSPage /> },

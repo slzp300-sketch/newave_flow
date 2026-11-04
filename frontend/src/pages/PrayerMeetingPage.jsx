@@ -17,6 +17,7 @@ import { getWeekStartByOffset, toApiDate, weekLabels } from '../utils/date'
 import { getISOWeek, startOfWeek, addWeeks, format, addDays } from 'date-fns'
 import useAuthStore from '../store/authStore'
 import { prayerVoteApi } from '../api/prayerVote'
+import PrayerMeetingLinks from '../components/intercession/PrayerMeetingLinks'
 
 const ROTATION_LABELS = [
   { key: 0, grades: ['중1', '고1'], label: '중1 · 고1' },
@@ -124,6 +125,7 @@ export default function PrayerMeetingPage() {
       </div>
 
       <div className="px-4 py-5">
+        <PrayerMeetingLinks week={weekStart}/>
         {voteLoading ? (
           <Card className="py-8 text-center text-base text-gray-600">불러오는 중...</Card>
         ) : prayerSubmitted ? (
