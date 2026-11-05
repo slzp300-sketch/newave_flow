@@ -8,6 +8,12 @@ export const STORE_REMIND_INTERVAL = 24 * 60 * 60 * 1000
 export const STORE_CACHE_KEY = 'newave-ios-store-version-v1'
 export const STORE_DISMISS_KEY = 'newave-ios-store-dismiss-v1'
 
+export function storeLookupUrl(timestamp = Date.now()) {
+  // Apple's fixed lookup URL can retain yesterday's release after a new version is live.
+  // Share one cache key per check window, without sending any device or account identifiers.
+  return `${STORE_LOOKUP_URL}&t=${Math.floor(timestamp / STORE_CHECK_INTERVAL)}`
+}
+
 function versionParts(value) {
   if (typeof value !== 'string' || !/^\d{1,5}(?:\.\d{1,5}){0,2}$/.test(value)) return null
   return value.split('.').map(Number)
@@ -86,7 +92,7 @@ export function startStoreUpdateMonitor({ platform, app, http, storage, events, 
         && (cached.release === null || validRelease(cached.release, timestamp))
       if (fresh) { publish(info, cached.release); return }
       if (timestamp < nextAttemptAt) return
-      const response = await http.get({ url: STORE_LOOKUP_URL, responseType: 'json',
+      const response = await http.get({ url: storeLookupUrl(timestamp), responseType: 'json',
         connectTimeout: 8000, readTimeout: 8000 })
       if (stopped) return
       const release = readStoreRelease(response, now())

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { compareStoreVersions, iosVersionFromUserAgent, readStoreRelease, startStoreUpdateMonitor,
-  STORE_APP_ID, STORE_BUNDLE_ID, STORE_URL, STORE_LOOKUP_URL, STORE_CACHE_KEY, STORE_DISMISS_KEY,
+import { compareStoreVersions, iosVersionFromUserAgent, readStoreRelease, startStoreUpdateMonitor, storeLookupUrl,
+  STORE_APP_ID, STORE_BUNDLE_ID, STORE_URL, STORE_CACHE_KEY, STORE_DISMISS_KEY,
   STORE_CHECK_INTERVAL, STORE_RETRY_INTERVAL, STORE_REMIND_INTERVAL } from '../src/native/storeUpdate.js'
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -26,7 +26,7 @@ function setup(options = {}) {
         return { remove() { removed++; listeners.delete(name); return Promise.resolve() } }
       },
     },
-    http: { async get(request) { calls++; requests.push(request); return options.request ? options.request(calls) : response() } },
+    http: { async get(request) { calls++; requests.push(request); return options.request ? options.request(calls, request) : response() } },
   })
   return { task, values, notices, requests, events, calls: () => calls, removed: () => removed,
     advance: amount => { time += amount }, setOnline: value => { online = value },
@@ -65,7 +65,30 @@ test('only the matching published app is accepted, not a future release or respo
 test('startup checks native installed version and uses only the fixed public Apple lookup/link', async () => {
   const t = setup(); await tick()
   assert.deepEqual(t.last(), { currentVersion: '1.0.2', version: '1.0.3', url: STORE_URL })
-  assert.deepEqual(t.requests, [{ url: STORE_LOOKUP_URL, responseType: 'json', connectTimeout: 8000, readTimeout: 8000 }])
+  assert.deepEqual(t.requests, [{ url: storeLookupUrl(epoch), responseType: 'json', connectTimeout: 8000, readTimeout: 8000 }])
+  const lookup = new URL(t.requests[0].url)
+  assert.equal(lookup.origin + lookup.pathname, 'https://itunes.apple.com/lookup')
+  assert.deepEqual([...lookup.searchParams.keys()], ['id', 'country', 't'])
+  assert.equal(lookup.searchParams.get('id'), STORE_APP_ID)
+  assert.equal(lookup.searchParams.get('country'), 'kr')
+  t.task.stop()
+})
+
+test('a new release is found at the next check even when Apple caches each URL for a day', async () => {
+  const appleCache = new Map()
+  let publishedVersion = '1.0.3'
+  const t = setup({ installed: '1.0.3', request: (_, { url }) => {
+    if (!appleCache.has(url)) appleCache.set(url, response(publishedVersion))
+    return appleCache.get(url)
+  } })
+  await tick(); assert.equal(t.last(), null)
+  publishedVersion = '1.0.4'
+  t.active(false); t.active(true); await tick()
+  assert.equal(t.calls(), 1) // Keep the existing request limit within the check window.
+  t.advance(STORE_CHECK_INTERVAL); t.active(true); await tick()
+  assert.deepEqual(t.last(), { currentVersion: '1.0.3', version: '1.0.4', url: STORE_URL })
+  assert.notEqual(t.requests[0].url, t.requests[1].url)
+  assert.equal(t.calls(), 2)
   t.task.stop()
 })
 
