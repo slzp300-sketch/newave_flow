@@ -14,6 +14,9 @@ public class IntercessionRequest {
  @Column(length=10,nullable=false) private String source;
  @Column(nullable=false) private boolean share;
  @Column(nullable=false) private boolean anonymous;
+ @Column(nullable=false) private boolean prayerCompleted;
+ @Column(columnDefinition="text") private String pendingUpdate;
+ @org.hibernate.annotations.ColumnDefault("'[]'") @Column(columnDefinition="text",nullable=false) private String updateHistory="[]";
  @Column(length=80,nullable=false) private String publicTitle="";
  @Column(columnDefinition="text",nullable=false) private String publicText="";
  @Enumerated(EnumType.STRING) @Column(length=12,nullable=false) private Status status=Status.PENDING;

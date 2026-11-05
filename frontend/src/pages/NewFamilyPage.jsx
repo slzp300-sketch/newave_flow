@@ -28,22 +28,23 @@ export default function NewFamilyPage() {
   const [weekDirty, setWeekDirty] = useState(false)
   const [reload, setReload] = useState(0)
   const qc = useQueryClient()
-  const roster = useQuery({ queryKey: ['new-family-roster'], queryFn: api.roster, enabled: !!access.data?.canManage })
+  const canView=access.data?.canView??access.data?.canManage,readOnly=!access.data?.canManage
+  const roster = useQuery({ queryKey: ['new-family-roster',user?.id], queryFn: api.roster, enabled: !!canView })
   const date = toApiDate(getWeekStartByOffset(offset, 0))
   const run = async (task, success, next) => {
     setBusy(true); setError(''); setMessage('')
     try { const result = await task(); setMessage(success); await next?.(result); await qc.invalidateQueries({ queryKey: ['new-family-roster'] }); return true }
     catch (e) { setError(messageFor(e)); return false } finally { setBusy(false) }
   }
-  const open = (kind, person) => { setScreen({ kind, person }); setError(''); setMessage('') }
+  const open = (kind, person) => { if(readOnly&&kind!=='person')return; setScreen({ kind, person }); setError(''); setMessage('') }
   const savedPerson = person => setScreen({ kind: 'person', person })
   const navigate = key => { setTab(key); setScreen(null); setError(''); setMessage('') }
   const canAssign = access.data?.canAssign
   const labels = weekLabels(getWeekStartByOffset(offset, 0))
-  const baseProps = { busy, run, savedPerson, open }
+  const baseProps = { busy, run, savedPerson, open, readOnly }
   return <div className="nf-page"><Header title="새가족팀 관리" showBack /><main className="nf-body">
-    {access.isPending ? <p role="status">업무 권한을 확인하고 있습니다…</p> : access.isError ? <div role="alert">권한을 확인하지 못했습니다. <Button variant="secondary" size="sm" onClick={() => access.refetch()}>다시 확인</Button></div> : !access.data.canManage ? <div className="nf-panel"><h2>새가족팀 담당자 전용</h2><p>관리자에게 새가족팀 업무 배정을 요청해주세요.</p><Link to="/">홈으로</Link></div> : <>
-      <nav className="nf-tabs" aria-label="새가족팀 업무">{[['week','이번 주'],['people','학생·과정'],['handoff','등반·배정'],...(access.data.canManageTeam ? [['team','팀원 관리']] : [])].map(([key,label]) => <Button variant="secondary" size="sm" type="button" key={key} disabled={busy||weekDirty} aria-pressed={tab===key} onClick={() => navigate(key)}>{label}</Button>)}</nav>
+    {access.isPending ? <p role="status">업무 권한을 확인하고 있습니다…</p> : access.isError ? <div role="alert">권한을 확인하지 못했습니다. <Button variant="secondary" size="sm" onClick={() => access.refetch()}>다시 확인</Button></div> : !canView ? <div className="nf-panel"><h2>새가족팀 담당자 전용</h2><p>관리자에게 새가족팀 업무 배정을 요청해주세요.</p><Link to="/">홈으로</Link></div> : <>
+      {readOnly&&<span className="nf-badge nf-readonly">조회 전용</span>}<nav className="nf-tabs" aria-label="새가족팀 업무">{[['week','이번 주'],['people','학생·과정'],['handoff','등반·배정'],['team',access.data.canManageTeam?'팀원 관리':'팀원 명단']].map(([key,label]) => <Button variant="secondary" size="sm" type="button" key={key} disabled={busy||weekDirty} aria-pressed={tab===key} onClick={() => navigate(key)}>{label}</Button>)}</nav>
       {error && <div role="alert" className="nf-error">{error}<Button variant="secondary" size="sm" disabled={busy} onClick={() => { setScreen(null); setError(''); setWeekDirty(false); setReload(n=>n+1); void qc.invalidateQueries({ queryKey: ['new-family-roster'] }); void qc.invalidateQueries({ queryKey: ['new-family-week'] }) }}>최신 자료 다시 확인</Button></div>}
       {message && <p role="status" className="nf-success">{message}</p>}
       {screen ? <><Button variant="secondary" size="sm" className="nf-back" disabled={busy} onClick={() => setScreen(null)}>← 목록으로</Button>
@@ -56,11 +57,11 @@ export default function NewFamilyPage() {
       </> : tab==='week' ? <>
         <WeekNavigator offset={offset} onChange={setOffset} disabled={busy||weekDirty} title={`${labels.monthWeek} 출결`} sub={`${date} 주일 · 예배 합산`} />
         <Week key={`${date}:${reload}`} date={date} onDirty={setWeekDirty} {...baseProps} />
-      </> : tab==='team' ? <Team {...baseProps} /> : <>
+      </> : tab==='team' ? <Team {...baseProps} canManageTeam={access.data.canManageTeam} /> : <>
         <div><h2>{tab==='people' ? '학생·4주 과정' : '등반·반 배정'}</h2></div>
         {roster.isError ? <Button variant="secondary" size="sm" onClick={() => roster.refetch()}>명단 다시 불러오기</Button> : !roster.data ? <p role="status">명단을 불러오는 중…</p> : <div className="nf-list">{roster.data.filter(p => tab==='people' || p.decision==='READY').map(p => <article className="nf-card" key={p.id}><div className="nf-row"><div><strong>{p.profile.name}</strong><p className="nf-help">{p.profile.grade} · 첫 방문 {p.firstVisit}</p></div><span className="nf-badge">{familyStage(p,today())}</span></div>
           {p.enrolledOn && <><Progress dates={p.course} /><p className="nf-help">과정 기록 {p.course.filter(Boolean).length}/4{p.decisionReason ? ` · ${p.decisionReason}` : ''}</p></>}
-          {p.classId ? <Handoff person={p} /> : tab==='handoff' && p.assignmentRequested ? <>{canAssign ? <Button size="sm" disabled={busy} onClick={() => open('assign',p)}>반 배정 확정하기</Button> : <p className="nf-help">관리자 확인을 기다리고 있습니다.</p>}</> : tab==='handoff' ? <Button size="sm" disabled={busy} onClick={() => run(() => api.request(p.id,p.revision),'관리자에게 반 배정을 요청했습니다.')}>관리자에게 반 배정 요청</Button> : null}
+          {p.classId ? <Handoff person={p} /> : tab==='handoff' && p.assignmentRequested ? <>{canAssign ? <Button size="sm" disabled={busy} onClick={() => open('assign',p)}>반 배정 확정하기</Button> : <p className="nf-help">관리자 확인을 기다리고 있습니다.</p>}</> : tab==='handoff'&&!readOnly ? <Button size="sm" disabled={busy} onClick={() => run(() => api.request(p.id,p.revision),'관리자에게 반 배정을 요청했습니다.')}>관리자에게 반 배정 요청</Button> : null}
           <Button variant="secondary" size="sm" disabled={busy} onClick={() => open('person',p)}>{p.enrolledOn ? '과정·판단' : '학생 확인'}</Button>
         </article>)}{!roster.data.some(p=>tab==='people'||p.decision==='READY') && <p className="nf-help">{tab==='people' ? '학생 없음 · 이번 주에서 첫 방문 기록' : '등반 대기 학생이 없습니다.'}</p>}</div>}
       </>}
@@ -70,7 +71,7 @@ export default function NewFamilyPage() {
 
 function Progress({ dates }) { return <div className="nf-progress" role="img" aria-label={`과정 참여 ${dates.filter(Boolean).length}회 / 4회`}>{dates.map((date,i)=><span key={i} className={date ? 'done' : ''} />)}</div> }
 function Handoff({person:p}) { return <p className="nf-info"><strong>{p.className}</strong> · {p.effectiveDate}부터 담당 반 명단에 연결{p.handoffMemo && <><br />인계: {p.handoffMemo}</>}</p> }
-function Week({date,busy,run,open,onDirty}) {
+function Week({date,busy,run,open,onDirty,readOnly}) {
   const query=useQuery({queryKey:['new-family-week',date],queryFn:()=>api.week(date)})
   const [draft,setDraft]=useState(null)
   const [targets,setTargets]=useState({})
@@ -81,6 +82,7 @@ function Week({date,busy,run,open,onDirty}) {
   const saved=async()=>{await query.refetch();setDraft(null);onDirty(false)}
   if(query.isError)return <p role="alert">출결을 불러오지 못했습니다. <Button variant="secondary" size="sm" onClick={()=>query.refetch()}>다시 시도</Button></p>
   if(!data)return <p role="status">출결을 불러오는 중…</p>
+  if(readOnly)return <ReadOnlyWeek data={data} count={count} statuses={statuses} date={date}/>
   return <>
     <div className="nf-row"><h2>이번 주 출결</h2><Button variant="secondary" size="sm" disabled={busy||!!draft} onClick={()=>open('new')}>+ 첫 방문 기록</Button></div>
     <dl className="nf-summary ui-metrics" aria-label="새가족팀 출석 요약">{Object.entries(FAMILY_CATEGORIES).map(([key,label])=><div key={key}><dt>{label}</dt><dd>{count[key]}<small>명</small></dd></div>)}<div><dt>총 출석</dt><dd>{count.total}<small>명</small></dd></div></dl>
@@ -101,9 +103,10 @@ function ProfileForm({person,firstVisit,busy,run,savedPerson}) {
   const [distinctPerson,setDistinct]=useState(false)
   return <form className="nf-panel nf-form" onSubmit={e=>{e.preventDefault();run(()=>person ? api.edit(person.id,{revision:person.revision,profile,memo}) : api.create({profile,firstVisit:date,distinctPerson}),person?'학생 정보를 저장했습니다.':'첫 방문 기록 완료 · 출석 체크 필요',savedPerson)}}><h2>{person?'학생 정보 보완':'처음 온 친구 기록'}</h2><fieldset disabled={busy} className="nf-form"><ProfileFields value={profile} onChange={setProfile} />{!person&&<><label>첫 방문일<input type="date" required min="2000-01-01" max={today()} value={date} onChange={e=>setDate(e.target.value)} /></label><label className="nf-checkbox"><input type="checkbox" checked={distinctPerson} onChange={e=>setDistinct(e.target.checked)} />같은 이름·학년의 학생과 다른 사람입니다</label></>}{person&&<label>팀 메모<textarea maxLength={1000} value={memo} onChange={e=>setMemo(e.target.value)} /></label>}<Button size="sm" type="submit">{person?'학생 정보 저장':'첫 방문 기록 저장'}</Button></fieldset></form>
 }
-function PersonDetail({person:p,busy,run,open,savedPerson}) {
+function PersonDetail({person:p,busy,run,open,savedPerson,readOnly}) {
   const [dates,setDates]=useState(p.course)
   const [memo,setMemo]=useState(p.memo)
+  if(readOnly)return <ReadOnlyPerson person={p}/>
   return <><div className="nf-row"><div><h2>{p.profile.name}</h2><p className="nf-help">{p.profile.grade} · {p.profile.gender||'성별 미확인'}</p></div><span className="nf-badge">{familyStage(p,today())}</span></div><div className="nf-panel"><p>첫 방문 {p.firstVisit}</p><p>등록 결정 {p.enrolledOn||'미정'}</p><Button variant="secondary" size="sm" disabled={busy} onClick={()=>open('edit',p)}>학생 정보 보완</Button></div>
     {!p.enrolledOn ? <div className="nf-panel"><h3>예배 후 등록 의사 확인</h3><Button size="sm" disabled={busy} onClick={()=>open('enroll',p)}>새가족 등록 결정</Button></div> : <>
       <form className="nf-panel nf-form" onSubmit={e=>{e.preventDefault();run(()=>api.course(p.id,{revision:p.revision,dates,memo}),'과정 기록 저장 완료',savedPerson)}}><div className="nf-row"><h3>4주 과정 참여 이력</h3><span>{dates.filter(Boolean).length}/4</span></div><Progress dates={dates}/><fieldset disabled={busy||!!p.classId} className="nf-form">{dates.map((date,i)=><div className="nf-course" key={i}><label className="nf-checkbox"><input type="checkbox" checked={!!date} onChange={e=>setDates(dates.map((d,j)=>i===j ? e.target.checked?today():null : d))}/>{i+1}주 과정</label><label>참여일<input type="date" aria-label={`${i+1}주 과정 참여일`} disabled={!date} required={!!date} min={p.enrolledOn} max={today()} value={date||''} onChange={e=>setDates(dates.map((d,j)=>i===j?e.target.value:d))}/></label></div>)}<label>팀 메모<textarea maxLength={1000} value={memo} onChange={e=>setMemo(e.target.value)}/></label>{!p.classId&&<Button variant="secondary" size="sm" type="submit">과정 기록 저장</Button>}</fieldset></form>
@@ -113,4 +116,23 @@ function PersonDetail({person:p,busy,run,open,savedPerson}) {
 function Enrollment({person:p,busy,run,savedPerson}) {const [date,setDate]=useState(today());const [memo,setMemo]=useState(p.memo);return <form className="nf-panel nf-form" onSubmit={e=>{e.preventDefault();run(()=>api.enroll(p.id,{revision:p.revision,date,memo}),'새가족 등록 결정을 기록했습니다.',savedPerson)}}><h2>{p.profile.name} · 새가족 등록</h2><fieldset disabled={busy} className="nf-form"><label>등록 결정일<input type="date" required min={p.firstVisit} max={today()} value={date} onChange={e=>setDate(e.target.value)}/></label><label>등록 확인 메모<textarea maxLength={1000} value={memo} onChange={e=>setMemo(e.target.value)}/></label><Button size="sm" type="submit">등록 결정 저장</Button></fieldset></form>}
 function Decision({person:p,busy,run,savedPerson}) {const [decision,setDecision]=useState(p.decision==='READY'?'READY':'HOLD');const [reason,setReason]=useState(p.decisionReason);const [date,setDate]=useState(p.graduatedOn||today());return <form className="nf-panel nf-form" onSubmit={e=>{e.preventDefault();run(()=>api.decide(p.id,{revision:p.revision,decision,reason,graduatedOn:decision==='READY'?date:null}),'새가족팀의 개별 판단을 기록했습니다.',savedPerson)}}><h2>{p.profile.name} · 등반 판단</h2><p className="nf-help">과정 기록 {p.course.filter(Boolean).length}/4</p><fieldset disabled={busy} className="nf-form"><label>팀 판단<AppSelect aria-label="팀 판단" value={decision} onChange={e=>setDecision(e.target.value)}><option value="HOLD">계속 참여 · 추후 검토</option><option value="READY">등반 가능</option></AppSelect></label>{decision==='READY'&&<label>등반일<input type="date" required min={p.enrolledOn} max={today()} value={date} onChange={e=>setDate(e.target.value)}/></label>}<label>판단 사유<textarea required maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label><Button size="sm" type="submit">팀 판단 저장</Button></fieldset></form>}
 function Assignment({person:p,busy,run,savedPerson}) {const query=useQuery({queryKey:['new-family-classes'],queryFn:api.classes});const [classId,setClassId]=useState('');const [date,setDate]=useState(toApiDate(getWeekStartByOffset(1,0)));const [memo,setMemo]=useState('');return <form className="nf-panel nf-form" onSubmit={e=>{e.preventDefault();run(()=>api.assign(p.id,{revision:p.revision,classId:Number(classId),effectiveDate:date,memo}),'배정 완료 · 적용일부터 담당 반에서 출결 체크',savedPerson)}}><h2>{p.profile.name} · 반 배정</h2><p className="nf-help">팀 판단: {p.decisionReason}</p><fieldset disabled={busy||!query.data} className="nf-form"><label>배정할 반<AppSelect aria-label="배정할 반" required value={classId} onChange={e=>setClassId(e.target.value)}><option value="">같은 학년의 반 선택</option>{query.data?.filter(c=>c.grade===p.profile.grade).map(c=><option key={c.id} value={c.id}>{c.name} · {c.teacher} · {c.size}명</option>)}</AppSelect></label><label>반 적용일<input type="date" min={today()} required value={date} onChange={e=>setDate(e.target.value)}/></label><label>담임 인계 메모<textarea maxLength={500} value={memo} onChange={e=>setMemo(e.target.value)}/></label><p className="nf-help">적용일 전: 새가족팀 · 적용일부터: 배정 반</p><Button size="sm" type="submit">반 배정 확정</Button></fieldset>{query.isError&&<Button variant="secondary" size="sm" type="button" onClick={()=>query.refetch()}>반 목록 다시 불러오기</Button>}{query.data&&!query.data.some(c=>c.grade===p.profile.grade)&&<p className="nf-error">같은 학년의 반을 먼저 등록하세요.</p>}</form>}
-function Team({busy,run}) {const query=useQuery({queryKey:['new-family-team'],queryFn:api.team});return <><h2>새가족팀 업무 배정</h2>{query.isError?<Button variant="secondary" size="sm" onClick={()=>query.refetch()}>팀원 다시 불러오기</Button>:query.data?.map(u=><div className="nf-card nf-row" key={u.id}><div><strong>{u.name}</strong><p className="nf-help">{u.role==='ADMIN'?'관리자':u.role==='PASTOR'?'목사님':u.role==='EXECUTIVE'?'임원':'교사'}{u.member?' · 새가족팀':''}</p></div>{!['ADMIN','PASTOR'].includes(u.role)&&<Button variant="secondary" size="sm" disabled={busy} onClick={()=>run(()=>api.setTeam(u.id,!u.member),u.member?'새가족팀 업무 배정을 해제했습니다.':'새가족팀 담당자로 지정했습니다.',()=>query.refetch())}>{u.member?'팀 배정 해제':'팀 담당 지정'}</Button>}</div>)}</>}
+function Team({busy,run,canManageTeam}) {const query=useQuery({queryKey:['new-family-team'],queryFn:api.team});return <><h2>{canManageTeam?'새가족팀 담당자 지정':'새가족팀 명단'}</h2>{query.isError?<Button variant="secondary" size="sm" onClick={()=>query.refetch()}>팀원 다시 불러오기</Button>:query.data?.map(u=><div className="nf-card nf-row" key={u.id}><div><strong>{u.name}</strong><p className="nf-help">{u.leader?'새가족팀장':u.role==='ADMIN'?'관리자':u.role==='PASTOR'?'목사님':u.role==='EXECUTIVE'?'임원':'교사'}{u.member&&!u.leader?' · 새가족팀':''}</p></div>{u.leader?<span className="nf-badge">조직도 지정</span>:canManageTeam&&!['ADMIN','PASTOR'].includes(u.role)&&<Button variant="secondary" size="sm" disabled={busy} onClick={()=>run(()=>api.setTeam(u.id,!u.member),u.member?'새가족팀 업무 배정을 해제했습니다.':'새가족팀 담당자로 지정했습니다.',()=>query.refetch())}>{u.member?'팀 배정 해제':'팀 담당 지정'}</Button>}</div>)}</>}
+
+
+function ReadOnlyWeek({data,count,statuses,date}) {
+ return <>
+  <h2>이번 주 출결</h2>
+  <dl className="nf-summary ui-metrics" aria-label="새가족팀 출석 요약">{Object.entries(FAMILY_CATEGORIES).map(([key,label])=><div key={key}><dt>{label}</dt><dd>{count[key]}<small>명</small></dd></div>)}<div><dt>총 출석</dt><dd>{count.total}<small>명</small></dd></div></dl>
+  <div className="nf-list">{data.people.map(p=><article className="nf-card nf-row" key={p.id}><div><strong>{p.profile.name}</strong><p className="nf-help">{p.profile.grade} · {FAMILY_CATEGORIES[familyCategory(p,date)]}</p></div><span className="nf-badge">{({PRESENT:'출석',ABSENT:'불참',LATE:'지각'})[statuses[p.id]]||'미확인'}</span></article>)}</div>
+  {!data.people.length&&<p className="nf-help">이 주에 새가족팀이 담당하는 학생이 없습니다.</p>}
+  <div className="nf-panel"><p>{data.submitted?data.changed?'수정된 자료 · 다시 제출 필요':`제출 완료 · ${data.submittedBy}`:'새가족팀 자료 미제출'}</p>{data.issues.length>0&&<ul className="nf-help">{data.issues.map((s,i)=><li key={i}>{s}</li>)}</ul>}</div>
+ </>
+}
+function ReadOnlyPerson({person:p}) {
+ return <>
+  <div className="nf-row"><div><h2>{p.profile.name}</h2><p className="nf-help">{p.profile.grade} · {p.profile.gender||'성별 미확인'}</p></div><span className="nf-badge">{familyStage(p,today())}</span></div>
+  <section className="nf-panel"><p>첫 방문 {p.firstVisit}</p><p>등록 결정 {p.enrolledOn||'미정'}</p></section>
+  {p.enrolledOn&&<><section className="nf-panel"><h3>4주 과정 참여 이력</h3><Progress dates={p.course}/>{p.course.map((date,i)=><p key={i} className="nf-help">{i+1}주 · {date||'미참여'}</p>)}{p.memo&&<p>{p.memo}</p>}</section><section className="nf-panel"><h3>새가족팀 판단</h3><span className="nf-badge">{p.decision==='READY'?'등반 가능':p.decision==='HOLD'?'계속 참여':'검토 중'}</span><p>{p.decisionReason||'팀 판단 대기'}</p>{p.decidedBy&&<p className="nf-help">{p.decidedBy} · {p.decidedAt?.slice(0,10)}</p>}</section></>}
+  {p.classId&&<Handoff person={p}/>}
+ </>
+}

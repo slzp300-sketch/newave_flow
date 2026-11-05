@@ -49,7 +49,8 @@ class PraiseHttpTest {
   http.perform(get("/api/praise").param("term",String.valueOf(id())).header("Authorization",auth(teacher))).andExpect(status().isOk()).andExpect(jsonPath("$.canManage").value(false)).andExpect(jsonPath("$.candidates").isEmpty());
   assertThrows(com.newaveflow.exception.AppException.class,()->service.generate(id(),new MonthInput(rev(),"2026-11"),teacher));
   var org=offices.get(null,admin);offices.assign(org.activeYear(),OfficerPosition.PRAISE,new OfficerOrganizationService.Assignment(org.revision(),null),admin);
-  assertThrows(com.newaveflow.exception.AppException.class,()->service.state(id(),chair));
+  assertFalse(service.state(id(),chair).canManage());
+  assertThrows(com.newaveflow.exception.AppException.class,()->service.generate(id(),new MonthInput(rev(),"2026-11"),chair));
  }
  @Test void draftsNeverReplacePublishedTeacherAssignmentsAndStaleWritesFail(){
   var w=state.weeks().get(0);edit(w.id(),teacherMember);assertTrue(service.state(id(),teacher).weeks().get(0).slots().isEmpty());

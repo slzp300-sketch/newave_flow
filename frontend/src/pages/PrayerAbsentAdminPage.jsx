@@ -1,5 +1,6 @@
 import AppSelect from '../components/common/AppSelect'
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { addDays, format } from 'date-fns'
 import Header from '../components/layout/Header'
@@ -13,7 +14,7 @@ import { FilterResults } from '../components/common/AdminTools'
 import AdminReadGuard from '../components/common/AdminReadGuard'
 import { matchesAdminSearch } from '../utils/adminSearch'
 import { getWeekStartByOffset, formatUpdatedAt, toApiDate, weekLabels } from '../utils/date'
-import { PRAYER_STATUSES, prayerTotals, prayerTrendTotals, matchesPrayerStatus, prayerWeekOffset } from '../utils/prayerParticipation'
+import { PRAYER_STATUSES, prayerTotals, prayerTrendTotals, matchesPrayerStatus, prayerWeekOffset, selectedPrayerWeekOffset } from '../utils/prayerParticipation'
 import { prayerVoteApi } from '../api/prayerVote'
 import useAuthStore from '../store/authStore'
 import './PrayerAbsentAdminPage.css'
@@ -28,13 +29,15 @@ const shortDate = value => format(new Date(value + 'T00:00:00'), 'M/d')
 export default function PrayerAbsentAdminPage() {
   const userId = useAuthStore(state => state.user?.id)
   const environment = useAuthStore(state => state.apiEnvironment)
-  const [offset, setOffset] = useState(0)
+  const [params,setParams] = useSearchParams()
+  const currentWeek = toApiDate(getWeekStartByOffset(0, 1))
+  const offset = selectedPrayerWeekOffset(params.get('week'),currentWeek)
+  const setOffset = value => setParams(previous=>{const next=new URLSearchParams(previous);next.set('week',toApiDate(getWeekStartByOffset(value,1)));return next},{replace:true})
   const [search, setSearch] = useState('')
   const [grade, setGrade] = useState('전체')
   const [status, setStatus] = useState('ALL')
   const monday = getWeekStartByOffset(offset, 1)
   const week = toApiDate(monday)
-  const currentWeek = toApiDate(getWeekStartByOffset(0, 1))
   const labels = weekLabels(monday)
   const query = useQuery({
     queryKey: ['prayer-participation', environment, userId, week],

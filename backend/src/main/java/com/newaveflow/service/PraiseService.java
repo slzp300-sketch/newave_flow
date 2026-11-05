@@ -42,14 +42,14 @@ public class PraiseService {
  public record WeekView(Long id,LocalDate worshipDate,LocalDate practiceDate,LocalTime startTime,LocalTime endTime,long scheduleVersion,Map<String,List<Long>> slots,boolean published,boolean draftChanged,LocalDateTime publishedAt,LocalDateTime updatedAt,List<PraisePdfRepository.Metadata> pdfs,boolean canUpload) {}
  public record ResponseView(Long userId,String month,List<LocalDate> dates,Map<String,Long> scheduleVersions,LocalDateTime submittedAt) {}
  public record PrayerView(Long id,LocalDate date,Long hostId,String zoomUrl) {}
- public record State(boolean canManage,Long me,List<TermView> terms,TermView term,List<MemberView> members,List<Candidate> candidates,List<WeekView> weeks,List<ResponseView> responses,List<PrayerView> prayers) {}
+ public record State(boolean canManage,boolean canViewAll,Long me,List<TermView> terms,TermView term,List<MemberView> members,List<Candidate> candidates,List<WeekView> weeks,List<ResponseView> responses,List<PrayerView> prayers) {}
  private User actor(User u){var current=access.current(u);if(deletions.existsByUserId(current.getId()))throw AppException.forbidden("탈퇴 처리 중인 계정입니다.");return current;}
  public boolean manager(User u){return access.all(u)||access.hasOffice(u,OfficerPosition.PRAISE);}
- public boolean canEnter(User u){u=access.current(u);if(deletions.existsByUserId(u.getId()))return false;return manager(u)||members.existsByUserIdAndActiveTrue(u.getId());}
+ public boolean canEnter(User u){u=access.current(u);if(deletions.existsByUserId(u.getId()))return false;return access.common(u)||members.existsByUserIdAndActiveTrue(u.getId());}
  private void manage(User u){if(!manager(u))throw AppException.forbidden("찬양팀장만 변경할 수 있습니다.");}
  private boolean active(PraiseMember m){return m.isActive()&&(m.getUser()!=null?m.getUser().isActive()&&!m.getUser().isSuspended()&&!deletions.existsByUserId(m.getUser().getId()):m.getStudent()!=null&&m.getStudent().isActive());}
  private boolean joined(Long term,User u){return members.findByTermIdOrderById(term).stream().anyMatch(m->active(m)&&m.getUser()!=null&&m.getUser().getId().equals(u.getId()));}
- private PraiseTerm term(Long id,User u){var t=terms.findById(id).orElseThrow(()->AppException.notFound("학기를 찾을 수 없습니다."));if(!manager(u)&&!joined(id,u))throw AppException.forbidden("이 학기 찬양팀원만 이용할 수 있습니다.");return t;}
+ private PraiseTerm term(Long id,User u){var t=terms.findById(id).orElseThrow(()->AppException.notFound("학기를 찾을 수 없습니다."));if(!access.common(u)&&!joined(id,u))throw AppException.forbidden("이 학기 찬양팀원만 이용할 수 있습니다.");return t;}
  private PraiseTerm lock(Long id,Long revision,User u){var t=terms.lockById(id).orElseThrow(()->AppException.notFound("학기를 찾을 수 없습니다."));term(id,u);if(revision==null||revision!=t.getRevision())throw AppException.conflict("내용이 변경됐습니다. 새로고침 후 다시 저장해주세요.");return t;}
  private void changed(PraiseTerm t){t.setRevision(t.getRevision()+1);terms.saveAndFlush(t);}
  private LocalDateTime now(){return LocalDateTime.now(clock);}
@@ -62,17 +62,17 @@ public class PraiseService {
  private ResponseView view(PraiseResponse r){return new ResponseView(r.getUser().getId(),r.getMonth(),read(r.getDates(),new TypeReference<>(){}),read(r.getScheduleVersions(),new TypeReference<>(){}),r.getSubmittedAt());}
  private boolean canUpload(PraiseWeek w,User u){if(manager(u))return true;return slots(w.getPublishedSlots()).getOrDefault("인도자",List.of()).stream().anyMatch(id->members.findById(id).filter(m->active(m)&&m.getUser()!=null&&m.getUser().getId().equals(u.getId())).isPresent());}
  public State state(Long selected,User principal){
-  var u=actor(principal);boolean manage=manager(u);
-  var available=terms.findAllByOrderByTermYearDescHalfDesc().stream().filter(t->manage||joined(t.getId(),u)).toList();
+  var u=actor(principal);boolean manage=manager(u),viewAll=access.common(u);
+  var available=terms.findAllByOrderByTermYearDescHalfDesc().stream().filter(t->viewAll||joined(t.getId(),u)).toList();
   var today=LocalDate.now(clock);int currentHalf=today.getMonthValue()<=7?1:2;
   PraiseTerm t=selected==null?available.stream().filter(v->v.getTermYear()==today.getYear()&&v.getHalf()==currentHalf).findFirst().orElse(available.isEmpty()?null:available.get(0)):term(selected,u);
   var candidates=new ArrayList<Candidate>();
   if(manage){users.findByIsActiveTrue().stream().filter(p->!p.isSuspended()&&!deletions.existsByUserId(p.getId())).forEach(p->candidates.add(new Candidate(p.getId(),null,p.getName(),"교사",null)));students.findAllByIsActiveTrueOrderByGradeAscNameAsc().forEach(s->candidates.add(new Candidate(null,s.getId(),s.getName(),"학생",s.getGrade())));}
-  if(t==null)return new State(manage,u.getId(),available.stream().map(this::view).toList(),null,List.of(),candidates,List.of(),List.of(),List.of());
+  if(t==null)return new State(manage,viewAll,u.getId(),available.stream().map(this::view).toList(),null,List.of(),candidates,List.of(),List.of(),List.of());
   var metadata=pdfs.metadata(t.getId());
-  return new State(manage,u.getId(),available.stream().map(this::view).toList(),view(t),members.findByTermIdOrderById(t.getId()).stream().map(this::view).toList(),candidates,
+  return new State(manage,viewAll,u.getId(),available.stream().map(this::view).toList(),view(t),members.findByTermIdOrderById(t.getId()).stream().map(this::view).toList(),candidates,
    weeks.findByTermIdOrderByWorshipDate(t.getId()).stream().map(w->new WeekView(w.getId(),w.getWorshipDate(),w.getPracticeDate(),w.getStartTime(),w.getEndTime(),w.getScheduleVersion(),slots(manage?w.getSlots():w.getPublishedSlots()),w.getPublishedSlots()!=null,manage&&!Objects.equals(w.getSlots(),w.getPublishedSlots()),w.getPublishedAt(),w.getUpdatedAt(),w.getPublishedSlots()!=null||manage?metadata.stream().filter(p->p.weekId().equals(w.getId())).toList():List.of(),canUpload(w,u))).toList(),
-   responses.findByTermId(t.getId()).stream().filter(r->manage||r.getUser().getId().equals(u.getId())).map(this::view).toList(),
+   responses.findByTermId(t.getId()).stream().filter(r->viewAll||r.getUser().getId().equals(u.getId())).map(this::view).toList(),
    prayers.findByTermIdOrderByMeetingDate(t.getId()).stream().map(p->new PrayerView(p.getId(),p.getMeetingDate(),p.getHost()==null?null:p.getHost().getId(),p.getZoomUrl())).toList());
  }
  @Transactional public State create(TermInput in,User principal){var u=actor(principal);manage(u);if(in.year()<2000||in.year()>2100||in.half()<1||in.half()>2)throw AppException.badRequest("학기를 확인해주세요.");var t=terms.findByTermYearAndHalf(in.year(),in.half()).orElseGet(()->{var n=new PraiseTerm();n.setTermYear(in.year());n.setHalf(in.half());return terms.saveAndFlush(n);});return state(t.getId(),u);}
@@ -125,7 +125,7 @@ public class PraiseService {
   weeks.flush();changed(t);return state(id,u);
  }
  @Transactional public State respond(Long id,ResponseInput in,User principal){
-  var u=actor(principal);var t=lock(id,in.revision(),u);var m=month(t,in.month());if(!m.equals(YearMonth.now(clock).plusMonths(1)))throw AppException.badRequest("다음 달 일정만 제출할 수 있습니다.");
+  var u=actor(principal);if(!manager(u)&&!joined(id,u))throw AppException.forbidden("찬양팀원만 불가 일정을 제출할 수 있습니다.");var t=lock(id,in.revision(),u);var m=month(t,in.month());if(!m.equals(YearMonth.now(clock).plusMonths(1)))throw AppException.badRequest("다음 달 일정만 제출할 수 있습니다.");
   if(in.dates()==null||in.dates().size()>5||in.scheduleVersions()==null)throw AppException.badRequest("날짜를 확인해주세요.");
   for(var d:in.dates())if(d==null||!YearMonth.from(d).equals(m)||d.getDayOfWeek()!=DayOfWeek.SATURDAY)throw AppException.badRequest("해당 월의 토요일을 선택해주세요.");
   var current=new LinkedHashMap<String,Long>();weeks.findByTermIdOrderByWorshipDate(id).stream().filter(w->YearMonth.from(w.getWorshipDate().minusDays(1)).equals(m)).forEach(w->current.put(w.getId().toString(),w.getScheduleVersion()));

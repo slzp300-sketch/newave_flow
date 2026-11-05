@@ -32,4 +32,5 @@ public class OfficerAccessService {
     }
     public boolean canReport(User actor) { var u=current(actor); return all(u)||hasOffice(u,OfficerPosition.SECRETARY); }
     public boolean canNewFamily(User actor) { var u=current(actor); return all(u)||u.isNewFamilyTeam()||hasOffice(u,OfficerPosition.NEW_FAMILY); }
+    public boolean canViewNewFamily(User actor) { var u=current(actor); return common(u)||canNewFamily(u); }
 }

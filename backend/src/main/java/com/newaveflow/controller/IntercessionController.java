@@ -18,6 +18,9 @@ public class IntercessionController {
  @GetMapping("/requests/{id}") public ResponseEntity<RequestView> detail(@PathVariable Long id,@AuthenticationPrincipal User u){return response(service.detail(id,u));}
  @PostMapping("/requests") public ResponseEntity<RequestView> submit(@RequestBody RequestInput in,@AuthenticationPrincipal User u){return response(service.submit(in,u));}
  @PutMapping("/requests/{id}") public ResponseEntity<RequestView> review(@PathVariable Long id,@RequestBody ReviewInput in,@AuthenticationPrincipal User u){return response(service.review(id,in,u));}
+ @PutMapping("/requests/{id}/decision") public ResponseEntity<RequestView> decide(@PathVariable Long id,@RequestBody DecisionInput in,@AuthenticationPrincipal User u){return response(service.decide(id,in,u));}
+ @PutMapping("/requests/{id}/update") public ResponseEntity<RequestView> update(@PathVariable Long id,@RequestBody UpdateInput in,@AuthenticationPrincipal User u){return response(service.updateRequest(id,in,u));}
+ @PutMapping("/requests/{id}/update-review") public ResponseEntity<RequestView> reviewUpdate(@PathVariable Long id,@RequestBody UpdateReviewInput in,@AuthenticationPrincipal User u){return response(service.reviewUpdate(id,in,u));}
  @PostMapping("/requests/{id}/withdraw") public ResponseEntity<RequestView> withdraw(@PathVariable Long id,@RequestBody Revision in,@AuthenticationPrincipal User u){return response(service.withdraw(id,in,u));}
  @PutMapping("/meetings/{date}") public ResponseEntity<State> meeting(@PathVariable LocalDate date,@RequestBody MeetingInput in,@AuthenticationPrincipal User u){return response(service.configure(date,in,u));}
  @PutMapping("/meetings/{date}/materials") public ResponseEntity<State> materials(@PathVariable LocalDate date,@RequestBody MaterialsInput in,@AuthenticationPrincipal User u){return response(service.materials(date,in,u));}

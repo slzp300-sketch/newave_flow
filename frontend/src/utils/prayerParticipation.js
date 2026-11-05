@@ -23,3 +23,11 @@ export function matchesPrayerStatus(status, filter) {
 export function prayerWeekOffset(week, currentWeek) {
   return Math.round((Date.parse(week + 'T00:00:00Z') - Date.parse(currentWeek + 'T00:00:00Z')) / 604800000)
 }
+
+export function selectedPrayerWeekOffset(week,currentWeek){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(week||''))return 0
+  const date=new Date(week+'T00:00:00Z')
+  if(!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==week||date.getUTCFullYear()<2000||date.getUTCFullYear()>2100)return 0
+  date.setUTCDate(date.getUTCDate()-(date.getUTCDay()+6)%7)
+  return Math.min(0,prayerWeekOffset(date.toISOString().slice(0,10),currentWeek))
+}

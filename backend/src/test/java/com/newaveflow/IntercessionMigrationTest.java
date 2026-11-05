@@ -26,6 +26,45 @@ class IntercessionMigrationTest {
    s.execute("DELETE FROM users WHERE id=9001");
    assertEquals("0",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_members"));assertEquals("0",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_requests"));assertEquals("1",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_meetings WHERE host_id IS NULL"));
    assertThrows(SQLException.class,()->s.execute(sql));s.execute("ROLLBACK");
+   s.execute("UPDATE intercession_meetings SET start_time=NULL,revision=7,selected_ids='[42]',paper='[]'");
+   String preservedColumns="SELECT concat_ws('|',meeting_date,duration,host_id,zoom_url,revision,selected_ids,paper,prepared_at) FROM intercession_meetings";
+   var preserved=EventReadMigrationTest.scalar(c,preservedColumns);
+   var beforeSchedule=EventReadMigrationTest.fingerprints(c);
+   String schedule=Files.readString(Path.of("db/migrations/V023__intercession_schedule.sql"));
+   assertThrows(SQLException.class,()->s.execute(schedule.replace("INSERT INTO schema_migrations","SELECT 1/0; INSERT INTO schema_migrations")));s.execute("ROLLBACK");
+   assertEquals(beforeSchedule,EventReadMigrationTest.fingerprints(c));
+   s.execute(schedule);
+   assertEquals(preserved,EventReadMigrationTest.scalar(c,preservedColumns));
+   assertEquals("1",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_meetings WHERE start_time=TIME '21:30' AND canceled=false AND cancellation_reason=''"));
+   var afterSchedule=EventReadMigrationTest.fingerprints(c);
+   for(String table:List.of("intercession_meetings","schema_migrations")){beforeSchedule.remove(table);afterSchedule.remove(table);}
+   assertEquals(beforeSchedule,afterSchedule);
+   s.execute("INSERT INTO intercession_meetings(meeting_date) VALUES('2026-11-03')");
+   assertEquals("2",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_meetings WHERE start_time=TIME '21:30' AND canceled=false"));
+   assertThrows(SQLException.class,()->s.execute(schedule));s.execute("ROLLBACK");
+   for(String status:List.of("PENDING","READY","PUBLISHED","ANSWERED","ARCHIVED"))s.execute("INSERT INTO intercession_requests(title,body,category,source,share,anonymous,status,created_at,updated_at) VALUES('Synthetic completion','Synthetic original','기타','앱',true,true,'"+status+"',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+   String originals="SELECT md5(string_agg(row(id,title,body,share,anonymous,status,revision,created_at,updated_at)::text,'|' ORDER BY id)) FROM intercession_requests";
+   var originalRequests=EventReadMigrationTest.scalar(c,originals);var beforeCompletion=EventReadMigrationTest.fingerprints(c);
+   String completion=Files.readString(Path.of("db/migrations/V024__intercession_prayer_completion.sql"));
+   assertThrows(SQLException.class,()->s.execute(completion.replace("INSERT INTO schema_migrations","SELECT 1/0; INSERT INTO schema_migrations")));s.execute("ROLLBACK");
+   assertEquals(beforeCompletion,EventReadMigrationTest.fingerprints(c));s.execute(completion);
+   assertEquals(originalRequests,EventReadMigrationTest.scalar(c,originals));
+   assertEquals("1",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_requests WHERE prayer_completed=true AND status='ANSWERED'"));
+   assertEquals("4",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_requests WHERE prayer_completed=false AND status<>'ANSWERED'"));
+   var afterCompletion=EventReadMigrationTest.fingerprints(c);
+   for(String table:List.of("intercession_requests","schema_migrations")){beforeCompletion.remove(table);afterCompletion.remove(table);}
+   assertEquals(beforeCompletion,afterCompletion);
+   assertThrows(SQLException.class,()->s.execute(completion));s.execute("ROLLBACK");
+   var beforeUpdates=EventReadMigrationTest.fingerprints(c);
+   String updates=Files.readString(Path.of("db/migrations/V025__intercession_request_updates.sql"));
+   assertThrows(SQLException.class,()->s.execute(updates.replace("INSERT INTO schema_migrations","SELECT 1/0; INSERT INTO schema_migrations")));s.execute("ROLLBACK");
+   assertEquals(beforeUpdates,EventReadMigrationTest.fingerprints(c));s.execute(updates);
+   assertEquals(originalRequests,EventReadMigrationTest.scalar(c,originals));
+   assertEquals("5",EventReadMigrationTest.scalar(c,"SELECT count(*) FROM intercession_requests WHERE pending_update IS NULL AND update_history='[]'"));
+   var afterUpdates=EventReadMigrationTest.fingerprints(c);
+   for(String table:List.of("intercession_requests","schema_migrations")){beforeUpdates.remove(table);afterUpdates.remove(table);}
+   assertEquals(beforeUpdates,afterUpdates);
+   assertThrows(SQLException.class,()->s.execute(updates));s.execute("ROLLBACK");
   }
   try(var app=app(url,user,"validate")){assertTrue(app.isActive());}
  }

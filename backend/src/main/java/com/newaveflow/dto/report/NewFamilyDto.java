@@ -3,8 +3,8 @@ import java.time.*;
 import java.util.*;
 public final class NewFamilyDto {
     private NewFamilyDto() {}
-    public record Capability(boolean canManage,boolean canAssign,boolean canManageTeam) {}
-    public record TeamUser(Long id,String name,String role,boolean member) {}
+    public record Capability(boolean canManage,boolean canAssign,boolean canManageTeam,boolean canView) {}
+    public record TeamUser(Long id,String name,String role,boolean member,boolean leader) {}
     public record TeamInput(boolean member) {}
     public record Profile(String name,String grade,String gender,String school,String phone,String address,String introducer) {}
     public record Create(Profile profile,LocalDate firstVisit,boolean distinctPerson) {}

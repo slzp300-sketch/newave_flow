@@ -73,7 +73,8 @@ class OfficerOrganizationHttpTest {
         http.perform(get("/api/new-family/capability").header("Authorization",auth(chair))).andExpect(jsonPath("$.canManage").value(true)).andExpect(jsonPath("$.canAssign").value(false));
         http.perform(get("/api/new-family/people").header("Authorization",auth(chair))).andExpect(status().isOk());
         assign(admin,year(),OfficerPosition.NEW_FAMILY,null);
-        http.perform(get("/api/new-family/people").header("Authorization",auth(chair))).andExpect(status().isForbidden());
+        http.perform(get("/api/new-family/people").header("Authorization",auth(chair))).andExpect(status().isOk());
+        assertFalse(access.canNewFamily(fresh(chair)));
         http.perform(get("/api/new-family/people").header("Authorization",auth(member))).andExpect(status().isOk());
     }
     @Test void activationRechecksAccountStatusBeforeChangingAnyAuthority() {

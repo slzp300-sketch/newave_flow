@@ -47,7 +47,7 @@ export function FeedbackToast({notice,onClose}){
  </AnimatePresence></div>,document.body)
 }
 
-export function MotionDialog({title,busy,onClose,children,error}){
+export function MotionDialog({title,busy,onClose,children,error,className='',footer}){
  const reduced=useMotionPreference(),present=useIsPresent(),dialog=useRef(null),heading=useRef(null),id=useId()
  useEffect(()=>{
   const node=dialog.current,previous=document.activeElement,overflow=document.body.style.overflow
@@ -55,12 +55,13 @@ export function MotionDialog({title,busy,onClose,children,error}){
   const dispose=installPressFeedback(node)
   return()=>{dispose();node.close();document.body.style.overflow=overflow;if(previous?.isConnected)previous.focus({preventScroll:true})}
  },[])
- return createPortal(<motion.dialog ref={dialog} className={`officer-dialog pt-motion-dialog app-motion ${reduced?'motion-reduced':''}`} aria-labelledby={id}
+ return createPortal(<motion.dialog ref={dialog} className={`officer-dialog pt-motion-dialog app-motion ${reduced?'motion-reduced':''} ${className}`} aria-labelledby={id}
   data-exiting={!present||undefined} inert={present?undefined:''} onCancel={e=>{e.preventDefault();if(!busy&&present)onClose()}}
   initial={reduced?{opacity:0}:{opacity:0,y:14,scale:.985}} animate={{opacity:1,y:0,scale:1}}
   exit={reduced?{opacity:0}:{opacity:0,y:8,scale:.99}} transition={{duration:reduced?.12:.2,ease}}>
   <header><h2 id={id} ref={heading} tabIndex={-1}>{title}</h2><button type="button" className="icon-button" aria-label="닫기" disabled={busy||!present} onClick={onClose}><X size={20}/></button></header>
   <div className="officer-dialog-body">{error&&<p className="pt-live-error" role="alert">{error}</p>}{children}</div>
+  {footer&&<footer className="pt-dialog-footer">{footer}</footer>}
  </motion.dialog>,document.body)
 }
 

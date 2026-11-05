@@ -120,7 +120,7 @@ class PostgresMigrationTest {
         execute(Files.readString(Path.of("db/migrations/V013__content_moderation.sql")));
         execute(Files.readString(Path.of("db/migrations/V014__apple_passwordless.sql")));
         // Current entities require the additive push and calendar-quarter tables, even with delivery disabled.
-        for (String name : List.of("V015__notifications_push", "V016__tts_calendar_quarters", "V017__weekly_church_reports", "V018__teacher_profile_gender", "V019__new_family_team", "V020__officer_organization", "V021__praise_team", "V022__intercession_team")) {
+        for (String name : List.of("V015__notifications_push", "V016__tts_calendar_quarters", "V017__weekly_church_reports", "V018__teacher_profile_gender", "V019__new_family_team", "V020__officer_organization", "V021__praise_team", "V022__intercession_team", "V023__intercession_schedule", "V024__intercession_prayer_completion", "V025__intercession_request_updates")) {
             String sql=Files.readString(Path.of("db/migrations/"+name+".sql"));
             Map<String,String> before;
             try(var c=connect()) { before=EventReadMigrationTest.fingerprints(c); }

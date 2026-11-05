@@ -51,7 +51,9 @@ class NewFamilyHttpTest {
     List<StudentRow> teamRows(LocalDate date){return weekly.get(date).classes().stream().filter(c->c.classId()<0&&c.submitted()).flatMap(c->c.students().stream()).toList();}
     @Test void scopesTeamAccessAndRevokesItImmediately()throws Exception {
         var admin=user("가상관리",User.Role.ADMIN);var team=user("가상팀원",User.Role.TEACHER);var other=user("가상일반",User.Role.TEACHER);var executive=user("가상임원",User.Role.EXECUTIVE);
-        for(var u:List.of(team,other,executive))http.perform(get("/api/new-family/people").header("Authorization",auth(u))).andExpect(status().isForbidden());
+        for(var u:List.of(team,other))http.perform(get("/api/new-family/people").header("Authorization",auth(u))).andExpect(status().isForbidden());
+        http.perform(get("/api/new-family/people").header("Authorization",auth(executive))).andExpect(status().isOk());
+        http.perform(post("/api/new-family/people").header("Authorization",auth(executive)).contentType("application/json").content("{}")).andExpect(status().isForbidden());
         http.perform(put("/api/new-family/team/{id}",team.getId()).header("Authorization",auth(other)).contentType("application/json").content("{\"member\":true}")).andExpect(status().isForbidden());
         http.perform(put("/api/new-family/team/{id}",team.getId()).header("Authorization",auth(admin)).contentType("application/json").content("{\"member\":true}")).andExpect(status().isOk());
         http.perform(get("/api/new-family/people").header("Authorization",auth(team))).andExpect(status().isOk());

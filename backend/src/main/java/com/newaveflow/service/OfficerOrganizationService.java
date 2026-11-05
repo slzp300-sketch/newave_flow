@@ -30,8 +30,8 @@ public class OfficerOrganizationService {
 
     public Capability capability(User actor) {
         var u=access.current(actor); var positions=access.positions(u);
-        return new Capability(access.activeYear(),access.common(u),u.getRole()==User.Role.ADMIN,access.canReport(u),access.canNewFamily(u),
-            positions.stream().map(p->office(p,u)).toList(),positions.stream().map(p->p.grade).filter(Objects::nonNull).toList(),praise.canEnter(u),intercession.canManage(u));
+        return new Capability(access.activeYear(),access.common(u),u.getRole()==User.Role.ADMIN,access.canReport(u),access.canViewNewFamily(u),
+            positions.stream().map(p->office(p,u)).toList(),positions.stream().map(p->p.grade).filter(Objects::nonNull).toList(),praise.canEnter(u),intercession.canViewTeam(u));
     }
     private int year(int value) { if(value<2000||value>2100) throw AppException.badRequest("활동연도를 확인해주세요."); return value; }
     private Office office(OfficerPosition p,User u) {

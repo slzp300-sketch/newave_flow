@@ -69,11 +69,12 @@ class PrivacyDeletionTest {
             s.execute("""
                 INSERT INTO intercession_registry(id,revision) VALUES(1,0);
                 INSERT INTO intercession_members(id) VALUES(1),(2);
-                INSERT INTO intercession_requests(id,author_id,sender_name,title,body,category,source,share,anonymous,public_title,public_text,status,revision,created_at,updated_at) VALUES
-                  (1,1,'삭제대상가상','개인 기도 요청','삭제대상가상 개인 원문','기타','앱',true,true,'개인 요청','삭제대상가상 공유본','PUBLISHED',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
-                  (2,2,'보존교사가상','보존 요청','다른 교사의 기도제목 보존','기타','앱',false,true,'','','PENDING',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-                INSERT INTO intercession_meetings(meeting_date,host_id,duration,zoom_url,revision,selected_ids,paper,prepared_at)
-                  VALUES('2026-11-05',1,45,'https://zoom.us/j/123',0,'[1]','[{"title":"삭제대상가상 공유본"}]',CURRENT_TIMESTAMP);
+                INSERT INTO intercession_requests(id,author_id,sender_name,title,body,category,source,share,anonymous,public_title,public_text,status,revision,created_at,updated_at,prayer_completed) VALUES
+                  (1,1,'삭제대상가상','개인 기도 요청','삭제대상가상 개인 원문','기타','앱',true,true,'개인 요청','삭제대상가상 공유본','PUBLISHED',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,false),
+                  (2,2,'보존교사가상','보존 요청','다른 교사의 기도제목 보존','기타','앱',false,true,'','','PENDING',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,false);
+                UPDATE intercession_requests SET pending_update='{"note":"삭제대상가상 새 근황"}',update_history='[{"note":"삭제대상가상 지난 근황"}]' WHERE id=1;
+                INSERT INTO intercession_meetings(meeting_date,host_id,duration,zoom_url,revision,selected_ids,paper,prepared_at,canceled,cancellation_reason)
+                  VALUES('2026-11-05',1,45,'https://zoom.us/j/123',0,'[1]','[{"title":"삭제대상가상 공유본"}]',CURRENT_TIMESTAMP,false,'');
                 """);
             s.execute("""
                 ALTER TABLE push_devices ADD FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE;

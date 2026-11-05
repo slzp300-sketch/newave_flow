@@ -8,8 +8,7 @@ import { useMotionPreference } from '../common/Motion'
 import CommunitySafetyGate from '../common/CommunitySafetyGate'
 
 export default function AppLayout() {
-  const { pathname, search } = useLocation()
-  const presentation = pathname === '/intercession' && new URLSearchParams(search).get('page') === 'present'
+  const { pathname } = useLocation()
   const reduced = useMotionPreference()
   const { isRefreshing, pullDistance } = usePullToRefresh()
   const { user } = useAuthStore()
@@ -64,13 +63,13 @@ export default function AppLayout() {
       </div>
 
       <main
-        className={['readable-content flex-1 mx-auto w-full transition-transform duration-150', presentation ? 'max-w-[1100px] pb-6' : 'pb-[calc(80px+env(safe-area-inset-bottom))] max-w-mobile'].join(' ')}
+        className="readable-content flex-1 mx-auto w-full transition-transform duration-150 pb-[calc(80px+env(safe-area-inset-bottom))] max-w-mobile"
         style={pullDistance > 0 ? { transform: `translateY(${pullDistance * 0.4}px)` } : undefined}
       >
         {/* Opacity only: a transform here would displace fixed submit bars and dialogs. */}
         <div key={pathname} className="motion-page"><CommunitySafetyGate><Outlet /></CommunitySafetyGate></div>
       </main>
-      {!presentation && <BottomNav />}
+      <BottomNav />
     </div>
   )
 }

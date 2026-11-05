@@ -34,15 +34,23 @@ public class IntercessionService {
  public record MemberInput(Long revision,List<Long> userIds) {}
  public record RequestInput(String title,String body,String category,boolean proxy,String senderName,boolean share,boolean anonymous) {}
  public record ReviewInput(Long revision,String action,String publicTitle,String publicText,boolean anonymous) {}
+ public record DecisionInput(Long revision,Boolean publish,Boolean completed,String publicTitle,String publicText,Boolean anonymous) {}
+ public record UpdateInput(Long revision,String title,String body,String note) {}
+ public record UpdateReviewInput(Long revision,Boolean updatePublic,String publicTitle,String publicText) {}
+ public record PrayerUpdate(String title,String body,String note,LocalDateTime submittedAt) {}
+ public record UpdateHistory(PrayerUpdate update,LocalDateTime reviewedAt,boolean shared) {}
  public record Revision(Long revision) {}
- public record MeetingInput(Long revision,LocalTime startTime,int duration,Long hostId,String zoomUrl) {}
+ public record MeetingInput(Long revision,LocalTime startTime,int duration,Long hostId,String zoomUrl,Boolean canceled,String cancellationReason) {
+  // Older clients may update a host without knowing about cancellation. Preserve its saved state.
+  public MeetingInput(Long revision,LocalTime startTime,int duration,Long hostId,String zoomUrl){this(revision,startTime,duration,hostId,zoomUrl,null,null);}
+ }
  public record MaterialsInput(Long revision,List<Long> requestIds) {}
  public record Person(Long id,String name,String role) {}
- public record RequestView(Long id,long revision,String title,String body,String publicTitle,String publicText,String category,String author,String source,boolean share,boolean anonymous,String state,LocalDateTime date,boolean own,boolean canReadOriginal) {}
+ public record RequestView(Long id,long revision,String title,String body,String publicTitle,String publicText,String category,String author,String source,boolean share,boolean anonymous,String state,LocalDateTime date,boolean own,boolean canReadOriginal,boolean completed,PrayerUpdate pendingUpdate,List<UpdateHistory> updates) {}
  public record RequestPage(List<RequestView> items,long total,int page,int pages) {}
  public record PaperItem(Long id,long revision,String title,String body,String category,String author) {}
- public record MeetingView(LocalDate date,LocalTime time,int duration,Long hostId,String hostName,String zoom,long revision,int voters,List<RequestView> selected,List<PaperItem> paper,boolean paperStale,LocalDateTime preparedAt) {}
- public record State(Long me,boolean canManage,boolean canLead,LocalDate week,long teamRevision,List<Person> team,List<Person> candidates,List<MeetingView> meetings,long pending,long published) {}
+ public record MeetingView(LocalDate date,LocalTime time,int duration,Long hostId,String hostName,String zoom,long revision,int voters,List<RequestView> selected,List<PaperItem> paper,boolean paperStale,LocalDateTime preparedAt,boolean canceled,String cancellationReason) {}
+ public record State(Long me,boolean canManage,boolean canLead,boolean canViewTeam,LocalDate week,long teamRevision,List<Person> team,List<Person> candidates,List<MeetingView> meetings,long pending,long published) {}
 
  private User actor(User principal) {
   var u=access.current(principal);
@@ -52,6 +60,7 @@ public class IntercessionService {
  private boolean eligible(User u){return u!=null&&u.isActive()&&!u.isSuspended()&&!deletions.existsByUserId(u.getId());}
  public boolean lead(User u){return access.all(u)||access.hasOffice(u,OfficerPosition.INTERCESSION);}
  public boolean canManage(User principal){var u=actor(principal);return lead(u)||members.existsById(u.getId());}
+ public boolean canViewTeam(User principal){var u=actor(principal);return access.common(u)||canManage(u);}
  private void manage(User u){if(!canManage(u))throw AppException.forbidden("중보기도팀만 변경할 수 있습니다.");}
  // Same lock order as account suspension and office changes. Recheck the current session after acquiring locks.
  private User writer(User principal){
@@ -74,7 +83,8 @@ public class IntercessionService {
   boolean own=owner(r,u),original=originals&&(own||canManage(u));
   return new RequestView(r.getId(),r.getRevision(),original?r.getTitle():null,original?r.getBody():null,
    original||publicRequest(r)?r.getPublicTitle():null,original||publicRequest(r)?r.getPublicText():null,r.getCategory(),
-   original||!r.isAnonymous()?r.getSenderName():null,original?r.getSource():null,r.isShare(),r.isAnonymous(),r.getStatus().name().toLowerCase(Locale.ROOT),r.getCreatedAt(),own,original);
+   original||!r.isAnonymous()?r.getSenderName():null,original?r.getSource():null,r.isShare(),r.isAnonymous(),r.getStatus().name().toLowerCase(Locale.ROOT),r.getCreatedAt(),own,original,r.isPrayerCompleted(),
+   original&&r.getPendingUpdate()!=null?read(r.getPendingUpdate(),new TypeReference<PrayerUpdate>(){}):null,original?read(r.getUpdateHistory(),new TypeReference<List<UpdateHistory>>(){}):List.of());
  }
  private IntercessionRequest request(Long id){return requests.findById(id).orElseThrow(()->AppException.notFound("기도제목을 찾을 수 없습니다."));}
  public RequestView detail(Long id,User principal){
@@ -93,7 +103,10 @@ public class IntercessionService {
    default -> throw AppException.badRequest("목록을 확인해주세요.");
   }
   if(status!=null&&!status.isBlank()&&!status.equals("all")){
-   if(status.equals("private")&&scope.equals("inbox"))spec=spec.and((r,q,b)->b.isFalse(r.get("share")));
+   if(status.equals("pending")&&scope.equals("inbox"))spec=spec.and((r,q,b)->b.and(b.notEqual(r.get("status"),Status.ARCHIVED),b.or(b.equal(r.get("status"),Status.PENDING),b.isNotNull(r.get("pendingUpdate")))));
+   else if(status.equals("ongoing"))spec=spec.and((r,q,b)->b.and(r.get("status").in(Status.READY,Status.PUBLISHED),b.isFalse(r.get("prayerCompleted"))));
+   else if(status.equals("completed"))spec=spec.and((r,q,b)->b.and(r.get("status").in(Status.READY,Status.ANSWERED),b.isTrue(r.get("prayerCompleted"))));
+   else if(status.equals("private")&&scope.equals("inbox"))spec=spec.and((r,q,b)->b.isFalse(r.get("share")));
    else{Status parsed;try{parsed=Status.valueOf(status.toUpperCase(Locale.ROOT));}catch(Exception e){throw AppException.badRequest("상태를 확인해주세요.");}spec=spec.and((r,q,b)->b.equal(r.get("status"),parsed));}
   }
   String term=text(search,100,false);
@@ -114,10 +127,10 @@ public class IntercessionService {
   var u=actor(principal);boolean manager=canManage(u),leader=lead(u);var week=monday(requestedWeek);
   int tue=0,thu=0;
   if(!week.isAfter(monday(null))){var counts=participation.get(week).summary();tue=counts.tuesday();thu=counts.thursday();}
-  var pending=requests.count((r,q,b)->b.equal(r.get("status"),Status.PENDING));
+  var pending=requests.count((r,q,b)->b.and(b.notEqual(r.get("status"),Status.ARCHIVED),b.or(b.equal(r.get("status"),Status.PENDING),b.isNotNull(r.get("pendingUpdate")))));
   var published=requests.count(publicSpec().and((r,q,b)->b.equal(r.get("status"),Status.PUBLISHED)));
-  return new State(u.getId(),manager,leader,week,manager?registry.findById(1L).map(IntercessionRegistry::getRevision).orElse(0L):0,
-   manager?team():List.of(),leader?users.findByIsActiveTrue().stream().filter(this::eligible).sorted(Comparator.comparing(User::getName)).map(p->new Person(p.getId(),p.getName(),p.getRole().name())).toList():List.of(),
+  return new State(u.getId(),manager,leader,canViewTeam(u),week,manager?registry.findById(1L).map(IntercessionRegistry::getRevision).orElse(0L):0,
+   canViewTeam(u)?team():List.of(),leader?users.findByIsActiveTrue().stream().filter(this::eligible).sorted(Comparator.comparing(User::getName)).map(p->new Person(p.getId(),p.getName(),p.getRole().name())).toList():List.of(),
    List.of(meetingView(week.plusDays(1),tue,u),meetingView(week.plusDays(3),thu,u)),manager?pending:0,published);
  }
  private IntercessionMeeting meeting(LocalDate date){meetingDate(date);return meetings.findById(date).orElseGet(()->{var m=new IntercessionMeeting();m.setMeetingDate(date);return m;});}
@@ -127,8 +140,8 @@ public class IntercessionService {
   var available=new HashMap<Long,IntercessionRequest>();requests.findAllById(ids).stream().filter(r->r.isShare()&&r.getStatus()==Status.PUBLISHED).forEach(r->available.put(r.getId(),r));
   List<PaperItem> paper=m.getPaper()==null?List.of():read(m.getPaper(),new TypeReference<>(){});
   boolean stale=paper.stream().anyMatch(p->!available.containsKey(p.id())||available.get(p.id()).getRevision()!=p.revision());
-  return new MeetingView(date,m.getStartTime(),m.getDuration(),m.getHost()==null?null:m.getHost().getId(),m.getHost()==null?"미배정":eligible(m.getHost())&&canManage(m.getHost())?m.getHost().getName():"진행자 재배정 필요",m.getZoomUrl(),m.getRevision(),voters,
-   manager?ids.stream().filter(available::containsKey).map(id->view(available.get(id),u,false)).toList():List.of(),manager&&!stale?paper:List.of(),manager&&stale,manager?m.getPreparedAt():null);
+  return new MeetingView(date,IntercessionMeeting.START_TIME,m.getDuration(),m.getHost()==null?null:m.getHost().getId(),m.getHost()==null?"미배정":eligible(m.getHost())&&canManage(m.getHost())?m.getHost().getName():"진행자 재배정 필요",m.getZoomUrl(),m.getRevision(),voters,
+   manager?ids.stream().filter(available::containsKey).map(id->view(available.get(id),u,false)).toList():List.of(),manager&&!stale?paper:List.of(),manager&&stale,manager?m.getPreparedAt():null,m.isCanceled(),m.getCancellationReason());
  }
  @Transactional public State members(MemberInput in,User principal){
   var u=writer(principal);if(!lead(u))throw AppException.forbidden("팀장만 팀원을 지정할 수 있습니다.");
@@ -149,22 +162,64 @@ public class IntercessionService {
  }
  @Transactional public RequestView review(Long id,ReviewInput in,User principal){
   var u=writer(principal);manage(u);var r=request(id);revision(in.revision(),r.getRevision());
-  if(r.getStatus()==Status.ARCHIVED)throw AppException.conflict("철회된 기도제목입니다.");
+  if(r.getStatus()==Status.ARCHIVED)throw AppException.conflict("삭제된 기도제목입니다.");
+  if(r.getPendingUpdate()!=null)throw AppException.conflict("수정 내용과 근황을 먼저 확인해주세요.");
   if(in.action()==null||!Set.of("SAVE","PUBLISH","ANSWER").contains(in.action()))throw AppException.badRequest("처리를 확인해주세요.");
   if(in.action().equals("ANSWER")){
-   if(r.getStatus()!=Status.PUBLISHED)throw AppException.badRequest("공유 중인 제목만 응답·감사로 옮길 수 있습니다.");r.setStatus(Status.ANSWERED);
+   if(r.getStatus()!=Status.PUBLISHED)throw AppException.badRequest("공유 중인 제목만 응답·감사로 옮길 수 있습니다.");r.setStatus(Status.ANSWERED);r.setPrayerCompleted(true);
   }else{
    if(in.action().equals("PUBLISH")&&!r.isShare())throw AppException.forbidden("팀에만 전달된 내용은 전체 공유할 수 없습니다.");
    r.setPublicTitle(text(in.publicTitle(),80,true));r.setPublicText(text(in.publicText(),2000,true));
    // Anonymous consent may be tightened by a team editor, never loosened.
    if(r.isAnonymous()&&!in.anonymous())throw AppException.forbidden("익명으로 제출된 이름은 공개할 수 없습니다.");
-   r.setAnonymous(in.anonymous());r.setStatus(in.action().equals("PUBLISH")?Status.PUBLISHED:Status.READY);
+   r.setAnonymous(in.anonymous());r.setStatus(in.action().equals("PUBLISH")?(r.isPrayerCompleted()?Status.ANSWERED:Status.PUBLISHED):Status.READY);
   }
   r.setRevision(r.getRevision()+1);r.setUpdatedAt(now());requests.saveAndFlush(r);return view(r,u,true);
  }
+ @Transactional public RequestView decide(Long id,DecisionInput in,User principal){
+  var u=writer(principal);manage(u);var r=request(id);revision(in.revision(),r.getRevision());
+  if(r.getStatus()==Status.ARCHIVED)throw AppException.conflict("삭제된 기도제목입니다.");
+  if(r.getPendingUpdate()!=null)throw AppException.conflict("수정 내용과 근황을 먼저 확인해주세요.");
+  if(in.publish()==null||in.completed()==null)throw AppException.badRequest("공유 여부와 기도 상태를 선택해주세요.");
+  if(in.publish()&&!r.isShare())throw AppException.forbidden("팀에만 전달된 내용은 전체 공유할 수 없습니다.");
+  boolean anonymous=in.anonymous()==null?r.isAnonymous():in.anonymous();
+  if(r.isAnonymous()&&!anonymous)throw AppException.forbidden("익명으로 제출된 이름은 공개할 수 없습니다.");
+  String title=text(in.publicTitle()==null?(r.getPublicTitle().isBlank()?r.getTitle():r.getPublicTitle()):in.publicTitle(),80,true);
+  String body=text(in.publicText()==null?(r.getPublicText().isBlank()?r.getBody():r.getPublicText()):in.publicText(),2000,true);
+  r.setPublicTitle(title);r.setPublicText(body);r.setAnonymous(anonymous);r.setPrayerCompleted(in.completed());
+  r.setStatus(in.publish()?(in.completed()?Status.ANSWERED:Status.PUBLISHED):Status.READY);
+  r.setRevision(r.getRevision()+1);r.setUpdatedAt(now());requests.saveAndFlush(r);return view(r,u,true);
+ }
+ @Transactional public RequestView updateRequest(Long id,UpdateInput in,User principal){
+  var u=writer(principal);var r=request(id);
+  if(!owner(r,u))throw AppException.forbidden("본인이 보낸 기도제목만 수정할 수 있습니다.");
+  revision(in.revision(),r.getRevision());
+  if(r.getStatus()==Status.ARCHIVED)throw AppException.conflict("삭제된 기도제목입니다.");
+  String title=text(in.title(),80,true),body=text(in.body(),2000,true),note=text(in.note(),2000,false);
+  if(title.equals(r.getTitle())&&body.equals(r.getBody())&&note.isEmpty())throw AppException.badRequest("수정할 내용이나 근황을 입력해주세요.");
+  r.setPendingUpdate(write(new PrayerUpdate(title,body,note,now())));
+  r.setRevision(r.getRevision()+1);r.setUpdatedAt(now());requests.saveAndFlush(r);return view(r,u,true);
+ }
+ @Transactional public RequestView reviewUpdate(Long id,UpdateReviewInput in,User principal){
+  var u=writer(principal);manage(u);var r=request(id);revision(in.revision(),r.getRevision());
+  if(r.getStatus()==Status.ARCHIVED)throw AppException.conflict("삭제된 기도제목입니다.");
+  if(r.getPendingUpdate()==null)throw AppException.conflict("확인할 수정 내용이 없습니다.");
+  if(in.updatePublic()==null)throw AppException.badRequest("공유 내용에 반영할지 선택해주세요.");
+  if(in.updatePublic()&&!r.isShare())throw AppException.forbidden("팀에만 전달된 내용은 전체 공유할 수 없습니다.");
+  var update=read(r.getPendingUpdate(),new TypeReference<PrayerUpdate>(){});
+  String title=in.updatePublic()?text(in.publicTitle(),80,true):r.getPublicTitle(),body=in.updatePublic()?text(in.publicText(),2000,true):r.getPublicText();
+  r.setTitle(update.title());r.setBody(update.body());
+  if(in.updatePublic()){
+   r.setPublicTitle(title);r.setPublicText(body);
+   r.setStatus(r.isPrayerCompleted()?Status.ANSWERED:Status.PUBLISHED);
+  }else if(r.getStatus()==Status.PENDING){r.setStatus(Status.READY);}
+  var history=new ArrayList<>(read(r.getUpdateHistory(),new TypeReference<List<UpdateHistory>>(){}));
+  history.add(new UpdateHistory(update,now(),in.updatePublic()));r.setUpdateHistory(write(history));r.setPendingUpdate(null);
+  r.setRevision(r.getRevision()+1);r.setUpdatedAt(now());requests.saveAndFlush(r);return view(r,u,true);
+ }
  @Transactional public RequestView withdraw(Long id,Revision in,User principal){
-  var u=writer(principal);var r=request(id);if(!owner(r,u)&&!canManage(u))throw AppException.forbidden("본인 또는 중보기도팀만 철회할 수 있습니다.");
-  revision(in.revision(),r.getRevision());r.setStatus(Status.ARCHIVED);r.setRevision(r.getRevision()+1);r.setUpdatedAt(now());requests.saveAndFlush(r);return view(r,u,true);
+  var u=writer(principal);var r=request(id);if(!owner(r,u)&&!canManage(u))throw AppException.forbidden("작성자 또는 중보기도팀만 삭제할 수 있습니다.");
+  revision(in.revision(),r.getRevision());r.setStatus(Status.ARCHIVED);r.setPendingUpdate(null);r.setRevision(r.getRevision()+1);r.setUpdatedAt(now());requests.saveAndFlush(r);return view(r,u,true);
  }
  private String zoom(String value){
   String s=text(value,1000,false);if(s.isEmpty())return s;
@@ -176,7 +231,13 @@ public class IntercessionService {
   var u=writer(principal);manage(u);var m=meeting(date);revision(in.revision(),m.getRevision());
   if(!List.of(30,45,60).contains(in.duration()))throw AppException.badRequest("진행 시간은 30·45·60분입니다.");
   User host=null;if(in.hostId()!=null){host=users.findById(in.hostId()).orElseThrow(()->AppException.badRequest("진행자를 선택해주세요."));if(!eligible(host)||!canManage(host))throw AppException.badRequest("현재 중보기도팀에서 진행자를 선택해주세요.");}
-  m.setHost(host);m.setStartTime(in.startTime());m.setDuration(in.duration());m.setZoomUrl(zoom(in.zoomUrl()));changed(m);return state(date,u);
+  String zoomUrl=zoom(in.zoomUrl());
+  String reason=Boolean.TRUE.equals(in.canceled())?text(in.cancellationReason(),120,false):"";
+  if(!Set.of("","교회 행사","부서 행사","기타").contains(reason))throw AppException.badRequest("취소 사유를 선택해주세요.");
+  m.setHost(host);m.setStartTime(IntercessionMeeting.START_TIME);m.setDuration(in.duration());m.setZoomUrl(zoomUrl);
+  // Cancellation is an announcement only: votes, attendance statistics and prepared materials stay intact.
+  if(in.canceled()!=null){m.setCanceled(in.canceled());m.setCancellationReason(reason);}
+  changed(m);return state(date,u);
  }
  private void changed(IntercessionMeeting m){m.setRevision(m.getRevision()+1);meetings.saveAndFlush(m);}
  @Transactional public State materials(LocalDate date,MaterialsInput in,User principal){
@@ -189,9 +250,14 @@ public class IntercessionService {
  @Transactional public State prepare(LocalDate date,Revision in,User principal){
   var u=writer(principal);manage(u);var m=meeting(date);revision(in.revision(),m.getRevision());
   List<Long> ids=read(m.getSelectedIds(),new TypeReference<>(){});if(ids.isEmpty())throw AppException.badRequest("기도제목을 먼저 선택해주세요.");
-  var result=new ArrayList<PaperItem>();
-  for(var id:ids){var r=request(id);if(!r.isShare()||r.getStatus()!=Status.PUBLISHED)throw AppException.conflict("공유 내용이 변경됐습니다. 제목을 다시 선택해주세요.");
+  var result=new ArrayList<PaperItem>();var continuing=new ArrayList<Long>();
+  for(var id:ids){var r=request(id);
+   if(r.isPrayerCompleted()&&r.getStatus()!=Status.ARCHIVED)continue;
+   if(!r.isShare()||r.getStatus()!=Status.PUBLISHED)throw AppException.conflict("공유 내용이 변경됐습니다. 제목을 다시 선택해주세요.");
+   continuing.add(id);
    result.add(new PaperItem(id,r.getRevision(),r.getPublicTitle(),r.getPublicText(),r.getCategory(),r.isAnonymous()?null:r.getSenderName()));}
+  if(result.isEmpty())throw AppException.badRequest("계속 기도할 제목을 먼저 선택해주세요.");
+  m.setSelectedIds(write(continuing));
   m.setPaper(write(result));m.setPreparedAt(now());changed(m);return state(date,u);
  }
 }

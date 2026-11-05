@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { prayerTotals, prayerTrendTotals, matchesPrayerStatus, prayerWeekOffset } from '../src/utils/prayerParticipation.js'
+import { prayerTotals, prayerTrendTotals, matchesPrayerStatus, prayerWeekOffset, selectedPrayerWeekOffset } from '../src/utils/prayerParticipation.js'
 
 test('prayer attendance uses responses only and separates unanswered from absent', () => {
   const totals = prayerTotals({ tuesday: 2, thursday: 3, absent: 2, unanswered: 9 })
@@ -35,4 +35,15 @@ test('trend navigation crosses year and daylight saving boundaries by whole week
   assert.equal(prayerWeekOffset('2026-12-28', '2027-01-04'), -1)
   assert.equal(prayerWeekOffset('2026-03-02', '2026-03-09'), -1)
   assert.equal(prayerWeekOffset('2026-10-26', '2026-10-26'), 0)
+})
+
+test('statistics links retain the selected past week and normalize weekdays',()=>{
+ assert.equal(selectedPrayerWeekOffset('2026-10-26','2026-11-02'),-1)
+ assert.equal(selectedPrayerWeekOffset('2026-10-29','2026-11-02'),-1)
+ assert.equal(selectedPrayerWeekOffset('2026-11-02','2026-11-02'),0)
+ assert.equal(selectedPrayerWeekOffset('2026-12-28','2027-01-04'),-1)
+ assert.equal(selectedPrayerWeekOffset('2024-02-29','2024-03-04'),-1)
+})
+test('invalid and future statistics links fall back to this week',()=>{
+ for(const week of [null,'','invalid','2026-02-30','2026-13-01','2026-11-09','1999-12-27','2101-01-03'])assert.equal(selectedPrayerWeekOffset(week,'2026-11-02'),0)
 })
