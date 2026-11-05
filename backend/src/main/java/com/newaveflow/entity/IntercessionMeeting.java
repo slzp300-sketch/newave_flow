@@ -7,8 +7,8 @@ public class IntercessionMeeting {
  public static final LocalTime START_TIME=LocalTime.of(21,30);
  @Id private LocalDate meetingDate;
  private LocalTime startTime=START_TIME;
- @Column(nullable=false) private boolean canceled=false;
- @Column(length=120,nullable=false) private String cancellationReason="";
+ @org.hibernate.annotations.ColumnDefault("false") @Column(nullable=false) private boolean canceled=false;
+ @org.hibernate.annotations.ColumnDefault("''") @Column(length=120,nullable=false) private String cancellationReason="";
  @Column(nullable=false) private int duration=45;
  @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="host_id") private User host;
  @Column(length=1000,nullable=false) private String zoomUrl="";
