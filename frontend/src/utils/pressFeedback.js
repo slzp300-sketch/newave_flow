@@ -48,7 +48,8 @@ export function installPressFeedback(root) {
   const listeners = [
     [root, 'pointerdown', down], [view, 'pointermove', move], [view, 'pointerup', up],
     [view, 'pointercancel', cancel], [root, 'keydown', keyDown], [view, 'keyup', keyUp],
-    [view, 'blur', reset], [root, 'scroll', reset],
+    [view, 'blur', reset], [root, 'scroll', reset], [view, 'pagehide', reset],
+    [root.ownerDocument, 'visibilitychange', reset], [root.ownerDocument, 'pause', reset], [root.ownerDocument, 'resume', reset],
   ]
   for (const [node, name, fn] of listeners) node.addEventListener(name, fn, { capture: true, passive: true })
   return () => {

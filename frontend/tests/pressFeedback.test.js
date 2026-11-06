@@ -9,7 +9,8 @@ function fixture() {
   view.performance = { now: () => time }
   view.setTimeout = (fn, delay) => { tasks.set(++id, { fn, due: time + delay }); return id }
   view.clearTimeout = id => tasks.delete(id)
-  root.ownerDocument = { defaultView: view }
+  root.ownerDocument = new EventTarget()
+  root.ownerDocument.defaultView = view
   root.contains = target => target.inside
   const control = ({ disabled = false, link = false } = {}) => ({
     inside: true, attrs: new Map(),
@@ -66,6 +67,17 @@ test('disabled controls and secondary pointers have no feedback; keyboard activa
   f.emit(f.root, 'keydown', b, { key: ' ' }); assert.equal(f.pressed(b), true)
   f.emit(f.view, 'keyup', b, { key: ' ' }); f.advance(120)
   assert.equal(f.pressed(b), false)
+  f.stop()
+})
+
+test('suspending and resuming without a pointerup clears held feedback', () => {
+  const f = fixture(), b = f.control()
+  for (const type of ['visibilitychange', 'pause', 'resume']) {
+    f.emit(f.root, 'pointerdown', b)
+    f.emit(f.root.ownerDocument, type, b)
+    assert.equal(f.pressed(b), false)
+    f.emit(f.root, 'click', b)
+  }
   f.stop()
 })
 
