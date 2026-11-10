@@ -11,6 +11,9 @@ import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
+    @Query("select a from Attendance a join fetch a.student where a.student.id in :ids and a.attendanceDate between :from and :to order by a.attendanceDate desc")
+    List<Attendance> findForCare(@Param("ids") java.util.Collection<Long> ids, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     List<Attendance> findByClassGroupIdAndAttendanceDate(Long classGroupId, LocalDate date);
 
     Optional<Attendance> findByStudentIdAndAttendanceDate(Long studentId, LocalDate date);

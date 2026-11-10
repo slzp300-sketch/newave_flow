@@ -1,3 +1,4 @@
+import DialogActions, {DialogSections} from './common/DialogActions'
 import AppSelect from './common/AppSelect'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -29,20 +30,21 @@ export default function ApprovalAssignmentDialog({ users, scope, onClose }) {
   const close = () => { if (!busy.current) onClose() }
   const next = () => index + 1 < users.length ? setIndex(value => value + 1) : onClose()
   const teacher = users[index]
-  return createPortal(<dialog ref={dialog} className="admin-accounts-page account-approval-dialog" aria-labelledby={titleId}
+  return createPortal(<dialog ref={dialog} className="admin-accounts-page account-approval-dialog ui-dialog-shell" aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); close() }}>
-    <header className="account-dialog-heading">
+    <DialogSections><header className="account-dialog-heading">
       <div><p aria-live="polite" className="text-sm text-primary-700">가입 승인 완료{users.length > 1 ? ' · ' + (index + 1) + ' / ' + users.length : ''}</p>
         <h2 id={titleId} className="text-lg font-bold text-gray-900">교사 반 배정</h2></div>
       <button type="button" className="account-dialog-close" aria-label="반 배정 닫기" disabled={saving} onClick={close}><X size={22} /></button>
     </header>
-    <AssignmentStep key={teacher.id} teacher={teacher} scope={scope} last={index + 1 === users.length} onNext={next}
-      onBusy={value => { busy.current = value; setSaving(value) }} />
+    <div className="ui-dialog-body"><AssignmentStep key={teacher.id} teacher={teacher} scope={scope} last={index + 1 === users.length} onNext={next}
+      onBusy={value => { busy.current = value; setSaving(value) }} /></div>
     {users.length > 1 && index + 1 < users.length && <button type="button" className="account-skip-rest" disabled={saving} onClick={close}>나머지는 나중에 배정</button>}
-  </dialog>, document.body)
+  </DialogSections></dialog>, document.body)
 }
 
 function AssignmentStep({ teacher, scope, last, onNext, onBusy }) {
+  const formId=useId()
   const qc = useQueryClient()
   const [phase, setPhase] = useState('ask')
   const [grade, setGrade] = useState('')
@@ -93,17 +95,17 @@ function AssignmentStep({ teacher, scope, last, onNext, onBusy }) {
   if (phase === 'ask') return <div className="account-assignment-step">
     <p ref={question} tabIndex={-1} className="account-assignment-question">{teacher.name + ' 선생님의 반을 배정하시겠어요?'}</p>
     <p className="account-email text-gray-600">{teacher.email}</p>
-    <div className="account-dialog-actions">
-      <Button type="button" onClick={() => setPhase('choose')}>지금 반 배정하기</Button>
+    <DialogActions>
       <Button type="button" variant="secondary" onClick={onNext}>나중에 하기</Button>
-    </div>
+      <Button type="button" onClick={() => setPhase('choose')}>지금 반 배정하기</Button>
+    </DialogActions>
   </div>
   if (phase === 'done') return <div className="account-assignment-step">
     <p ref={question} tabIndex={-1} role="status" className="account-assignment-question">{teacher.name + ' 선생님의 반 배정을 저장했습니다.'}</p>
     <p className="text-sm text-gray-600">{(chosen?.grade || '미분류') + ' ' + (chosen?.name || '') + ' · ' + (primary ? '담임' : '부담임')}</p>
-    <Button type="button" onClick={onNext} disabled={mutation.isPending}>{last ? '완료' : '다음 교사 배정'}</Button>
+    <DialogActions><Button type="button" onClick={onNext} disabled={mutation.isPending}>{last ? '완료' : '다음 교사 배정'}</Button></DialogActions>
   </div>
-  return <form className="account-assignment-step" onSubmit={assign}>
+  return <form id={formId} className="account-assignment-step" onSubmit={assign}>
     <p ref={question} tabIndex={-1} className="account-assignment-question">{teacher.name + ' 선생님 반 배정'}</p>
     <p className="account-email text-gray-600">{teacher.email}</p>
     {!hasQueryData([rosterQuery]) ? <QueryNotice queries={[rosterQuery]} label="반 목록" /> : <>
@@ -132,9 +134,9 @@ function AssignmentStep({ teacher, scope, last, onNext, onBusy }) {
       {currentPrimary && <p className="text-sm text-gray-600">{'현재 담임: ' + currentPrimary.name + (primary ? ' · 기존 담임은 부담임으로 변경됩니다.' : ' · 기존 담임 배정은 유지됩니다.')}</p>}
     </>}
     {error && <p role="alert" className="account-feedback account-feedback-error">{error}</p>}
-    <div className="account-dialog-actions">
-      <Button type="submit" disabled={!ready || !chosen || mutation.isPending} loading={mutation.isPending}>반 배정 저장</Button>
+    <DialogActions>
       <Button type="button" variant="secondary" disabled={mutation.isPending} onClick={onNext}>나중에 하기</Button>
-    </div>
+      <Button type="submit" form={formId} disabled={!ready || !chosen || mutation.isPending} loading={mutation.isPending}>반 배정 저장</Button>
+    </DialogActions>
   </form>
 }

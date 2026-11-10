@@ -180,6 +180,14 @@ class BuiltBundle(unittest.TestCase):
                      'CFBundleURLTypes': [{'CFBundleURLSchemes': ['newaveflow']}],
                      'NSCameraUsageDescription': 'Synthetic camera purpose', 'NSPhotoLibraryUsageDescription': 'Synthetic photo purpose'}
         self.write_plist('Info.plist', self.info)
+        self.info['NewaveWidgetKeychainGroup'] = 'SYNTHETIC1.app.newaveflow.mobile.widgets'
+        self.write_plist('Info.plist', self.info)
+        self.widget_info = {'CFBundleIdentifier': 'app.newaveflow.mobile.widgets', 'CFBundleShortVersionString':'1.0.0', 'CFBundleVersion':'1',
+                            'CFBundleSupportedPlatforms':['iPhoneSimulator'], 'MinimumOSVersion':'17.0',
+                            'NewaveWidgetKeychainGroup':self.info['NewaveWidgetKeychainGroup'],
+                            'NSExtension':{'NSExtensionPointIdentifier':'com.apple.widgetkit-extension'}}
+        self.write_plist('PlugIns/NewaveWidgets.appex/Info.plist', self.widget_info)
+        self.write_plist('PlugIns/NewaveWidgets.appex/PrivacyInfo.xcprivacy', {'NSPrivacyTracking':False})
         self.config = {'appId': 'app.newaveflow.mobile', 'loggingBehavior': 'none',
                        'server': {'iosScheme': 'capacitor', 'hostname': 'localhost', 'cleartext': False}}
         self.write_config()
@@ -201,7 +209,16 @@ class BuiltBundle(unittest.TestCase):
         (self.app / 'capacitor.config.json').write_text(json.dumps(self.config))
 
     def test_complete_simulator_bundle(self):
-        self.assertEqual(bundle['verify'](self.app)['privacyManifests'], 3)
+        self.assertEqual(bundle['verify'](self.app)['privacyManifests'], 4)
+
+    def test_missing_widget_or_mismatched_version_cannot_ship(self):
+        for patch in ({'CFBundleVersion':'old'}, {'CFBundleIdentifier':'wrong'}, {'NewaveWidgetKeychainGroup':'private'}, {'MinimumOSVersion':'16.0'}):
+            self.write_plist('PlugIns/NewaveWidgets.appex/Info.plist', {**self.widget_info, **patch})
+            with self.subTest(patch=patch), self.assertRaises(ValueError):
+                bundle['verify'](self.app)
+        (self.app / 'PlugIns/NewaveWidgets.appex/Info.plist').unlink()
+        with self.assertRaises(OSError):
+            bundle['verify'](self.app)
 
     def test_old_ios_versions_cannot_ship_dialogs_they_do_not_support(self):
         for version in ('14.8', '15.0', '15.3'):
@@ -258,6 +275,8 @@ class BuiltBundle(unittest.TestCase):
             bundle['verify'](self.app, device=True)
         self.info.update({'CFBundleSupportedPlatforms': ['iPhoneOS'], 'NewaveAppleSignInEnabled': 'YES'})
         self.write_plist('Info.plist', self.info)
+        self.widget_info['CFBundleSupportedPlatforms'] = ['iPhoneOS']
+        self.write_plist('PlugIns/NewaveWidgets.appex/Info.plist', self.widget_info)
         bundle['verify'](self.app, device=True, apple_login=True)
 
 

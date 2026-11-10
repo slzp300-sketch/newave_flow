@@ -1,3 +1,4 @@
+import DialogActions, {DialogSections} from '../common/DialogActions'
 import '../../pages/SupportingReadability.css'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
@@ -67,8 +68,8 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose, 
     <>
       <div className="fixed inset-0 z-[80] bg-black/50" onClick={onClose} />
       <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
-        <div ref={panel} tabIndex={-1} role="dialog" aria-label="날짜 선택" onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onClose() } }} className="supporting-readable readable-content date-range-readable safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl">
-          <div className="flex items-center justify-between mb-3">
+        <div ref={panel} tabIndex={-1} role="dialog" aria-label="날짜 선택" onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onClose() } }} className="supporting-readable readable-content date-range-readable ui-dialog-shell safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+          <DialogSections><header className="flex items-center justify-between p-3 border-b border-gray-100">
             <button type="button" onClick={() => setMonth(m => subMonths(m, 1))} className="p-2 rounded-lg active:bg-gray-100" aria-label="이전 달">
               <ChevronLeft size={18} />
             </button>
@@ -76,8 +77,8 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose, 
             <button type="button" onClick={() => setMonth(m => addMonths(m, 1))} className="p-2 rounded-lg active:bg-gray-100" aria-label="다음 달">
               <ChevronRight size={18} />
             </button>
-          </div>
-
+          </header>
+          <div className="ui-dialog-body p-4">
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS.map((w, i) => (
               <div key={w} className={`text-center text-xs font-bold py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-primary-400' : 'text-gray-400'}`}>{w}</div>
@@ -122,10 +123,10 @@ export default function DateRangePicker({ open, start, end, onConfirm, onClose, 
             </p>
           </div>
 
-          <div className="flex gap-2 mt-4">
+          </div><DialogActions>
             <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-bold text-gray-500 bg-gray-100 active:bg-gray-200">취소</button>
             <button type="button" onClick={() => onConfirm(s, e)} className="flex-[2] py-3 rounded-xl text-sm font-bold text-white bg-primary-600 active:bg-primary-700">확인</button>
-          </div>
+          </DialogActions></DialogSections>
         </div>
       </div>
     </>,

@@ -191,6 +191,9 @@ export default function ProfilePage() {
           <button type="button" onClick={() => navigate('/profile/connections')} className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-4 text-left text-base font-bold text-gray-900">
             <span>계정 연결 관리</span><ChevronRight size={18} aria-hidden="true" />
           </button>
+          <button type="button" onClick={() => navigate('/profile/widgets')} className="flex min-h-14 w-full items-center justify-between gap-3 border-t border-gray-100 px-4 py-4 text-left text-base font-bold text-gray-900">
+            <span>홈 화면 위젯</span><ChevronRight size={18} aria-hidden="true" />
+          </button>
         </Card>
 
         {/* 내 프로필 편집 */}

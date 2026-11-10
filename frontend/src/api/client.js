@@ -4,6 +4,7 @@ import { createApiClient, resolveApiBaseUrl } from './createApiClient'
 import { queryClient } from '../queryClient'
 import { invalidateAfterWrite } from './queryPolicy'
 import { validatedReviewApiUrl } from '../auth/reviewEnvironment'
+import { createReadRecovery } from './readRecovery'
 
 export const API = resolveApiBaseUrl(import.meta.env.VITE_API_URL, import.meta.env.PROD)
 let reviewUrlPromise
@@ -14,9 +15,14 @@ const reviewBaseURL = async () => {
   }).catch(error => { reviewUrlPromise = null; throw error })
   return reviewUrlPromise
 }
-const api = createApiClient({ axios, authStore: useAuthStore, baseURL: API,
+export const readRecovery = createReadRecovery()
+const api = createApiClient({ axios, authStore: useAuthStore, baseURL: API, readRecovery,
   reviewBaseURL,
   onSessionExpired: () => { window.location.href = '/login' },
+  onSessionRefreshed: (previous, next) => {
+    // Permission changes still discard data from the former role.
+    if (previous?.id !== next?.id || previous?.role !== next?.role) queryClient.clear()
+  },
   onWriteSuccess: config => { void invalidateAfterWrite(queryClient, config.url) },
 })
 export const refreshSession = api.refreshSession

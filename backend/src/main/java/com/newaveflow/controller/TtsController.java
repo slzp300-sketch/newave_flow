@@ -68,6 +68,12 @@ public class TtsController {
     }
 
     // 모든 교사가 보는 통계 (주차별 점수)
+    @PutMapping("/answer-fields")
+    public ResponseEntity<TtsResponse> saveFields(@RequestBody com.newaveflow.dto.tts.TtsFieldAnswerRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(ttsService.saveFields(currentUser, request));
+    }
+
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(@RequestParam Integer year) {
         return ResponseEntity.ok(ttsService.getStats(year));

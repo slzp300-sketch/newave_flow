@@ -64,7 +64,7 @@ function WeeklyReportWeek({ date, offset, onOffset, canNewFamily }) {
         <label className="wr-check"><input type="checkbox" checked={fields.includeLate !== 'false'} onChange={e => edit('includeLate', String(e.target.checked))} />지각을 출석 인원에 포함</label>
         {Object.entries(longFields).map(([key, label]) => <label key={key}>{label}<textarea rows={3} maxLength={6000} value={fields[key] || ''} onChange={e => edit(key, e.target.value)} /></label>)}
 
-        <div className="wr-row"><Button size="sm" disabled={!draft} onClick={() => save.mutate()}>{save.isPending ? '저장 중…' : '공통 항목 저장'}</Button>{draft && <Button variant="secondary" size="sm" onClick={() => { setDraft(null); setError('') }}>작성 취소</Button>}</div>
+        <div className="wr-row wr-form-actions">{draft && <Button variant="secondary" size="sm" onClick={() => { setDraft(null); setError('') }}>작성 취소</Button>}<Button size="sm" disabled={!draft} onClick={() => save.mutate()}>{save.isPending ? '저장 중…' : '공통 항목 저장'}</Button></div>
       </fieldset></details>
       <details className="wr-panel"><DisclosureSummary>반·새가족팀 제출 자료</DisclosureSummary>{data.classes.map(c => <div className="wr-table-row" key={c.classId}>
         <div className="wr-row"><div><strong>{c.grade} {c.className}</strong><p className="wr-muted">{c.teacherName || '담당 교사 미배정'} · {c.changed ? '수정 후 재제출 필요' : c.submitted ? '제출 완료' : '미제출'}{c.legacy ? ' · 이전 제출 자료' : ''}</p>{c.correctionReason && <p className="wr-help">보완: {c.correctionReason}</p>}</div><Button variant="secondary" size="sm" disabled={busy || (activeClass != null && activeClass !== c.classId)} onClick={() => setActiveClass(activeClass === c.classId ? null : c.classId)}>{activeClass === c.classId ? '닫기' : '내용 확인·보완'}</Button></div>

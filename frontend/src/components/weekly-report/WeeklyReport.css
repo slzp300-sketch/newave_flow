@@ -51,3 +51,6 @@ html.large-font .wr-grid,html.large-font .wr-downloads { grid-template-columns:1
 html.large-font .wr-overview .wr-progress { grid-template-columns:1fr; }
 html.large-font .wr-progress>div { flex-direction:row; align-items:center; justify-content:space-between; gap:12px; }
 html.large-font .wr-progress>div+div { border-left:0; border-top:1px solid theme('colors.gray.100'); }
+
+.wr-form-actions{padding-top:.75rem;border-top:1px solid var(--newave-line)}
+.wr-form-actions>button{flex:1;min-height:46px}

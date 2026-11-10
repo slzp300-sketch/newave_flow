@@ -48,6 +48,7 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty 'spring.test.context.cache.maxSize', '4'
     inputs.dir('db/privacy')
     inputs.dir('db/migrations')
 }

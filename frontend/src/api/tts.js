@@ -9,7 +9,7 @@ export const ttsApi = {
   getAllQuestions: () => client.get('/admin/tts/questions'),
   updateQuestions: (questions) => client.post('/admin/tts/questions', questions),
   getWeek: (date) => client.get('/tts/week', { params: { date } }),
-  saveAnswer: (data) => client.put('/tts/answer', data),
+  saveAnswer: (data) => client.put(data.changes || typeof data.checked === 'boolean' ? '/tts/answer-fields' : '/tts/answer', data),
   getStats: (year, options = {}) => client.get('/tts/stats', { ...options, params: { year } }),
   getWeekStats: (year, weekNum, calendarYear, quarter, options = {}) => client.get('/tts/stats/week', { ...options, params: { year, weekNum, calendarYear, quarter } }),
   previewLegacy: (data) => client.post('/admin/tts/legacy/preview', data),

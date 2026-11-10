@@ -1,4 +1,5 @@
-import {useCallback,useEffect,useRef,useState} from 'react'
+import DialogActions from '../components/common/DialogActions'
+import {useCallback,useEffect,useId,useRef,useState} from 'react'
 import {Link,useNavigate,useSearchParams} from 'react-router-dom'
 import {useQuery,useQueryClient} from '@tanstack/react-query'
 import {AnimatePresence} from 'framer-motion'
@@ -28,6 +29,7 @@ function QueryStatus({query}){return query.isError?<div className="it-error" rol
 function Pagination({data,onChange,busy}){return data?.pages>1&&<div className="it-row"><Button size="sm" variant="secondary" disabled={busy||data.page===0} onClick={()=>onChange(data.page-1)}>이전</Button><span className="it-meta">{data.page+1} / {data.pages}</span><Button size="sm" variant="secondary" disabled={busy||data.page+1>=data.pages} onClick={()=>onChange(data.page+1)}>다음</Button></div>}
 
 export default function IntercessionPage(){
+ const meetingFormId=useId()
  const user=useAuthStore(s=>s.user),navigate=useNavigate(),[params,setParams]=useSearchParams(),qc=useQueryClient()
  const requested=normalizePrayerPage(params.get('page')||'home'),page=titles[requested]?requested:'home'
  const week=params.get('week')||toApiDate(getWeekStartByOffset(0,1)),item=params.get('item')
@@ -116,15 +118,15 @@ export default function IntercessionPage(){
      {manager&&<label className="it-check"><MotionCheck checked={dialog.proxy} disabled={busy} onChange={e=>setDialog(d=>({...d,proxy:e.target.checked}))}/>다른 분의 기도제목 대신 등록</label>}
      <RequestForm key={String(dialog.proxy)} proxy={dialog.proxy} busy={busy} onSave={form=>run(()=>api.submit(form),'기도제목을 보냈습니다.',()=>{setDialog(null);if(manager)setView('pending')})}/>
     </div>}
-    {dialog.type==='request'&&<div className="it-app it-dialog-content" data-feature-tone="violet"><QueryStatus query={detail}/>{active&&(dialog.confirmDelete?<div className="it-stack"><p className="it-prayer-copy">이 기도제목을 삭제할까요? 목록과 공유 화면에서 사라집니다.</p><div className="it-actions"><Button variant="secondary" disabled={busy} onClick={()=>setDialog(d=>({...d,confirmDelete:false}))}>취소</Button><Button loading={busy} onClick={deleteRequest}>삭제하기</Button></div></div>:requestDetail)}</div>}
-    {dialog.type==='meeting'&&<form className="it-stack" onSubmit={e=>{e.preventDefault();run(()=>api.meeting(dialog.date,{revision:dialog.revision,startTime:'21:30',duration:Number(dialog.duration),hostId:dialog.hostId||null,zoomUrl:dialog.zoom,canceled:dialog.canceled,cancellationReason:dialog.canceled?dialog.cancellationReason:''}),'모임 설정을 저장했습니다.',()=>setDialog(null))}}><fieldset disabled={busy} className="it-stack">
+    {dialog.type==='request'&&<div className="it-app it-dialog-content" data-feature-tone="violet"><QueryStatus query={detail}/>{active&&(dialog.confirmDelete?<div className="it-stack"><p className="it-prayer-copy">이 기도제목을 삭제할까요? 목록과 공유 화면에서 사라집니다.</p><DialogActions><Button variant="secondary" disabled={busy} onClick={()=>setDialog(d=>({...d,confirmDelete:false}))}>취소</Button><Button loading={busy} onClick={deleteRequest}>삭제하기</Button></DialogActions></div>:requestDetail)}</div>}
+    {dialog.type==='meeting'&&<form id={meetingFormId} className="it-stack" onSubmit={e=>{e.preventDefault();run(()=>api.meeting(dialog.date,{revision:dialog.revision,startTime:'21:30',duration:Number(dialog.duration),hostId:dialog.hostId||null,zoomUrl:dialog.zoom,canceled:dialog.canceled,cancellationReason:dialog.canceled?dialog.cancellationReason:''}),'모임 설정을 저장했습니다.',()=>setDialog(null))}}><fieldset disabled={busy} className="it-stack">
      <div className="it-row"><span className="it-meta">시작 시간</span><strong>21:30 고정</strong></div>
      <FormField label="기도 인도자"><AppSelect aria-label="기도 인도자" value={dialog.hostId||''} onChange={e=>setDialog(d=>({...d,hostId:Number(e.target.value)||null}))}><option value="">미배정</option>{team.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</AppSelect></FormField>
      <label className="it-check"><MotionCheck checked={dialog.canceled} onChange={e=>setDialog(d=>({...d,canceled:e.target.checked}))}/><span>이번 모임은 쉬어요</span></label>
      {dialog.canceled&&<><FormField label="쉬는 이유 (선택)"><AppSelect aria-label="쉬는 이유" value={dialog.cancellationReason} onChange={e=>setDialog(d=>({...d,cancellationReason:e.target.value}))}><option value="">선택 안 함</option>{['교회 행사','부서 행사','기타'].map(reason=><option key={reason} value={reason}>{reason}</option>)}</AppSelect></FormField><p className="it-meta">기존 투표·통계는 유지됩니다.</p></>}
-     <Button type="submit" loading={busy}>저장</Button>
+     <DialogActions><Button type="submit" form={meetingFormId} loading={busy}>저장</Button></DialogActions>
     </fieldset></form>}
-    {dialog.type==='members'&&<><div className="it-pick-list">{data?.candidates.map(t=><label className="it-pick" key={t.id}><MotionCheck disabled={busy||team.some(m=>m.id===t.id&&m.role==='팀장')} checked={dialog.ids.includes(t.id)} onChange={e=>setDialog(d=>({...d,ids:e.target.checked?[...d.ids,t.id]:d.ids.filter(id=>id!==t.id)}))}/><span>{t.name}<small>{team.find(m=>m.id===t.id)?.role||'교사'}</small></span></label>)}</div><Button loading={busy} onClick={()=>run(()=>api.team({revision:dialog.revision,userIds:dialog.ids}),'팀원 명단을 저장했습니다.',()=>setDialog(null))}>명단 저장</Button></>}
+    {dialog.type==='members'&&<><div className="it-pick-list">{data?.candidates.map(t=><label className="it-pick" key={t.id}><MotionCheck disabled={busy||team.some(m=>m.id===t.id&&m.role==='팀장')} checked={dialog.ids.includes(t.id)} onChange={e=>setDialog(d=>({...d,ids:e.target.checked?[...d.ids,t.id]:d.ids.filter(id=>id!==t.id)}))}/><span>{t.name}<small>{team.find(m=>m.id===t.id)?.role||'교사'}</small></span></label>)}</div><DialogActions><Button loading={busy} onClick={()=>run(()=>api.team({revision:dialog.revision,userIds:dialog.ids}),'팀원 명단을 저장했습니다.',()=>setDialog(null))}>명단 저장</Button></DialogActions></>}
     {dialog.type==='copy'&&<textarea className="field-input" rows={10} readOnly value={dialog.text} aria-label="복사할 기도제목"/>}
    </MotionDialog>}
   </AnimatePresence>

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import DialogActions from '../common/DialogActions'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import AppSelect from '../common/AppSelect'
 import Button from '../common/Button'
@@ -49,19 +50,20 @@ function OrganizationSummary({ offices }) {
   return <StatSummary label="임원 구성" items={[{ label: '배정 직책', value: `${count.assigned} / ${offices.length}`, unit: '' }, { label: '담당 인원', value: count.people }, { label: '공석', value: count.vacant, unit: '자리' }]} />
 }
 function AssignmentEditor({ editor, organization, onClose, onSaved, onRefresh }) {
+  const formId=useId()
   const [selected, setSelected] = useState(editor.office.userId == null ? '' : String(editor.office.userId))
   const save = useMutation({ mutationFn: () => officersApi.assign(organization.year, editor.office.code, editor.revision, selected ? Number(selected) : null), onSuccess: onSaved, onError: onRefresh })
   const candidates = organization.candidates.filter(p => editor.office.code !== 'PASTOR' || p.role === 'PASTOR')
   const needsPromotion = organization.year === organization.activeYear && candidates.find(p => String(p.id) === selected)?.role === 'TEACHER'
   return <OfficerDialog title={editor.office.label} busy={save.isPending} onClose={onClose}>
-    <form onSubmit={e => { e.preventDefault(); save.mutate() }} className="officer-form"><fieldset disabled={save.isPending}>
+    <form id={formId} onSubmit={e => { e.preventDefault(); save.mutate() }} className="officer-form"><fieldset disabled={save.isPending}>
       <label>담당자<AppSelect aria-label={`${editor.office.label} 담당자`} value={selected} onChange={e => setSelected(e.target.value)}>
         <option value="">공석</option>{editor.office.userId && !candidates.some(p => p.id === editor.office.userId) && <option value={editor.office.userId} disabled>{editor.office.name} · 현재 이용 불가</option>}
         {candidates.map(p => <option key={p.id} value={p.id}>{p.name} · {roles[p.role]}{organization.offices.filter(o => o.userId === p.id && o.code !== editor.office.code).map(o => ` · ${o.label}`).join('')}</option>)}
       </AppSelect></label>
       <p className="officer-meta">{organization.year !== organization.activeYear ? '해당 연도로 전환할 때 권한이 적용됩니다.' : needsPromotion ? '임원 권한을 함께 부여합니다. 해당 교사는 다시 로그인해야 합니다.' : '담당 업무 권한도 함께 변경됩니다.'}</p>
       {save.isError && <p className="officer-error" role="alert">{errorText(save.error)}{save.error.response?.status === 409 && ' 닫은 뒤 담당자를 다시 선택해주세요.'}</p>}
-      <div className="officer-row"><Button type="button" variant="secondary" onClick={onClose}>취소</Button><Button type="submit" loading={save.isPending} disabled={selected === String(editor.office.userId ?? '') || (save.isError && save.error.response?.status === 409)}>저장</Button></div>
+      <DialogActions><Button type="button" variant="secondary" disabled={save.isPending} onClick={onClose}>취소</Button><Button type="submit" form={formId} loading={save.isPending} disabled={selected === String(editor.office.userId ?? '') || (save.isError && save.error.response?.status === 409)}>저장</Button></DialogActions>
     </fieldset></form>
   </OfficerDialog>
 }
@@ -72,6 +74,6 @@ function ActivationEditor({ organization, onClose, onSaved }) {
     <p>직책별 권한이 새 담당자에게 적용됩니다. 기존 연도 기록은 보존됩니다.</p>
     <p className="officer-meta">공석 {organizationCounts(organization.offices).vacant}자리 · 권한이 바뀐 교사는 다시 로그인해야 합니다.</p>
     {save.isError && <p className="officer-error" role="alert">{errorText(save.error)}</p>}
-    <div className="officer-row"><Button variant="secondary" disabled={save.isPending} onClick={onClose}>취소</Button><Button loading={save.isPending} onClick={() => save.mutate()}>전환 확정</Button></div>
+    <DialogActions><Button variant="secondary" disabled={save.isPending} onClick={onClose}>취소</Button><Button loading={save.isPending} onClick={() => save.mutate()}>전환 확정</Button></DialogActions>
   </OfficerDialog>
 }

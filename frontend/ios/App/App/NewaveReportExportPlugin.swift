@@ -11,13 +11,13 @@ struct NewaveReportFile {
     let data: Data
 
     init(filename: String, base64: String) throws {
-        let pattern = #"\A(청소년부 주간보고서 \([0-9]{4}-[0-9]{2}-[0-9]{2}\)\.(pdf|hwpx)|찬양팀 콘티 \([0-9]{4}-[0-9]{2}-[0-9]{2}\) v[1-9][0-9]*\.pdf)\z"#
+        let pattern = #"\A(청소년부 주간보고서 \([0-9]{4}-[0-9]{2}-[0-9]{2}\)\.(pdf|hwpx)|찬양팀 콘티 \([0-9]{4}-[0-9]{2}-[0-9]{2}\) v[1-9][0-9]*\.pdf|예배위원 공지 \([0-9]{4}-[0-9]{2}-[0-9]{2}\)\.png)\z"#
         guard filename.range(of: pattern, options: .regularExpression) != nil,
               base64.utf8.count <= ((Self.maxBytes + 2) / 3) * 4,
               let data = Data(base64Encoded: base64), !data.isEmpty, data.count <= Self.maxBytes else {
             throw NewaveReportFileError.invalidFile
         }
-        let signature: [UInt8] = filename.hasSuffix(".pdf") ? [0x25, 0x50, 0x44, 0x46, 0x2d] : [0x50, 0x4b, 0x03, 0x04]
+        let signature: [UInt8] = filename.hasSuffix(".png") ? [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] : filename.hasSuffix(".pdf") ? [0x25, 0x50, 0x44, 0x46, 0x2d] : [0x50, 0x4b, 0x03, 0x04]
         guard data.starts(with: signature) else { throw NewaveReportFileError.invalidFile }
         self.filename = filename
         self.data = data

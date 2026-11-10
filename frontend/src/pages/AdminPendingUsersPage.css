@@ -41,6 +41,9 @@
 .account-dialog-actions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:.25rem; }
 .account-dialog-actions > button { flex:1 1 9rem; }
 .account-skip-rest { display:block; width:100%; margin-top:.75rem; padding:.5rem; color:#475569; text-decoration:underline; text-underline-offset:.2em; }
+.account-approval-dialog.ui-dialog-shell>.account-dialog-heading{margin:0;padding:12px 16px;border-bottom:1px solid #e5eaf2}
+.account-approval-dialog.ui-dialog-shell>.ui-dialog-body{padding:16px}
+.account-approval-dialog.ui-dialog-shell>.account-skip-rest{flex:none;margin:0;padding:8px 16px}
 @media(max-width:359px) {
   .admin-accounts-page .account-pending-row { grid-template-columns:2.5rem minmax(0,1fr); }
   .admin-accounts-page .account-pending-row > button { grid-column:2; justify-self:end; }

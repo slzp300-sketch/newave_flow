@@ -3,11 +3,13 @@ import {
   UserRoundCheck, Ticket, BookOpen, CalendarDays, HandHeart, Presentation,
   ContactRound, School, NotebookPen, Route, Bell, ListChecks, ShieldCheck,
   BadgeCheck, KeyRound, GraduationCap, Network, UserRoundMinus, LayoutGrid,
-  UserRound, ShieldAlert, UsersRound, FileText, Music2,
+  UserRound, ShieldAlert, UsersRound, FileText, Music2, Church,
 } from 'lucide-react'
 
 // Page identity only. Save, completion, warning and input-state icons stay independent.
 const SYMBOLS = {
+  gradeCare: UsersRound,
+  worship: Church,
   praise: Music2,
   safety: ShieldAlert,
   attendance: UserRoundCheck,

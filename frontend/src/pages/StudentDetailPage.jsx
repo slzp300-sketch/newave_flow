@@ -1,4 +1,11 @@
 import GradeLabel from '../components/common/GradeLabel'
+import {useState} from 'react'
+import useAuthStore from '../store/authStore'
+import {gradeCareApi} from '../api/gradeCare'
+import {checkLabels} from '../utils/gradeCare'
+import StudentCareDialog from '../components/grade-care/StudentCareDialog'
+import Button from '../components/common/Button'
+import {AnimatePresence} from 'framer-motion'
 import './PeopleReadability.css'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -15,6 +22,8 @@ import { newFamilyApi } from '../api/newFamily'
 
 export default function StudentDetailPage() {
   const { id } = useParams()
+  const user=useAuthStore(s=>s.user),[careOpen,setCareOpen]=useState(false)
+  const careAccess=useQuery({queryKey:['grade-care-student-access',user?.id,id],queryFn:()=>gradeCareApi.studentAccess(id),staleTime:0,refetchInterval:30000,refetchOnWindowFocus:'always'})
   const handoff = useQuery({queryKey:['new-family-handoff',id],queryFn:()=>newFamilyApi.handoff(id)})
 
   const { data: student, isLoading: loadingStudent } = useQuery({
@@ -57,6 +66,7 @@ export default function StudentDetailPage() {
         </motion.div>
 
         {/* 기본 정보 */}
+        {!careAccess.isError&&careAccess.data?.canCare&&<Button variant="secondary" onClick={()=>setCareOpen(true)}>학생 기록 보기</Button>}
         <div className="grid grid-cols-1 gap-3">
           <SectionLabel>기본 정보</SectionLabel>
           {[
@@ -96,13 +106,13 @@ export default function StudentDetailPage() {
                 >
                   <Card className="flex flex-wrap gap-2 items-center justify-between py-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-secondary-500' : 'bg-red-400'}`} />
+                      <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-secondary-500' : record.status === 'LATE' ? 'bg-amber-400' : 'bg-red-400'}`} />
                       <span className="text-sm font-semibold text-gray-700">{formatDate(record.attendanceDate)}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       {record.note && <MessageSquare size={14} className="text-gray-300" />}
-                      <Badge variant={record.status === 'PRESENT' ? 'success' : 'danger'}>
-                        {record.status === 'PRESENT' ? '출석' : '결석'}
+                      <Badge variant={record.status === 'PRESENT' ? 'success' : record.status === 'LATE' ? 'warning' : 'danger'}>
+                        {checkLabels[record.status] || '미기록'}
                       </Badge>
                     </div>
                   </Card>
@@ -112,6 +122,7 @@ export default function StudentDetailPage() {
           )}
         </div>
       </div>
+      <AnimatePresence>{careOpen&&!careAccess.isError&&careAccess.data?.canCare&&<StudentCareDialog studentId={Number(id)} onClose={()=>setCareOpen(false)}/>}</AnimatePresence>
     </div>
   )
 }

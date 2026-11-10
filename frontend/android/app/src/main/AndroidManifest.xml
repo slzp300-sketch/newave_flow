@@ -54,6 +54,13 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <receiver android:name=".NewaveWidgetProvider" android:exported="false" android:label="@string/widget_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/newave_widget_info" />
+        </receiver>
+        <receiver android:name=".WidgetActionReceiver" android:exported="false" />
+        <service android:name=".WidgetRefreshJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
     </application>
 
 </manifest>

@@ -1,6 +1,9 @@
 export const eventRangeKey = (from, to) => ['events', from, to]
 
 const rules = [
+  [/^\/grade-care|^\/officers|^\/(admin\/)?users|^\/(admin\/)?students|^\/(admin\/)?classes|^\/attendance|^\/reports|^\/weekly-reports|^\/events|^\/meetings|^\/minutes|^\/new-family|^\/safety/, ['grade-care']],
+  [/^\/worship/, ['worship', 'officer-access']],
+  [/^\/officers|^\/(admin\/)?users|^\/(admin\/)?students|^\/safety/, ['worship']],
   [/^\/intercession/, ['intercession', 'officer-access']],
   [/^\/prayer|^\/officers|^\/(admin\/)?users|^\/safety/, ['intercession']],
   [/^\/praise/, ['officer-access']],

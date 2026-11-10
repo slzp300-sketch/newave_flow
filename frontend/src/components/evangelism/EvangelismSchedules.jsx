@@ -1,4 +1,5 @@
-import {useState,useEffect,useRef} from 'react'
+import DialogActions from '../common/DialogActions'
+import {useState,useEffect,useRef,useId} from 'react'
 import {useQuery} from '@tanstack/react-query'
 import {format,parseISO,addDays,nextSaturday} from 'date-fns'
 import {ko} from 'date-fns/locale'
@@ -33,14 +34,15 @@ export default function EvangelismSchedules({groups,groupsQuery,scope,busy,error
   {current&&<EvangelismDialog title="전도 일정 상세" busy={busy} onClose={close}>
    <div className="ev-heading"><strong>{dateLabel(current.scheduledDate)}</strong><span className={'ev-status ev-status-'+current.status.toLowerCase()}>{scheduleStatus(current.status)}</span></div>
    <h3 className="ui-section-title">{scheduleGroupName(current)}</h3><p className="ev-muted">{current.assignments?.map(a=>a.teacherName).join(' · ')||'등록된 담당 교사 없음'}</p>
-   {current.status!=='CANCELED'&&<div className="ev-actions"><Button size="sm" onClick={()=>openForm({mode:'single',id:current.id,scheduledDate:current.scheduledDate,groupId:scheduleGroupId(current)})}>일정 수정</Button><button type="button" className="ev-small" disabled={busy} onClick={()=>setConfirm('cancel')}>일정 취소</button></div>}
+   {!confirm&&current.status!=='CANCELED'&&<DialogActions><Button size="sm" onClick={()=>openForm({mode:'single',id:current.id,scheduledDate:current.scheduledDate,groupId:scheduleGroupId(current)})}>일정 수정</Button><button type="button" className="ev-small" disabled={busy} onClick={()=>setConfirm('cancel')}>일정 취소</button></DialogActions>}
    <button type="button" className="ev-small ev-danger" disabled={busy} onClick={()=>setConfirm('delete')}><Trash2 size={16}/>일정 삭제</button>
-   {confirm&&<div className="ev-confirm"><p>이 일정을 {confirm==='delete'?'삭제':'취소'}할까요?</p><div className="ev-actions"><Button size="sm" loading={busy} onClick={()=>perform('schedule-'+confirm,current.id,()=>confirm==='delete'?evangelismApi.deleteSchedule(current.id):evangelismApi.cancelSchedule(current.id),close)}>{confirm==='delete'?'삭제 확인':'취소 확정'}</Button><button type="button" className="ev-small" disabled={busy} onClick={()=>setConfirm(null)}>돌아가기</button></div></div>}
+   {confirm&&<div className="ev-confirm"><p>이 일정을 {confirm==='delete'?'삭제':'취소'}할까요?</p><DialogActions><Button size="sm" loading={busy} onClick={()=>perform('schedule-'+confirm,current.id,()=>confirm==='delete'?evangelismApi.deleteSchedule(current.id):evangelismApi.cancelSchedule(current.id),close)}>{confirm==='delete'?'삭제 확인':'취소 확정'}</Button><button type="button" className="ev-small" disabled={busy} onClick={()=>setConfirm(null)}>돌아가기</button></DialogActions></div>}
    {error&&<p role="alert" className="ev-error">{error}</p>}
   </EvangelismDialog>}
  </section>
 }
 function ScheduleForm({form,groups,schedules,busy,error,onClose,onSubmit}){
+ const formId=useId()
  const bulk=form.mode==='bulk'
  const groupOptions=groups.map(g=>({value:String(g.id),label:g.name}))
  const [start,setStart]=useState(form.scheduledDate||nextDate()),[count,setCount]=useState(4),[interval,setInterval]=useState(1),[first,setFirst]=useState(String(form.groupId||groups[0]?.id||''))
@@ -69,13 +71,13 @@ function ScheduleForm({form,groups,schedules,busy,error,onClose,onSubmit}){
  const title=form.id?'전도 일정 수정':bulk?'여러 전도 일정 등록':'전도 일정 등록'
  return <EvangelismDialog title={title} busy={busy} onClose={()=>dirty?setConfirmClose(true):onClose()}>
   {!groups.length&&<p className="ev-error" role="alert">전도 조를 먼저 추가해주세요.</p>}
-  <form noValidate onSubmit={submit} className="ev-form">
+  <form id={formId} noValidate onSubmit={submit} className="ev-form">
    {bulk&&<details className="ev-generator" open><DisclosureSummary>반복 일정 만들기</DisclosureSummary><fieldset disabled={busy} className="ev-generator-fields"><div className="ev-field"><label htmlFor="ev-start">시작 날짜</label><input id="ev-start" type="date" value={start} onChange={e=>setStart(e.target.value)}/></div><div className="ev-pair"><div className="ev-field"><label htmlFor="ev-count">횟수</label><input id="ev-count" type="number" min="1" max="52" value={count} onChange={e=>setCount(e.target.value)}/></div><CompactSelect id="ev-interval" label="간격" value={interval} disabled={busy} onChange={setInterval} options={[{value:'1',label:'매주'},{value:'2',label:'2주마다'},{value:'4',label:'4주마다'}]}/></div><CompactSelect id="ev-first-group" label="시작 조" value={first} disabled={busy} onChange={setFirst} options={groupOptions}/><button type="button" className="ev-small" onClick={generate}>아래 목록 다시 만들기</button></fieldset></details>}
    <div className="ev-heading"><h3 className="ui-section-title">{bulk?'등록할 일정 '+rows.length+'개':'일정 정보'}</h3>{bulk&&<button type="button" className="ev-small" disabled={busy||rows.length>=52} onClick={add}><Plus size={16}/>다음 주 추가</button>}</div>
    <fieldset disabled={busy} className="ev-schedule-rows">{rows.map((row,index)=><div key={index} className="ev-schedule-row"><div className="ev-field"><label htmlFor={'ev-date-'+index}>{bulk?(index+1)+'. 날짜':'날짜'}</label><input id={'ev-date-'+index} type="date" value={row.scheduledDate} onChange={e=>update(index,{scheduledDate:e.target.value})}/></div><CompactSelect id={'ev-row-group-'+index} label="담당 조" value={row.groupId} disabled={busy} onChange={value=>update(index,{groupId:value})} options={groupOptions}/>{bulk&&<button type="button" className="ev-icon" aria-label={(index+1)+'번째 일정 제외'} onClick={()=>{setRows(prev=>prev.filter((_,i)=>i!==index));setDirty(true);setLocalError('')}}><Trash2 size={16}/></button>}</div>)}</fieldset>
    {(localError||error)&&<p ref={feedback} tabIndex={-1} role="alert" className="ev-error">{localError||error}</p>}
-   <div className="ev-form-footer"><Button type="submit" loading={busy} disabled={!groups.length||!rows.length}>{form.id?'수정 저장':rows.length+'개 일정 등록'}</Button></div>
+   <DialogActions>{!confirmClose&&<Button type="submit" form={formId} loading={busy} disabled={!groups.length||!rows.length}>{form.id?'수정 저장':rows.length+'개 일정 등록'}</Button>}</DialogActions>
   </form>
-  {confirmClose&&<div ref={closePrompt} tabIndex={-1} className="ev-confirm" role="alertdialog" aria-label="작성 취소 확인"><p>작성 중인 내용을 닫을까요?</p><div className="ev-actions"><button type="button" className="ev-small" onClick={onClose}>작성 취소</button><Button size="sm" onClick={()=>setConfirmClose(false)}>계속 작성</Button></div></div>}
+  {confirmClose&&<div ref={closePrompt} tabIndex={-1} className="ev-confirm" role="alertdialog" aria-label="작성 취소 확인"><p>작성 중인 내용을 닫을까요?</p><DialogActions><Button variant="secondary" disabled={busy} onClick={onClose}>작성 취소</Button><Button disabled={busy} onClick={()=>setConfirmClose(false)}>계속 작성</Button></DialogActions></div>}
  </EvangelismDialog>
 }

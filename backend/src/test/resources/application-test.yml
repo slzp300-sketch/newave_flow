@@ -1,6 +1,7 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:regression;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    # Each Spring context owns its schema; evicting one must not drop another context's tables.
+    url: jdbc:h2:mem:regression-${random.uuid};MODE=PostgreSQL;DB_CLOSE_DELAY=-1
     username: sa
     password: ""
   jpa:

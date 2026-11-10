@@ -68,3 +68,6 @@
 }
 .large-font .ev-schedule-row { grid-template-columns:minmax(0,1fr) 44px; }
 .large-font .ev-schedule-row .ev-field:first-child { grid-column:1 / -1; }
+
+.ev-dialog .ui-dialog-footer .ev-selection{position:static;margin:0;padding:0;border:0;box-shadow:none;width:100%}
+.ev-dialog .ui-dialog-footer .ev-actions>button{flex:1;min-height:46px}

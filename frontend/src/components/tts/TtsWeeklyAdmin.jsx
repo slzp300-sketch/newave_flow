@@ -1,3 +1,4 @@
+import {DialogSections} from '../common/DialogActions'
 import { useState, useRef, useLayoutEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -75,9 +76,10 @@ function WeeklyDetail({ person, week, scope, onClose }) {
     return () => { node.close(); document.body.style.overflow = overflow; window.scrollTo(position); if (previous?.isConnected) previous.focus({ preventScroll: true }) }
   }, [])
   const detail = query.data
-  return createPortal(<dialog ref={dialog} className="tts-admin-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onClose() }}>
+  return createPortal(<dialog ref={dialog} className="ui-dialog-shell tts-admin-dialog" aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onClose() }}>
+    <DialogSections>
     <header><h2 ref={heading} tabIndex={-1} id={titleId}>{person.teacherName}</h2><button type="button" aria-label="주간 체크 내역 닫기" onClick={onClose}><X size={22} aria-hidden="true" /></button></header>
-    <div className="tts-admin-dialog-body">
+    <div className="tts-admin-dialog-body ui-dialog-body">
       <p className="tts-admin-muted">{rankingDateLabel(week.start)} ~ {rankingDateLabel(week.end)}</p>
       <div className="tts-admin-heading"><GradeLabel value={person.grade || person.gradeGroup} /><strong>{person.score ?? 0}점 · {person.isSubmitted ? '참여' : '미참여'}</strong></div>
       {state !== 'ready' ? <AdminStatsNotice query={query} state={state} label="체크 내역" /> : !detail ? <p className="tts-admin-empty">조회할 기록이 없습니다.</p> : detail.imported ? <p className="tts-admin-note">시트 확정 점수 · 날짜별 체크 내역 없음</p> : <>
@@ -88,5 +90,5 @@ function WeeklyDetail({ person, week, scope, onClose }) {
         {person.updatedAt && <p className="tts-admin-muted">최근 저장 {formatUpdatedAt(person.updatedAt)}</p>}
       </>}
     </div>
-  </dialog>, document.body)
+  </DialogSections></dialog>, document.body)
 }

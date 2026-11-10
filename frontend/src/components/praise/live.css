@@ -42,8 +42,6 @@
 .pt-editor-dialog>header h2{color:#795099;font-size:.98rem;letter-spacing:-.02em}
 .pt-editor-dialog>header>.icon-button{flex:none;border-radius:14px}
 .pt-editor-dialog>.officer-dialog-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;overflow-anchor:none;scroll-padding-block:.85rem;padding:.85rem;gap:1rem;-webkit-overflow-scrolling:touch}
-.pt-editor-dialog>.pt-dialog-footer{flex:none;display:flex;align-items:center;gap:.75rem;padding:.75rem .85rem;border-top:1px solid #e5eaf2;background:#fff}
-.pt-dialog-footer>button,.pt-dialog-footer>.pt-action-control{flex:1;min-width:0}
 .pt-pdf-actions{display:flex;flex-direction:column;gap:.6rem;width:100%;min-width:0}
 .pt-save-context{flex:none;display:flex;flex-direction:column;gap:.1rem;color:#67768c;font-size:.72rem;min-width:60px}
 .pt-save-context strong{color:#2c654c;font-size:.8rem}

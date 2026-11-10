@@ -1,3 +1,4 @@
+import DialogActions, {DialogSections} from '../components/common/DialogActions'
 import AppSelect from '../components/common/AppSelect'
 import { useState, useLayoutEffect, useRef, useId } from 'react'
 import { createPortal } from 'react-dom'
@@ -140,15 +141,15 @@ function EventDialog({ event, today, onClose, onSaved, onDeleted }) {
     catch (e) { setError(errorText(e, '삭제하지 못했습니다. 다시 시도해 주세요.')) }
     finally { busy.current = false; setSaving(false) }
   }
-  return createPortal(<dialog ref={dialog} className="calendar-admin-dialog" aria-labelledby={titleId} onCancel={e => { e.preventDefault(); close() }}>
-    <header className="calendar-admin-dialog-heading"><h2 ref={heading} tabIndex={-1} id={titleId}>{editing ? event.isNew ? '일정 등록' : '일정 수정' : event.title}</h2><button type="button" className="calendar-admin-close" aria-label="일정 상세 닫기" disabled={saving} onClick={close}><X size={22} aria-hidden="true" /></button></header>
-    <div className="calendar-admin-dialog-body">
+  return createPortal(<dialog ref={dialog} className="calendar-admin-dialog ui-dialog-shell" aria-labelledby={titleId} onCancel={e => { e.preventDefault(); close() }}>
+    <DialogSections><header className="calendar-admin-dialog-heading"><h2 ref={heading} tabIndex={-1} id={titleId}>{editing ? event.isNew ? '일정 등록' : '일정 수정' : event.title}</h2><button type="button" className="calendar-admin-close" aria-label="일정 상세 닫기" disabled={saving} onClick={close}><X size={22} aria-hidden="true" /></button></header>
+    <div className="calendar-admin-dialog-body ui-dialog-body">
       {error && <p ref={errorPanel} tabIndex={-1} role="alert" className="calendar-admin-error">{error}</p>}
       {message && <p role="status" className="calendar-admin-success">{message}</p>}
       {confirmation ? <section ref={confirmPanel} tabIndex={-1} role="alertdialog" aria-label={confirmation === 'delete' ? '일정 삭제 확인' : '수정 내용 취소 확인'} className="calendar-admin-confirm">
         <p>{confirmation === 'delete' ? '이 일정과 출석 기록을 삭제할까요?' : '저장하지 않은 내용을 버릴까요?'}</p>
-        <div className="calendar-admin-actions"><Button size="sm" disabled={saving} onClick={confirmation === 'delete' ? remove : discard}>{confirmation === 'delete' ? '삭제 확정' : '버리기'}</Button><Button size="sm" variant="secondary" disabled={saving} onClick={() => setConfirmation(null)}>{confirmation === 'delete' ? '취소' : '계속 작성'}</Button></div>
-      </section> : editing ? <form onSubmit={submit} aria-label={event.isNew ? '일정 등록' : '일정 수정'}>
+        <DialogActions><Button variant="secondary" disabled={saving} onClick={() => setConfirmation(null)}>{confirmation === 'delete' ? '취소' : '계속 작성'}</Button><Button disabled={saving} onClick={confirmation === 'delete' ? remove : discard}>{confirmation === 'delete' ? '삭제 확정' : '버리기'}</Button></DialogActions>
+      </section> : editing ? <form id={titleId+"-form"} onSubmit={submit} aria-label={event.isNew ? '일정 등록' : '일정 수정'}>
         <fieldset disabled={saving} className="calendar-admin-form">
           <label>일정 제목<input ref={titleInput} value={draft.title} required maxLength={200} onChange={e => change({ title: e.target.value })} /></label>
           <div className="calendar-admin-date"><span>날짜</span><DateRangeField label="일정 날짜 선택" portalTarget={() => dialog.current} start={draft.eventDate} end={draft.endDate} onChange={(eventDate, endDate) => change({ eventDate, endDate })} className="w-full min-h-11 rounded-xl border px-3 py-2 text-base" /></div>
@@ -162,7 +163,7 @@ function EventDialog({ event, today, onClose, onSaved, onDeleted }) {
           <label>설명 · 선택<textarea rows={3} value={draft.description} onChange={e => change({ description: e.target.value })} /></label>
           <EventSwitch label="출석 체크" checked={draft.attendanceRequired} onChange={() => change({ attendanceRequired: !draft.attendanceRequired, attendanceStartDate: draft.attendanceStartDate || (eventToday() > draft.endDate ? draft.endDate : eventToday()), attendanceDeadline: draft.attendanceDeadline || draft.endDate })} />
           {draft.attendanceRequired && <EventAttendanceFields value={draft} onChange={change} />}
-          <div className="calendar-admin-actions"><Button type="submit" size="sm" loading={saving}>{saving ? '저장 중…' : event.isNew ? '등록 완료' : '수정 저장'}</Button><Button type="button" size="sm" variant="secondary" onClick={cancelEdit}>취소</Button></div>
+          <DialogActions><Button type="button" variant="secondary" disabled={saving} onClick={cancelEdit}>취소</Button><Button type="submit" form={titleId+"-form"} loading={saving}>{saving ? '저장 중…' : event.isNew ? '등록 완료' : '수정 저장'}</Button></DialogActions>
         </fieldset>
       </form> : <>
         <dl className="calendar-admin-detail">
@@ -173,10 +174,10 @@ function EventDialog({ event, today, onClose, onSaved, onDeleted }) {
           {event.attendanceRequired && <><div><dt>대상</dt><dd>{eventAttendanceTarget(event)}</dd></div><div><dt>접수 기간</dt><dd>{event.attendanceStartDate ? formatDate(event.attendanceStartDate) : '시작일 미지정'} ~ {formatDate(event.attendanceDeadline || event.endDate || event.eventDate)}</dd></div></>}
         </dl>
         {event.description && <section aria-label="일정 설명" className="calendar-admin-description">{event.description}</section>}
-        <div className="calendar-admin-actions"><Button size="sm" variant="secondary" onClick={edit}><PenLine size={16} aria-hidden="true" />수정</Button><button type="button" className="calendar-admin-delete" onClick={() => { setError(''); setConfirmation('delete') }}><Trash2 size={16} aria-hidden="true" />삭제</button></div>
+        <DialogActions><Button size="sm" variant="secondary" onClick={edit}><PenLine size={16} aria-hidden="true" />수정</Button><button type="button" className="calendar-admin-delete" onClick={() => { setError(''); setConfirmation('delete') }}><Trash2 size={16} aria-hidden="true" />삭제</button></DialogActions>
       </>}
     </div>
-  </dialog>, document.body)
+  </DialogSections></dialog>, document.body)
 }
 
 function EventSwitch({ label, checked, onChange }) {

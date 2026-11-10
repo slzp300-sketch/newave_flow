@@ -11,8 +11,7 @@ export default function AppLayout() {
   const { pathname } = useLocation()
   const reduced = useMotionPreference()
   const { isRefreshing, pullDistance } = usePullToRefresh()
-  const { user } = useAuthStore()
-  const largeFontMode = user?.largeFont ?? false
+  const largeFontMode = useAuthStore(state => state.user?.largeFont ?? false)
 
   useEffect(() => {
     const root = document.documentElement
@@ -63,7 +62,7 @@ export default function AppLayout() {
       </div>
 
       <main
-        className="readable-content flex-1 mx-auto w-full transition-transform duration-150 pb-[calc(80px+env(safe-area-inset-bottom))] max-w-mobile"
+        className={`readable-content flex-1 mx-auto w-full pb-[calc(80px+env(safe-area-inset-bottom))] max-w-mobile ${!pullDistance && !reduced ? 'transition-transform duration-150' : ''}`}
         style={pullDistance > 0 ? { transform: `translateY(${pullDistance * 0.4}px)` } : undefined}
       >
         {/* Opacity only: a transform here would displace fixed submit bars and dialogs. */}

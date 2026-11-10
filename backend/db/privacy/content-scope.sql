@@ -10,8 +10,10 @@ WHERE c.table_schema='public'
     'event_student_attendances','events','meeting_minutes','checklist_items','tts_item',
     'tts_question_revisions','evangelism_groups','content_reports','user_status_events','moderated_photos',
     'weekly_class_supplements','teacher_worship_attendances','weekly_department_reports','weekly_report_exports',
-    'new_family_members','new_family_checks','new_family_submissions','new_family_references','intercession_requests')
+    'new_family_members','new_family_checks','new_family_submissions','new_family_references','intercession_requests','worship_weeks','student_care_records')
   AND (c.table_name,c.column_name) NOT IN (
+    ('student_care_records','kind'),
+    ('worship_weeks','intercession_grade'),
     ('intercession_requests','status'),('intercession_requests','source'),('intercession_requests','category'),
     ('attendances','status'),('daily_reports','status'),('daily_reports_before_class_merge','status'),
     ('teacher_worship_attendances','gender'),('teacher_worship_attendances','status'),

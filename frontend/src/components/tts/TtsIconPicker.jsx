@@ -1,3 +1,4 @@
+import {DialogSections} from '../common/DialogActions'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, X } from 'lucide-react'
@@ -35,10 +36,11 @@ function IconChoices({ value, label, disabled, onClose, onSelect }) {
       if (previous?.isConnected) previous.focus({ preventScroll: true })
     }
   }, [])
-  return createPortal(<dialog ref={dialog} className="tts-admin-dialog tts-icon-dialog" aria-labelledby={titleId}
+  return createPortal(<dialog ref={dialog} className="ui-dialog-shell tts-admin-dialog tts-icon-dialog" aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); onClose() }}>
+    <DialogSections>
     <header><h2 ref={heading} tabIndex={-1} id={titleId}>아이콘 선택</h2><button type="button" aria-label="아이콘 선택 닫기" onClick={onClose}><X size={22} aria-hidden="true" /></button></header>
-    <div className="tts-admin-dialog-body">
+    <div className="tts-admin-dialog-body ui-dialog-body">
       <div className="tts-icon-options" role="group" aria-label={label}>
         {choices.map(([icon, name]) => <button type="button" key={icon} ref={value === icon ? selected : undefined} disabled={disabled}
           aria-label={name + ' 아이콘'} aria-pressed={value === icon} onClick={() => onSelect(icon)}>
@@ -47,5 +49,5 @@ function IconChoices({ value, label, disabled, onClose, onSelect }) {
       </div>
       <button type="button" className="tts-admin-small-action" ref={!value ? selected : undefined} disabled={disabled} aria-pressed={!value} onClick={() => onSelect('')}>아이콘 없음</button>
     </div>
-  </dialog>, document.body)
+  </DialogSections></dialog>, document.body)
 }

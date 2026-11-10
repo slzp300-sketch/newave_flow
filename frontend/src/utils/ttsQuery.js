@@ -63,8 +63,11 @@ export function ttsAnswerOptions(client, save) {
       const week = group.reduce(applyIntent, journal.confirmed)
       const batch = { applied: false, promise: null }
       for (const queued of group) batches.set(queued, batch)
+      const fields = intent.day
+        ? { changes: Object.fromEntries(group.map(p => [p.day, p.checked])) }
+        : { checked: group.at(-1).checked }
       batch.promise = Promise.resolve().then(() => save({ weekStart: intent.weekStart, questionId: intent.questionId,
-        answerData: week.answers.find(a => a.questionId === intent.questionId).answerData }))
+        answerData: week.answers.find(a => a.questionId === intent.questionId).answerData, ...fields }))
       return batch.promise
     },
     onSuccess: (response, intent) => {

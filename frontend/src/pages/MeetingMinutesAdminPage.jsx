@@ -1,3 +1,4 @@
+import DialogActions, {DialogSections} from '../components/common/DialogActions'
 import { useState, useLayoutEffect, useRef, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -129,27 +130,27 @@ function MinuteDialog({ minute, scope, onClose, onSaved, onDeleted }) {
     finally { busy.current = false; setSaving(false) }
   }
   const link = videoUrl(minute.videoLink)
-  return createPortal(<dialog ref={dialog} className="minutes-dialog" aria-labelledby={titleId} onCancel={e => { e.preventDefault(); close() }}>
-    <header className="minutes-dialog-heading"><h2 ref={heading} tabIndex={-1} id={titleId}>{editing ? minute.isNew ? '회의록 등록' : '회의록 수정' : minute.title}</h2><button type="button" className="minutes-close" aria-label="회의록 상세 닫기" disabled={saving} onClick={close}><X size={22} aria-hidden="true" /></button></header>
-    <div className="minutes-dialog-body">
+  return createPortal(<dialog ref={dialog} className="minutes-dialog ui-dialog-shell" aria-labelledby={titleId} onCancel={e => { e.preventDefault(); close() }}>
+    <DialogSections><header className="minutes-dialog-heading"><h2 ref={heading} tabIndex={-1} id={titleId}>{editing ? minute.isNew ? '회의록 등록' : '회의록 수정' : minute.title}</h2><button type="button" className="minutes-close" aria-label="회의록 상세 닫기" disabled={saving} onClick={close}><X size={22} aria-hidden="true" /></button></header>
+    <div className="minutes-dialog-body ui-dialog-body">
       {error && <p role="alert" className="minutes-error">{error}</p>}
       {message && <p role="status" className="minutes-success">{message}</p>}
       {confirmation ? <section ref={confirmPanel} tabIndex={-1} role="alertdialog" aria-label={confirmation === 'delete' ? '회의록 삭제 확인' : '수정 내용 취소 확인'} className="minutes-confirm">
         <p>{confirmation === 'delete' ? '이 회의록과 확인 기록을 삭제할까요?' : '저장하지 않은 내용을 버릴까요?'}</p>
-        <div className="minutes-dialog-actions"><Button size="sm" disabled={saving} onClick={confirmation === 'delete' ? remove : discard}>{confirmation === 'delete' ? '삭제 확정' : '버리기'}</Button><Button size="sm" variant="secondary" disabled={saving} onClick={() => setConfirmation(null)}>{confirmation === 'delete' ? '취소' : '계속 작성'}</Button></div>
-      </section> : editing ? <form onSubmit={submit} aria-label={minute.isNew ? '회의록 등록' : '회의록 수정'}>
+        <DialogActions><Button variant="secondary" disabled={saving} onClick={() => setConfirmation(null)}>{confirmation === 'delete' ? '취소' : '계속 작성'}</Button><Button disabled={saving} onClick={confirmation === 'delete' ? remove : discard}>{confirmation === 'delete' ? '삭제 확정' : '버리기'}</Button></DialogActions>
+      </section> : editing ? <form id={titleId+"-form"} onSubmit={submit} aria-label={minute.isNew ? '회의록 등록' : '회의록 수정'}>
         <fieldset disabled={saving} className="minutes-form">
           <label>회의 제목<input ref={titleInput} value={draft.title} maxLength={200} required onChange={e => setDraft({ ...draft, title: e.target.value })} /></label>
           <label>회의 날짜<input type="date" value={draft.meetingDate} required onChange={e => setDraft({ ...draft, meetingDate: e.target.value })} /></label>
           <label>영상 링크 · 선택<input type="url" value={draft.videoLink} maxLength={500} placeholder="https://" onChange={e => setDraft({ ...draft, videoLink: e.target.value })} /></label>
           <div className="minutes-visibility-row"><span>교사에게 공개</span><button type="button" role="switch" aria-label="교사에게 공개" aria-checked={draft.isActive} className="minutes-switch" onClick={() => setDraft({ ...draft, isActive: !draft.isActive })}>{draft.isActive ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}{draft.isActive ? '공개' : '비공개'}</button></div>
           <label>회의 내용<textarea rows={8} required value={draft.content} onChange={e => setDraft({ ...draft, content: e.target.value })} /></label>
-          <div className="minutes-dialog-actions"><Button type="submit" size="sm" loading={saving}>{saving ? '저장 중…' : minute.isNew ? '등록 완료' : '수정 저장'}</Button><Button type="button" size="sm" variant="secondary" onClick={cancelEdit}>취소</Button></div>
+          <DialogActions><Button type="button" variant="secondary" disabled={saving} onClick={cancelEdit}>취소</Button><Button type="submit" form={titleId+"-form"} loading={saving}>{saving ? '저장 중…' : minute.isNew ? '등록 완료' : '수정 저장'}</Button></DialogActions>
         </fieldset>
       </form> : <>
         <div className="minutes-detail-meta"><time dateTime={minute.meetingDate}>{formatDate(minute.meetingDate)}</time><VisibilityBadge active={minute.isActive} /></div>
         <div className="minutes-visibility-row"><span>교사에게 공개</span><button type="button" role="switch" aria-label="교사에게 공개" aria-checked={minute.isActive} disabled={saving} className="minutes-switch" onClick={() => persist({ ...fieldsOf(minute), isActive: !minute.isActive }, minute.isActive ? '비공개로 변경했습니다.' : '공개로 변경했습니다.')}>{minute.isActive ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}{minute.isActive ? '공개' : '비공개'}</button></div>
-        <div className="minutes-dialog-actions"><Button size="sm" variant="secondary" disabled={saving} onClick={() => { setDraft(fieldsOf(minute)); setEditing(true); setShowStatus(false); setError(''); setMessage('') }}><PenLine size={16} aria-hidden="true" />수정</Button>{link && <a className="minutes-video" href={link} target="_blank" rel="noopener noreferrer"><Play size={16} aria-hidden="true" />영상 열기</a>}</div>
+        <DialogActions><Button size="sm" variant="secondary" disabled={saving} onClick={() => { setDraft(fieldsOf(minute)); setEditing(true); setShowStatus(false); setError(''); setMessage('') }}><PenLine size={16} aria-hidden="true" />수정</Button>{link && <a className="minutes-video" href={link} target="_blank" rel="noopener noreferrer"><Play size={16} aria-hidden="true" />영상 열기</a>}</DialogActions>
         <section aria-label="회의 내용" className="minutes-content">{minute.content}</section>
         <details className="minutes-status" onToggle={e => setShowStatus(e.currentTarget.open)}><DisclosureSummary>참석·회의록 확인 현황</DisclosureSummary>
           {showStatus && (status.isPending ? <p role="status" className="minutes-empty">확인 중…</p> : status.isError ? <div role="alert" className="minutes-error">현황을 불러오지 못했습니다.<Button size="sm" variant="secondary" onClick={() => status.refetch()}>다시 불러오기</Button></div> : <MinuteStatusList rows={status.data || []} />)}
@@ -157,7 +158,7 @@ function MinuteDialog({ minute, scope, onClose, onSaved, onDeleted }) {
         <button type="button" className="minutes-delete" disabled={saving} onClick={() => { setError(''); setConfirmation('delete') }}><Trash2 size={16} aria-hidden="true" />회의록 삭제</button>
       </>}
     </div>
-  </dialog>, document.body)
+  </DialogSections></dialog>, document.body)
 }
 
 function VisibilityBadge({ active }) { return <span className={`minutes-badge ${active ? 'minutes-public' : ''}`}>{active ? '공개' : '비공개'}</span> }

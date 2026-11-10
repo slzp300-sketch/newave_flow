@@ -83,5 +83,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NewaveWidgetKeychainGroup</key>
+	<string>$(AppIdentifierPrefix)app.newaveflow.mobile.widgets</string>
 </dict>
 </plist>

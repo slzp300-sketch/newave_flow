@@ -109,18 +109,18 @@ export default function AdminTeacherManagePage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 12 }}
                 role="dialog" aria-modal="true" aria-label={`${selectedUser.name} 교사 관리`}
-                className="safe-modal-panel safe-modal-85d overflow-y-auto w-full max-w-[400px] pointer-events-auto flex flex-col gap-2 rounded-2xl bg-white"
+                className="safe-modal-panel safe-modal-85d overflow-hidden w-full max-w-[400px] pointer-events-auto flex flex-col rounded-2xl bg-white"
               >
-                <UserManagementCard
+                <div className="min-h-0 flex-1 overflow-y-auto"><UserManagementCard
                   user={selectedUser}
                   onUpdate={handleRoleChange}
                   isUpdating={mutation.isPending && mutation.variables?.id === selectedUser.id}
                   disabled={mutation.isPending}
-                />
-                <button disabled={mutation.isPending} onClick={() => setSelectedId(null)}
-                  className="teacher-action sticky bottom-0 rounded-xl bg-white border border-gray-200 text-gray-700 shadow-sm disabled:opacity-50">
+                /></div>
+                <div className="shrink-0 p-3 border-t border-gray-100"><button disabled={mutation.isPending} onClick={() => setSelectedId(null)}
+                  className="teacher-action w-full rounded-xl bg-white border border-gray-200 text-gray-700 shadow-sm disabled:opacity-50">
                   <FitLabel>닫기</FitLabel>
-                </button>
+                </button></div>
               </motion.div>
             </div>
           </>

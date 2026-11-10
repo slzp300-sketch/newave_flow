@@ -65,3 +65,5 @@
 .tts-icon-options button { display:flex; flex-direction:column; justify-content:center; align-items:center; min-width:0; min-height:64px; gap:.125rem; padding:.375rem .125rem; border:1px solid var(--newave-line); border-radius:.75rem; }
 .tts-icon-options button > span:first-child { font-size:1.5rem; line-height:1.4; overflow-wrap:anywhere; }
 .tts-icon-options button > span:last-child { font-size:.75rem; line-height:1.5; overflow-wrap:anywhere; }
+
+.tts-admin-save .tts-admin-actions>button{flex:1;min-height:46px}

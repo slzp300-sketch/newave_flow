@@ -54,6 +54,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/safety/policy").permitAll()
+                // These exact endpoints independently require a purpose-limited widget token.
+                .requestMatchers(HttpMethod.GET, "/api/widgets/snapshot").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/api/widgets/check").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

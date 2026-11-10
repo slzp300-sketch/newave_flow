@@ -25,7 +25,8 @@ BEGIN
     'new_family_registry','new_family_members','new_family_checks','new_family_submissions','new_family_references',
     'officer_registry','officer_appointments','officer_changes',
     'praise_terms','praise_members','praise_weeks','praise_responses','praise_prayers','praise_pdfs',
-    'intercession_registry','intercession_members','intercession_requests','intercession_meetings')) THEN
+    'intercession_registry','intercession_members','intercession_requests','intercession_meetings',
+    'worship_registry','worship_members','worship_weeks','worship_offerings','worship_tasks','student_care_records','student_care_changes')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -43,7 +44,8 @@ BEGIN
         'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
         'user_status_events','moderated_photos','notification_preferences','push_devices','tts_linked_snapshots','teacher_worship_attendances',
         'officer_appointments','officer_changes','praise_members','praise_responses','praise_pdfs',
-        'intercession_members','intercession_requests','intercession_meetings'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'intercession_members','intercession_requests','intercession_meetings',
+        'worship_members','worship_weeks','worship_tasks','student_care_records','student_care_changes'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
   -- Binary scores may contain names even when another teacher uploaded them.
   -- Require an exact reviewed file/hash inventory; never infer consent from the uploader.
   IF to_regclass('public.praise_pdfs') IS NOT NULL THEN
@@ -322,6 +324,23 @@ BEGIN
       -- Other authors' free text remains covered by the reviewed redaction inventory above.
       UPDATE intercession_meetings SET paper=NULL,prepared_at=NULL,revision=revision+1;
       UPDATE intercession_meetings SET host_id=NULL,zoom_url='' WHERE host_id=req.user_id;
+    END IF;
+    IF to_regclass('public.student_care_records') IS NOT NULL THEN
+      UPDATE student_care_records SET author_id=NULL,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE author_id=req.user_id;
+      UPDATE student_care_changes SET actor_id=NULL WHERE actor_id=req.user_id;
+      UPDATE student_care_records SET revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE id IN (
+        SELECT row_id FROM privacy_content_review WHERE table_name='student_care_records' AND decision IN ('erase','redact'));
+    END IF;
+    IF to_regclass('public.worship_members') IS NOT NULL THEN
+      DELETE FROM worship_members WHERE id=req.user_id;
+      UPDATE worship_registry SET revision=revision+1;
+      UPDATE worship_weeks SET announced_by_id=NULL,announced_at=NULL,revision=revision+1 WHERE id IN (
+        SELECT row_id FROM privacy_content_review WHERE table_name='worship_weeks' AND decision IN ('erase','redact'));
+      UPDATE worship_weeks SET offering_prayer_id=NULL,announced_by_id=NULL,announced_at=NULL,revision=revision+1 WHERE offering_prayer_id=req.user_id;
+      UPDATE worship_weeks SET announced_by_id=NULL,revision=revision+1 WHERE announced_by_id=req.user_id;
+      UPDATE worship_tasks SET assignee_id=NULL,completed_by_id=NULL,completed_at=NULL,reviewed_by_id=NULL,reviewed_at=NULL,revision=revision+1 WHERE assignee_id=req.user_id;
+      UPDATE worship_tasks SET completed_by_id=NULL,revision=revision+1 WHERE completed_by_id=req.user_id;
+      UPDATE worship_tasks SET reviewed_by_id=NULL,revision=revision+1 WHERE reviewed_by_id=req.user_id;
     END IF;
     DELETE FROM users WHERE id=req.user_id;
   GET DIAGNOSTICS changed=ROW_COUNT;

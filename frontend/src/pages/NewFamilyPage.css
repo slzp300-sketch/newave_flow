@@ -42,3 +42,6 @@
 html.large-font .nf-grid,html.large-font .nf-course { grid-template-columns:1fr; }
 html.large-font .nf-tabs { flex-wrap:wrap; }
 html.large-font .nf-tabs .motion-button { flex-basis:40%; }
+
+.nf-save-actions{padding:.75rem;border:1px solid var(--newave-line);border-radius:1rem;background:#fff}
+.nf-save-actions>button{flex:1;min-height:46px}.nf-save-actions>p{flex-basis:100%;order:2;margin:0}

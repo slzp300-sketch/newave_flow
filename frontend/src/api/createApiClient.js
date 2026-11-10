@@ -6,7 +6,7 @@ export function resolveApiBaseUrl(configuredUrl, production = false) {
 }
 
 // Dependencies are injected so retry/session behavior can be tested without a live server.
-export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSessionExpired, onWriteSuccess = () => {}, wait = ms => new Promise(r => setTimeout(r, ms)) }) {
+export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSessionExpired, onSessionRefreshed = () => {}, onWriteSuccess = () => {}, readRecovery, wait = ms => new Promise(r => setTimeout(r, ms)) }) {
   const client = axios.create({ baseURL, timeout: 20000, headers: { 'Content-Type': 'application/json' } })
   let refreshPromise = null
   const environment = () => authStore.getState().apiEnvironment || 'production'
@@ -33,7 +33,9 @@ export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSe
       if (authStore.getState().refreshToken !== originalSession || environment() !== originalEnvironment) throw new Error('로그인 상태가 변경되었습니다.')
       const { data } = await axios.post(`${selectedBase}/auth/refresh`, { refreshToken: originalSession }, { timeout: 15000 })
       if (authStore.getState().refreshToken !== originalSession || environment() !== originalEnvironment) throw new Error('로그인 상태가 변경되었습니다.')
+      const previousUser = authStore.getState().user
       authStore.getState().setAuth(data.user, data.accessToken, data.refreshToken, originalEnvironment, originalIdentity)
+      onSessionRefreshed(previousUser, data.user)
       return data
     })().catch(error => {
       if ([401, 403].includes(error.response?.status) && authStore.getState().refreshToken === originalSession && environment() === originalEnvironment) {
@@ -61,10 +63,12 @@ export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSe
     const token = authStore.getState().accessToken
     if (token && !config.skipAuth) config.headers.Authorization = `Bearer ${token}`
     else delete config.headers.Authorization
+    readRecovery?.begin(config)
     return config
   })
 
   client.interceptors.response.use(response => {
+    readRecovery?.finish(response.config)
     assertExpectedSession(response.config)
     if (!response.config.skipAuth && response.config._sessionScope !== sessionScope()) throw new Error('로그인 상태가 변경되었습니다.')
     if (['post', 'put', 'patch', 'delete'].includes(response.config.method)) onWriteSuccess(response.config)
@@ -72,9 +76,14 @@ export function createApiClient({ axios, authStore, baseURL, reviewBaseURL, onSe
   }, async error => {
     const original = error.config
     if (!original) throw error
+    const interruptedRead = readRecovery?.finish(original)
     assertExpectedSession(original)
     if (!original.skipAuth && original._sessionScope !== sessionScope()) throw new Error('로그인 상태가 변경되었습니다.')
     const method = (original.method || 'get').toLowerCase()
+    if (interruptedRead && !original._resumeRetry && ['get', 'head'].includes(method)) {
+      original._resumeRetry = true
+      return client(original)
+    }
     if (!error.response && ['get', 'head'].includes(method) && !original._networkRetry && error.code !== 'ERR_CANCELED') {
       original._networkRetry = true
       await wait(1000)

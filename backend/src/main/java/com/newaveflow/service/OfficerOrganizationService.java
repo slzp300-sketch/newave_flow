@@ -19,19 +19,20 @@ public class OfficerOrganizationService {
     private final OfficerAccessService access;
     private final PraiseService praise;
     private final IntercessionService intercession;
+    private final WorshipService worship;
     private final jakarta.persistence.EntityManager em;
     public record Office(String code,String label,String group,String grade,Long userId,String name,String state) {}
     public record Person(Long id,String name,String role) {}
     public record Change(Long id,String action,String position,String previousName,String nextName,String actorName,LocalDateTime changedAt) {}
     public record Organization(int year,int activeYear,long revision,boolean canEdit,List<Office> offices,List<Person> candidates,List<Change> history) {}
-    public record Capability(int activeYear,boolean canManage,boolean canEditOrganization,boolean canReport,boolean canNewFamily,List<Office> offices,List<String> grades,boolean canPraise,boolean canIntercession) {}
+    public record Capability(int activeYear,boolean canManage,boolean canEditOrganization,boolean canReport,boolean canNewFamily,List<Office> offices,List<String> grades,boolean canPraise,boolean canIntercession,boolean canWorship) {}
     public record Assignment(Long revision,Long userId) {}
     public record Activation(Long revision) {}
 
     public Capability capability(User actor) {
         var u=access.current(actor); var positions=access.positions(u);
         return new Capability(access.activeYear(),access.common(u),u.getRole()==User.Role.ADMIN,access.canReport(u),access.canViewNewFamily(u),
-            positions.stream().map(p->office(p,u)).toList(),positions.stream().map(p->p.grade).filter(Objects::nonNull).toList(),praise.canEnter(u),intercession.canViewTeam(u));
+            positions.stream().map(p->office(p,u)).toList(),positions.stream().map(p->p.grade).filter(Objects::nonNull).toList(),praise.canEnter(u),intercession.canViewTeam(u),worship.canEnter(u));
     }
     private int year(int value) { if(value<2000||value>2100) throw AppException.badRequest("활동연도를 확인해주세요."); return value; }
     private Office office(OfficerPosition p,User u) {

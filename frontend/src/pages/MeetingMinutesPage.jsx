@@ -1,3 +1,4 @@
+import DialogActions, {DialogSections} from '../components/common/DialogActions'
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -98,12 +99,12 @@ export default function MeetingMinutesPage() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               role="dialog" aria-labelledby="meeting-minute-title"
-              className="bg-white w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 safe-modal-panel safe-modal-90 overflow-y-auto"
+              className="ui-dialog-shell bg-white w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] safe-modal-panel safe-modal-90 overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}
             >
-              <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto mb-6 sm:hidden" />
+              <DialogSections>
               
-              <div className="flex items-start justify-between gap-3 mb-5">
+              <header className="flex items-start justify-between gap-3 p-4 border-b border-gray-100">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className="bg-primary-50 text-primary-700 text-sm font-semibold px-2 py-1 rounded-lg border border-primary-100">
@@ -116,8 +117,8 @@ export default function MeetingMinutesPage() {
                 <button aria-label="회의록 닫기" onClick={() => setSelectedId(null)} className="min-w-11 min-h-11 shrink-0 flex items-center justify-center bg-gray-50 rounded-full text-gray-600 focus-visible:ring-2 focus-visible:ring-primary-300">
                   <ChevronRight className="rotate-90" size={20} />
                 </button>
-              </div>
-
+              </header>
+              <div className="ui-dialog-body p-4">
               <div className="text-base text-gray-800 mb-6 whitespace-pre-wrap leading-[1.8] break-words [overflow-wrap:anywhere]">
                 {selected.content}
               </div>
@@ -160,12 +161,12 @@ export default function MeetingMinutesPage() {
                       <AlertCircle size={16} className="shrink-0" />
                       {selected.videoLink ? '회의록과 영상을' : '회의록을'} 확인한 뒤 확인 완료를 눌러주세요.
                     </div>
-                    <Button size="lg" disabled={confirm.isPending} onClick={() => confirm.mutate(selected.id)}>
+                    <DialogActions><Button size="lg" disabled={confirm.isPending} onClick={() => confirm.mutate(selected.id)}>
                       {confirm.isPending ? '저장 중…' : '확인 완료'}
-                    </Button>
+                    </Button></DialogActions>
                   </>
                 )}
-              </div>
+              </div></div></DialogSections>
             </motion.div>
           </motion.div>
         )}

@@ -66,14 +66,19 @@ def sign():
     profile_file.write_bytes(helpers['decode_secret'](os.environ, 'IOS_PROFILE_BASE64'))
     require(bool(os.environ.get('P12_PASSWORD')), 'Missing secret: P12_PASSWORD')
     profile = command_plist(['security', 'cms', '-D', '-i', str(profile_file)], 'Profile decoding')
-    profile_uuid = helpers['validate_profile'](profile, team, apple, push_notifications=push)
+    profile_uuid = helpers['validate_profile'](profile, team, apple, push_notifications=push, widgets=True)
+    widget_profile_file = private / 'widget.mobileprovision'
+    widget_profile_file.write_bytes(helpers['decode_secret'](os.environ, 'IOS_WIDGET_PROFILE_BASE64'))
+    widget_profile = command_plist(['security', 'cms', '-D', '-i', str(widget_profile_file)], 'Widget profile decoding')
+    widget_profile_uuid = helpers['validate_profile'](widget_profile, team, False, widgets=True, extension=True)
     entitlement_file = private / 'release.entitlements'
-    entitlement_file.write_bytes(plistlib.dumps(helpers['release_entitlements'](apple, push)))
+    entitlement_file.write_bytes(plistlib.dumps(helpers['release_entitlements'](apple, push, widgets=True, team_id=team)))
     cert_pem = private / 'distribution.pem'
     cert_pem.write_bytes(command(['openssl', 'pkcs12', '-in', str(certificate), '-clcerts', '-nokeys',
                                  '-passin', 'env:P12_PASSWORD'], 'Certificate decoding'))
     cert_der = command(['openssl', 'x509', '-in', str(cert_pem), '-outform', 'DER'], 'Certificate conversion')
     require(cert_der in profile['DeveloperCertificates'], 'Certificate is not included in the provisioning profile')
+    require(cert_der in widget_profile['DeveloperCertificates'], 'Certificate is not included in the widget profile')
     command(['openssl', 'x509', '-in', str(cert_pem), '-checkend', '86400', '-noout'], 'Certificate expiration check')
     keychain = private / 'signing.keychain-db'
     password = secrets.token_urlsafe(32)
@@ -92,29 +97,33 @@ def sign():
     require(not installed.exists(), 'A provisioning profile already exists; use a fresh runner')
     installed.parent.mkdir(parents=True, exist_ok=True)
     # Persist only our cleanup target, before installing it. Never remove other profiles.
-    (private / 'cleanup.json').write_text(json.dumps({'profile': str(installed)}))
+    widget_installed = installed.parent / f'{widget_profile_uuid}.mobileprovision'
+    require(widget_installed != installed and not widget_installed.exists(), 'Use separate fresh app and widget profiles')
+    (private / 'cleanup.json').write_text(json.dumps({'profiles': [str(installed), str(widget_installed)]}))
     shutil.copyfile(profile_file, installed)
+    shutil.copyfile(widget_profile_file, widget_installed)
     archive = private / 'App.xcarchive'
     print('Creating the signed archive for the confirmed commit.')
     command(['xcodebuild', '-project', 'ios/App/App.xcodeproj', '-scheme', 'App', '-configuration', 'Release',
              '-destination', 'generic/platform=iOS', '-archivePath', str(archive),
              '-derivedDataPath', str(private / 'DerivedData'), 'archive',
              'CODE_SIGN_STYLE=Manual', f'DEVELOPMENT_TEAM={team}', f'CODE_SIGN_IDENTITY={matches[0]}',
-             f'PROVISIONING_PROFILE_SPECIFIER={profile_uuid}', f'OTHER_CODE_SIGN_FLAGS=--keychain {keychain}',
+             f'NEWAVE_APP_PROFILE={profile_uuid}', f'NEWAVE_WIDGET_PROFILE={widget_profile_uuid}', f'OTHER_CODE_SIGN_FLAGS=--keychain {keychain}',
              f'MARKETING_VERSION={os.environ["RELEASE_VERSION"]}', f'CURRENT_PROJECT_VERSION={os.environ["RELEASE_BUILD"]}',
              f'NEWAVE_APPLE_SIGN_IN_ENABLED={"YES" if apple else "NO"}',
-             f'CODE_SIGN_ENTITLEMENTS={entitlement_file}'],
+             f'NEWAVE_APP_ENTITLEMENTS={entitlement_file}'],
             'Signed archive build', cwd=ROOT / 'frontend')
     app = archive / 'Products/Applications/App.app'
     summary = verify_bundle(app, apple_login=apple, device=True)
     require(summary['version'] == os.environ['RELEASE_VERSION'] and summary['build'] == os.environ['RELEASE_BUILD'], 'Archive version mismatch')
     command(['codesign', '--verify', '--deep', '--strict', str(app)], 'Archive signature validation')
     archive_entitlements = signed_entitlements(app, 'Archive entitlement inspection')
-    helpers['verify_signed_entitlements'](archive_entitlements, team, apple, push)
+    helpers['verify_signed_entitlements'](archive_entitlements, team, apple, push, widgets=True)
+    helpers['verify_signed_entitlements'](signed_entitlements(app / 'PlugIns/NewaveWidgets.appex', 'Widget archive entitlement inspection'), team, False, widgets=True, extension=True)
     export = private / 'ExportOptions.plist'
     export.write_bytes(plistlib.dumps({'method': 'app-store-connect', 'destination': 'export',
         'signingStyle': 'manual', 'teamID': team, 'signingCertificate': matches[0],
-        'provisioningProfiles': {helpers['BUNDLE_ID']: profile_uuid},
+        'provisioningProfiles': {helpers['BUNDLE_ID']: profile_uuid, helpers['WIDGET_BUNDLE_ID']: widget_profile_uuid},
         'manageAppVersionAndBuildNumber': False, 'uploadSymbols': False}))
     command(['xcodebuild', '-exportArchive', '-archivePath', str(archive), '-exportOptionsPlist', str(export),
              '-exportPath', str(private / 'export')], 'IPA export')
@@ -126,9 +135,13 @@ def sign():
     require(exported == summary, 'Export changed the app metadata')
     command(['codesign', '--verify', '--deep', '--strict', str(exported_app)], 'Exported IPA signature validation')
     exported_entitlements = signed_entitlements(exported_app, 'Exported entitlement inspection')
-    helpers['verify_signed_entitlements'](exported_entitlements, team, apple, push)
+    helpers['verify_signed_entitlements'](exported_entitlements, team, apple, push, widgets=True)
+    exported_widget = exported_app / 'PlugIns/NewaveWidgets.appex'
+    helpers['verify_signed_entitlements'](signed_entitlements(exported_widget, 'Exported widget entitlement inspection'), team, False, widgets=True, extension=True)
+    exported_widget_profile = command_plist(['security', 'cms', '-D', '-i', str(exported_widget / 'embedded.mobileprovision')], 'Exported widget profile inspection')
+    require(helpers['validate_profile'](exported_widget_profile, team, False, widgets=True, extension=True) == widget_profile_uuid, 'Export used a different widget profile')
     exported_profile = command_plist(['security', 'cms', '-D', '-i', str(exported_app / 'embedded.mobileprovision')], 'Exported profile inspection')
-    require(helpers['validate_profile'](exported_profile, team, apple, push_notifications=push) == profile_uuid, 'Export used a different provisioning profile')
+    require(helpers['validate_profile'](exported_profile, team, apple, push_notifications=push, widgets=True) == profile_uuid, 'Export used a different provisioning profile')
     summary.update({'commit': os.environ['RELEASE_SHA'], 'ipaSha256': hashlib.sha256(ipas[0].read_bytes()).hexdigest(),
                     'pushEnabled': push, 'uploadCommandCompleted': False, 'appleProcessingVerified': False})
     (private / 'summary.json').write_text(json.dumps(summary, indent=2), encoding='utf8')
@@ -170,10 +183,14 @@ def cleanup():
         return
     target = private / 'cleanup.json'
     if target.is_file():
-        installed = Path(json.loads(target.read_text())['profile'])
+        targets = json.loads(target.read_text())
+        profiles = targets.get('profiles', [targets['profile']] if 'profile' in targets else [])
         expected_parent = Path.home() / 'Library/MobileDevice/Provisioning Profiles'
-        require(installed.parent == expected_parent and re.fullmatch(helpers['UUID_PATTERN'] + r'\.mobileprovision', installed.name), 'Unexpected profile cleanup target')
-        installed.unlink(missing_ok=True)
+        for name in profiles:
+            installed = Path(name)
+            require(installed.parent == expected_parent and re.fullmatch(helpers['UUID_PATTERN'] + r'\.mobileprovision', installed.name), 'Unexpected profile cleanup target')
+        for name in profiles:
+            Path(name).unlink(missing_ok=True)
     keychain = private / 'signing.keychain-db'
     if keychain.exists():
         command(['security', 'delete-keychain', str(keychain)], 'Temporary keychain cleanup')

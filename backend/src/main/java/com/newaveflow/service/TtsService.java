@@ -160,6 +160,29 @@ public class TtsService {
     }
 
     // 답변 값 검사: 미래 요일 체크 금지, 형식 통일
+    @Transactional
+    public TtsResponse saveFields(User teacher, com.newaveflow.dto.tts.TtsFieldAnswerRequest request) {
+        if (request.weekStart() == null || request.questionId() == null) throw AppException.badRequest("항목을 확인해주세요.");
+        userRepository.lockById(teacher.getId()).orElseThrow(() -> AppException.unauthorized("교사를 찾을 수 없습니다."));
+        var question = getActiveQuestions(request.weekStart()).stream().filter(q -> q.getId().equals(request.questionId()))
+                .findFirst().orElseThrow(() -> AppException.notFound("항목을 찾을 수 없습니다."));
+        String raw;
+        if (question.getType() == TtsQuestionType.DAYS) {
+            if (request.checked() != null || request.changes() == null || request.changes().isEmpty()
+                    || !DAY_LABELS.containsAll(request.changes().keySet()) || request.changes().values().stream().anyMatch(Objects::isNull))
+                throw AppException.badRequest("요일 값을 확인해주세요.");
+            var week = getWeek(teacher, request.weekStart());
+            var previous = week.getAnswers().stream().filter(a -> a.getQuestionId().equals(request.questionId())).findFirst();
+            Map<String, Boolean> days = new LinkedHashMap<>(readDays(previous.map(TtsResponse.AnswerResponse::getAnswerData).orElse(null)));
+            days.putAll(request.changes());
+            try { raw = objectMapper.writeValueAsString(days); } catch (Exception e) { throw AppException.badRequest("체크 값을 확인해주세요."); }
+        } else {
+            if (request.checked() == null || request.changes() != null) throw AppException.badRequest("체크 값을 확인해주세요.");
+            raw = request.checked().toString();
+        }
+        return saveAnswer(teacher, new TtsAnswerRequest(request.weekStart(), request.questionId(), raw));
+    }
+
     private String normalizeAnswer(TtsQuestion question, String raw, LocalDate sunday, LocalDate today, String previous) {
         if (question.getType() == TtsQuestionType.ATTEND) {
             if (!"true".equals(raw) && !"false".equals(raw)) {

@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom'
 import {AnimatePresence, motion, useIsPresent} from 'framer-motion'
 import {X} from 'lucide-react'
 import Button from '../common/Button'
+import {DialogSections} from '../common/DialogActions'
 import {SelectionMark, useMotionPreference} from '../common/Motion'
 import {installPressFeedback} from '../../utils/pressFeedback'
 import './motion.css'
@@ -35,10 +36,10 @@ export function ActionButton({children,onClick,successLabel,...props}){
  </Button>{error&&<span className="pt-action-error" role="alert">저장하지 못했습니다. 다시 시도해 주세요.</span>}</span>
 }
 
-export function FeedbackToast({notice,onClose}){
+export function FeedbackToast({notice,onClose,className=''}){
  const reduced=useMotionPreference()
  useEffect(()=>{if(!notice)return;const timer=setTimeout(onClose,4200);return()=>clearTimeout(timer)},[notice?.id,onClose])
- return createPortal(<div className={`pt-toast-layer ${reduced?'motion-reduced':''}`}><AnimatePresence initial={false}>
+ return createPortal(<div className={`pt-toast-layer ${reduced?'motion-reduced':''} ${className}`}><AnimatePresence initial={false}>
   {notice&&<motion.div key={notice.id} className="pt-feedback-toast" role="status" aria-live="polite" aria-atomic="true"
    initial={reduced?{opacity:0}:{opacity:0,y:10,scale:.98}} animate={{opacity:1,y:0,scale:1}}
    exit={reduced?{opacity:0}:{opacity:0,y:5}} transition={{duration:reduced?.12:.24,ease}}>
@@ -55,13 +56,14 @@ export function MotionDialog({title,busy,onClose,children,error,className='',foo
   const dispose=installPressFeedback(node)
   return()=>{dispose();node.close();document.body.style.overflow=overflow;if(previous?.isConnected)previous.focus({preventScroll:true})}
  },[])
- return createPortal(<motion.dialog ref={dialog} className={`officer-dialog pt-motion-dialog app-motion ${reduced?'motion-reduced':''} ${className}`} aria-labelledby={id}
+ return createPortal(<motion.dialog ref={dialog} className={`officer-dialog pt-motion-dialog ui-dialog-shell app-motion ${reduced?'motion-reduced':''} ${className}`} aria-labelledby={id}
   data-exiting={!present||undefined} inert={present?undefined:''} onCancel={e=>{e.preventDefault();if(!busy&&present)onClose()}}
   initial={reduced?{opacity:0}:{opacity:0,y:14,scale:.985}} animate={{opacity:1,y:0,scale:1}}
   exit={reduced?{opacity:0}:{opacity:0,y:8,scale:.99}} transition={{duration:reduced?.12:.2,ease}}>
-  <header><h2 id={id} ref={heading} tabIndex={-1}>{title}</h2><button type="button" className="icon-button" aria-label="닫기" disabled={busy||!present} onClick={onClose}><X size={20}/></button></header>
-  <div className="officer-dialog-body">{error&&<p className="pt-live-error" role="alert">{error}</p>}{children}</div>
-  {footer&&<footer className="pt-dialog-footer">{footer}</footer>}
+  <DialogSections footer={<>{error&&<p className="pt-live-error" role="alert">{error}</p>}{footer&&<div className="ui-dialog-actions">{footer}</div>}</>}>
+   <header><h2 id={id} ref={heading} tabIndex={-1}>{title}</h2><button type="button" className="icon-button" aria-label="닫기" disabled={busy||!present} onClick={onClose}><X size={20}/></button></header>
+   <div className="officer-dialog-body ui-dialog-body">{children}</div>
+  </DialogSections>
  </motion.dialog>,document.body)
 }
 

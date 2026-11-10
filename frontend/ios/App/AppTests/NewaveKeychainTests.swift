@@ -5,6 +5,46 @@ import AuthenticationServices
 @testable import App
 
 final class NewaveKeychainTests: XCTestCase {
+    func testWidgetStoreRejectsOldAccountAndOutOfOrderReplies() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let widget = NewaveWidgetStore(service: "widget-test." + UUID().uuidString, accessGroup: nil, directory: directory)
+        defer { try? widget.clear(); try? FileManager.default.removeItem(at: directory) }
+        func snapshot(_ revision: Int64) -> WidgetSnapshot {
+            WidgetSnapshot(schemaVersion: 1, revision: revision, generatedAt: "revision-\(revision)", date: "2026-11-09", validUntil: "2026-11-10T00:00:00Z", events: [], checks: [], tasks: [])
+        }
+        let first = WidgetSession(token: "synthetic-a", baseURL: "https://synthetic.up.railway.app/api", scope: "a", expiresAt: "2030-01-01T00:00:00Z", snapshot: snapshot(1))
+        try widget.configure(first)
+        try widget.update(token: first.token, snapshot: snapshot(3), checked: true)
+        try widget.update(token: first.token, snapshot: snapshot(2), checked: false)
+        try widget.failed(token: first.token, revision: 1, message: "late failure")
+        XCTAssertEqual(try widget.read()?.snapshot?.revision, 3)
+        XCTAssertNil(try widget.read()?.error)
+        try widget.update(token: first.token, snapshot: snapshot(4), checked: false)
+        XCTAssertEqual(try widget.read()?.lastCheckAt, "revision-3")
+        let second = WidgetSession(token: "synthetic-b", baseURL: first.baseURL, scope: "b", expiresAt: first.expiresAt, snapshot: snapshot(5))
+        try widget.configure(second)
+        try widget.update(token: first.token, snapshot: snapshot(6), checked: true)
+        try widget.revoke(token: first.token)
+        XCTAssertEqual(try widget.read()?.scope, "b")
+        XCTAssertEqual(try widget.read()?.snapshot?.revision, 5)
+        try widget.clear(); XCTAssertNil(try widget.read())
+    }
+
+    func testWidgetCannotSendCredentialsToOtherEndpoints() {
+        XCTAssertTrue(WidgetNetwork.validBase("https://synthetic.up.railway.app/api"))
+        for base in ["http://synthetic.up.railway.app/api", "https://evil.invalid/api", "https://a.up.railway.app.evil.invalid/api", "https://a.up.railway.app/api?redirect=evil", "https://user@a.up.railway.app/api", "https://a.up.railway.app:444/api"] {
+            XCTAssertFalse(WidgetNetwork.validBase(base))
+        }
+    }
+
+    func testWorshipAnnouncementPNGHasStrictNameAndSignature() throws {
+        let png = Data([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
+        XCTAssertEqual(try NewaveReportFile(filename: "예배위원 공지 (2026-11-08).png", base64: png.base64EncodedString()).data, png)
+        XCTAssertThrowsError(try NewaveReportFile(filename: "../예배위원 공지 (2026-11-08).png", base64: png.base64EncodedString()))
+        XCTAssertThrowsError(try NewaveReportFile(filename: "예배위원 공지 (2026-11-08).png", base64: Data("%PDF-fake".utf8).base64EncodedString()))
+        XCTAssertThrowsError(try NewaveReportFile(filename: "청소년부 주간보고서 (2026-11-08).pdf", base64: png.base64EncodedString()))
+    }
     private var store: NewaveKeychainStore!
 
     func testReportExportValidatesFileNamesAndDocumentBytes() throws {

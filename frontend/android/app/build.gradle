@@ -3,6 +3,8 @@ apply plugin: 'com.android.application'
 android {
     namespace = "app.newaveflow.mobile"
     compileSdk = rootProject.ext.compileSdkVersion
+    // Synthetic on-device widget checks use a separate package from the installed app.
+    testBuildType project.hasProperty('widgetNativeTests') ? 'verification' : 'debug'
     defaultConfig {
         applicationId "app.newaveflow.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,7 +22,7 @@ android {
     buildTypes {
         verification {
             initWith debug
-            applicationIdSuffix '.verification'
+            applicationIdSuffix project.hasProperty('widgetNativeTests') ? '.widgetverification' : '.verification'
             versionNameSuffix '-verification'
             matchingFallbacks = ['debug']
             manifestPlaceholders = [authScheme: 'newaveflowverification']

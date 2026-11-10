@@ -4,10 +4,12 @@ export const MENU_GROUPS = [
   {
     title: '담당 업무', tone: 'violet', icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50',
     items: [
+      { to: '/grade-care', title: '우리 학년', desc: '학년 체크 현황·학생 돌봄' },
       { to: '/admin/weekly-report', title: '주간보고서 관리', desc: '자동 집계·보완·한글/PDF', capability: 'weeklyReport' },
       { to: '/new-family', title: '새가족팀 관리', desc: '첫 방문·출결·과정·등반·반 배정', capability: 'newFamily' },
       { to: '/praise', title: '찬양팀', desc: '명단·로테이션·콘티·기도회', capability: 'praise' },
       { to: '/intercession', title: '중보기도팀', desc: '모임·기도제목·공유 자료', capability: 'intercession' },
+      { to: '/worship', title: '예배운영팀', desc: '예배위원·공지·준비', capability: 'worship' },
     ],
   },
   {
@@ -80,10 +82,10 @@ export const PERSONAL_GROUPS = [
   ] },
 ]
 
-export function managementMenuGroups(role, canManageNewFamily = false, canReport = false, canPraise = false, canIntercession = false) {
+export function managementMenuGroups(role, canManageNewFamily = false, canReport = false, canPraise = false, canIntercession = false, canWorship = false) {
   const canManageAll = ['ADMIN', 'PASTOR', 'EXECUTIVE'].includes(role)
   return MENU_GROUPS.map(group => ({ ...group, items: group.items.filter(item =>
-    item.capability === 'newFamily' ? canManageNewFamily : item.capability === 'weeklyReport' ? canReport : item.capability === 'praise' ? canPraise : item.capability === 'intercession' ? canIntercession : canManageAll
+    item.capability === 'newFamily' ? canManageNewFamily : item.capability === 'weeklyReport' ? canReport : item.capability === 'praise' ? canPraise : item.capability === 'intercession' ? canIntercession : item.capability === 'worship' ? canWorship : canManageAll
   ) })).filter(group => group.items.length > 0)
 }
 

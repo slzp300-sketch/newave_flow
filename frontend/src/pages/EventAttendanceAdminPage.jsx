@@ -1,3 +1,4 @@
+import {DialogSections} from '../components/common/DialogActions'
 import { useState, useLayoutEffect, useRef, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -151,14 +152,15 @@ function PersonDialog({ person, kind, onClose }) {
     node.showModal(); document.body.style.overflow = 'hidden'; window.scrollTo(position); heading.current?.focus({ preventScroll: true })
     return () => { node.close(); document.body.style.overflow = overflow; window.scrollTo(position); if (previous?.isConnected) previous.focus({ preventScroll: true }) }
   }, [])
-  return createPortal(<dialog ref={dialog} className="event-attendance-dialog" aria-labelledby={titleId} onCancel={e => { e.preventDefault(); onClose() }}>
+  return createPortal(<dialog ref={dialog} className="ui-dialog-shell event-attendance-dialog" aria-labelledby={titleId} onCancel={e => { e.preventDefault(); onClose() }}>
+    <DialogSections>
     <header><h2 ref={heading} tabIndex={-1} id={titleId}>{person.name}</h2><button type="button" aria-label="출석 상세 닫기" onClick={onClose}><X size={22} aria-hidden="true" /></button></header>
-    <dl>
+    <dl className="ui-dialog-body">
       <div><dt>학년</dt><dd><GradeLabel value={person.grade || person.gradeGroup} /></dd></div>
       {kind === 'student' && <div><dt>반</dt><dd>{person.className}</dd></div>}
       <div><dt>출석</dt><dd><AttendanceBadge status={person.status} /></dd></div>
       {person.status === 'ABSENT' && <div><dt>불참 사유</dt><dd>{person.absenceReason || '미입력'}</dd></div>}
       {person.status === 'PARTIAL' && <><div><dt>참석 시작</dt><dd>{person.partialFromDate ? formatDate(person.partialFromDate) : '미입력'}</dd></div><div><dt>메모</dt><dd>{person.partialNote || '미입력'}</dd></div></>}
     </dl>
-  </dialog>, document.body)
+  </DialogSections></dialog>, document.body)
 }

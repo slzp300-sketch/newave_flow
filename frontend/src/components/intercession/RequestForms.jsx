@@ -1,4 +1,5 @@
-import {useState} from 'react'
+import {useId,useState} from 'react'
+import DialogActions from '../common/DialogActions'
 import {SlidersHorizontal,Lock,Globe,Check,RotateCcw,History} from 'lucide-react'
 import PrayerDisclosure from './PrayerDisclosure'
 import AppSelect from '../common/AppSelect'
@@ -11,9 +12,10 @@ export const isShared=r=>['published','answered'].includes(r.state)
 export const sharingName=r=>r.state==='pending'?(r.share?(r.anonymous?'익명 공유 동의':'전체 공유 동의'):'팀만 전달'):isShared(r)?(r.anonymous?'익명 공유':'전체 공유'):'팀만 보기'
 export function FormField({label,children}){return <label className="it-field"><span>{label}</span>{children}</label>}
 export function RequestForm({proxy=false,onSave,busy}){
+ const formId=useId()
  const [form,setForm]=useState({title:'',body:'',category:'청소년부',proxy,senderName:'',share:true,anonymous:true})
  const change=patch=>setForm(s=>({...s,...patch}))
- return <form className="it-stack" onSubmit={e=>{e.preventDefault();onSave(form)}}>
+ return <form id={formId} className="it-stack" onSubmit={e=>{e.preventDefault();onSave(form)}}>
   <fieldset disabled={busy} className="it-stack">
    {proxy&&<FormField label="보내주신 분"><input required maxLength={80} className="field-input" value={form.senderName} onChange={e=>change({senderName:e.target.value})} placeholder="이름 또는 익명"/></FormField>}
    <FormField label="기도제목"><input required maxLength={80} className="field-input" value={form.title} onChange={e=>change({title:e.target.value})} placeholder="함께 기도할 제목"/></FormField>
@@ -21,7 +23,7 @@ export function RequestForm({proxy=false,onSave,busy}){
    <FormField label="분류"><AppSelect aria-label="기도제목 분류" value={form.category} onChange={e=>change({category:e.target.value})}>{categories.map(c=><option key={c}>{c}</option>)}</AppSelect></FormField>
    <label className="it-check"><MotionCheck checked={form.share} onChange={e=>change({share:e.target.checked})}/>{proxy?'전체 공유 동의 확인':'교사 전체에 공유'}</label>
    {form.share?<label className="it-check"><MotionCheck checked={form.anonymous} onChange={e=>change({anonymous:e.target.checked})}/>이름은 표시하지 않기</label>:<p className="it-private"><Lock size={15}/>팀에만 전달</p>}
-   <Button type="submit" size="lg" loading={busy}>{proxy?'등록하기':'기도제목 보내기'}</Button>
+   <DialogActions><Button type="submit" form={formId} size="lg" loading={busy}>{proxy?'등록하기':'기도제목 보내기'}</Button></DialogActions>
   </fieldset>
  </form>
 }

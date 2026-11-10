@@ -1,7 +1,9 @@
 import { MENU_GROUPS, PERSONAL_GROUPS } from './menuGroups.js'
 
 const ROUTES = Object.entries({
+  '/grade-care': 'gradeCare',
   '/praise': 'praise',
+  '/worship': 'worship',
   '/intercession': 'prayer',
   '/officers': 'assignment',
   '/admin/attendance': 'attendance',

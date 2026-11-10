@@ -1,3 +1,4 @@
+import DialogActions, {DialogSections} from '../components/common/DialogActions'
 import AppSelect from '../components/common/AppSelect'
 import { Collapse, CollapsePanel } from '../components/common/Motion'
 import './CalendarPage.css'
@@ -7,6 +8,7 @@ import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import { eventToday, isEventEnded, validateAttendanceWindow } from '../utils/eventAttendance'
 import { eventRangeKey } from '../api/queryPolicy'
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usePersistedState } from '../hooks/usePersistedState'
 import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -58,6 +60,8 @@ const EVENT_TYPES = [
 ]
 
 export default function CalendarPage() {
+  const [linkParams] = useSearchParams()
+  const linkedDate = linkParams.get('date')
   const { user } = useAuthStore()
   const today = useToday(eventToday)
   const qc = useQueryClient()
@@ -65,6 +69,12 @@ export default function CalendarPage() {
 
   const [currentTs, setCurrentTs] = usePersistedState('current', new Date().getTime())
   const [selectedTs, setSelectedTs] = usePersistedState('selected', new Date().getTime())
+  useEffect(() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(linkedDate || '')) return
+    const date = new Date(linkedDate + 'T12:00:00')
+    if (!Number.isFinite(date.getTime()) || toApiDate(date) !== linkedDate) return
+    setCurrentTs(date.getTime()); setSelectedTs(date.getTime())
+  }, [linkedDate, setCurrentTs, setSelectedTs])
 
   const current  = useMemo(() => new Date(currentTs),  [currentTs])
   const selected = useMemo(() => new Date(selectedTs), [selectedTs])
@@ -576,13 +586,13 @@ export default function CalendarPage() {
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="safe-overlay safe-overlay-spaced fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl overflow-y-auto safe-modal-panel safe-modal-90" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-6">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} role="dialog" aria-label={editingId ? '일정 수정' : '새 일정 등록'} className="ui-dialog-shell bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-90" onClick={e => e.stopPropagation()}>
+              <DialogSections><header className="flex justify-between items-center p-4 border-b border-gray-100">
                 <h3 className="text-xl font-bold text-gray-900">{editingId ? '일정 수정' : '새 일정 등록'}</h3>
-                <button onClick={() => setShowForm(false)} className="p-2 bg-gray-50 rounded-full text-gray-400"><X size={20} /></button>
-              </div>
+                <button type="button" aria-label="일정 입력 닫기" disabled={submitting} onClick={() => setShowForm(false)} className="min-h-11 min-w-11 flex items-center justify-center bg-gray-50 rounded-full text-gray-400"><X size={20} /></button>
+              </header>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form id="calendar-event-editor" onSubmit={handleSubmit} className="ui-dialog-body p-4 flex flex-col gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">제목</label>
                   <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
@@ -700,11 +710,11 @@ export default function CalendarPage() {
 
                 <Collapse open={formData.attendanceRequired}><EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} /></Collapse>
 
-                <div className="flex gap-2 mt-2">
-                  <Button type="submit" loading={submitting} className="flex-1">저장하기</Button>
-                  <Button variant="ghost" onClick={() => setShowForm(false)}>취소</Button>
-                </div>
-              </form>
+                <DialogActions>
+                  <Button type="button" variant="secondary" disabled={submitting} onClick={() => setShowForm(false)}>취소</Button>
+                  <Button type="submit" form="calendar-event-editor" loading={submitting}>저장하기</Button>
+                </DialogActions>
+              </form></DialogSections>
             </motion.div>
           </motion.div>
         )}

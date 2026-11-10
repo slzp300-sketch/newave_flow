@@ -12,11 +12,17 @@ import { startAppleSessionMonitor } from '../auth/appleSessionMonitor'
 import { authApi } from '../api/auth'
 import useAuthStore from '../store/authStore'
 import { startPushNotifications, refreshPushNotifications } from './pushNotifications'
+import { installAppLifecycle } from './appLifecycle'
+import { readRecovery, refreshSession } from '../api/client'
+import { tokenNeedsRefresh } from '../auth/tokenExpiry'
+import { startWidgets, refreshWidgets } from './widgets'
+import { widgetDestination } from './widgetController'
 
 export default function NativeRuntime({ router }) {
   const [storageError, setStorageError] = useState(false)
   const [appleNotice, setAppleNotice] = useState('')
   useEffect(() => startPushNotifications(router), [router])
+  useEffect(() => startWidgets(), [])
   useEffect(() => {
     if (nativePlatform !== 'ios') return
     return startAppleSessionMonitor({ native: appleNative, app: NativeApp, store: useAuthStore,
@@ -41,12 +47,29 @@ export default function NativeRuntime({ router }) {
         // Keep web navigation usable if the native lifecycle plugin is unavailable.
       }
     }
-    void register('appStateChange', ({ isActive }) => {
-      focusManager.setFocused(isActive)
-      if (isActive) { void restorePendingAuthViewport(); void refreshPushNotifications() }
+    const stopLifecycle = installAppLifecycle({ app: NativeApp, view: window,
+      focus: active => focusManager.setFocused(active),
+      onResume: since => {
+        readRecovery.resume(since)
+        if (tokenNeedsRefresh(useAuthStore.getState().accessToken)) void refreshSession().catch(() => {})
+        void restorePendingAuthViewport().catch(() => {})
+        void Promise.resolve(refreshPushNotifications()).catch(() => {})
+        void refreshWidgets()
+      },
     })
     if (nativePlatform === 'ios') void Browser.addListener('browserFinished', () => { void finishExternalAuthViewport(false) }).then(handle => { if (disposed) void handle.remove(); else handles.push(handle) }).catch(() => {})
-    const openKakao = ({ url }) => { const path = nativeKakaoDestination(url); if (path) void router.navigate(path) }
+    let pendingWidgetPath
+    const openKakao = ({ url }) => {
+      const path = nativeKakaoDestination(url)
+      if (path) { void router.navigate(path); return }
+      const widgetPath = widgetDestination(url)
+      if (!widgetPath) return
+      if (useAuthStore.getState().user) void router.navigate(widgetPath)
+      else { pendingWidgetPath = widgetPath; void router.navigate('/login') }
+    }
+    const stopWidgetLink = useAuthStore.subscribe(state => {
+      if (state.user && pendingWidgetPath) { const path = pendingWidgetPath; pendingWidgetPath = null; void router.navigate(path) }
+    })
     void register('appUrlOpen', openKakao)
     void NativeApp.getLaunchUrl().then(value => { if (!disposed && value?.url) openKakao(value) }).catch(() => {})
     if (nativePlatform === 'android') void register('backButton', () => {
@@ -66,7 +89,8 @@ export default function NativeRuntime({ router }) {
     return () => {
       disposed = true
       handles.forEach(handle => void handle.remove())
-      focusManager.setFocused(undefined)
+      stopLifecycle()
+      stopWidgetLink()
       window.removeEventListener('newave:storage-error', failed)
     }
   }, [router])

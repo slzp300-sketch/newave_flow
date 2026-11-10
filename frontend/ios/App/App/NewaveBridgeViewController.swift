@@ -11,6 +11,8 @@ class NewaveBridgeViewController: CAPBridgeViewController {
                 try store.remove("newave-auth")
                 try store.remove("newave-kakao-pending")
                 try store.remove("newave-deletion-receipt")
+                // Widget keychain data also survives uninstall; clear only this app's widget item.
+                try? NewaveWidgetStore.shared.clear()
                 defaults.set(true, forKey: "newave.session.install.v1")
             } catch {
                 // Keep the marker unset so clearing is retried on the next launch.
@@ -21,6 +23,7 @@ class NewaveBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(NewaveSecureStoragePlugin())
         bridge?.registerPluginInstance(NewaveAppleSignInPlugin())
         bridge?.registerPluginInstance(NewaveReportExportPlugin())
+        bridge?.registerPluginInstance(NewaveWidgetPlugin())
     }
 }
 
