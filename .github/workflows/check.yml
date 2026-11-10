@@ -226,6 +226,19 @@ jobs:
           RUN_INTERCESSION_MIGRATION: 'true'
           INTERCESSION_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_intercession_ci
         run: bash gradlew test --tests com.newaveflow.IntercessionMigrationTest --no-daemon
+      - name: Create isolated worship and student care migration databases
+        env:
+          PGPASSWORD: migration-ci-only
+        run: |
+          psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_worship_ci'
+          psql -h 127.0.0.1 -U verification -d newave_migration_ci -c 'CREATE DATABASE newave_grade_care_ci'
+      - name: Verify worship and student care migrations (V026-V027)
+        env:
+          RUN_WORSHIP_MIGRATION: 'true'
+          WORSHIP_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_worship_ci
+          RUN_GRADE_CARE_MIGRATION: 'true'
+          GRADE_CARE_TEST_JDBC_URL: jdbc:postgresql://127.0.0.1:5432/newave_grade_care_ci
+        run: bash gradlew test --tests com.newaveflow.WorshipMigrationTest --tests com.newaveflow.GradeCareMigrationTest --no-daemon
       - name: Create isolated post-release migration database
         env:
           PGPASSWORD: migration-ci-only

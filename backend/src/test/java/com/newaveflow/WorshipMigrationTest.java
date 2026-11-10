@@ -12,7 +12,7 @@ class WorshipMigrationTest {
   String url=System.getenv("WORSHIP_TEST_JDBC_URL"),user=System.getenv("MIGRATION_TEST_USER");
   assertTrue(url.matches("jdbc:postgresql://127\\.0\\.0\\.1:[0-9]+/newave_worship_[a-z0-9_]+"));
   try(var app=app(url,user,"create")){assertTrue(app.isActive());}
-  try(var c=DriverManager.getConnection(url,user,"");var s=c.createStatement()){
+  try(var c=DriverManager.getConnection(url,user,System.getenv().getOrDefault("MIGRATION_TEST_PASSWORD",""));var s=c.createStatement()){
    s.execute("DROP TABLE worship_offerings,worship_tasks,worship_weeks,worship_members,worship_registry");
    s.execute("DROP TABLE IF EXISTS schema_migrations; CREATE TABLE schema_migrations(version varchar(80) PRIMARY KEY,applied_at timestamp DEFAULT CURRENT_TIMESTAMP); INSERT INTO schema_migrations(version) VALUES('V025__intercession_request_updates')");
    s.execute("INSERT INTO users(id,name,email,role,is_active,is_suspended,auth_version,large_font,new_family_team,organization_executive) VALUES(9001,'Synthetic worship','worship@example.invalid','TEACHER',true,false,0,false,false,false)");
@@ -40,6 +40,6 @@ class WorshipMigrationTest {
   try(var app=app(url,user,"validate")){assertTrue(app.isActive());}
  }
  private org.springframework.context.ConfigurableApplicationContext app(String url,String user,String ddl){
-  return new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run("--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,"--spring.datasource.username="+user,"--spring.datasource.password=","--spring.jpa.hibernate.ddl-auto="+ddl,"--app.seed.enabled=false","--app.review.mode=false","--kakao.enabled=false","--apple.enabled=false","--push.enabled=false","--jwt.secret="+UUID.randomUUID()+UUID.randomUUID(),"--spring.main.banner-mode=off","--logging.level.root=ERROR");
+  return new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run("--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,"--spring.datasource.username="+user,"--spring.datasource.password="+System.getenv().getOrDefault("MIGRATION_TEST_PASSWORD",""),"--spring.jpa.hibernate.ddl-auto="+ddl,"--app.seed.enabled=false","--app.review.mode=false","--kakao.enabled=false","--apple.enabled=false","--push.enabled=false","--jwt.secret="+UUID.randomUUID()+UUID.randomUUID(),"--spring.main.banner-mode=off","--logging.level.root=ERROR");
  }
 }

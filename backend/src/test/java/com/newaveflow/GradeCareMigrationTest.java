@@ -12,7 +12,7 @@ class GradeCareMigrationTest {
   String url=System.getenv("GRADE_CARE_TEST_JDBC_URL"),user=System.getenv("MIGRATION_TEST_USER");
   assertTrue(url.matches("jdbc:postgresql://127\\.0\\.0\\.1:[0-9]+/newave_grade_care_[a-z0-9_]+"));
   try(var app=app(url,user,"create")){assertTrue(app.isActive());}
-  try(var c=DriverManager.getConnection(url,user,"");var s=c.createStatement()){
+  try(var c=DriverManager.getConnection(url,user,System.getenv().getOrDefault("MIGRATION_TEST_PASSWORD",""));var s=c.createStatement()){
    s.execute("DROP TABLE student_care_changes,student_care_records; DROP TABLE IF EXISTS schema_migrations; CREATE TABLE schema_migrations(version varchar(80) PRIMARY KEY,applied_at timestamp DEFAULT CURRENT_TIMESTAMP); INSERT INTO schema_migrations(version) VALUES('V026__worship_team')");
    s.execute("INSERT INTO users(id,name,email,role,is_active,is_suspended,auth_version,large_font,new_family_team,organization_executive) VALUES(9001,'Synthetic carer','care@example.invalid','TEACHER',true,false,0,false,false,false); INSERT INTO students(id,name,grade,is_active) VALUES(9001,'Synthetic student','중1',true)");
    var before=EventReadMigrationTest.fingerprints(c);String sql=Files.readString(Path.of("db/migrations/V027__grade_student_care.sql"));
@@ -27,5 +27,5 @@ class GradeCareMigrationTest {
   }
   try(var app=app(url,user,"validate")){assertTrue(app.isActive());}
  }
- private org.springframework.context.ConfigurableApplicationContext app(String url,String user,String ddl){return new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run("--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,"--spring.datasource.username="+user,"--spring.datasource.password=","--spring.jpa.hibernate.ddl-auto="+ddl,"--app.seed.enabled=false","--app.review.mode=false","--kakao.enabled=false","--apple.enabled=false","--push.enabled=false","--jwt.secret="+UUID.randomUUID()+UUID.randomUUID(),"--spring.main.banner-mode=off","--logging.level.root=ERROR");}
+ private org.springframework.context.ConfigurableApplicationContext app(String url,String user,String ddl){return new SpringApplicationBuilder(NewaveFlowApplication.class).profiles("prod").run("--server.address=127.0.0.1","--server.port=0","--spring.datasource.url="+url,"--spring.datasource.username="+user,"--spring.datasource.password="+System.getenv().getOrDefault("MIGRATION_TEST_PASSWORD",""),"--spring.jpa.hibernate.ddl-auto="+ddl,"--app.seed.enabled=false","--app.review.mode=false","--kakao.enabled=false","--apple.enabled=false","--push.enabled=false","--jwt.secret="+UUID.randomUUID()+UUID.randomUUID(),"--spring.main.banner-mode=off","--logging.level.root=ERROR");}
 }
