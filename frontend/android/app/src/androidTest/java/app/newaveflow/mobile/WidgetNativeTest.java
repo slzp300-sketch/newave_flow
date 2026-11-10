@@ -64,7 +64,7 @@ public class WidgetNativeTest {
         }
     }
     void assertChildrenFit(ViewGroup parent){for(int i=0;i<parent.getChildCount();i++){View child=parent.getChildAt(i);if(child.getVisibility()==View.GONE)continue;
-        assertTrue("Widget child extends past its height",child.getBottom()<=parent.getHeight());if(child instanceof ViewGroup)assertChildrenFit((ViewGroup)child);}}
+        assertTrue("Widget child "+child.getId()+" bottom="+child.getBottom()+" parent="+parent.getHeight()+" fontScale="+context.getResources().getConfiguration().fontScale,child.getBottom()<=parent.getHeight());if(child instanceof ViewGroup)assertChildrenFit((ViewGroup)child);}}
     @Test public void endpointValidationAndOldAccountTapNeverReachNetwork()throws Exception{
         assertTrue(WidgetNetwork.validBase("https://synthetic.up.railway.app/api"));
         for(String base:new String[]{"http://a.up.railway.app/api","https://a.up.railway.app.evil.invalid/api","https://user@a.up.railway.app/api","https://a.up.railway.app/api?token=fake"})assertFalse(WidgetNetwork.validBase(base));
