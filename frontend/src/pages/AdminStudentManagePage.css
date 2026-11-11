@@ -1,0 +1,33 @@
+/* A single compact list, with editing separate from student-status actions. */
+.admin-students-page .student-management-list { display:flex; flex-direction:column; gap:.5rem; margin:0; padding:0; list-style:none; }
+.admin-students-page .student-management-list > li { min-width:0; }
+.admin-students-page .student-management-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:.5rem; min-width:0; padding:.75rem; border:1px solid #dfe5ee; border-radius:.875rem; background:#fff; }
+.admin-students-page .student-record-inactive { border-color:#fecdd3; background:#fffafb; }
+.admin-students-page .student-record-edit { display:grid; grid-template-columns:2rem minmax(0,1fr); align-items:start; gap:.5rem; width:100%; min-width:0; min-height:2.75rem; padding:0; border:0; border-radius:.5rem; background:transparent; text-align:left; }
+.admin-students-page .student-record-edit:focus-visible, .admin-students-page .student-record-status-action:focus-visible { outline:2px solid #1750ec; outline-offset:3px; }
+.admin-students-page .student-record-edit:hover .student-record-name { color:#1750ec; }
+.admin-students-page .student-record-avatar { display:flex; align-items:center; justify-content:center; width:2rem; height:2rem; margin-top:.125rem; border-radius:.625rem; overflow:hidden; font-size:.875rem; font-weight:700; }
+.admin-students-page .student-record-avatar img { width:100%; height:100%; object-fit:cover; }
+.admin-students-page .student-record-content { display:flex; flex-direction:column; gap:.375rem; min-width:0; }
+.admin-students-page .student-record-heading { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem .375rem; min-width:0; }
+.admin-students-page .student-record-name { min-width:0; font-size:1rem; font-weight:700; line-height:1.5; color:#111827; overflow-wrap:anywhere; }
+.admin-students-page .student-record-badges { display:inline-flex; flex-wrap:wrap; align-items:center; gap:.25rem; max-width:100%; }
+.admin-students-page .student-record-status, .admin-students-page .student-record-baptism { max-width:100%; padding:.125rem .375rem; border-radius:.375rem; font-size:.75rem; font-weight:600; line-height:1.5; }
+.admin-students-page .student-record-active { color:#166534; background:#f0fdf4; }
+.admin-students-page .student-record-deactivated { color:#9f1239; background:#ffe4e6; }
+.admin-students-page .student-record-baptism { color:#5b21b6; background:#f5f3ff; }
+.admin-students-page .student-record-pencil { flex-shrink:0; margin-left:auto; color:#94a3b8; }
+.admin-students-page .student-record-details { display:grid; grid-template-columns:1.75rem minmax(0,1fr); align-items:start; gap:.125rem .375rem; min-width:0; font-size:.8125rem; line-height:1.5; }
+.admin-students-page .student-record-label { color:#64748b; }
+.admin-students-page .student-record-value { min-width:0; color:#475569; overflow-wrap:anywhere; }
+.admin-students-page .student-record-actions { display:flex; align-items:center; padding-left:.5rem; border-left:1px solid #e2e8f0; }
+.admin-students-page .student-record-status-action { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.125rem; width:2.75rem; min-width:2.75rem; min-height:2.75rem; padding:.25rem; border:0; border-radius:.625rem; font-size:.75rem; font-weight:600; line-height:1.4; }
+.admin-students-page .student-record-deactivate { color:#b91c1c; background:#fff1f2; }
+.admin-students-page .student-record-activate { color:#166534; background:#f0fdf4; }
+.admin-students-page .student-record-edit:disabled, .admin-students-page .student-record-status-action:disabled { opacity:.6; }
+@media(max-width:359px) {
+  .admin-students-page .student-record-edit { grid-template-columns:minmax(0,1fr); }
+  .admin-students-page .student-record-avatar { display:none; }
+}
+.large-font .admin-students-page .student-record-edit { grid-template-columns:minmax(0,1fr); }
+.large-font .admin-students-page .student-record-avatar { display:none; }

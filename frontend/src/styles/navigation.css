@@ -1,0 +1,46 @@
+/* Navigation colors are deliberately separate from completion/absence states. */
+@layer utilities {
+  [data-feature-tone='blue'] { --feature-soft: #eef3ff; --feature-line: #d4dff5; --feature-ink: #284f94; --feature-chip: #dde7ff; }
+  [data-feature-tone='teal'] { --feature-soft: #edf8f3; --feature-line: #c7e4d7; --feature-ink: #21684d; --feature-chip: #d7eee3; }
+  [data-feature-tone='amber'] { --feature-soft: #fff5eb; --feature-line: #efd8be; --feature-ink: #90551f; --feature-chip: #fbe5ce; }
+  [data-feature-tone='violet'] { --feature-soft: #f6f0fc; --feature-line: #e5d8f2; --feature-ink: #795099; --feature-chip: #ecdef8; }
+  [data-feature-tone='slate'] { --feature-soft: #f1f4f7; --feature-line: #dae1e9; --feature-ink: #52627a; --feature-chip: #e3e9f0; }
+  :root .feature-menu-link.brand-action[data-feature-tone] {
+    --surface-bg: var(--feature-soft);
+    --surface-border: var(--feature-line);
+    --surface-ink: var(--feature-ink);
+    background-color: var(--feature-soft);
+    color: var(--feature-ink);
+    border-color: var(--feature-line);
+    box-shadow: none;
+  }
+  :root .feature-menu-link .feature-menu-icon {
+    display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 12px; background: var(--feature-chip); color: var(--feature-ink);
+  }
+  :root .home-menu-card.feature-menu-link { min-height: 102px; gap: 5px; padding: 11px 7px; border-radius: 17px; }
+  .home-menu-label { width: 100%; min-width: 0; font-size: .875rem; line-height: 1.45; font-weight: 700; }
+  :root .home-menu-card .home-menu-status { font-size: .6875rem; line-height: 1.5; }
+  .home-overview-link { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 2px; font-size: .8125rem; font-weight: 600; color: #284f94; white-space: nowrap; }
+  .home-group-title { margin: 0 0 10px; padding: 0 2px; font-size: .9375rem; line-height: 1.5; font-weight: 700; color: #26364f; }
+  :root .home-management-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :root .home-management-grid .home-menu-card { flex-direction: row; justify-content: flex-start; gap: 9px; min-height: 78px; text-align: left; padding: 12px 10px; }
+  :root .home-management-grid .home-menu-label { flex: 1; width: auto; }
+  :root .home-scope .ui-segments { padding: 4px; background: #e9edf3; border: 1px solid #e0e5ed; border-radius: 15px; }
+  :root .home-scope .ui-segments > button:not(.brand-color-swatch) { --surface-bg: transparent; --surface-ink: #637089; border: 0; border-radius: 11px; }
+  :root .home-scope .ui-segments > button[aria-pressed='true']:not(.brand-color-swatch) { --surface-bg: #fff; --surface-ink: #21684d; box-shadow: 0 1px 4px #24334b15; }
+  :root .home-scope[data-home-scope='management'] .ui-segments > button[aria-pressed='true']:not(.brand-color-swatch) { --surface-ink: #284f94; }
+  :root .menu-group-title[data-feature-tone],
+  :root .home-personal-section > .home-group-title,
+  :root .home-management-section > .home-group-title { color: var(--feature-ink); }
+  :root .menu-group-title[data-feature-tone]::before { background: var(--feature-ink); }
+  :root .app-header[data-feature-tone] [data-feature-title] { color: var(--feature-ink); }
+  :root .app-header[data-feature-tone] { border-bottom-color: var(--feature-line); }
+  :root .app-header[data-feature-tone] .brand-heading-icon { color: var(--feature-ink); background: var(--feature-chip); }
+  :root .brand-nav-link[data-feature-tone][aria-current='location'] { color: var(--feature-ink); }
+  :root .brand-nav-link[data-feature-tone] .brand-nav-indicator { background: var(--feature-soft); }
+  :root.large-font .home-management-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The motion indicator lives outside Tailwind layers. */
+:root .home-scope .ui-segments .brand-selection { background: #fff; border: 1px solid #dce4ed; }

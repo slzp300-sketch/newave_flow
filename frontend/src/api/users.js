@@ -9,8 +9,8 @@ export const usersApi = {
     client.put('/users/me/settings', settings),
   getMyProfile: () =>
     client.get('/users/me/profile'),
-  updateProfile: ({ name, phone, birthDate, profileImage, churchPosition }) =>
-    client.put('/users/me/profile', { name, phone, birthDate, profileImage, churchPosition }),
+  updateProfile: ({ name, phone, birthDate, profileImage, churchPosition, gender }) =>
+    client.put('/users/me/profile', { name, phone, birthDate, profileImage, churchPosition, gender }),
   getTeacherRoster: () =>
     client.get('/users/teachers/roster'),
 }

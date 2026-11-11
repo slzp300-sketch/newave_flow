@@ -2,10 +2,9 @@ const inPath = (pathname, prefix) => pathname === prefix || pathname.startsWith(
 
 export function navigationSection(pathname) {
   if (pathname === '/') return '/'
-  if (['/checklist', '/attendance', '/tts', '/meeting', '/event-attendance', '/minutes'].some(p => inPath(pathname, p))) return '/checklist'
   if (['/calendar', '/events'].some(p => inPath(pathname, p))) return '/calendar'
-  if (inPath(pathname, '/profile')) return '/profile'
-  return '/menu'
+  if (['/profile', '/safety/report', '/community-guidelines'].some(p => inPath(pathname, p))) return '/profile'
+  return '/'
 }
 
 export function parentPath(pathname) {

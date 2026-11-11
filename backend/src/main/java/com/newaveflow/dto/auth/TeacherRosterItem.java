@@ -11,7 +11,8 @@ public record TeacherRosterItem(
         String profileImage,
         String className,
         List<TagInfo> tags,
-        String churchPosition
+        String churchPosition,
+        String gender
 ) {
     public record TagInfo(Long id, String name, String category, String color) {}
 }

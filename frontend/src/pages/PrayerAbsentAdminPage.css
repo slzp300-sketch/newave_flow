@@ -1,0 +1,34 @@
+.admin-prayer-page { min-height: 100vh; padding-bottom: 6rem; }
+.prayer-admin-body { display: flex; flex-direction: column; gap: .875rem; padding: .75rem; }
+.prayer-panel { min-width: 0; padding: .875rem; background: #fff; border: 1px solid var(--newave-line); border-radius: 1rem; }
+.prayer-admin-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.prayer-admin-row > div { min-width: 0; }
+.prayer-help { color: #6b7280; font-size: .75rem; line-height: 1.6; margin-top: .375rem; overflow-wrap: anywhere; }
+.prayer-summary { padding: .5rem .625rem; }
+.prayer-summary-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: .25rem .5rem; }
+.prayer-summary-heading > h2 { font-size: .875rem; }
+.prayer-summary-heading > strong { color: var(--newave-navy); font-size: 1.25rem; font-weight: 800; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.prayer-summary .prayer-admin-row > button { flex-shrink: 0; }
+.prayer-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: .25rem; padding-top: .375rem; border-top: 1px solid var(--newave-line); }
+.prayer-counts > div { display: flex; flex-direction: column; gap: .125rem; padding: 0 .25rem; }
+.prayer-counts dt { font-size: .75rem; line-height: 1.5; color: var(--newave-muted); }
+.prayer-counts dd { font-size: 1rem; line-height: 1.5; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.prayer-counts small { margin-left: .125rem; font-size: .75rem; font-weight: 400; }
+.prayer-trend { padding: 0; }
+.prayer-trend > .ui-disclosure-trigger { border: 0; border-radius: inherit; padding: .5rem .75rem; }
+.prayer-trend > .prayer-help, .prayer-trend > .prayer-trend-list { margin-left: .75rem; margin-right: .75rem; }
+.prayer-trend > .prayer-trend-list { margin-bottom: .75rem; }
+.prayer-trend-list { display: flex; flex-direction: column; gap: .375rem; margin-top: .625rem; }
+.prayer-trend-row { display: grid; grid-template-columns: 3.75rem minmax(1.5rem, 1fr) 3.5rem 3rem; align-items: center; gap: .375rem; width: 100%; min-height: 2.75rem; padding: .5rem; border: 1px solid #e5e7eb; border-radius: .75rem; text-align: left; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.prayer-trend-row strong, .prayer-trend-row small { text-align: right; }
+.prayer-trend-track { display: block; height: .375rem; background: #e5e7eb; border-radius: 1rem; overflow: hidden; }
+.prayer-trend-track > span { display: block; height: 100%; border-radius: inherit; background: var(--newave-green); }
+.prayer-admin-roster { display: flex; min-width: 0; flex-direction: column; gap: .625rem; }
+.prayer-list-filters { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: .5rem; align-items: center; }
+.prayer-grade-filter select { min-height: 3rem; width: 100%; border: 1px solid #e5e7eb; border-radius: .75rem; padding: .5rem; background: white; font-size: .8125rem; }
+.prayer-empty { text-align: center; color: #6b7280; padding: 1.5rem .75rem; font-size: .875rem; }
+@media (max-width: 359px) {
+  .large-font .prayer-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .prayer-list-filters { grid-template-columns: minmax(0, 1fr); }
+  .prayer-trend-row { grid-template-columns: 3.5rem minmax(.75rem, 1fr) 3.25rem 2.75rem; gap: .25rem; }
+}

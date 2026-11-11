@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { primary, neutral } from './brand-theme.js'
 
 export default defineConfig(({ mode }) => ({
+  build: { target: ['es2020', 'safari15.4'] },
   define: {
     __APP_BUILD_ID__: JSON.stringify((process.env.VERCEL_GIT_COMMIT_SHA || process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 7) || new Date().toISOString()),
   },

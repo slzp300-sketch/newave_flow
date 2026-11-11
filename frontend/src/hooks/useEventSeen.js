@@ -66,6 +66,8 @@ export default function useEventSeen(today, events = []) {
     ? (mutation.error.response?.status === 409 ? '일정이 변경되었어요. 최신 내용을 다시 확인해 주세요.' : '확인 상태를 저장하지 못했어요. 일정을 다시 눌러 주세요.')
     : query.isError ? '일정 확인 상태를 불러오지 못했어요.' : null
   return {
+    readsKnown: knownRead(query),
+    readQuery: query,
     isNew: event => !!userId && knownRead(query) && isUnseenEvent(event, query.data, today),
     markSeen, isSaving, readError,
     retryReads: () => { mutation.reset(); query.refetch() },

@@ -1,0 +1,6 @@
+<resources>
+ <string name="widget_name">뉴웨이브 · 일정·체크</string><string name="widget_description">가까운 일정과 영성 체크, 이번 주 남은 체크</string>
+ <string name="widget_daily_name">뉴웨이브 · 영성 체크</string><string name="widget_daily_description">오늘의 말씀과 기도를 바로 체크</string>
+ <string name="widget_weekly_name">뉴웨이브 · 이번 주 체크</string><string name="widget_weekly_description">남은 체크를 확인하고 해당 화면으로 이동</string>
+ <string name="widget_calendar_name">뉴웨이브 · 교회 달력</string><string name="widget_calendar_description">한 달의 교회 일정과 가까운 모임</string>
+</resources>

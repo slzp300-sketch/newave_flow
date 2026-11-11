@@ -23,6 +23,17 @@
 		F09558D6AEB4412889183B35 /* AppTests.mdimporter in Copy Files */ = {isa = PBXBuildFile; fileRef = F72C53C3BB504125BE84052F /* AppTests.mdimporter */; };
 		F86B41DE28F040EFAAE87420 /* NewaveKeychainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086E2F8F3CBF4E4CBDF955B5 /* NewaveKeychainTests.swift */; };
 		D5964ABB07754E4597209794 /* NewaveAppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */; };
+		EB1B538C3C2947179EBD3401 /* NewaveReportExportPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1B538C3C2947179EBD3402 /* NewaveReportExportPlugin.swift */; };
+		2EEF8003B75A4080BEE62D9C /* NewaveWidgets.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = 8E97817C66384C0E88EDA312 /* NewaveWidgets.appex */; };
+		7C247C03BBB64A3AB72B2F34 /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48806F7EE99141AEA9E21E37 /* WidgetStore.swift */; };
+		A2DD967A715442D7A4393126 /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48806F7EE99141AEA9E21E37 /* WidgetStore.swift */; };
+		954D140E9B164A6BB2ADAEC4 /* WidgetNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0581EE2EEE144CF38EEE545E /* WidgetNetwork.swift */; };
+		77AB7B77979441BEAEF33F1F /* WidgetNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0581EE2EEE144CF38EEE545E /* WidgetNetwork.swift */; };
+		6C4955A99D964F75930A1AF6 /* WidgetCheckIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D650B93058A44A099DFFFD6 /* WidgetCheckIntent.swift */; };
+		8E00538890724DE78F8C06BB /* WidgetCheckIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D650B93058A44A099DFFFD6 /* WidgetCheckIntent.swift */; };
+		57756E27D24146AD881115E0 /* NewaveWidgetPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2F9343C8904C32AD7313C4 /* NewaveWidgetPlugin.swift */; };
+		37145FCD4D0742D097F36A72 /* NewaveWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32398968A6EA49D397F2B178 /* NewaveWidgets.swift */; };
+		C42F82C85947487C9183BA1D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C82A658CFA444959A6CDC147 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +55,15 @@
 		F72C53C3BB504125BE84052F /* AppTests.mdimporter */ = {isa = PBXFileReference; name = "AppTests.xctest"; path = "AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; explicitFileType = "wrapper.cfbundle"; includeInIndex = 0; };
 		086E2F8F3CBF4E4CBDF955B5 /* NewaveKeychainTests.swift */ = {isa = PBXFileReference; name = "NewaveKeychainTests.swift"; path = "NewaveKeychainTests.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; includeInIndex = 0; };
 		DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */ = {isa = PBXFileReference; name = "NewaveAppleSignInPlugin.swift"; path = "NewaveAppleSignInPlugin.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; includeInIndex = 0; };
+		EB1B538C3C2947179EBD3402 /* NewaveReportExportPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewaveReportExportPlugin.swift; sourceTree = "<group>"; };
+		8E97817C66384C0E88EDA312 /* NewaveWidgets.appex */ = {isa = PBXFileReference; name = "NewaveWidgets.appex"; path = "NewaveWidgets.appex"; sourceTree = BUILT_PRODUCTS_DIR; fileEncoding = undefined; lastKnownFileType = undefined; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; };
+		48806F7EE99141AEA9E21E37 /* WidgetStore.swift */ = {isa = PBXFileReference; name = "WidgetStore.swift"; path = "WidgetStore.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		0581EE2EEE144CF38EEE545E /* WidgetNetwork.swift */ = {isa = PBXFileReference; name = "WidgetNetwork.swift"; path = "WidgetNetwork.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		5D650B93058A44A099DFFFD6 /* WidgetCheckIntent.swift */ = {isa = PBXFileReference; name = "WidgetCheckIntent.swift"; path = "WidgetCheckIntent.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		1F2F9343C8904C32AD7313C4 /* NewaveWidgetPlugin.swift */ = {isa = PBXFileReference; name = "NewaveWidgetPlugin.swift"; path = "NewaveWidgetPlugin.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		32398968A6EA49D397F2B178 /* NewaveWidgets.swift */ = {isa = PBXFileReference; name = "NewaveWidgets.swift"; path = "NewaveWidgets.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		E5B4C25392014A9B8AC84BB3 /* Widgets.entitlements */ = {isa = PBXFileReference; name = "Widgets.entitlements"; path = "Widgets.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		C82A658CFA444959A6CDC147 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; name = "PrivacyInfo.xcprivacy"; path = "App/PrivacyInfo.xcprivacy"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +82,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BC71D1A842AD4379986A4E3A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -72,6 +99,9 @@
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
 				CAB912A0B6164757871AF7DA /* AppTests */,
+				FB84600203B14DB78FCC596B /* WidgetShared */,
+				5726F7077E11454A90BF2C51 /* NewaveWidgets */,
+				C82A658CFA444959A6CDC147 /* PrivacyInfo.xcprivacy */,
 			);
 			sourceTree = "<group>";
 		};
@@ -80,6 +110,7 @@
 			children = (
 				504EC3041FED79650016851F /* App.app */,
 				F72C53C3BB504125BE84052F /* AppTests.xctest */,
+				8E97817C66384C0E88EDA312 /* NewaveWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,6 +132,8 @@
 				3D9ACDA8DA0B47DABEBC08BA /* NewaveBridgeViewController.swift */,
 				5A6E2D997F2641ECB260C8E6 /* PrivacyInfo.xcprivacy */,
 				DC70AFC5296C497B9C243120 /* NewaveAppleSignInPlugin.swift */,
+				EB1B538C3C2947179EBD3402 /* NewaveReportExportPlugin.swift */,
+				1F2F9343C8904C32AD7313C4 /* NewaveWidgetPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -114,6 +147,27 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
+		FB84600203B14DB78FCC596B /* WidgetShared */ = {
+			isa = PBXGroup;
+			children = (
+				48806F7EE99141AEA9E21E37 /* WidgetStore.swift */,
+				0581EE2EEE144CF38EEE545E /* WidgetNetwork.swift */,
+				5D650B93058A44A099DFFFD6 /* WidgetCheckIntent.swift */,
+			);
+			name = WidgetShared;
+			path = WidgetShared;
+			sourceTree = "<group>";
+		};
+		5726F7077E11454A90BF2C51 /* NewaveWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				32398968A6EA49D397F2B178 /* NewaveWidgets.swift */,
+				E5B4C25392014A9B8AC84BB3 /* Widgets.entitlements */,
+			);
+			name = NewaveWidgets;
+			path = NewaveWidgets;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -124,10 +178,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				1CD2BC8A23A54A7198BED07E /* Copy Files */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				6BEC689233924E3B8562BD75 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -153,6 +209,23 @@
 			);
 			dependencies = (
 				F1B966A66A3E48819BDC7F79 /* PBXTargetDependency */,
+			);
+		};
+		BCAFE111EAC44804B1819AA6 /* "NewaveWidgets" */ = {
+			isa = PBXNativeTarget;
+			name = "NewaveWidgets";
+			productName = "NewaveWidgets";
+			productReference = 8E97817C66384C0E88EDA312;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 7F61E0AD6BC54824942737FD;
+			buildPhases = (
+				1809E7B2ED5E4DC291BD7ECE /* Sources */,
+				BC71D1A842AD4379986A4E3A /* Frameworks */,
+				C7D76C904F6F4276BBF90C01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
 			);
 		};
 /* End PBXNativeTarget section */
@@ -192,6 +265,7 @@
 			targets = (
 				504EC3031FED79650016851F /* App */,
 				56B44D5D220B4988ACDFCB11 /* "AppTests" */,
+				BCAFE111EAC44804B1819AA6 /* "NewaveWidgets" */,
 			);
 		};
 /* End PBXProject section */
@@ -218,6 +292,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C7D76C904F6F4276BBF90C01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C42F82C85947487C9183BA1D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -231,6 +313,11 @@
 				3406CF4E3C864734B39BCF9D /* NewaveSecureStoragePlugin.swift in Sources */,
 				B58B412DC3794F64B06E2C10 /* NewaveBridgeViewController.swift in Sources */,
 				D5964ABB07754E4597209794 /* NewaveAppleSignInPlugin.swift in Sources */,
+				EB1B538C3C2947179EBD3401 /* NewaveReportExportPlugin.swift in Sources */,
+				7C247C03BBB64A3AB72B2F34 /* WidgetStore.swift in Sources */,
+				954D140E9B164A6BB2ADAEC4 /* WidgetNetwork.swift in Sources */,
+				6C4955A99D964F75930A1AF6 /* WidgetCheckIntent.swift in Sources */,
+				57756E27D24146AD881115E0 /* NewaveWidgetPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,6 +326,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				F86B41DE28F040EFAAE87420 /* NewaveKeychainTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1809E7B2ED5E4DC291BD7ECE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2DD967A715442D7A4393126 /* WidgetStore.swift in Sources */,
+				77AB7B77979441BEAEF33F1F /* WidgetNetwork.swift in Sources */,
+				8E00538890724DE78F8C06BB /* WidgetCheckIntent.swift in Sources */,
+				37145FCD4D0742D097F36A72 /* NewaveWidgets.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -313,7 +411,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -364,7 +462,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -381,7 +479,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -394,6 +492,9 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				NEWAVE_APPLE_SIGN_IN_ENABLED = NO;
+				NEWAVE_APP_ENTITLEMENTS = App/WidgetApp.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(NEWAVE_APP_ENTITLEMENTS)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(NEWAVE_APP_PROFILE)";
 			};
 			name = Debug;
 		};
@@ -404,7 +505,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -416,6 +517,9 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				NEWAVE_APPLE_SIGN_IN_ENABLED = NO;
+				NEWAVE_APP_ENTITLEMENTS = App/WidgetApp.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(NEWAVE_APP_ENTITLEMENTS)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(NEWAVE_APP_PROFILE)";
 			};
 			name = Release;
 		};
@@ -434,7 +538,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				SWIFT_VERSION = 5.0;
 				SDKROOT = iphoneos;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/App.app/App";
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -452,11 +556,57 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				SWIFT_VERSION = 5.0;
 				SDKROOT = iphoneos;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/App.app/App";
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+			};
+		};
+		D1F05ED87B464FBDB38F2C7A /* Debug */ = {
+			name = Debug;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = NewaveWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_NAME = "NewaveWidgets";
+				SKIP_INSTALL = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.newaveflow.mobile.widgets";
+				SWIFT_VERSION = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0.0;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = NewaveWidgets/Widgets.entitlements;
+				PROVISIONING_PROFILE_SPECIFIER = "$(NEWAVE_WIDGET_PROFILE)";
+			};
+		};
+		274BBDA4508648639F9F6BCF /* Release */ = {
+			name = Release;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = NewaveWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_NAME = "NewaveWidgets";
+				SKIP_INSTALL = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.newaveflow.mobile.widgets";
+				SWIFT_VERSION = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0.0;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = NewaveWidgets/Widgets.entitlements;
+				PROVISIONING_PROFILE_SPECIFIER = "$(NEWAVE_WIDGET_PROFILE)";
 			};
 		};
 /* End XCBuildConfiguration section */
@@ -489,6 +639,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		7F61E0AD6BC54824942737FD /* Build configuration list for PBXNativeTarget "NewaveWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1F05ED87B464FBDB38F2C7A /* Debug */,
+				274BBDA4508648639F9F6BCF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -512,6 +671,11 @@
 			target = 504EC3031FED79650016851F /* App */;
 			targetProxy = E70A8CCC2A254965B6410F88 /* PBXContainerItemProxy */;
 		};
+		6BEC689233924E3B8562BD75 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BCAFE111EAC44804B1819AA6 /* "NewaveWidgets" */;
+			targetProxy = 9A74480C31744067A0A88729 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXContainerItemProxy section */
@@ -522,7 +686,28 @@
 			remoteGlobalIDString = 504EC3031FED79650016851F;
 			remoteInfo = App;
 		};
+		9A74480C31744067A0A88729 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BCAFE111EAC44804B1819AA6;
+			remoteInfo = "NewaveWidgets";
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1CD2BC8A23A54A7198BED07E /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2EEF8003B75A4080BEE62D9C /* NewaveWidgets.appex in Copy Files */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			name = "Copy Files";
+			dstPath = "";
+			dstSubfolderSpec = 13;
+		};
+/* End PBXCopyFilesBuildPhase section */
 	};
 	rootObject = 504EC2FC1FED79650016851F /* Project object */;
 }

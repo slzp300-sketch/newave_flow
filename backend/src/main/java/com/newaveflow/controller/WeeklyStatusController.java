@@ -38,7 +38,7 @@ public class WeeklyStatusController {
         List<DailyReport> weeklyReports = classIds.isEmpty() ? List.of() : dailyReportRepository
                 .findByClassGroupIdInAndReportDateBetween(classIds, sunday, saturday);
         boolean attendanceSubmitted = !classIds.isEmpty() && classIds.stream().allMatch(id -> weeklyReports.stream()
-                .anyMatch(r -> r.getClassGroup().getId().equals(id) && r.getStatus() == DailyReport.Status.SUBMITTED));
+                .anyMatch(r -> r.getClassGroup().getId().equals(id) && r.getReportDate().equals(sunday) && r.isSubmissionComplete()));
 
         long unconfirmedMinutesCount = meetingMinuteConfirmRepository.countUnconfirmedForUser(currentUser);
 

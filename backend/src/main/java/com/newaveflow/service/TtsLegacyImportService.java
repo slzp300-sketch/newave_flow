@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -23,6 +25,7 @@ public class TtsLegacyImportService {
     private final UserRepository users;
     private final TtsService tts;
     private final ObjectMapper json;
+    private Clock clock = Clock.system(TtsPeriod.ZONE);
     private static final Pattern WEEK = Pattern.compile("^(\\d+)\\s*주차(?:\\s*\\(.*\\))?$");
 
     @Transactional(readOnly = true)
@@ -35,6 +38,10 @@ public class TtsLegacyImportService {
         // Same lock as answer saving; deterministic order also serializes overlapping imports.
         users.findAll().stream().map(User::getId).sorted().forEach(id -> users.lockById(id).orElseThrow());
         Review review = review(request);
+        // The imported totals have no daily detail and retain their confirmed 2026 Q4 attribution.
+        // Check after the user locks so a queued import cannot cross midnight with a stale date.
+        if (TtsPeriod.closed(LocalDate.of(2026, 12, 31), LocalDate.now(clock.withZone(TtsPeriod.ZONE))))
+            throw AppException.forbidden("마감된 분기의 시트 점수는 변경할 수 없습니다.");
         if (!request.previewToken().equals(review.summary().get("previewToken")))
             throw AppException.conflict("미리보기 이후 원본 내용이나 앱 기록이 바뀌었습니다. 다시 미리보기해 주세요.");
         legacy.deleteInRange(request.year(), request.fromWeek(), request.toWeek());

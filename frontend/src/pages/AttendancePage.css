@@ -1,0 +1,53 @@
+.teacher-attendance { color:var(--newave-ink); }
+.teacher-attendance-top { display:grid; gap:.5rem; padding:.75rem .75rem .25rem; }
+.teacher-attendance .teacher-help { margin:0; font-size:.8125rem; line-height:1.65; color:var(--newave-muted); overflow-wrap:anywhere; }
+.teacher-attendance .teacher-worship { padding:.75rem; border:1px solid var(--newave-line); border-radius:1rem; background:white; }
+.teacher-worship-row,.teacher-student-row,.teacher-student-controls,.teacher-status-buttons { display:flex; align-items:center; gap:6px; }
+.teacher-worship-row { justify-content:space-between; gap:10px; }
+.teacher-worship-row strong { font-size:.875rem; font-weight:600; }
+.teacher-worship-row p { margin:3px 0 0; font-size:.75rem; color:var(--newave-muted); }
+.teacher-status-buttons button { display:inline-flex; align-items:center; justify-content:center; gap:3px; min-height:44px; min-width:52px; padding:7px; border:1px solid var(--newave-line); border-radius:.75rem; font-size:.8125rem; font-weight:600; }
+.teacher-attendance button:disabled { opacity:.5; cursor:not-allowed; }
+.teacher-profile-hint,.teacher-save-message { font-size:.8125rem; line-height:1.6; margin:6px 0 0; }
+.teacher-profile-hint a { color:theme('colors.primary.700'); text-decoration:underline; }
+.teacher-save-message { color:theme('colors.secondary.800'); }
+.teacher-class-picker { display:grid; gap:6px; font-size:.8125rem; color:var(--newave-muted); }
+.teacher-attendance select,.teacher-attendance input:not([type=checkbox]):not([type=search]),.teacher-attendance textarea { min-width:0; max-width:100%; width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--newave-line); border-radius:.75rem; color:var(--newave-ink); background:white; font-size:1rem; }
+.teacher-attendance textarea { resize:vertical; }
+.teacher-counts { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.teacher-counts>div { align-items:center; }
+.teacher-counts>div+div { border-left:1px solid theme('colors.gray.100'); }
+.teacher-counts .teacher-present { color:theme('colors.secondary.700'); }
+.teacher-counts .teacher-absent { color:theme('colors.red.700'); }
+.teacher-student-list { display:grid; gap:.5rem; min-width:0; border:0; margin:0; padding:.75rem 1rem; }
+.teacher-student-card { min-width:0; padding:.75rem; background:white; border:1px solid var(--newave-line); border-radius:1rem; }
+.teacher-student-row { justify-content:space-between; gap:8px; }
+.teacher-student-info { flex:1; min-width:0; }
+.teacher-student-info>strong { display:block; font-size:.9375rem; font-weight:600; line-height:1.5; overflow-wrap:anywhere; }
+.teacher-student-info p { margin:3px 0 0; font-size:.75rem; color:var(--newave-muted); line-height:1.5; overflow-wrap:anywhere; }
+.teacher-student-controls { flex-shrink:0; gap:4px; }
+.teacher-note-toggle { position:relative; display:flex; align-items:center; justify-content:center; width:44px; min-height:44px; border:1px solid var(--newave-line); border-radius:.75rem; }
+.teacher-note-dot { position:absolute; right:5px; top:9px; width:5px; height:5px; background:var(--newave-green); border-radius:50%; }
+.teacher-absence,.teacher-student-note { display:block; margin-top:8px; padding-top:8px; border-top:1px solid theme('colors.gray.100'); font-size:.8125rem; color:var(--newave-muted); }
+.teacher-absence>span { margin-left:4px; }
+.teacher-absence input,.teacher-student-note textarea { display:block; margin-top:5px; }
+.teacher-extras { padding:8px; background:white; border:1px solid var(--newave-line); border-radius:1rem; }
+.teacher-extras .ui-disclosure-label small { display:block; margin-top:2px; font-size:.75rem; font-weight:400; color:var(--newave-muted); }
+.teacher-extras fieldset { display:grid; gap:.75rem; padding:12px 4px 4px; margin:0; border:0; min-width:0; }
+.teacher-extras label { display:grid; gap:6px; font-size:.875rem; color:theme('colors.gray.600'); min-width:0; }
+.teacher-extra-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:.875rem; margin-top:8px; }
+.teacher-extra-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px; }
+.teacher-visitor { padding:10px; border:1px solid var(--newave-line); border-radius:.75rem; }
+.teacher-category-change { border-top:1px solid var(--newave-line); }
+.teacher-category-change>label { margin-top:8px; }
+.teacher-extras .teacher-check { display:flex; align-items:center; gap:6px; min-height:44px; }
+.teacher-check input { width:18px; height:18px; }
+.teacher-submitted { padding:1rem; display:flex; flex-direction:column; align-items:center; gap:1rem; }
+.teacher-submitted-check { display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:1rem; background:theme('colors.secondary.700'); }
+.teacher-attendance .attendance-submit { padding:10px 1rem; }
+.teacher-attendance .attendance-submit p { font-size:.75rem; margin-top:5px; }
+@media(max-width:380px) { .teacher-attendance-top { padding:.75rem; } .teacher-student-list { padding:.75rem; } }
+@media(max-width:359px) { .teacher-student-row { flex-wrap:wrap; } .teacher-student-controls { margin-left:auto; } .teacher-extra-grid { grid-template-columns:1fr; } }
+html.large-font .teacher-attendance .teacher-student-row,html.large-font .teacher-attendance .teacher-worship-row { flex-wrap:wrap; }
+html.large-font .teacher-attendance .teacher-student-controls { margin-left:auto; }
+html.large-font .teacher-extra-grid { grid-template-columns:1fr; }

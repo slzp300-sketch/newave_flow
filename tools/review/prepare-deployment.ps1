@@ -9,6 +9,9 @@ foreach ($file in @('build.gradle','settings.gradle')) { Copy-Item -LiteralPath 
 Copy-Item -LiteralPath (Join-Path $repo 'backend/Dockerfile.review') -Destination (Join-Path $target 'Dockerfile')
 Copy-Item -LiteralPath (Join-Path $repo 'backend/src/main/resources/application.yml') -Destination (Join-Path $target 'src/main/resources/application.yml')
 Copy-Item -LiteralPath (Join-Path $repo 'backend/src/main/resources/META-INF/spring.factories') -Destination (Join-Path $target 'src/main/resources/META-INF/spring.factories')
+foreach ($directory in @('report-fonts', 'report-templates')) {
+  Copy-Item -LiteralPath (Join-Path $repo "backend/src/main/resources/$directory") -Destination (Join-Path $target "src/main/resources/$directory") -Recurse
+}
 $files = Get-ChildItem -LiteralPath $target -Recurse -File
 if ($files | Where-Object { $_.Name -match 'roster_data|^\.env|keystore|\.p12$|\.dpapi$|review-access' }) { throw '배포 자료에 금지된 파일이 있습니다.' }
 $manifest = $files | ForEach-Object { @{ path = [IO.Path]::GetRelativePath($target, $_.FullName).Replace('\','/'); sha256 = (Get-FileHash -LiteralPath $_.FullName).Hash.ToLower() } }

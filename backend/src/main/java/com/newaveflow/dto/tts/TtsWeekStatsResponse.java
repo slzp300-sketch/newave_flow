@@ -10,5 +10,5 @@ public record TtsWeekStatsResponse(int year, int weekNum, LocalDate weekStart, I
     public record Person(String key, Long teacherId, String name, String grade, Integer score,
                          String source, LocalDateTime updatedAt, List<Item> items) {}
     public record Item(Long questionId, String title, String type, int points, boolean linked,
-                       boolean active, List<String> days, boolean checked, int score) {}
+                       boolean active, List<String> days, boolean checked, int score, List<String> eligibleDays) {}
 }

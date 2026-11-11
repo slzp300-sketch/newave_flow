@@ -40,7 +40,7 @@ public class ClassService {
         
         // 클래스 ID를 기준으로 학생들을 그룹화
         Map<Long, List<com.newaveflow.entity.Student>> studentsByClassId = allActiveStudents.stream()
-                .filter(s -> s.getClassGroup() != null)
+                .filter(s -> s.belongsToClassOn(java.time.LocalDate.now()))
                 .collect(Collectors.groupingBy(s -> s.getClassGroup().getId()));
         
         return classes.stream().map(cls -> {
@@ -76,9 +76,14 @@ public class ClassService {
     }
 
     public List<StudentDto> getStudentsInClass(Long classGroupId, User actor) {
+        return getStudentsInClass(classGroupId,actor,java.time.LocalDate.now());
+    }
+    public List<StudentDto> getStudentsInClass(Long classGroupId, User actor, java.time.LocalDate date) {
         classAccessService.requireClass(actor, classGroupId);
         return studentRepository.findByClassGroupIdAndIsActiveTrue(classGroupId)
                 .stream()
+                .filter(s -> s.belongsToClassOn(date))
+                .filter(s -> actor.getRole() != User.Role.TEACHER || s.belongsToClassOn(java.time.LocalDate.now()))
                 .map(StudentDto::from)
                 .toList();
     }
@@ -89,6 +94,10 @@ public class ClassService {
                 .orElseThrow(() -> new RuntimeException("반을 찾을 수 없습니다."));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("교사를 찾을 수 없습니다."));
+
+        if (!user.isActive() || user.isSuspended()) {
+            throw com.newaveflow.exception.AppException.conflict("현재 이용 중인 교사만 반을 배정할 수 있습니다. 계정 상태를 다시 확인해주세요.");
+        }
 
         if (isPrimary) {
             // 기존 담임이 있으면 부담임으로 강등

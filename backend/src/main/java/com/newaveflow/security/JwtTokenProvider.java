@@ -56,6 +56,12 @@ public class JwtTokenProvider {
         return buildToken(userId, email, role, version, "refresh", refreshExpiration);
     }
 
+    // A widget credential cannot authenticate normal API calls or refresh a login.
+    public String createWidgetToken(com.newaveflow.entity.User user) {
+        return buildToken(user.getId(), null, user.getRole().name(), user.getAuthVersion(),
+                "widget", Math.min(refreshExpiration, java.time.Duration.ofDays(30).toMillis()));
+    }
+
     public boolean matchesUser(Claims claims, com.newaveflow.entity.User user) {
         Number version = claims.get("version", Number.class);
         return user.isActive() && version != null && version.longValue() == user.getAuthVersion()

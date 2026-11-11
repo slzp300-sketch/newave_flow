@@ -2,6 +2,7 @@ package com.newaveflow.repository;
 
 import com.newaveflow.entity.Attendance;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,11 +12,20 @@ import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
+    @Query("select a from Attendance a join fetch a.student where a.student.id in :ids and a.attendanceDate between :from and :to order by a.attendanceDate desc")
+    List<Attendance> findForCare(@Param("ids") java.util.Collection<Long> ids, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     List<Attendance> findByClassGroupIdAndAttendanceDate(Long classGroupId, LocalDate date);
 
     Optional<Attendance> findByStudentIdAndAttendanceDate(Long studentId, LocalDate date);
 
     List<Attendance> findByStudentIdOrderByAttendanceDateDesc(Long studentId);
+
+    @Query("select a from Attendance a join fetch a.student where a.student.id = :studentId order by a.attendanceDate desc")
+    List<Attendance> findHistory(@Param("studentId") Long studentId, Pageable pageable);
+
+    @Query("select a from Attendance a join fetch a.student where a.student.id = :studentId and a.attendanceDate < :before order by a.attendanceDate desc")
+    List<Attendance> findHistoryBefore(@Param("studentId") Long studentId, @Param("before") LocalDate before, Pageable pageable);
 
     @Query("""
         SELECT a FROM Attendance a

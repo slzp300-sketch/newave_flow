@@ -27,7 +27,7 @@ public class DeactivationRequestDto {
                     r.getStudent().getId(),
                     r.getStudent().getName(),
                     r.getStudent().getGrade(),
-                    r.getStudent().getClassGroup().getName(),
+                    r.getStudent().getClassGroup() == null ? "새가족팀" : r.getStudent().getClassGroup().getName(),
                     r.getTeacher() == null ? "삭제된 계정" : r.getTeacher().getName(),
                     r.getReason(),
                     r.getStatus().name(),

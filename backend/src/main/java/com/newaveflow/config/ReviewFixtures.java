@@ -94,7 +94,7 @@ public class ReviewFixtures implements ApplicationRunner {
         meetingAttendance.save(MeetingAttendance.builder().teacher(colleague).meetingDate(monday.plusDays(5))
                 .status("ATTEND").build());
         prayerVotes.save(PrayerVote.builder().teacher(colleague).weekStart(monday)
-                .status(PrayerVote.Status.ABSENT).reason("가상 불참·필사 제출 예시").build());
+                .status(PrayerVote.Status.ABSENT).reason("가상 불참 사유 예시").build());
         // Keep the teacher's current-week choices unset so saving is exercised for real.
         EvangelismGroup group = evangelismGroups.save(EvangelismGroup.builder().name("가상 전도 1조").build());
         for (User member : List.of(teacher, colleague)) {

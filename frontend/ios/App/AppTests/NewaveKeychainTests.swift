@@ -1,10 +1,183 @@
 import XCTest
+import UIKit
 import WebKit
 import AuthenticationServices
 @testable import App
 
 final class NewaveKeychainTests: XCTestCase {
+    func testWidgetVariantsPreserveInstalledKindAndOldSnapshots() throws {
+        XCTAssertEqual(Set(WidgetVariant.allCases.map { $0.kind }).count, 4)
+        XCTAssertEqual(WidgetVariant.combined.kind, NewaveWidgetStore.kind)
+        let old = #"{"schemaVersion":1,"revision":1,"generatedAt":"2026-11-11T10:00:00Z","date":"2026-11-11","validUntil":"","events":[],"checks":[],"tasks":[]}"#
+        var snapshot = try JSONDecoder().decode(WidgetSnapshot.self, from: Data(old.utf8))
+        XCTAssertNil(snapshot.calendarDates)
+        snapshot.calendarDates = ["2026-11-01", "2026-11-11"]
+        let decoded = try JSONDecoder().decode(WidgetSnapshot.self, from: JSONEncoder().encode(snapshot))
+        XCTAssertEqual(decoded.calendarDates, snapshot.calendarDates)
+        var session = WidgetSession(token: "synthetic", baseURL: "", scope: "a", expiresAt: "", snapshot: snapshot)
+        let now = ISO8601DateFormatter().date(from: "2026-11-11T10:00:00Z")!
+        XCTAssertTrue(session.hasRecentSnapshot(at: now.addingTimeInterval(29)))
+        XCTAssertFalse(session.hasRecentSnapshot(at: now.addingTimeInterval(30)))
+        XCTAssertFalse(session.hasRecentSnapshot(at: now.addingTimeInterval(-1)))
+        session.error = "저장 확인 필요"
+        XCTAssertFalse(session.hasRecentSnapshot(at: now))
+    }
+    func testWidgetShowsOnlyRecentConfirmedSameDayCheckWithoutAnotherFetch() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let widget = NewaveWidgetStore(service: "widget-test." + UUID().uuidString, accessGroup: nil, directory: directory)
+        defer { try? widget.clear(); try? FileManager.default.removeItem(at: directory) }
+        let now = ISO8601DateFormatter().date(from: "2026-11-11T10:00:00Z")!
+        func snapshot(_ revision: Int64, date: String = "2026-11-11") -> WidgetSnapshot {
+            WidgetSnapshot(schemaVersion: 1, revision: revision, generatedAt: "revision-\(revision)", date: date,
+                validUntil: "2026-11-12T00:00:00Z", events: [], checks: [], tasks: [])
+        }
+        let session = WidgetSession(token: "synthetic", baseURL: "https://synthetic.up.railway.app/api", scope: "a",
+            expiresAt: "2030-01-01T00:00:00Z", snapshot: snapshot(1))
+        try widget.configure(session)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: session.token, snapshot: snapshot(2), checked: true, now: now)
+        let confirmed = try XCTUnwrap(widget.read())
+        XCTAssertTrue(confirmed.hasRecentConfirmedCheck(at: now.addingTimeInterval(1)))
+        XCTAssertFalse(confirmed.hasRecentConfirmedCheck(at: now.addingTimeInterval(5)))
+        XCTAssertFalse(confirmed.hasRecentConfirmedCheck(at: now.addingTimeInterval(-1)))
+        try widget.failed(token: session.token, revision: 2, message: "save uncertain")
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: session.token, snapshot: snapshot(3), checked: false, now: now)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: session.token, snapshot: snapshot(4, date: "2026-11-10"), checked: true, now: now)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: "old-account", snapshot: snapshot(5), checked: true, now: now)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+    }
+
+    func testWidgetSessionFromPreviousAppVersionStillDecodes() throws {
+        let original = WidgetSession(token: "synthetic", baseURL: "https://synthetic.up.railway.app/api", scope: "a", expiresAt: "2030-01-01T00:00:00Z")
+        let data = try JSONEncoder().encode(original)
+        let fields = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertNil(fields["confirmedCheckAt"])
+        let decoded = try JSONDecoder().decode(WidgetSession.self, from: data)
+        XCTAssertEqual(decoded.scope, original.scope)
+        XCTAssertNil(decoded.confirmedCheckAt)
+        XCTAssertFalse(decoded.hasRecentConfirmedCheck())
+    }
+
+    func testWidgetStoreRejectsOldAccountAndOutOfOrderReplies() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let widget = NewaveWidgetStore(service: "widget-test." + UUID().uuidString, accessGroup: nil, directory: directory)
+        defer { try? widget.clear(); try? FileManager.default.removeItem(at: directory) }
+        func snapshot(_ revision: Int64) -> WidgetSnapshot {
+            WidgetSnapshot(schemaVersion: 1, revision: revision, generatedAt: "revision-\(revision)", date: "2026-11-09", validUntil: "2026-11-10T00:00:00Z", events: [], checks: [], tasks: [])
+        }
+        let first = WidgetSession(token: "synthetic-a", baseURL: "https://synthetic.up.railway.app/api", scope: "a", expiresAt: "2030-01-01T00:00:00Z", snapshot: snapshot(1))
+        try widget.configure(first)
+        try widget.update(token: first.token, snapshot: snapshot(3), checked: true)
+        try widget.update(token: first.token, snapshot: snapshot(2), checked: false)
+        try widget.failed(token: first.token, revision: 1, message: "late failure")
+        XCTAssertEqual(try widget.read()?.snapshot?.revision, 3)
+        XCTAssertNil(try widget.read()?.error)
+        try widget.update(token: first.token, snapshot: snapshot(4), checked: false)
+        XCTAssertEqual(try widget.read()?.lastCheckAt, "revision-3")
+        let second = WidgetSession(token: "synthetic-b", baseURL: first.baseURL, scope: "b", expiresAt: first.expiresAt, snapshot: snapshot(5))
+        try widget.configure(second)
+        try widget.update(token: first.token, snapshot: snapshot(6), checked: true)
+        try widget.revoke(token: first.token)
+        XCTAssertEqual(try widget.read()?.scope, "b")
+        XCTAssertEqual(try widget.read()?.snapshot?.revision, 5)
+        try widget.clear(); XCTAssertNil(try widget.read())
+    }
+
+    func testWidgetCannotSendCredentialsToOtherEndpoints() {
+        XCTAssertTrue(WidgetNetwork.validBase("https://synthetic.up.railway.app/api"))
+        for base in ["http://synthetic.up.railway.app/api", "https://evil.invalid/api", "https://a.up.railway.app.evil.invalid/api", "https://a.up.railway.app/api?redirect=evil", "https://user@a.up.railway.app/api", "https://a.up.railway.app:444/api"] {
+            XCTAssertFalse(WidgetNetwork.validBase(base))
+        }
+    }
+
+    func testWorshipAnnouncementPNGHasStrictNameAndSignature() throws {
+        let png = Data([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
+        XCTAssertEqual(try NewaveReportFile(filename: "예배위원 공지 (2026-11-08).png", base64: png.base64EncodedString()).data, png)
+        XCTAssertThrowsError(try NewaveReportFile(filename: "../예배위원 공지 (2026-11-08).png", base64: png.base64EncodedString()))
+        XCTAssertThrowsError(try NewaveReportFile(filename: "예배위원 공지 (2026-11-08).png", base64: Data("%PDF-fake".utf8).base64EncodedString()))
+        XCTAssertThrowsError(try NewaveReportFile(filename: "청소년부 주간보고서 (2026-11-08).pdf", base64: png.base64EncodedString()))
+    }
     private var store: NewaveKeychainStore!
+
+    func testReportExportValidatesFileNamesAndDocumentBytes() throws {
+        let pdf = Data("%PDF-1.7 synthetic".utf8)
+        let valid = try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).pdf", base64: pdf.base64EncodedString())
+        XCTAssertEqual(valid.data, pdf)
+        XCTAssertEqual(try NewaveReportFile(filename: "찬양팀 콘티 (2026-11-08) v2.pdf", base64: pdf.base64EncodedString()).data, pdf)
+        let hwpx = Data([0x50, 0x4b, 0x03, 0x04, 0x00, 0xff])
+        XCTAssertEqual(try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).hwpx", base64: hwpx.base64EncodedString()).data, hwpx)
+        for filename in ["../report.pdf", "청소년부 주간보고서 (2026-10-25).html", "청소년부 주간보고서 (2026-10-25).pdf\n", "찬양팀 콘티 (2026-11-08) v0.pdf", "찬양팀 콘티 (2026-11-08) v1.hwpx", "찬양팀 콘티 (2026-11-08) v1.pdf\n"] {
+            XCTAssertThrowsError(try NewaveReportFile(filename: filename, base64: pdf.base64EncodedString()))
+        }
+        for base64 in ["", "invalid!", Data("<html>error</html>".utf8).base64EncodedString(), hwpx.base64EncodedString()] {
+            XCTAssertThrowsError(try NewaveReportFile(filename: valid.filename, base64: base64))
+        }
+        XCTAssertThrowsError(try NewaveReportFile(filename: valid.filename, base64: Data(repeating: 65, count: NewaveReportFile.maxBytes + 1).base64EncodedString()))
+    }
+
+    func testReportTemporaryCopiesStaySeparateAndAreRemovedAfterExport() throws {
+        let report = try NewaveReportFile(filename: "청소년부 주간보고서 (2026-10-25).pdf", base64: Data("%PDF-1.7 synthetic".utf8).base64EncodedString())
+        let first = try report.writeTemporaryCopy()
+        let second = try report.writeTemporaryCopy()
+        defer { NewaveReportFile.removeTemporaryCopy(first); NewaveReportFile.removeTemporaryCopy(second) }
+        XCTAssertNotEqual(first, second)
+        XCTAssertEqual(try Data(contentsOf: first), report.data)
+        NewaveReportFile.removeTemporaryCopy(first)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.deletingLastPathComponent().path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: second.path))
+    }
+
+    @MainActor
+    func testReportBridgePresentsSaveDialogAndResolvesCancellation() async throws {
+        let controller = NewaveBridgeViewController()
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let previousKeyWindow = scene.windows.first { $0.isKeyWindow }
+        let window = UIWindow(windowScene: scene)
+        window.frame = scene.coordinateSpace.bounds
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        defer {
+            withExtendedLifetime((controller, window)) {
+                controller.webView?.stopLoading()
+                window.isHidden = true
+                window.rootViewController = nil
+                previousKeyWindow?.makeKeyAndVisible()
+            }
+        }
+        controller.loadViewIfNeeded()
+        window.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
+        let webView = try XCTUnwrap(controller.webView)
+        let deadline = Date().addingTimeInterval(15)
+        while (webView.isLoading || webView.url == nil) && Date() < deadline {
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        for (filename, data) in [("청소년부 주간보고서 (2026-10-25).pdf", Data("%PDF-1.7 synthetic".utf8)), ("청소년부 주간보고서 (2026-10-25).hwpx", Data([0x50, 0x4b, 0x03, 0x04, 0x00])), ("찬양팀 콘티 (2026-11-08) v2.pdf", Data("%PDF-1.7 synthetic".utf8))] {
+            let pending = Task { @MainActor in
+                try await webView.callAsyncJavaScript("""
+                    return await Capacitor.nativePromise('NewaveReportExport', 'save', { filename, base64 });
+                    """, arguments: ["filename": filename, "base64": data.base64EncodedString()], in: nil, contentWorld: .page)
+            }
+            let presentedBy = Date().addingTimeInterval(10)
+            while (controller.presentedViewController == nil || controller.presentedViewController?.isBeingPresented == true) && Date() < presentedBy {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+            let picker = try XCTUnwrap(controller.presentedViewController as? UIDocumentPickerViewController)
+            XCTAssertTrue(picker.delegate === controller.bridge?.plugin(withName: "NewaveReportExport"))
+            picker.delegate?.documentPickerWasCancelled?(picker)
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                picker.dismiss(animated: false) { continuation.resume() }
+            }
+            XCTAssertNil(controller.presentedViewController)
+            let result = try await pending.value as? [String: Any]
+            XCTAssertEqual(result?["cancelled"] as? Bool, true)
+        }
+    }
 
     @MainActor func testAppleRevocationObserverRemovesNotificationSubscriptionOnRelease() {
         let center = NotificationCenter()
@@ -83,13 +256,51 @@ final class NewaveKeychainTests: XCTestCase {
 
     @MainActor
     func testPackagedWebViewHandlesFreshStorageAndKakaoDeviceProof() async throws {
-        let controller = NewaveBridgeViewController()
-        controller.loadViewIfNeeded()
-        XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveSecureStorage"))
-        let webView = try XCTUnwrap(controller.webView)
-        let deadline = Date().addingTimeInterval(15)
-        while webView.isLoading && Date() < deadline {
+        let startupDeadline = Date().addingTimeInterval(60)
+        let activeScene = {
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                .first { $0.activationState == .foregroundActive }
+        }
+        while activeScene() == nil && Date() < startupDeadline {
             try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        let windowScene = try XCTUnwrap(
+            activeScene(),
+            "The packaged WebView test requires an active application window scene within 60 seconds"
+        )
+        let previousKeyWindow = windowScene.windows.first { $0.isKeyWindow }
+        let controller = NewaveBridgeViewController()
+        let testWindow = UIWindow(windowScene: windowScene)
+        testWindow.frame = windowScene.coordinateSpace.bounds
+        defer {
+            // Keep the bridge and its window alive across every awaited WebKit operation.
+            withExtendedLifetime((controller, testWindow)) {
+                controller.webView?.stopLoading()
+                testWindow.isHidden = true
+                testWindow.rootViewController = nil
+                previousKeyWindow?.makeKeyAndVisible()
+            }
+        }
+        // An offscreen WKWebView may suspend its JavaScript and native bridge callbacks.
+        testWindow.rootViewController = controller
+        testWindow.makeKeyAndVisible()
+        controller.loadViewIfNeeded()
+        testWindow.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
+        XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveSecureStorage"))
+        XCTAssertNotNil(controller.bridge?.plugin(withName: "NewaveReportExport"))
+        let webView = try XCTUnwrap(controller.webView)
+        guard webView.window === testWindow, testWindow.isKeyWindow, !testWindow.isHidden,
+              webView.bounds.width > 0, webView.bounds.height > 0 else {
+            XCTFail("The packaged WebView must be attached to a visible window with valid bounds")
+            return
+        }
+        while (webView.isLoading || webView.url?.scheme != "capacitor") && Date() < startupDeadline {
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        guard !webView.isLoading, webView.url?.scheme == "capacitor" else {
+            XCTFail("The packaged WebView startup did not finish within 60 seconds; JavaScript checks were not started")
+            return
         }
         XCTAssertEqual(webView.url?.scheme, "capacitor")
         let result = try await webView.callAsyncJavaScript("""
@@ -98,6 +309,22 @@ final class NewaveKeychainTests: XCTestCase {
                 && document.querySelector('#root form button[type="submit"]')?.textContent.includes('로그인');
             while (!loginReady() && Date.now() < readyBy) await new Promise(resolve => setTimeout(resolve, 100));
             if (!loginReady()) throw new Error('The packaged React login screen did not render after native storage hydration');
+            const fields = [...document.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]), select, textarea')];
+            if (fields.some(field => parseFloat(getComputedStyle(field).fontSize) < 16)) throw new Error('iOS login fields must not trigger focus zoom');
+            if (document.querySelector('meta[name="viewport"]').content.includes('user-scalable=no')) throw new Error('User pinch zoom must remain available');
+            const options = document.querySelector('button[aria-controls="account-environment-options"]');
+            if (!options || options.getAttribute('aria-expanded') !== 'false' || document.querySelector('input[value="review"]')) throw new Error('Review options must be publicly discoverable but initially collapsed');
+            options.click();
+            await new Promise(resolve => setTimeout(resolve, 350));
+            document.querySelector('input[value="review"]').click();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (!document.querySelector('form button[type="submit"]').textContent.includes('가상 자료')) throw new Error('Review login must remain explicitly selectable');
+            document.querySelector('input[value="production"]').click(); options.click();
+            await new Promise(resolve => setTimeout(resolve, 350));
+            const viewport = (method, options = {}) => Capacitor.nativePromise('NewaveAuthViewport', method, options);
+            await viewport('prepare');
+            if ((await viewport('restore', { finish: true, force: false })).restored !== true) throw new Error('Native authentication viewport bridge did not restore');
+            if ((await viewport('restore', { finish: false, force: false })).restored !== false) throw new Error('Ordinary resume must preserve user zoom');
             const storage = (method, options) => Capacitor.nativePromise('NewaveSecureStorage', method, options);
             const apple = (method, options = {}) => Capacitor.nativePromise('NewaveAppleSignIn', method, options);
             const availability = await apple('getAvailability');
@@ -129,4 +356,31 @@ final class NewaveKeychainTests: XCTestCase {
             """, arguments: [:], in: nil, contentWorld: .page)
         XCTAssertEqual(result as? Int, 32)
     }
+    @MainActor
+    func testAuthenticationViewportRestoresOnlyTheAuthHandoff() {
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        let viewport = NewaveAuthViewport()
+        let originalPinchEnabled = webView.scrollView.pinchGestureRecognizer?.isEnabled
+        webView.pageZoom = 1.4
+        XCTAssertFalse(viewport.restore(webView, finish: false))
+        XCTAssertEqual(webView.pageZoom, 1.4)
+        viewport.prepare(webView)
+        XCTAssertTrue(viewport.pending)
+        XCTAssertEqual(webView.pageZoom, 1)
+        webView.pageZoom = 1.3
+        XCTAssertTrue(viewport.restore(webView, finish: false))
+        XCTAssertEqual(webView.pageZoom, 1)
+        XCTAssertTrue(viewport.pending)
+        webView.pageZoom = 1.2
+        XCTAssertTrue(viewport.restore(webView, finish: true))
+        XCTAssertEqual(webView.pageZoom, 1)
+        XCTAssertFalse(viewport.pending)
+        webView.pageZoom = 1.5
+        XCTAssertFalse(viewport.restore(webView, finish: false))
+        XCTAssertEqual(webView.pageZoom, 1.5)
+        XCTAssertTrue(viewport.restore(webView, finish: true, force: true))
+        XCTAssertEqual(webView.pageZoom, 1)
+        XCTAssertEqual(webView.scrollView.pinchGestureRecognizer?.isEnabled, originalPinchEnabled)
+    }
+
 }

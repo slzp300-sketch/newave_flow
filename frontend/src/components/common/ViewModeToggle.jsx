@@ -1,3 +1,4 @@
+import { resolveViewMode } from '../../utils/viewModes'
 import { useState, useEffect } from 'react'
 import { LayoutGrid, Grid3x3, List, Table2 } from 'lucide-react'
 
@@ -9,12 +10,12 @@ const MODES = [
 ]
 
 /** 명단 보기 방식 (화면별로 기억 — 앱을 다시 열어도 유지) */
-export function useViewMode(key, defaultMode) {
+export function useViewMode(key, defaultMode, allowedModes) {
   const storageKey = `view_mode:${key}`
   const [mode, setMode] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey)
-      return MODES.some(m => m.id === saved) ? saved : defaultMode
+      return resolveViewMode(saved, defaultMode, allowedModes)
     } catch {
       return defaultMode
     }
@@ -28,10 +29,12 @@ export function useViewMode(key, defaultMode) {
 }
 
 /** 큰 카드 / 작은 카드 / 목록 / 자세히 전환 버튼 */
-export default function ViewModeToggle({ mode, onChange, label = '명단 보기 방식' }) {
+export default function ViewModeToggle({ mode, onChange, label = '명단 보기 방식', allowedModes, labels = {} }) {
   return (
     <div role="group" aria-label={label} className="flex w-fit max-w-full items-center bg-gray-100 rounded-2xl p-1 flex-shrink-0">
-      {MODES.map(({ id, label, Icon }) => (
+      {MODES.filter(m => !allowedModes || allowedModes.includes(m.id)).map(({ id, label: originalLabel, Icon }) => {
+        const label = labels[id] || originalLabel
+        return (
         <button
           key={id}
           type="button"
@@ -45,7 +48,7 @@ export default function ViewModeToggle({ mode, onChange, label = '명단 보기 
         >
           <Icon size={15} />
         </button>
-      ))}
+      )})}
     </div>
   )
 }

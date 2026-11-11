@@ -2,6 +2,7 @@ import { Browser } from '@capacitor/browser'
 import { isNativeApp, nativePlatform, secureAuthStorage } from '../native/platform'
 import { authApi } from '../api/auth'
 import { parseKakaoCallback, validatePending } from './kakaoFlow'
+import { prepareExternalAuthViewport, finishExternalAuthViewport } from '../native/authViewport'
 import { requireSignupEligibility } from './signupEligibility'
 
 const KEY = 'newave-kakao-pending'
@@ -30,21 +31,31 @@ export async function beginKakao(mode = 'LOGIN', currentPassword) {
   const authorization = new URL(data.authorizationUrl)
   if (authorization.origin !== 'https://kauth.kakao.com' || authorization.pathname !== '/oauth/authorize') throw new Error('카카오 로그인 주소를 확인하지 못했습니다.')
   await writePending({ flowId: data.flowId, verifier, mode, expiresAt: Date.now() + 10 * 60 * 1000 })
-  if (isNativeApp) await Browser.open({ url: authorization.href })
+  if (isNativeApp) {
+    await prepareExternalAuthViewport()
+    try { await Browser.open({ url: authorization.href }) }
+    catch (error) { await finishExternalAuthViewport(); throw error }
+  }
   else window.location.assign(authorization.href)
 }
 
 export function completeKakao(hash) {
   if (inFlight.has(hash)) return inFlight.get(hash)
   const promise = (async () => {
-    const callback = parseKakaoCallback(hash)
-    if (!callback) throw new Error('카카오 인증을 완료하지 못했습니다. 로그인 화면에서 다시 시도해 주세요.')
-    const pending = validatePending(await readKakaoPending(), callback)
-    const { data } = await authApi.completeKakao({ ...callback, verifier: pending.verifier })
-    if (data.status === 'REGISTRATION_REQUIRED') await writePending({ ...pending, registrationTicket: data.ticket })
-    else await clearKakaoPending()
-    if (isNativeApp) { try { await Browser.close() } catch { /* Android browser closes on handoff. */ } }
-    return data
+    try {
+      const callback = parseKakaoCallback(hash)
+      if (!callback) throw new Error('카카오 인증을 완료하지 못했습니다. 로그인 화면에서 다시 시도해 주세요.')
+      const pending = validatePending(await readKakaoPending(), callback)
+      const { data } = await authApi.completeKakao({ ...callback, verifier: pending.verifier })
+      if (data.status === 'REGISTRATION_REQUIRED') await writePending({ ...pending, registrationTicket: data.ticket })
+      else await clearKakaoPending()
+      return data
+    } finally {
+      if (isNativeApp) {
+        try { await Browser.close() } catch { /* Android browser closes on handoff. */ }
+        await finishExternalAuthViewport()
+      }
+    }
   })().finally(() => inFlight.delete(hash))
   inFlight.set(hash, promise)
   return promise

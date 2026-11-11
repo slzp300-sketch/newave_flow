@@ -1,21 +1,19 @@
-import { queryReadState } from '../../utils/queryReadState'
+import { queryFeedback } from '../../utils/requestFeedback'
+import Button from './Button'
 
 export default function QueryNotice({ queries, label = '기록' }) {
-  const state = queryReadState(queries)
-  if (state === 'ready') return null
-  const retrying = queries.some(q => q.isFetching)
+  const feedback = queryFeedback(queries, label)
+  if (!feedback) return null
   return (
-    <div role={state === 'error' ? 'alert' : 'status'} className="brand-card rounded-2xl border border-gray-200 bg-white p-5 text-center">
+    <div role={feedback.failed ? 'alert' : 'status'} className="brand-card rounded-2xl border border-gray-200 bg-white p-3 text-center">
       <p className="text-sm font-semibold text-gray-700">
-        {state === 'error' ? `${label}을 불러오지 못했습니다.` : `${label}을 불러오는 중입니다.`}
+        {feedback.title}
       </p>
-      {state === 'error' && <>
-        <p className="mt-2 text-xs leading-relaxed text-gray-500">연결 상태를 확인한 뒤 다시 시도해 주세요.</p>
-        <button type="button" disabled={retrying} onClick={() => queries.forEach(q => { void q.refetch() })}
-          className="mt-4 rounded-xl bg-primary-50 px-4 py-2 text-sm font-bold text-primary-700 disabled:opacity-50">
-          {retrying ? '다시 불러오는 중...' : '다시 시도'}
-        </button>
-      </>}
+      {feedback.detail && <p className="mt-1 text-xs leading-relaxed text-gray-600">{feedback.detail}</p>}
+      {feedback.failed && <Button type="button" size="sm" variant="secondary" className="mt-2" disabled={feedback.retrying}
+        onClick={() => { void Promise.allSettled(queries.map(q => q.refetch())) }}>
+        {feedback.retrying ? '다시 불러오는 중…' : '다시 불러오기'}
+      </Button>}
     </div>
   )
 }

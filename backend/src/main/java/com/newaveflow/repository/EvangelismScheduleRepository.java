@@ -10,6 +10,9 @@ import java.util.List;
 
 public interface EvangelismScheduleRepository extends JpaRepository<EvangelismSchedule, Long> {
 
+    boolean existsByScheduledDateAndResponsibleGroupIdAndStatusNot(LocalDate date, Long groupId, String status);
+    boolean existsByScheduledDateAndResponsibleGroupIdAndStatusNotAndIdNot(LocalDate date, Long groupId, String status, Long id);
+
     @Query("SELECT s FROM EvangelismSchedule s LEFT JOIN FETCH s.assignments a LEFT JOIN FETCH a.teacher LEFT JOIN FETCH a.group ORDER BY s.scheduledDate")
     List<EvangelismSchedule> findAllWithAssignments();
 

@@ -110,7 +110,7 @@ class SecurityRegressionTest {
         when(classes.lockById(911L)).thenReturn(Optional.of(requested)); when(users.findById(901L)).thenReturn(Optional.of(teacher()));
         when(assignments.findByClassGroup_IdAndTeacher_Id(911L,901L)).thenReturn(Optional.of(TeacherClass.builder().build()));
         when(students.findAllById(any())).thenReturn(List.of(Student.builder().id(921L).classGroup(ClassGroup.builder().id(912L).build()).build()));
-        var service = new AttendanceService(records, students, classes, users, reports, assignments, new ClassAccessService(assignments));
+        var service = new AttendanceService(records, students, classes, users, reports, assignments, new ClassAccessService(assignments), org.mockito.Mockito.mock(com.newaveflow.service.WeeklyReportSourceService.class));
         assertThrows(AppException.class, () -> service.saveBatch(new AttendanceBatchRequest(911L, LocalDate.of(2026,1,4),
                 List.of(new AttendanceBatchRequest.Record(921L,"PRESENT","",""))),901L));
         verify(records,never()).save(any()); verifyNoInteractions(reports);
@@ -126,6 +126,11 @@ class SecurityRegressionTest {
         @Bean TtsLegacyImportService importer() { return mock(TtsLegacyImportService.class); }
         @Bean AdminTtsController ttsController(TtsService tts, TtsLegacyImportService importer) { return new AdminTtsController(tts,importer); }
         @Bean TtsController teacherTtsController(TtsService tts) { return new TtsController(tts); }
+        @Bean EvangelismService evangelism() { return mock(EvangelismService.class); }
+        @Bean OperationService operations() { return mock(OperationService.class); }
+        @Bean com.newaveflow.controller.EvangelismController evangelismController(EvangelismService service, OperationService operations) {
+            return new com.newaveflow.controller.EvangelismController(service, operations);
+        }
     }
 
     @Test void directDeactivationIsForbiddenForTeacherAndExpiredTokenIs401() throws Exception {
@@ -163,6 +168,26 @@ class SecurityRegressionTest {
             mvc.perform(get("/api/tts/stats/week?year=2026&weekNum=42").with(user("teacher").roles("TEACHER")))
                     .andExpect(status().isOk());
             verify(context.getBean(TtsService.class)).getWeekStats(2026,42);
+        } finally { SecurityContextHolder.clearContext(); }
+    }
+
+    @Test void evangelismBulkWritesRequireManagementRole() throws Exception {
+        try (var context = new AnnotationConfigWebApplicationContext()) {
+            context.setServletContext(new MockServletContext()); context.register(MinimalWeb.class); context.refresh();
+            var mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+            for (String endpoint : List.of("/api/evangelism/groups/moves", "/api/evangelism/schedules/bulk")) {
+                mvc.perform(post(endpoint).with(user("teacher").roles("TEACHER"))
+                    .header("Idempotency-Key", "synthetic-bulk-permission-01").contentType("application/json").content("[]"))
+                    .andExpect(status().isForbidden());
+            }
+            verifyNoInteractions(context.getBean(OperationService.class), context.getBean(EvangelismService.class));
+            User admin = User.builder().id(902L).email("admin@example.invalid").role(User.Role.ADMIN).build();
+            var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(admin, null,
+                List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")));
+            mvc.perform(post("/api/evangelism/groups/moves").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth))
+                .header("Idempotency-Key", "synthetic-bulk-permission-01").contentType("application/json").content("[]")).andExpect(status().isOk());
+            mvc.perform(post("/api/evangelism/schedules/bulk").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth))
+                .header("Idempotency-Key", "synthetic-bulk-permission-02").contentType("application/json").content("[]")).andExpect(status().isCreated());
         } finally { SecurityContextHolder.clearContext(); }
     }
 }

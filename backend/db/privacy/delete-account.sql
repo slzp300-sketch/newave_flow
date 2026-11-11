@@ -19,7 +19,14 @@ BEGIN
     'evangelism_groups','evangelism_group_members','evangelism_schedules','tts_answers','tts_data_entry','tts_item',
     'tts_legacy_score','tts_question_revisions','completed_operations','kakao_auth_flows','apple_accounts','apple_auth_flows',
     'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
-    'apple_notification_receipts','user_status_events','moderated_photos','schema_migrations')) THEN
+    'apple_notification_receipts','user_status_events','moderated_photos','schema_migrations',
+    'notification_preferences','push_devices','push_deliveries','tts_linked_snapshots',
+    'weekly_class_supplements','teacher_worship_attendances','weekly_department_reports','weekly_report_exports',
+    'new_family_registry','new_family_members','new_family_checks','new_family_submissions','new_family_references',
+    'officer_registry','officer_appointments','officer_changes',
+    'praise_terms','praise_members','praise_weeks','praise_responses','praise_prayers','praise_pdfs',
+    'intercession_registry','intercession_members','intercession_requests','intercession_meetings',
+    'worship_registry','worship_members','worship_weeks','worship_offerings','worship_tasks','student_care_records','student_care_changes')) THEN
     RAISE EXCEPTION 'Unreviewed table; update the privacy data inventory before deletion';
   END IF;
   -- Blocks application writes while preserving read availability. Also covers tables added later.
@@ -35,7 +42,20 @@ BEGIN
         'evangelism_group_members','event_attendances','tts_data_entry','attendances','daily_reports','student_memos',
         'deactivation_requests','event_student_attendances','kakao_auth_flows','apple_accounts','apple_auth_flows',
         'account_deletion_requests','community_agreements','content_reports','apple_notification_subjects',
-        'user_status_events','moderated_photos'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+        'user_status_events','moderated_photos','notification_preferences','push_devices','tts_linked_snapshots','teacher_worship_attendances',
+        'officer_appointments','officer_changes','praise_members','praise_responses','praise_pdfs',
+        'intercession_members','intercession_requests','intercession_meetings',
+        'worship_members','worship_weeks','worship_tasks','student_care_records','student_care_changes'))) THEN RAISE EXCEPTION 'Unreviewed account foreign key'; END IF;
+  -- Binary scores may contain names even when another teacher uploaded them.
+  -- Require an exact reviewed file/hash inventory; never infer consent from the uploader.
+  IF to_regclass('public.praise_pdfs') IS NOT NULL THEN
+   IF EXISTS(SELECT 1 FROM praise_pdfs) THEN
+    IF to_regclass('pg_temp.privacy_praise_pdf_review') IS NULL THEN RAISE EXCEPTION 'Review praise PDF contents before account erasure'; END IF;
+    IF EXISTS(SELECT 1 FROM praise_pdfs p WHERE NOT EXISTS(SELECT 1 FROM privacy_praise_pdf_review r WHERE r.id=p.id AND r.content_md5=md5(p.content) AND r.decision IN ('KEEP_REVIEWED','DELETE')))
+       OR EXISTS(SELECT 1 FROM privacy_praise_pdf_review r WHERE NOT EXISTS(SELECT 1 FROM praise_pdfs p WHERE p.id=r.id AND md5(p.content)=r.content_md5)) THEN RAISE EXCEPTION 'Praise PDF review is incomplete or stale'; END IF;
+    DELETE FROM praise_pdfs p USING privacy_praise_pdf_review r WHERE p.id=r.id AND r.decision='DELETE';
+   END IF;
+  END IF;
   -- New lifecycle/photo tables are optional when replaying an older backup. New columns
   -- or edges in these reviewed tables must not silently bypass account erasure.
   IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND (
@@ -87,6 +107,21 @@ BEGIN
         OR fk.conkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='user_id')]::smallint[]
         OR fk.confkey IS DISTINCT FROM ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[])))) THEN
     RAISE EXCEPTION 'Unreviewed Apple notification foreign key';
+  END IF;
+  -- New notification storage is optional on older backups; unknown edges are never cascaded.
+  IF EXISTS(SELECT 1 FROM pg_constraint fk JOIN pg_class src ON src.oid=fk.conrelid
+    JOIN pg_namespace ns ON ns.oid=src.relnamespace
+    WHERE fk.contype='f' AND (
+      fk.confrelid IN (to_regclass('public.push_deliveries'),to_regclass('public.notification_preferences'),to_regclass('public.tts_linked_snapshots')) OR
+      (fk.confrelid IN (to_regclass('public.push_devices'),to_regclass('public.notifications')) AND NOT (
+        ns.nspname='public' AND src.relname='push_deliveries' AND fk.confdeltype='c' AND (
+          (fk.confrelid=to_regclass('public.push_devices') AND
+            fk.conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='installation_id')]::smallint[] AND
+            fk.confkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='installation_id')]::smallint[]) OR
+          (fk.confrelid=to_regclass('public.notifications') AND
+            fk.conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.conrelid AND attname='notification_id')]::smallint[] AND
+            fk.confkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid=fk.confrelid AND attname='id')]::smallint[])))))) THEN
+    RAISE EXCEPTION 'Unreviewed push lifecycle foreign key';
   END IF;
   SELECT * INTO target FROM users WHERE id=req.user_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'Target account is absent; reconcile the receipt before retry'; END IF;
@@ -221,6 +256,15 @@ BEGIN
     UPDATE moderated_photos SET submitted_by=NULL WHERE submitted_by=req.user_id;
     UPDATE moderated_photos SET reviewed_by=NULL WHERE reviewed_by=req.user_id;
   END IF;
+  IF to_regclass('public.push_deliveries') IS NOT NULL THEN
+    DELETE FROM push_deliveries WHERE notification_id IN (SELECT id FROM notifications WHERE user_id=req.user_id)
+      OR installation_id IN (SELECT installation_id FROM push_devices WHERE user_id=req.user_id);
+  END IF;
+  FOR item IN SELECT * FROM (VALUES ('push_devices','user_id'),('notification_preferences','user_id'),('tts_linked_snapshots','teacher_id')) x(tbl,key) LOOP
+    IF to_regclass('public.'||item.tbl) IS NOT NULL THEN
+      EXECUTE format('DELETE FROM public.%I WHERE %I=$1',item.tbl,item.key) USING req.user_id;
+    END IF;
+  END LOOP;
   FOR item IN SELECT * FROM (VALUES
     ('teacher_classes','teacher_id'),('user_tags','user_id'),('event_reads','user_id'),
     ('notifications','user_id'),('meeting_minute_confirms','user_id'),('checklist_records','teacher_id'),
@@ -230,6 +274,20 @@ BEGIN
     EXECUTE format('DELETE FROM public.%I WHERE %I=$1',item.tbl,item.key) USING req.user_id;
   END LOOP;
   DELETE FROM event_participants WHERE kind='TEACHER' AND person_id=req.user_id;
+  IF to_regclass('public.teacher_worship_attendances') IS NOT NULL THEN
+    DELETE FROM teacher_worship_attendances WHERE teacher_id=req.user_id;
+    UPDATE teacher_worship_attendances SET updated_by=NULL WHERE updated_by=req.user_id;
+  END IF;
+  IF to_regclass('public.weekly_report_exports') IS NOT NULL THEN
+    -- Preserve anonymous historical attendance totals; remove this user's numeric snapshot link.
+    -- Teacher names in shared class snapshots, authors and free text still require the
+    -- existing row-bound redaction review and final all-text scan below.
+    UPDATE weekly_report_exports e SET payload=jsonb_set(e.payload::jsonb,'{teachers}',(
+      SELECT coalesce(jsonb_agg(CASE WHEN t->>'id'=req.user_id::text
+        THEN t || '{"id":null,"name":"삭제된 교사","correctionReason":""}'::jsonb ELSE t END),'[]'::jsonb)
+      FROM jsonb_array_elements(e.payload::jsonb->'teachers') t))::text
+    WHERE EXISTS(SELECT 1 FROM jsonb_array_elements(e.payload::jsonb->'teachers') t WHERE t->>'id'=req.user_id::text);
+  END IF;
   -- Shared student outcomes are preserved. No anonymous login account is created.
   FOR item IN SELECT unnest(ARRAY['attendances','daily_reports','deactivation_requests',
     'event_student_attendances','daily_reports_before_class_merge']) AS tbl LOOP
@@ -242,7 +300,49 @@ BEGIN
     UPDATE account_deletion_requests SET user_id=NULL,user_created_at=NULL,status='COMPLETED',completed_at=CURRENT_TIMESTAMP
       WHERE user_id=req.user_id AND id=req.request_id::text;
   END IF;
-  DELETE FROM users WHERE id=req.user_id;
+  -- Preserve office vacancies/history, without keeping deleted account identifiers or names.
+  IF to_regclass('public.officer_appointments') IS NOT NULL THEN
+    UPDATE officer_appointments SET user_id=NULL WHERE user_id=req.user_id;
+    UPDATE officer_registry SET revision=revision+1 WHERE id=1;
+  END IF;
+  IF to_regclass('public.officer_changes') IS NOT NULL THEN
+    UPDATE officer_changes SET previous_user_id=NULL WHERE previous_user_id=req.user_id;
+    UPDATE officer_changes SET next_user_id=NULL WHERE next_user_id=req.user_id;
+    UPDATE officer_changes SET actor_id=NULL WHERE actor_id=req.user_id;
+  END IF;
+  IF to_regclass('public.praise_members') IS NOT NULL THEN
+    UPDATE praise_terms SET revision=revision+1 WHERE id IN (SELECT term_id FROM praise_members WHERE user_id=req.user_id);
+    UPDATE praise_members SET active=false,user_id=NULL WHERE user_id=req.user_id;
+    DELETE FROM praise_responses WHERE user_id=req.user_id;
+    UPDATE praise_pdfs SET uploaded_by_id=NULL WHERE uploaded_by_id=req.user_id;
+  END IF;
+    IF to_regclass('public.intercession_members') IS NOT NULL THEN
+      DELETE FROM intercession_members WHERE id=req.user_id;
+      DELETE FROM intercession_requests WHERE author_id=req.user_id;
+      UPDATE intercession_registry SET revision=revision+1;
+      -- Discard prepared copies, including names embedded in previously shared text.
+      -- Other authors' free text remains covered by the reviewed redaction inventory above.
+      UPDATE intercession_meetings SET paper=NULL,prepared_at=NULL,revision=revision+1;
+      UPDATE intercession_meetings SET host_id=NULL,zoom_url='' WHERE host_id=req.user_id;
+    END IF;
+    IF to_regclass('public.student_care_records') IS NOT NULL THEN
+      UPDATE student_care_records SET author_id=NULL,revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE author_id=req.user_id;
+      UPDATE student_care_changes SET actor_id=NULL WHERE actor_id=req.user_id;
+      UPDATE student_care_records SET revision=revision+1,updated_at=CURRENT_TIMESTAMP WHERE id IN (
+        SELECT row_id FROM privacy_content_review WHERE table_name='student_care_records' AND decision IN ('erase','redact'));
+    END IF;
+    IF to_regclass('public.worship_members') IS NOT NULL THEN
+      DELETE FROM worship_members WHERE id=req.user_id;
+      UPDATE worship_registry SET revision=revision+1;
+      UPDATE worship_weeks SET announced_by_id=NULL,announced_at=NULL,revision=revision+1 WHERE id IN (
+        SELECT row_id FROM privacy_content_review WHERE table_name='worship_weeks' AND decision IN ('erase','redact'));
+      UPDATE worship_weeks SET offering_prayer_id=NULL,announced_by_id=NULL,announced_at=NULL,revision=revision+1 WHERE offering_prayer_id=req.user_id;
+      UPDATE worship_weeks SET announced_by_id=NULL,revision=revision+1 WHERE announced_by_id=req.user_id;
+      UPDATE worship_tasks SET assignee_id=NULL,completed_by_id=NULL,completed_at=NULL,reviewed_by_id=NULL,reviewed_at=NULL,revision=revision+1 WHERE assignee_id=req.user_id;
+      UPDATE worship_tasks SET completed_by_id=NULL,revision=revision+1 WHERE completed_by_id=req.user_id;
+      UPDATE worship_tasks SET reviewed_by_id=NULL,revision=revision+1 WHERE reviewed_by_id=req.user_id;
+    END IF;
+    DELETE FROM users WHERE id=req.user_id;
   GET DIAGNOSTICS changed=ROW_COUNT;
   IF changed<>1 THEN RAISE EXCEPTION 'Account delete count mismatch'; END IF;
 

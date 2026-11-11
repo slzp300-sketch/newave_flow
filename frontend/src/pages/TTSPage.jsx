@@ -1,20 +1,21 @@
-import { useState, useMemo, useSyncExternalStore, useEffect, useRef, useId } from 'react'
+import { memo, useCallback, useState, useMemo, useSyncExternalStore, useEffect, useRef, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient, useIsMutating, onlineManager } from '@tanstack/react-query'
-import { Reveal, AnimatedValue, ProgressFill, SelectionMark } from '../components/common/Motion'
-import { addDays, format } from 'date-fns'
+import { useQuery, useMutation, useQueryClient, useIsMutating, useMutationState, onlineManager } from '@tanstack/react-query'
+import { ttsFeedbackIndex } from '../utils/ttsFeedback'
+import { Reveal, AnimatedValue, ProgressFill, SelectionMark, Collapse, Disclosure } from '../components/common/Motion'
+import { addDays, addWeeks, format, startOfWeek } from 'date-fns'
 import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import WeekNavigator from '../components/common/WeekNavigator'
-import { getWeekStartByOffset, toApiDate, weekLabels } from '../utils/date'
+import { toApiDate, weekLabels } from '../utils/date'
 import { ttsApi } from '../api/tts'
 import QueryNotice from '../components/common/QueryNotice'
 import { ttsReadState, ttsAnswerOptions } from '../utils/ttsQuery'
 import SegmentedControl from '../components/common/SegmentedControl'
 import TtsStats from '../components/tts/TtsStats'
 import HomeTtsSummary from '../components/tts/HomeTtsSummary'
-import { firstTtsOffset } from '../utils/ttsPeriod'
+import { firstTtsOffset, ttsToday } from '../utils/ttsPeriod'
 import useToday from '../hooks/useToday'
 import { todayTtsChecks } from '../utils/attention'
 import AttentionDot from '../components/common/AttentionDot'
@@ -65,9 +66,9 @@ export default function TTSPage() {
       <Header title="TTS" showBack />
       <div className="px-4 pt-3">
         <SegmentedControl label="TTS 보기" value={tab} onChange={setTab}
-          options={[{ value: 'check', label: '내 체크' }, { value: 'stats', label: '통계 · 상세' }]} />
+          options={[{ value: 'check', label: '내 체크' }, { value: 'stats', label: '분기 순위' }]} />
       </div>
-      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats initialView={params.get('view') === 'mine' ? 'mine' : 'weekly'} />}</div>
+      <div key={tab} className="motion-fade">{tab === 'check' ? <CheckTab /> : <TtsStats />}</div>
     </div>
   )
 }
@@ -88,7 +89,6 @@ export function CheckTab({ embedded = false }) {
     if (!embedded || !showEditor) return
     const frame = requestAnimationFrame(() => {
       editorRef.current?.focus({ preventScroll: true })
-      editorRef.current?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
     })
     return () => cancelAnimationFrame(frame)
   }, [embedded, showEditor])
@@ -96,12 +96,19 @@ export function CheckTab({ embedded = false }) {
     setShowEditor(false)
     editorButtonRef.current?.focus({ preventScroll: true })
   }
-  const todayStr = useToday()
+  const todayStr = useToday(ttsToday)
   const saving = useIsMutating({ mutationKey: ['tts-answer'] }) > 0
   const offline = useSyncExternalStore(onlineManager.subscribe, () => !onlineManager.isOnline())
-  const sunday    = getWeekStartByOffset(offset, 0)
+  const sunday    = addWeeks(startOfWeek(new Date(todayStr + 'T12:00:00'), { weekStartsOn: 0 }), offset)
   const weekStart = toApiDate(sunday)
   const weekKey   = ['tts-week', weekStart]
+  const saveHistory = useMutationState({ filters: { mutationKey: ['tts-answer'] },
+    select: mutation => ({ id: mutation.mutationId, status: mutation.state.status, variables: mutation.state.variables }) })
+  const feedbackIndex = useMemo(() => ttsFeedbackIndex(saveHistory, weekStart), [saveHistory, weekStart])
+  const feedback = feedbackIndex.overall
+  const fieldFeedback = (id, locked = false) => offline ? { kind: 'error', text: '연결 확인 필요' }
+    : readState.error || readState.paused ? { kind: 'error', text: '최신 기록 확인 필요' }
+    : locked ? { kind: 'idle', text: '읽기 전용' } : feedbackIndex.questions.get(id) || { kind: 'idle', text: '탭하면 자동 저장' }
 
   const questionsQuery = useQuery({
     queryKey: ['tts-questions', weekStart],
@@ -112,6 +119,7 @@ export function CheckTab({ embedded = false }) {
     queryKey: weekKey,
     enabled: !saving,
     queryFn: () => ttsApi.getWeek(weekStart).then(r => r.data),
+    refetchInterval: 60_000,
   })
 
   const questions = questionsQuery.data || []
@@ -119,6 +127,9 @@ export function CheckTab({ embedded = false }) {
   const reads = [questionsQuery, weekQuery]
   const readState = ttsReadState(reads)
   const ready = readState.editable
+  const editableDays = week?.editableDays || []
+  const attendanceEditable = week?.attendanceEditable === true
+  const quarterStart = `${todayStr.slice(0, 4)}-${String(Math.floor((Number(todayStr.slice(5,7)) - 1) / 3) * 3 + 1).padStart(2,'0')}-01`
   const mutationOptions = useMemo(() => ttsAnswerOptions(queryClient,
     payload => ttsApi.saveAnswer(payload).then(r => r.data)), [queryClient])
   const { mutate: saveAnswer } = useMutation({
@@ -149,19 +160,26 @@ export function CheckTab({ embedded = false }) {
   const dayDate  = (i) => toApiDate(addDays(sunday, i + 1)) // 월=0
   const todayIdx = DAYS.findIndex((_, i) => dayDate(i) === todayStr)
 
-  const currentAnswer = q => parseAnswer(q, queryClient.getQueryData(weekKey)?.answers
-    ?.find(a => a.questionId === q.id)?.answerData)
-  const toggleDay = (q, day) => {
+  // Stable handlers keep unchanged cells memoized. Read the latest optimistic
+  // cache on every tap rather than capturing an answer from the last render.
+  const toggleDay = useCallback((q, day) => {
+    const latest = queryClient.getQueryData(['tts-week', weekStart])
     const dayIndex = DAYS.indexOf(day)
-    if (!ready || offline || !isDaily(q) || dayIndex < 0 || dayDate(dayIndex) > todayStr || week?.importedPeriod) return
+    const date = toApiDate(addDays(new Date(weekStart + 'T12:00:00'), dayIndex + 1))
+    if (!ready || offline || !isDaily(q) || dayIndex < 0 || !latest?.editableDays?.includes(day)
+      || date > todayStr || date < quarterStart || latest.importedPeriod) return
+    const answer = parseAnswer(q, latest.answers?.find(a => a.questionId === q.id)?.answerData)
     setSaveError('')
-    saveAnswer({ weekStart, questionId: q.id, day, checked: !currentAnswer(q)?.[day] })
-  }
-  const toggleAttend = q => {
-    if (!ready || offline) return
+    saveAnswer({ weekStart, questionId: q.id, day, checked: !answer?.[day] })
+  }, [queryClient, weekStart, ready, offline, todayStr, quarterStart, saveAnswer])
+  const toggleAttend = useCallback(q => {
+    const latest = queryClient.getQueryData(['tts-week', weekStart])
+    if (!ready || offline || !latest?.attendanceEditable || latest.attendanceDate < quarterStart || latest.importedPeriod) return
+    const answer = parseAnswer(q, latest.answers?.find(a => a.questionId === q.id)?.answerData)
     setSaveError('')
-    saveAnswer({ weekStart, questionId: q.id, checked: currentAnswer(q) !== true })
-  }
+    saveAnswer({ weekStart, questionId: q.id, checked: answer !== true })
+  }, [queryClient, weekStart, ready, offline, quarterStart, saveAnswer])
+  const selectRow = useCallback(q => isLinked(q) ? navigate(LINK_PATH[q.linkType]) : toggleAttend(q), [navigate, toggleAttend])
 
   // 매일 항목은 한 카드의 표로, 참석·자동 반영 항목은 아래 목록으로 (색은 항목 순서대로)
   const withColor      = questions.map((q, i) => ({ q, color: PALETTE[i % PALETTE.length] }))
@@ -181,6 +199,7 @@ export function CheckTab({ embedded = false }) {
     ? questions.filter(q => q.type === 'DAYS' && !isLinked(q) && !answers[q.id]?.[DAYS[todayIdx]])
     : []
   const todayChecks = todayTtsChecks(questions, week, todayStr)
+    .filter(({ day }) => day ? editableDays.includes(day) : attendanceEditable)
 
   return (
     <>
@@ -208,12 +227,12 @@ export function CheckTab({ embedded = false }) {
         <div className={embedded ? '' : 'px-4'}><QueryNotice queries={reads} label="TTS 기록" /></div>
       ) : week?.importedPeriod ? (
         <div className={embedded ? '' : 'px-4'}>
-          <Card className="text-center py-6">
+          <section className="ui-stat-panel text-center">
             <p className="text-xs font-bold text-gray-500">시트 확정 점수</p>
-            <p className="text-3xl font-bold text-primary-600 mt-2">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
-            <p className="text-xs text-gray-500 mt-3">당시 주간 총점을 보존한 기록입니다.</p>
-            <p className="text-xs text-gray-400 mt-1">수정이 필요하면 관리자에게 알려 주세요.</p>
-          </Card>
+            <p className="ui-stat-value text-primary-600 mt-1">{week.importedScore != null ? `${week.importedScore}점` : '기록 없음'}</p>
+
+            <p className="text-xs text-gray-400 mt-1">{week.closedQuarter ? '마감 · 조회만 가능' : '수정: 관리자 문의'}</p>
+          </section>
         </div>
       ) : (
         <div className={`${embedded ? '' : 'px-4 '}flex flex-col gap-3`}>
@@ -241,55 +260,53 @@ export function CheckTab({ embedded = false }) {
               range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
               items={summaryItems} answers={answers}
               onToggleDay={toggleDay} disabled={!ready || offline}
-              days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr, today: i === todayIdx }))} />
+              days={DAYS.map((day, i) => ({ day, date: format(addDays(sunday, i + 1), 'M/d'), future: dayDate(i) > todayStr,
+                locked: !editableDays.includes(day) || dayDate(i) < quarterStart, today: i === todayIdx }))} />
             <div className="mt-3 flex gap-2">
               <button ref={editorButtonRef} type="button" aria-expanded={showEditor} aria-controls={editorId}
                 onClick={() => showEditor ? closeEditor() : setShowEditor(true)}
                 className={`brand-action flex min-h-11 flex-1 items-center justify-center gap-1 rounded-xl border px-2 text-xs ${showEditor ? 'border-secondary-300 bg-secondary-50 text-secondary-800' : 'border-primary-200'}`}>
-                {showEditor ? '이번 주 기록 닫기' : '이번 주 기록 수정'}<ChevronDown size={14} aria-hidden="true" className={showEditor ? 'rotate-180' : ''} />
+                {showEditor ? '이번 주 기록 닫기' : '이번 주 기록 수정'}<ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${showEditor ? 'rotate-180' : ''}`} />
               </button>
-              <button type="button" onClick={() => navigate('/tts?tab=stats&view=mine')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">내 상세 통계</button>
+              <button type="button" onClick={() => navigate('/tts?tab=stats')} className="min-h-11 flex-1 rounded-xl border border-primary-200 px-2 text-xs">분기 순위</button>
             </div>
           </section> : <ScoreCard
             compact={embedded}
-            saveStatus={offline ? (saving ? '연결 대기 · 미저장' : '연결 확인 필요') : saving ? '저장 중…' : saveError ? '저장 실패 확인' : readState.error || readState.paused ? '연결 확인 필요' : readState.refreshing ? '최신 기록 확인 중…' : '자동 저장'}
+            saveStatus={offline ? (saving ? '연결 대기 · 미저장' : '연결 확인 필요') : saving ? '저장 중…' : saveError || feedback.kind === 'error' ? '저장 실패 확인' : readState.error || readState.paused ? '연결 확인 필요' : readState.refreshing ? '최신 기록 확인 중…' : feedback.text}
             range={`${format(sunday, 'M/d')} ~ ${format(addDays(sunday, 6), 'M/d')}`}
             score={score}
             maxScore={maxScore}
-            weekLabel={labels.monthWeek}
             items={summaryItems}
-            message={
-              maxScore > 0 && score >= maxScore ? { done: true, text: '이번 주 만점이에요! 수고했어요' }
-              : offset === 0 && todayIdx >= 0 ? (remainingToday.length
-                ? { done: false, text: `오늘(${DAYS[todayIdx]}) 남은 체크: ${remainingToday.map(q => embedded ? splitTitle(q.title)[0] : q.title).join(', ')}` }
-                : { done: true, text: `오늘(${DAYS[todayIdx]}) 체크를 모두 마쳤어요` })
-              : null
-            }
           />}
 
-          {(!embedded || showEditor) && <div id={editorId} ref={editorRef} role="region" tabIndex={-1} aria-label="이번 주 기록 수정" className="scroll-mt-20 space-y-3 focus:outline-none">
+          <Collapse open={!embedded || showEditor} id={editorId} ref={editorRef} role="region" tabIndex={-1} aria-label="이번 주 기록 수정" className="scroll-mt-20 space-y-3 focus:outline-none">
           {embedded && <div className="flex items-center justify-between gap-2 px-1">
             <h2 className="brand-section-title font-semibold">이번 주 기록 수정</h2>
             <button type="button" onClick={closeEditor} className="min-h-11 px-3 text-xs font-semibold text-primary-700">접기</button>
           </div>}
+          {week?.closedQuarter && <p role="status" className="rounded-xl bg-gray-50 px-3 py-2 text-sm leading-relaxed text-gray-700">
+            마감된 분기 · 기록·통계 조회만 가능
+          </p>}
           {dayQuestions.length > 0 && (
             <DayGrid
               items={dayQuestions}
               answers={answers}
-              dayLabel={(i) => format(addDays(sunday, i + 1), 'M.d')}
+              dayLabel={(i) => format(addDays(sunday, i + 1), 'd')}
               isFuture={(i) => dayDate(i) > todayStr}
+              isLocked={(i) => !editableDays.includes(DAYS[i]) || dayDate(i) < quarterStart}
               todayIdx={todayIdx}
               onToggle={toggleDay}
+              fieldFeedback={fieldFeedback}
               disabled={!ready || offline}
             />
           )}
 
           {otherQuestions.length > 0 && (
             <Card>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="brand-section-title font-bold text-gray-900 text-sm">예배 · 모임</h2>
-                <p className="text-xs font-bold text-gray-400">참여를 마친 뒤 체크</p>
+              <div className="mb-4">
+                <h2 className="brand-section-title font-bold text-gray-900 text-base">예배 · 모임</h2>
               </div>
+              {!attendanceEditable && !week?.closedQuarter && <p className="mb-3 text-sm leading-relaxed text-gray-700">이 주 토요일이 속한 분기가 시작되면 체크할 수 있어요.</p>}
               <div className="flex flex-col gap-2">
                 {otherQuestions.map(({ q, color }) => isLinked(q) ? (
                   <CheckRow
@@ -298,7 +315,7 @@ export function CheckTab({ embedded = false }) {
                     color={color}
                     checked={!!linked[q.id]}
                     sub={`${LINK_LABEL[q.linkType]}에서 자동 반영 ›`}
-                    onClick={() => navigate(LINK_PATH[q.linkType])}
+                    onSelect={selectRow}
                   />
                 ) : (
                   <CheckRow
@@ -306,79 +323,73 @@ export function CheckTab({ embedded = false }) {
                     q={q}
                     color={color}
                     checked={answers[q.id] === true}
-                    disabled={!ready || offline}
-                    sub={answers[q.id] === true ? '참여 완료 · 탭해서 해제' : '참여 완료 후 탭해서 체크'}
-                    onClick={() => toggleAttend(q)}
+                    disabled={!ready || offline || !attendanceEditable || week?.attendanceDate < quarterStart}
+                    sub={answers[q.id] === true ? '참여 완료' : '미체크'}
+                    feedbackKind={fieldFeedback(q.id, !attendanceEditable).kind}
+                    feedbackText={fieldFeedback(q.id, !attendanceEditable).text}
+                    onSelect={selectRow}
                   />
                 ))}
               </div>
             </Card>
           )}
 
-          </div>}
-          {!embedded && (
-            <p className="text-xs text-gray-400 font-medium text-center mt-1">
-              지난 주 기록도 언제든 고칠 수 있어요. 아직 오지 않은 요일은 체크할 수 없어요.
-            </p>
-          )}
+          <Disclosure title="기록 기간" className="rounded-xl border border-gray-200 px-4">
+            <div className="space-y-2 pb-3 text-sm leading-relaxed text-gray-700">
+
+              <p>{quarterStart.slice(5).replace('-', '/')}부터 수정 가능 · 다음 분기 시작 시 마감</p>
+              <p>주간 항목: {format(addDays(sunday, 6), 'M/d')} 토요일 기준</p>
+            </div>
+          </Disclosure>
+          </Collapse>
         </div>
       )}
     </>
   )
 }
-function ScoreCard({ score, maxScore, weekLabel, items, message, saveStatus }) {
+function ScoreCard({ score, maxScore, items, saveStatus }) {
   const ratio = maxScore ? Math.min(score / maxScore, 1) : 0
   return (
-    <Reveal className="brand-card brand-card-accent rounded-2xl border border-primary-100 bg-primary-50 p-5">
-      <div className="flex justify-between gap-3 items-center text-sm">
-        <h2 className="brand-section-title font-medium text-primary-800">{weekLabel} 점수</h2>
-        <span className="text-xs text-gray-500" role="status" aria-live="polite"><span key={saveStatus} className="motion-fade inline-flex items-center gap-1">{saveStatus}</span></span>
+    <Reveal className="brand-card brand-card-accent ui-stat-panel">
+      <div className="flex justify-between gap-3 items-center">
+        <h2 className="brand-section-title text-sm font-semibold text-primary-800">주간 점수</h2>
+        <p className="shrink-0"><strong className="ui-stat-value"><AnimatedValue value={score} /></strong><span className="ml-1 text-sm text-gray-600">/ {maxScore}점</span></p>
       </div>
-      <p className="mt-3"><strong className="text-4xl font-semibold tabular-nums"><AnimatedValue value={score} /></strong><span className="ml-2 text-sm text-gray-500">/ {maxScore}점</span></p>
-      <div className="h-1.5 rounded-full bg-primary-100 overflow-hidden mt-3">
+      <div className="h-1.5 rounded-full bg-primary-100 overflow-hidden mt-2">
         <ProgressFill className="bg-secondary-600" ratio={ratio} />
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
-        {items.map(({ q, done, total }) => <p key={q.id} className="text-xs text-gray-600">{splitTitle(q.title)[0]} <span className="font-semibold text-gray-900">{done}/{total}</span></p>)}
-      </div>
-      {message && <p className={`mt-3 text-sm break-keep ${message.done ? 'text-secondary-700' : 'text-primary-800'}`}>{message.text}</p>}
+      <p className="mt-1 min-h-5 text-xs font-medium leading-5 text-gray-700" role="status" aria-live="polite">{saveStatus}</p>
       {items.length === 0 && <p className="mt-3 text-sm text-gray-500">등록된 체크 항목이 없습니다.</p>}
     </Reveal>
   )
 }
 
-// Labels above controls keep weekdays readable on narrow phones.
-function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle, disabled }) {
+// Date and weekday share the tap target; the today label reserves equal space.
+function DayGrid({ items, answers, dayLabel, isFuture, isLocked, todayIdx, onToggle, disabled, fieldFeedback }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4 gap-2">
         <h2 className="brand-section-title font-semibold text-base">매일의 말씀과 기도</h2>
-        <span className="text-xs text-gray-500">탭하면 저장돼요</span>
       </div>
       <div className="flex flex-col gap-5">
         {items.map(({ q }) => (
           <div key={q.id}>
             <div className="flex items-baseline justify-between mb-3 gap-2">
-              <p className="text-sm font-medium">{q.title}</p>
-              <span className="text-xs text-gray-500 shrink-0">하루 {pointsOf(q)}점</span>
+              <p className="text-base font-bold text-gray-900">{q.title}</p>
+              <span className="text-sm text-gray-600 shrink-0">하루 {pointsOf(q)}점</span>
             </div>
             <div className="tts-days">
               {DAYS.map((day, i) => {
                 const done = !!answers[q.id]?.[day]
                 const future = isFuture(i)
+                const locked = isLocked(i)
                 return (
-                  <div key={day} className="min-w-0 text-center">
-                    <p className={'text-xs mb-1 ' + (i === todayIdx ? 'text-primary-700 font-semibold' : 'text-gray-500')}>{day}</p>
-                    <p className="text-xs text-gray-400 mb-2">{dayLabel(i)}</p>
-                    <button disabled={future || disabled} onClick={() => onToggle(q, day)}
-                      aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : '')} aria-pressed={done}
-                      className={'tts-day w-full flex items-center justify-center border transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-300') + (future ? ' opacity-40' : '') + (i === todayIdx && !done ? ' ring-1 ring-primary-600' : '')}>
-                      {done ? <SelectionMark /> : <span aria-hidden="true">—</span>}
-                    </button>
-                  </div>
+                  <DayCell key={day} q={q} day={day} label={dayLabel(i)} today={i === todayIdx}
+                    done={done} future={future} locked={locked} disabled={disabled} onToggle={onToggle} />
                 )
               })}
             </div>
+            <SaveFeedback feedback={fieldFeedback(q.id, DAYS.every((_, i) => isLocked(i)))} />
           </div>
         ))}
       </div>
@@ -386,25 +397,52 @@ function DayGrid({ items, answers, dayLabel, isFuture, todayIdx, onToggle, disab
   )
 }
 
+const DayCell = memo(function DayCell({ q, day, label, today, done, future, locked, disabled, onToggle }) {
+  return <div className="min-w-0 text-center">
+    <p className="mb-1 h-5 text-xs font-bold leading-5 text-primary-800">{today ? '오늘' : '\u00a0'}</p>
+    <button disabled={future || locked || disabled} onClick={() => onToggle(q, day)}
+      aria-label={q.title + ' ' + day + (future ? ' (아직 체크할 수 없음)' : locked ? ' (마감)' : '')} aria-pressed={done}
+      className={'tts-day w-full flex flex-col gap-2 items-center justify-center border py-2 transition-colors ' + (done ? 'bg-primary-600 border-primary-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-700') + (future ? ' opacity-40' : '') + (today && !done ? ' ring-2 ring-primary-600' : '')}>
+      <span className="text-sm font-semibold whitespace-nowrap">{day} {label}</span>
+      <span className="flex h-5 items-center">{done ? <TtsCheckMark /> : <span aria-hidden="true">—</span>}</span>
+    </button>
+  </div>
+})
+
+// Selection and score update immediately; a short CSS check stroke avoids a JS
+// animation observer for every checked day in Android WebView and iOS WKWebView.
+function TtsCheckMark({ size = 18, className = '' }) {
+  return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" className={`tts-check-mark ${className}`}>
+    <path d="m5 12 4 4L19 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+}
+
 // 참석·자동 반영 항목 한 줄
-function CheckRow({ q, color, checked, sub, onClick, disabled }) {
+function SaveFeedback({ feedback }) {
+  return <p role="status" aria-live="polite" className={`mt-2 min-h-5 text-sm leading-5 ${feedback.kind === 'error' ? 'text-red-700' : feedback.kind === 'success' ? 'text-secondary-700' : 'text-gray-600'}`}>{feedback.kind === 'idle' && feedback.text === '탭하면 자동 저장' ? '' : feedback.text}</p>
+}
+
+const CheckRow = memo(function CheckRow({ q, color, checked, sub, onSelect, disabled, feedbackKind, feedbackText }) {
   return (
+    <div>
     <button
-      onClick={onClick}
+      onClick={() => onSelect(q)}
       disabled={disabled}
       aria-pressed={isLinked(q) ? undefined : checked}
       data-checked={checked}
-      className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all active:scale-[0.98] ${checked ? color.soft : 'bg-gray-50'}`}
+      className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left motion-tap ${checked ? color.soft : 'bg-gray-50'}`}
     >
       <span className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-lg flex-shrink-0 shadow-sm">{q.emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900">{q.title}</p>
-        <p className="text-xs font-normal text-gray-500">{sub}</p>
+        <p className="text-base font-bold text-gray-900">{q.title}</p>
+        <p className="text-sm font-normal text-gray-600">{sub}</p>
       </div>
-      <span className={`text-xs font-bold flex-shrink-0 ${checked ? color.text : 'text-gray-300'}`}>+{pointsOf(q)}</span>
+      <span className={`text-sm font-semibold flex-shrink-0 ${checked ? color.text : 'text-gray-600'}`}>+{pointsOf(q)}</span>
       <span className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${checked ? color.fill : 'bg-white border-2 border-gray-200'}`}>
-        {checked && <SelectionMark size={16} className="text-white" />}
+        {checked && <TtsCheckMark size={16} className="text-white" />}
       </span>
     </button>
+    {feedbackKind && <div className="px-3"><SaveFeedback feedback={{ kind: feedbackKind, text: feedbackText }} /></div>}
+    </div>
   )
-}
+})

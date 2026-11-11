@@ -1,0 +1,18 @@
+.grade-attendance-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 1rem .625rem; min-width: 0; }
+.grade-attendance-group { min-width: 0; }
+.grade-attendance-heading { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+.grade-attendance-heading > span { font-size: .75rem; color: var(--newave-muted); }
+.grade-attendance-rows { display: flex; flex-direction: column; gap: .375rem; }
+.grade-attendance-person { min-width: 0; border: 1px solid var(--newave-line); border-radius: .75rem; background: white; }
+.grade-attendance-person > .grade-attendance-trigger { min-height: 3rem; padding: .5rem; gap: .25rem; border: 0; margin-bottom: 0; border-radius: .75rem; }
+.grade-attendance-trigger > .ui-disclosure-label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .375rem; }
+.grade-attendance-trigger > .ui-disclosure-chevron { width: .875rem; height: .875rem; }
+.grade-attendance-name { flex: 1 1 4rem; min-width: 0; font-size: .875rem; overflow-wrap: anywhere; }
+.grade-attendance-status { flex-shrink: 0; border-radius: .5rem; padding: .2rem .375rem; font-size: .75rem; font-weight: 600; }
+.grade-attendance-status-attend { background: #f0fdf4; color: #166534; }
+.grade-attendance-status-absent { background: #fef2f2; color: #b91c1c; }
+.grade-attendance-status-unknown { background: #f3f4f6; color: #4b5563; }
+.grade-attendance-detail { display: flex; flex-direction: column; gap: .5rem; padding: .625rem; border-top: 1px solid var(--newave-line); font-size: .8125rem; line-height: 1.6; }
+.grade-attendance-detail > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: .125rem; }
+.grade-attendance-detail dt { color: var(--newave-muted); }
+.grade-attendance-detail dd { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--newave-ink); }

@@ -35,14 +35,14 @@ export default function WeeklyCheckPage() {
       <Header title="주간 체크" />
       <div className="space-y-5 px-4 py-5">
         <Reveal>
-          <section className="brand-card rounded-3xl border border-gray-200 bg-white p-5">
+          <section className="brand-card ui-stat-panel">
             <p className="text-xs text-gray-500">{getCurrentWeekRange()}</p>
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <div><h2 className="text-xl font-semibold tracking-tight">{summary.allDone ? '이번 주 제출 완료' : '이번 주 제출 현황'}</h2>
-                <p className="mt-2 text-sm text-gray-500" role="status">{reads.some(q => q.isFetching) ? '최신 제출 상태를 확인하고 있어요' : summary.unknown ? `${summary.unknown}개 항목은 상태 확인이 필요해요` : summary.allDone ? '제출한 기록도 다시 확인할 수 있어요' : `제출할 항목 ${summary.pending}개가 남았어요`}</p></div>
-              <p className="shrink-0 text-2xl font-semibold tabular-nums text-primary-800">{summary.done}<span className="text-sm font-medium text-gray-400"> / {summary.total}</span></p>
+            <div className="mt-1 flex items-end justify-between gap-2">
+              <div><h2 className="text-sm font-semibold tracking-tight">{summary.allDone ? '이번 주 제출 완료' : '이번 주 제출 현황'}</h2>
+                <p className="ui-stat-note min-h-5" role="status">{reads.some(q => q.isFetching) ? '확인 중…' : summary.unknown ? `확인 필요 ${summary.unknown}개` : ''}</p></div>
+              <p className="shrink-0 ui-stat-value text-primary-800">{summary.done}<span className="text-sm font-medium text-gray-400"> / {summary.total}</span></p>
             </div>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-label="주간 제출 완료" aria-valuemin={0} aria-valuemax={summary.total} aria-valuenow={summary.done}>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-label="주간 제출 완료" aria-valuemin={0} aria-valuemax={summary.total} aria-valuenow={summary.done}>
               <ProgressFill ratio={summary.total ? summary.done / summary.total : 0} className="bg-primary-600" />
             </div>
           </section>

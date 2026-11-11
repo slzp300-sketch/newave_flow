@@ -35,20 +35,38 @@ const targets = Object.entries(objects.PBXNativeTarget).filter(([,v]) => v?.isa 
 const tests = targets.find(([,v]) => v.productType?.includes('unit-test'))
 assert.ok(tests, 'Native keychain tests must be part of the Xcode project')
 assert.equal(objects.PBXFileReference[tests[1].productReference].path.replaceAll('"',''), 'AppTests.xctest')
-assert.equal(appTarget.firstTarget.dependencies.length, 0, 'App must not depend on its test bundle')
+const widget = targets.find(([,v]) => v.name?.replaceAll('"','') === 'NewaveWidgets')
+assert.ok(widget, 'Home-screen widget extension must be in the project')
+assert.ok(appTarget.firstTarget.dependencies.every(d => objects.PBXTargetDependency[d.value].target === widget[0]), 'App may depend only on its widget, never tests')
+assert.ok(appTarget.firstTarget.dependencies.some(d => objects.PBXTargetDependency[d.value].target === widget[0]))
 assert.ok(tests[1].dependencies.some(d => objects.PBXTargetDependency[d.value].target === appTarget.uuid))
 const sources = objects.PBXSourcesBuildPhase[appTarget.firstTarget.buildPhases.find(p => p.comment === 'Sources').value]
 const sourceNames = sources.files.map(f => objects.PBXFileReference[objects.PBXBuildFile[f.value].fileRef].path.replaceAll('"', ''))
-for (const name of ['NewaveBridgeViewController.swift','NewaveKeychainStore.swift','NewaveSecureStoragePlugin.swift','NewaveAppleSignInPlugin.swift']) assert.ok(sourceNames.includes(name), `${name} must compile in App`)
+for (const name of ['NewaveBridgeViewController.swift','NewaveKeychainStore.swift','NewaveSecureStoragePlugin.swift','NewaveAppleSignInPlugin.swift','NewaveReportExportPlugin.swift','NewaveWidgetPlugin.swift','WidgetStore.swift','WidgetNetwork.swift','WidgetCheckIntent.swift']) assert.ok(sourceNames.includes(name), `${name} must compile in App`)
+assert.ok(fs.readFileSync(path.join(app, 'NewaveBridgeViewController.swift'), 'utf8').includes('registerPluginInstance(NewaveReportExportPlugin())'))
 assert.equal(info.NewaveAppleSignInEnabled, '$(NEWAVE_APPLE_SIGN_IN_ENABLED)')
 for (const configuration of Object.values(objects.XCBuildConfiguration)) {
+  const minimum = configuration?.buildSettings?.IPHONEOS_DEPLOYMENT_TARGET
+  if (minimum) assert.ok(Number(minimum) >= 15.4, 'Dialog, Array.at and crypto.randomUUID require iOS 15.4 or later')
   if (configuration?.buildSettings?.PRODUCT_BUNDLE_IDENTIFIER === 'app.newaveflow.mobile') {
     assert.equal(configuration.buildSettings.NEWAVE_APPLE_SIGN_IN_ENABLED, 'NO', 'Apple login requires an explicit signed-device build opt-in')
-    assert.equal(configuration.buildSettings.CODE_SIGN_ENTITLEMENTS, undefined, 'Simulator CI must not require an Apple provisioning profile')
+    assert.equal(configuration.buildSettings.CODE_SIGN_ENTITLEMENTS.replaceAll('"',''), '$(NEWAVE_APP_ENTITLEMENTS)')
+    assert.equal(configuration.buildSettings.NEWAVE_APP_ENTITLEMENTS, 'App/WidgetApp.entitlements')
   }
 }
 const appleEntitlements = plist.parse(fs.readFileSync(path.join(app, 'AppleSignIn.entitlements'), 'utf8'))
 assert.deepEqual(appleEntitlements['com.apple.developer.applesignin'], ['Default'])
+for (const name of ['WidgetApp.entitlements','AppleSignIn.entitlements']) {
+  const entitlements = plist.parse(fs.readFileSync(path.join(app,name),'utf8'))
+  assert.deepEqual(entitlements['com.apple.security.application-groups'], ['group.app.newaveflow.mobile.widgets'])
+  assert.deepEqual(entitlements['keychain-access-groups'], ['$(AppIdentifierPrefix)app.newaveflow.mobile','$(AppIdentifierPrefix)app.newaveflow.mobile.widgets'], 'Primary login must stay in the private app group')
+}
+const widgetEntitlements = plist.parse(fs.readFileSync(path.join(root,'ios/App/NewaveWidgets/Widgets.entitlements'),'utf8'))
+assert.deepEqual(widgetEntitlements['keychain-access-groups'], ['$(AppIdentifierPrefix)app.newaveflow.mobile.widgets'], 'Extension must never read primary app credentials')
+const widgetSources = objects.PBXSourcesBuildPhase[widget[1].buildPhases.find(p => p.comment === 'Sources').value]
+assert.equal(widgetSources.files.length,4)
+const embedded = Object.values(objects.PBXCopyFilesBuildPhase).filter(v=>v?.isa==='PBXCopyFilesBuildPhase')
+assert.ok(embedded.some(v=>String(v.dstSubfolderSpec)==='13' && v.files.some(f=>objects.PBXBuildFile[f.value].fileRef===widget[1].productReference)))
 assert.ok(fs.readFileSync(path.join(app, 'SceneDelegate.swift'),'utf8').includes('NewaveBridgeViewController()'))
 assert.ok(fs.readFileSync(path.join(app, 'Base.lproj/Main.storyboard'),'utf8').includes('customClass="NewaveBridgeViewController"'))
 const icon = fs.readFileSync(path.join(app,'Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png'))

@@ -5,6 +5,10 @@
 .motion-enter { animation: section-arrive .55s var(--motion-ease) backwards; }
 .motion-week { animation: section-arrive .24s var(--motion-ease); }
 .motion-fade { animation: page-arrive .2s ease-out; }
+.tts-check-mark { animation: tts-check-arrive .2s var(--motion-ease); }
+.tts-check-mark path { stroke-dasharray: 24; animation: tts-check-stroke .18s ease-out; }
+@keyframes tts-check-stroke { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@keyframes tts-check-arrive { from { opacity: .55; transform: scale(.8); } to { opacity: 1; transform: scale(1); } }
 .motion-button, .motion-tap, .icon-button, .attendance-actions button, .tts-day {
   transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .2s ease, scale .18s var(--motion-ease);
 }
@@ -37,13 +41,47 @@
 @keyframes brand-arrive { from { opacity: 0; transform: translateY(12px) scale(.95); } to { opacity: 1; transform: none; } }
 @keyframes ocean-arrive { from { transform: scale(1.09) translateY(5px); } to { transform: scale(1); } }
 @keyframes wave-arrive { from { stroke-dashoffset: 420; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
-.motion-reduced *, .motion-reduced *::before, .motion-reduced *::after { animation: none !important; transition-duration: 0s !important; }
-.motion-reduced .motion-button, .motion-reduced .motion-tap, .motion-reduced .icon-button,
-.motion-reduced .attendance-actions button, .motion-reduced .tts-day { scale: 1 !important; }
-.motion-reduced .motion-row > svg:last-child { translate: none !important; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; scroll-behavior: auto !important; }
-  .motion-button, .motion-tap, .icon-button, .attendance-actions button, .tts-day { scale: 1 !important; }
-  .motion-row > svg:last-child { translate: none !important; }
+/* Shared touch/keyboard response also covers plain page buttons and menu links.
+   Independent scale leaves existing layout/Framer transforms intact. */
+.app-motion :where(button, a[href], summary, [role='button']) {
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease,
+    box-shadow .2s ease, opacity .16s ease, scale .22s var(--motion-ease);
 }
-@media print { *, *::before, *::after { animation: none !important; } }
+.app-motion :is(button, a[href], summary, [role='button'])[data-press-feedback='true']:not(:disabled):not([aria-disabled='true']) {
+  scale: .97;
+  transition-duration: .08s;
+}
+.app-motion :is(.home-menu-card, .motion-row, .ui-list-row)[data-press-feedback='true'] { scale: .985; }
+/* Keep the sliding highlight visible instead of painting a second instant one. */
+:root .ui-segments > button:not(.brand-color-swatch) { background-color: transparent; box-shadow: none; }
+:root .ui-segments .brand-selection { background-color: theme('colors.secondary.50'); border: 1px solid theme('colors.secondary.400'); }
+:root .brand-nav-link { box-shadow: none; }
+/* Reduced motion keeps stationary feedback; never animate geometry or scrolling. */
+@keyframes feedback-fade { from { opacity: .45; } to { opacity: 1; } }
+.motion-reduced *, .motion-reduced *::before, .motion-reduced *::after {
+  animation: none !important;
+  transition-property: background-color, color, border-color, box-shadow, opacity, filter !important;
+  transition-duration: .16s !important;
+  transition-timing-function: ease-out !important;
+  scroll-behavior: auto !important;
+}
+.motion-reduced :is(button, a[href], summary, [role='button']) { scale: 1 !important; }
+.motion-reduced .motion-row > svg:last-child { translate: none !important; }
+.motion-reduced :is(button, a[href], summary, [role='button'])[data-press-feedback='true']:not(:disabled):not([aria-disabled='true']) { filter: brightness(.85); }
+.motion-reduced :is(.motion-page, .motion-card, .motion-enter, .motion-week, .motion-fade, .motion-menu-tile, .tts-check-mark) { animation: feedback-fade .16s ease-out both !important; }
+.motion-reduced .motion-login .newave-brand, .motion-reduced .motion-login > p { animation: feedback-fade .16s ease-out both !important; }
+@media (prefers-reduced-motion: reduce) {
+*, *::before, *::after {
+  animation: none !important;
+  transition-property: background-color, color, border-color, box-shadow, opacity, filter !important;
+  transition-duration: .16s !important;
+  transition-timing-function: ease-out !important;
+  scroll-behavior: auto !important;
+}
+:is(button, a[href], summary, [role='button']) { scale: 1 !important; }
+.motion-row > svg:last-child { translate: none !important; }
+:is(button, a[href], summary, [role='button'])[data-press-feedback='true']:not(:disabled):not([aria-disabled='true']) { filter: brightness(.85); }
+:is(.motion-page, .motion-card, .motion-enter, .motion-week, .motion-fade, .motion-menu-tile, .tts-check-mark) { animation: feedback-fade .16s ease-out both !important; }
+.motion-login .newave-brand, .motion-login > p { animation: feedback-fade .16s ease-out both !important; }
+}
+@media print { *, *::before, *::after { animation: none !important; transition: none !important; } }

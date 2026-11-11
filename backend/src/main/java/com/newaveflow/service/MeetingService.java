@@ -22,6 +22,7 @@ public class MeetingService {
 
     private final MeetingAttendanceRepository meetingAttendanceRepository;
     private final UserRepository userRepository;
+    private final TtsService ttsService;
 
     // 제출 가능 기간: 월요일 00:00 ~ 토요일 16:00
     public static boolean isMeetingWindowOpen(LocalDateTime now) {
@@ -47,6 +48,8 @@ public class MeetingService {
         if (request.status() == null || !java.util.Set.of("ATTEND", "ABSENT").contains(request.status())) {
             throw com.newaveflow.exception.AppException.badRequest("회의 출석 상태가 올바르지 않습니다.");
         }
+        ttsService.preserveClosedLinkedScore(teacherId, request.meetingDate(),
+                com.newaveflow.entity.TtsQuestion.TtsLinkType.SAT_MEETING);
         MeetingAttendance existing = meetingAttendanceRepository.findByTeacherIdAndMeetingDate(teacherId, request.meetingDate())
                 .orElse(null);
 

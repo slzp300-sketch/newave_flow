@@ -68,14 +68,23 @@ public class TtsController {
     }
 
     // 모든 교사가 보는 통계 (주차별 점수)
+    @PutMapping("/answer-fields")
+    public ResponseEntity<TtsResponse> saveFields(@RequestBody com.newaveflow.dto.tts.TtsFieldAnswerRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(ttsService.saveFields(currentUser, request));
+    }
+
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(@RequestParam Integer year) {
         return ResponseEntity.ok(ttsService.getStats(year));
     }
 
     @GetMapping("/stats/week")
-    public ResponseEntity<TtsWeekStatsResponse> getWeekStats(@RequestParam int year, @RequestParam int weekNum) {
-        return ResponseEntity.ok(ttsService.getWeekStats(year, weekNum));
+    public ResponseEntity<TtsWeekStatsResponse> getWeekStats(@RequestParam int year, @RequestParam int weekNum,
+            @RequestParam(required = false) Integer calendarYear, @RequestParam(required = false) Integer quarter) {
+        if (calendarYear == null && quarter == null) return ResponseEntity.ok(ttsService.getWeekStats(year, weekNum));
+        if (calendarYear == null || quarter == null) throw com.newaveflow.exception.AppException.badRequest("연도와 분기를 함께 선택해 주세요.");
+        return ResponseEntity.ok(ttsService.getWeekStats(year, weekNum, calendarYear, quarter));
     }
 
     @GetMapping("/window")

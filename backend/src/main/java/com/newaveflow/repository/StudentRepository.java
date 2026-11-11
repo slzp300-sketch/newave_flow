@@ -15,7 +15,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findAllByIsActiveTrueOrderByGradeAscNameAsc();
     List<Student> findAllByOrderByGradeAscIsActiveDescNameAsc();
 
-    @Query("SELECT s FROM Student s JOIN FETCH s.classGroup ORDER BY s.grade ASC, s.isActive DESC, s.name ASC")
+    @Query("SELECT s FROM Student s LEFT JOIN FETCH s.classGroup ORDER BY s.grade ASC, s.isActive DESC, s.name ASC")
     List<Student> findAllWithClassGroup();
 
     @Query("SELECT s FROM Student s JOIN FETCH s.classGroup WHERE s.isActive = true ORDER BY s.grade ASC, s.name ASC")

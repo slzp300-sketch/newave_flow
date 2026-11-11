@@ -15,7 +15,7 @@ export default function HomeWeekly() {
       <Link to="/checklist" className="brand-action flex min-h-11 items-center rounded-lg px-3 text-sm">전체 보기</Link>
     </div>
     {!!failed.length && <QueryNotice queries={failed} label="할 일 현황" />}
-    <p className="mb-3 text-xs text-gray-500">빨간 점은 아직 해야 할 일이 있다는 뜻이에요.</p>
+
     <div className="grid grid-cols-2 gap-2.5">
       {tasks.map(task => <Link key={task.id} to={task.path}
         className="brand-action motion-tap relative flex flex-col items-start gap-2 rounded-2xl border border-primary-200 p-4">

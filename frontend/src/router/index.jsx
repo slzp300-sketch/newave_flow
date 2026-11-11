@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
 import useAuthStore from '../store/authStore'
-import { queryClient } from '../queryClient'
+import { tokenNeedsRefresh } from '../auth/tokenExpiry'
 import AppLayout from '../components/layout/AppLayout'
 import client, { refreshSession } from '../api/client'
 
@@ -13,6 +13,12 @@ const FindAccountPage = lazy(() => import('../pages/FindAccountPage'))
 const Home = lazy(() => import('../pages/Home'))
 const AttendancePage = lazy(() => import('../pages/AttendancePage'))
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'))
+const OfficerPage = lazy(() => import('../pages/OfficerPage'))
+const GradeCarePage = lazy(() => import('../pages/GradeCarePage'))
+const PraisePage = lazy(() => import('../pages/PraisePage'))
+const IntercessionPage = lazy(() => import('../pages/IntercessionPage'))
+const WorshipPage = lazy(() => import('../pages/WorshipPage'))
+const AdminAttendanceOverviewPage = lazy(() => import('../pages/AdminAttendanceOverviewPage'))
 const CalendarPage = lazy(() => import('../pages/CalendarPage'))
 const CalendarAdminPage = lazy(() => import('../pages/CalendarAdminPage'))
 const PrayerMeetingPage = lazy(() => import('../pages/PrayerMeetingPage'))
@@ -24,7 +30,6 @@ const EvangelismAdminPage = lazy(() => import('../pages/EvangelismAdminPage'))
 const MeetingMinutesPage = lazy(() => import('../pages/MeetingMinutesPage'))
 const MeetingMinutesAdminPage = lazy(() => import('../pages/MeetingMinutesAdminPage'))
 const PrayerAbsentAdminPage = lazy(() => import('../pages/PrayerAbsentAdminPage'))
-const WeeklyCheckPage = lazy(() => import('../pages/WeeklyCheckPage'))
 const RosterPage = lazy(() => import('../pages/RosterPage'))
 const EventAttendanceListPage = lazy(() => import('../pages/EventAttendanceListPage'))
 const EventAttendancePage = lazy(() => import('../pages/EventAttendancePage'))
@@ -33,33 +38,25 @@ const AdminMeetingAttendancePage = lazy(() => import('../pages/AdminMeetingAtten
 const ClassManagePage = lazy(() => import('../pages/ClassManagePage'))
 const DeactivationRequestsAdminPage = lazy(() => import('../pages/DeactivationRequestsAdminPage'))
 const TtsAdminPage = lazy(() => import('../pages/TtsAdminPage'))
-const MenuPage = lazy(() => import('../pages/MenuPage'))
 const AdminTeacherManagePage = lazy(() => import('../pages/AdminTeacherManagePage'))
 const AdminClassManagePage = lazy(() => import('../pages/AdminClassManagePage'))
 const AdminStudentManagePage = lazy(() => import('../pages/AdminStudentManagePage'))
 const AdminPendingUsersPage = lazy(() => import('../pages/AdminPendingUsersPage'))
 const AdminStudentAttendancePage = lazy(() => import('../pages/AdminStudentAttendancePage'))
+const AdminWeeklyReportPage = lazy(() => import('../pages/AdminWeeklyReportPage'))
+const NewFamilyPage = lazy(() => import('../pages/NewFamilyPage'))
 const ManualPreviewPage = lazy(() => import('../pages/ManualPreviewPage'))
 const AppGuidePage = lazy(() => import('../pages/AppGuidePage'))
 const ProfilePage = lazy(() => import('../pages/ProfilePage'))
+const WidgetsPage = lazy(() => import('../pages/WidgetsPage'))
 const NotificationPage = lazy(() => import('../pages/NotificationPage'))
+const AccountConnectionsPage = lazy(() => import('../pages/AccountConnectionsPage'))
 const AccountHelpPage = lazy(() => import('../pages/AccountHelpPage'))
 const PrivacyPage = lazy(() => import('../pages/PrivacyPage'))
 const CommunityPolicyPage = lazy(() => import('../pages/CommunityPolicyPage'))
 const ContentReportPage = lazy(() => import('../pages/ContentReportPage'))
 const ContentReportsAdminPage = lazy(() => import('../pages/ContentReportsAdminPage'))
 const ContentPhotosAdminPage = lazy(() => import('../pages/ContentPhotosAdminPage'))
-
-// JWT payload의 exp(초 단위)를 보고 만료됐거나 bufferMs 이내에 만료되는지 확인
-function isTokenExpiredOrExpiring(token, bufferMs = 5 * 60 * 1000) {
-  try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    const { exp } = JSON.parse(atob(base64))
-    return !exp || Date.now() > exp * 1000 - bufferMs
-  } catch {
-    return true
-  }
-}
 
 // 세션 내 서버 워밍업 완료 여부 (페이지 리로드 시 초기화됨)
 // ※ 토큰 갱신과 분리: 워밍업은 서버 헬스체크만 담당
@@ -85,7 +82,7 @@ function ConnectingScreen({ slow }) {
   )
 }
 
-function RequireAuth() {
+export function RequireAuth() {
   const { user, isHydrated, accessToken } = useAuthStore()
 
   // 서버 워밍업이 필요한 경우: 로그인 상태인데 아직 워밍업 안 된 경우
@@ -93,12 +90,10 @@ function RequireAuth() {
 
   // 토큰 갱신이 필요한 경우: 워밍업 완료됐지만 토큰이 만료됐거나 5분 내 만료 예정
   // sessionWarmedUp과 무관하게 항상 체크 (SPA 내 페이지 이동 시에도 동작)
-  const needsTokenRefresh = !!(user && accessToken && !needsWarmup && isTokenExpiredOrExpiring(accessToken))
+  const needsTokenRefresh = !!(user && accessToken && !needsWarmup && tokenNeedsRefresh(accessToken))
 
   const [warming, setWarming] = useState(() => needsWarmup)
-  const [refreshing, setRefreshing] = useState(() => needsTokenRefresh)
   const [slowStart, setSlowStart] = useState(false)
-  useEffect(() => { if (needsTokenRefresh) setRefreshing(true) }, [needsTokenRefresh])
 
   // ─── 서버 워밍업 (백엔드 첫 기동 시) ───
   useEffect(() => {
@@ -137,11 +132,9 @@ function RequireAuth() {
       // /health는 인증 불필요라 토큰 만료를 감지 못함. 만료됐거나 5분 내 만료 예정이면
       // 페이지 렌더 전에 미리 갱신하여 데이터 로딩 실패를 방지한다.
       const { accessToken: tok } = useAuthStore.getState()
-      if (tok && isTokenExpiredOrExpiring(tok)) {
+      if (tokenNeedsRefresh(tok)) {
         try {
           await refreshSession()
-
-          queryClient.clear()
         } catch {
           // 리프레시 토큰도 만료된 경우 — auth 초기화 후 렌더 시 /login으로 이동
           // refreshSession clears authentication only for rejected credentials.
@@ -163,31 +156,13 @@ function RequireAuth() {
     }
   }, [warming])
 
-  // ─── 토큰 선제 갱신 (워밍업 완료 후, 오래된 세션에서 페이지 이동 시) ───
+  // Same-account renewal must not unmount a form or clear loaded records.
+  // The client shares refresh work and redirects only for rejected credentials.
   useEffect(() => {
-    if (!refreshing) return
+    if (needsTokenRefresh) void refreshSession().catch(() => {})
+  }, [needsTokenRefresh, accessToken])
 
-    let mounted = true
-
-    const tryRefresh = async () => {
-      const { accessToken: tok } = useAuthStore.getState()
-      if (tok && isTokenExpiredOrExpiring(tok)) {
-        try {
-          await refreshSession()
-
-          queryClient.clear()
-        } catch {
-          // refreshSession clears authentication only for rejected credentials.
-        }
-      }
-      if (mounted) setRefreshing(false)
-    }
-
-    tryRefresh()
-    return () => { mounted = false }
-  }, [refreshing])
-
-  if (!isHydrated || warming || refreshing) return <ConnectingScreen slow={slowStart} />
+  if (!isHydrated || warming) return <ConnectingScreen slow={slowStart} />
 
   return user ? <Outlet /> : <Navigate to="/login" replace />
 }
@@ -216,10 +191,14 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
         element: <AppLayout />,
         children: [
           { path: '/',           element: <Home /> },
-          { path: '/menu',       element: <MenuPage /> },
+          { path: '/menu',       element: <Navigate to="/" replace /> },
           { path: '/attendance', element: <AttendancePage /> },
+          { path: '/new-family', element: <NewFamilyPage /> },
+          { path: '/praise', element: <PraisePage /> },
+          { path: '/intercession', element: <IntercessionPage /> },
+          { path: '/worship', element: <WorshipPage /> },
           { path: '/calendar',   element: <CalendarPage /> },
-          { path: '/checklist',  element: <WeeklyCheckPage /> },
+          { path: '/checklist',  element: <Navigate to="/" replace /> },
           { path: '/tts',        element: <TTSPage /> },
           { path: '/meeting/prayer',  element: <PrayerMeetingPage /> },
           { path: '/meeting/sat',     element: <SatMeetingPage /> },
@@ -233,11 +212,16 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
           { path: '/class-manage',         element: <ClassManagePage /> },
           { path: '/notifications',        element: <NotificationPage /> },
           { path: '/profile',              element: <ProfilePage /> },
+          { path: '/profile/widgets',      element: <WidgetsPage /> },
+          { path: '/profile/connections', element: <AccountConnectionsPage /> },
           { path: '/safety/report', element: <ContentReportPage /> },
           {
             element: <RequireRole roles={['ADMIN', 'PASTOR', 'EXECUTIVE']} />,
             children: [
               { path: '/admin',             element: <AdminDashboard /> },
+              { path: '/officers', element: <OfficerPage /> },
+              { path: '/grade-care', element: <GradeCarePage /> },
+              { path: '/admin/attendance', element: <AdminAttendanceOverviewPage /> },
               { path: '/admin/content-reports', element: <ContentReportsAdminPage /> },
               { path: '/admin/content-photos', element: <ContentPhotosAdminPage /> },
               { path: '/admin/teachers',    element: <AdminTeacherManagePage /> },
@@ -250,6 +234,7 @@ const router = createBrowserRouter([{ element: <Suspense fallback={<ConnectingSc
               { path: '/admin/deactivation-requests', element: <DeactivationRequestsAdminPage /> },
               { path: '/admin/tts',              element: <TtsAdminPage /> },
               { path: '/admin/student-attendance', element: <AdminStudentAttendancePage /> },
+              { path: '/admin/weekly-report', element: <AdminWeeklyReportPage /> },
               { path: '/admin/class-assignment', element: <AdminClassManagePage /> },
                 { path: '/admin/students',               element: <AdminStudentManagePage /> },
                 { path: '/admin/pending-users',          element: <AdminPendingUsersPage /> },

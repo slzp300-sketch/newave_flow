@@ -23,7 +23,8 @@ def verify(app, apple_login=False, device=False):
     require(info.get('CFBundleIdentifier') == BUNDLE_ID, 'Unexpected app identifier')
     require(info.get('CFBundleDisplayName') == '뉴웨이브 플로우', 'App name is missing')
     require(info.get('UIDeviceFamily') == [1], 'Review iPad assets before changing supported devices')
-    require(float(info.get('MinimumOSVersion', '0')) >= 15, 'Unsupported minimum iOS version')
+    minimum = tuple(int(part) for part in info.get('MinimumOSVersion', '0').split('.')[:2])
+    require(minimum >= (15, 4), 'App dialogs and selections require iOS 15.4 or later')
     expected_platform = 'iPhoneOS' if device else 'iPhoneSimulator'
     require(expected_platform in info.get('CFBundleSupportedPlatforms', []), 'Wrong build platform')
     require(info.get('NewaveAppleSignInEnabled') == ('YES' if apple_login else 'NO'), 'Apple login setting mismatch')
@@ -47,7 +48,17 @@ def verify(app, apple_login=False, device=False):
     forbidden = {'.p8', '.p12', '.pem', '.key', '.map'}
     for resource in (app / 'public').rglob('*'):
         require(resource.suffix.lower() not in forbidden and not resource.name.startswith('.env'), 'Private/development resource in web bundle')
-    privacy_paths = [app / 'PrivacyInfo.xcprivacy'] + [
+    widget = app / 'PlugIns/NewaveWidgets.appex'
+    require({p.name for p in (app / 'PlugIns').glob('*.appex')} == {'NewaveWidgets.appex'}, 'Expected exactly the home-screen widget extension')
+    widget_info = load_plist(widget / 'Info.plist')
+    require(widget_info.get('CFBundleIdentifier') == BUNDLE_ID + '.widgets', 'Widget identifier mismatch')
+    require(widget_info.get('NSExtension', {}).get('NSExtensionPointIdentifier') == 'com.apple.widgetkit-extension', 'Widget extension type mismatch')
+    require(widget_info.get('CFBundleShortVersionString') == info.get('CFBundleShortVersionString') and widget_info.get('CFBundleVersion') == info.get('CFBundleVersion'), 'App and widget versions must match')
+    require(expected_platform in widget_info.get('CFBundleSupportedPlatforms', []), 'Widget platform mismatch')
+    require(tuple(int(p) for p in widget_info.get('MinimumOSVersion','0').split('.')[:2]) >= (17,0), 'Interactive widget requires iOS 17')
+    require(widget_info.get('NewaveWidgetKeychainGroup') == info.get('NewaveWidgetKeychainGroup') and str(info.get('NewaveWidgetKeychainGroup','')).endswith(BUNDLE_ID + '.widgets'), 'Widget shared keychain setting mismatch')
+    require(not list((widget / 'Frameworks').glob('*.framework')), 'Widget must use only system frameworks')
+    privacy_paths = [app / 'PrivacyInfo.xcprivacy', widget / 'PrivacyInfo.xcprivacy'] + [
         app / f'Frameworks/{sdk}.framework/PrivacyInfo.xcprivacy' for sdk in ('Capacitor', 'Cordova')
     ]
     require({path.name for path in (app / 'Frameworks').glob('*.framework')} == {'Capacitor.framework', 'Cordova.framework'},
@@ -63,7 +74,7 @@ def verify(app, apple_login=False, device=False):
                 for entry in app_privacy.get('NSPrivacyAccessedAPITypes', [])), 'Missing UserDefaults reason')
     return {'bundleId': BUNDLE_ID, 'version': info.get('CFBundleShortVersionString'),
             'build': info.get('CFBundleVersion'), 'platform': expected_platform,
-            'appleLogin': apple_login, 'privacyManifests': 3, 'usesNonExemptEncryption': False}
+            'appleLogin': apple_login, 'privacyManifests': 4, 'widget': True, 'usesNonExemptEncryption': False}
 
 
 if __name__ == '__main__':

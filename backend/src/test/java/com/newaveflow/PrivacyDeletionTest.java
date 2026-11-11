@@ -66,6 +66,35 @@ class PrivacyDeletionTest {
                   VALUES('11111111-1111-4111-8111-111111111111',1,'2026-10-01',repeat('d',64),'REQUESTED',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '7 days',false);
                 """);
             // Recreate old constraints then validate the actual additive migration, including rollback.
+            s.execute("""
+                INSERT INTO intercession_registry(id,revision) VALUES(1,0);
+                INSERT INTO intercession_members(id) VALUES(1),(2);
+                INSERT INTO intercession_requests(id,author_id,sender_name,title,body,category,source,share,anonymous,public_title,public_text,status,revision,created_at,updated_at,prayer_completed) VALUES
+                  (1,1,'삭제대상가상','개인 기도 요청','삭제대상가상 개인 원문','기타','앱',true,true,'개인 요청','삭제대상가상 공유본','PUBLISHED',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,false),
+                  (2,2,'보존교사가상','보존 요청','다른 교사의 기도제목 보존','기타','앱',false,true,'','','PENDING',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,false);
+                UPDATE intercession_requests SET pending_update='{"note":"삭제대상가상 새 근황"}',update_history='[{"note":"삭제대상가상 지난 근황"}]' WHERE id=1;
+                INSERT INTO intercession_meetings(meeting_date,host_id,duration,zoom_url,revision,selected_ids,paper,prepared_at,canceled,cancellation_reason)
+                  VALUES('2026-11-05',1,45,'https://zoom.us/j/123',0,'[1]','[{"title":"삭제대상가상 공유본"}]',CURRENT_TIMESTAMP,false,'');
+                """);
+            s.execute("""
+                ALTER TABLE push_devices ADD FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE;
+                ALTER TABLE notification_preferences ADD FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE;
+                ALTER TABLE tts_linked_snapshots ADD FOREIGN KEY(teacher_id) REFERENCES users(id) ON DELETE CASCADE;
+                ALTER TABLE push_deliveries ADD FOREIGN KEY(notification_id) REFERENCES notifications(id) ON DELETE CASCADE;
+                ALTER TABLE push_deliveries ADD FOREIGN KEY(installation_id) REFERENCES push_devices(installation_id) ON DELETE CASCADE;
+                INSERT INTO notifications(id,user_id,type,title,content,is_read,created_at) VALUES
+                  (1,1,'SYSTEM','Synthetic notice','Synthetic notice',false,CURRENT_TIMESTAMP),
+                  (2,2,'SYSTEM','Other notice','Other notice',false,CURRENT_TIMESTAMP);
+                INSERT INTO notification_preferences(user_id,push_enabled) VALUES(1,true),(2,true);
+                INSERT INTO push_devices(installation_id,user_id,platform,token,token_hash,active,updated_at) VALUES
+                  ('11111111-1111-4111-8111-111111111111',1,'IOS','synthetic-token-one',repeat('a',64),true,CURRENT_TIMESTAMP),
+                  ('22222222-2222-4222-8222-222222222222',2,'IOS','synthetic-token-two',repeat('b',64),true,CURRENT_TIMESTAMP);
+                INSERT INTO push_deliveries(id,notification_id,installation_id,status,attempts,next_attempt_at,expires_at) VALUES
+                  (1,1,'11111111-1111-4111-8111-111111111111','PENDING',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '1 day'),
+                  (2,2,'22222222-2222-4222-8222-222222222222','PENDING',0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '1 day');
+                INSERT INTO tts_linked_snapshots(id,teacher_id,week_start,link_type,checked) VALUES
+                  (1,1,'2026-03-29','SAT_MEETING',false),(2,2,'2026-03-29','SAT_MEETING',true);
+                """);
             s.execute("INSERT INTO community_agreements(user_id,policy_version,accepted_at) VALUES(1,'2026-10-14-v1',CURRENT_TIMESTAMP)");
             s.execute("""
                 INSERT INTO content_reports(id,revision,reporter_id,request_id,target_type,content_type,target_id,subject,reason,details,status,action,moderator_id,created_at,updated_at) VALUES
@@ -105,15 +134,28 @@ class PrivacyDeletionTest {
                   (4,0,'STUDENT',2,NULL,1,CURRENT_TIMESTAMP,'APPROVED',1,CURRENT_TIMESTAMP,'Approved synthetic photograph');
                 """);
 
+            s.execute("""
+                INSERT INTO new_family_members(id,student_id,first_visit,course_json,decision,decision_reason,assignment_requested,memo,handoff_memo,introducer,updated_by,updated_at,revision)
+                  VALUES(1,1,'2026-10-11','[null,null,null,null]','REVIEW','',false,'삭제대상가상 상담 / 학생 과정 기록 보존','','','보존교사가상',CURRENT_TIMESTAMP,0);
+                INSERT INTO new_family_checks(id,member_id,worship_date,status,updated_by,updated_at)
+                  VALUES(1,1,'2026-10-11','PRESENT','삭제대상가상',CURRENT_TIMESTAMP);
+                INSERT INTO new_family_submissions(report_date,payload,source_hash,revision,submitted_at,submitted_by)
+                  VALUES('2026-10-11','{"present":1,"note":"학생 기록 보존"}',repeat('a',64),1,CURRENT_TIMESTAMP,'삭제대상가상');
+                """);
+            s.execute("INSERT INTO praise_terms(id,term_year,half,revision) VALUES(1,2026,2,0); INSERT INTO praise_members(id,term_id,user_id,parts,active) VALUES(1,1,1,'[]',true),(2,1,2,'[]',true); INSERT INTO praise_weeks(id,term_id,worship_date,practice_date,start_time,end_time,schedule_version,slots) VALUES(1,1,'2026-12-06','2026-12-05','17:00','19:00',0,'{}'); INSERT INTO praise_responses(term_id,user_id,response_month,dates,schedule_versions,submitted_at) VALUES(1,1,'2026-12','[]','{}',CURRENT_TIMESTAMP); INSERT INTO praise_pdfs(id,week_id,file_version,page_count,content,uploaded_by_id,uploaded_at) VALUES(1,1,1,1,decode('255044462d','hex'),2,CURRENT_TIMESTAMP)");
             String inputs=Files.readString(Path.of("db/privacy/request-tables.sql"))
                 +"CREATE TEMP TABLE privacy_content_scope ON COMMIT DROP AS "+Files.readString(Path.of("db/privacy/content-scope.sql"))+";";
             String deletion=Files.readString(Path.of("db/privacy/delete-account.sql"));
             String review="""
                 INSERT INTO privacy_request VALUES('11111111-1111-4111-8111-111111111111',1,'2026-10-01',true,true,true,true);
                 INSERT INTO privacy_legacy_decisions VALUES(1,true);
+                INSERT INTO privacy_praise_pdf_review SELECT id,md5(content),'KEEP_REVIEWED' FROM praise_pdfs;
                 INSERT INTO privacy_redactions SELECT 'daily_reports','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports;
                 INSERT INTO privacy_redactions SELECT 'daily_reports_before_class_merge','special_notes',id,md5(special_notes),'학생 기록 보존' FROM daily_reports_before_class_merge;
                 INSERT INTO privacy_redactions SELECT 'meeting_minutes','content',id,md5(content),'다른 사람 회의 결정' FROM meeting_minutes;
+                INSERT INTO privacy_redactions SELECT 'new_family_members','memo',id,md5(memo),'학생 과정 기록 보존' FROM new_family_members;
+                INSERT INTO privacy_redactions SELECT 'new_family_checks','updated_by',id,md5(updated_by),'삭제된 교사' FROM new_family_checks;
+                INSERT INTO privacy_redactions SELECT 'new_family_submissions','submitted_by',id,md5(submitted_by),'삭제된 교사' FROM new_family_submissions;
                 """+syntheticContentReview()+"UPDATE privacy_content_review SET decision='erase',reason='요청자 단독 작성 내용임을 가상 원본으로 확인함' WHERE (table_name='events' AND column_name='description') OR table_name='student_memos';";
             var original=EventReadMigrationTest.fingerprints(c);
             for(String unsafe:List.of(
@@ -122,6 +164,8 @@ class PrivacyDeletionTest {
                 review+"UPDATE privacy_request SET request_id='22222222-2222-4222-8222-222222222222';",
                 review+"UPDATE apple_accounts SET revoked_at=NULL,refresh_token_ciphertext='synthetic-unrevoked' WHERE user_id=1;",
                 review+"DELETE FROM privacy_legacy_decisions;",
+                review+"DELETE FROM privacy_praise_pdf_review;",
+                review+"UPDATE praise_pdfs SET content=decode('255044462d3031','hex');",
                 review+"DELETE FROM privacy_owned_student_memos;",
                 review+"UPDATE student_memos SET sketch='검토 이후 변경' WHERE id=1;",
                 review+"DELETE FROM privacy_content_review WHERE table_name='meeting_minutes' AND column_name='content';",
@@ -156,7 +200,7 @@ class PrivacyDeletionTest {
             // Restore replay must remain compatible with backups made before V012/V013.
             c.setAutoCommit(false);
             try {
-                s.execute("DROP TABLE user_status_events; DROP TABLE moderated_photos; ALTER TABLE content_reports DROP COLUMN assigned_to_id");
+                s.execute("DROP TABLE user_status_events; DROP TABLE moderated_photos; ALTER TABLE content_reports DROP COLUMN assigned_to_id; DROP TABLE push_deliveries; DROP TABLE push_devices; DROP TABLE notification_preferences; DROP TABLE tts_linked_snapshots");
                 s.execute(inputs+review+namesakeReview); s.execute(deletion);
                 assertEquals("0",scalar(c,"SELECT count(*) FROM users WHERE id=1"));
             } finally { c.rollback(); c.setAutoCommit(true); }
@@ -213,7 +257,7 @@ class PrivacyDeletionTest {
                 INSERT INTO apple_notification_receipts(jti_hash,subject_hash,payload_hash,received_at)
                   VALUES(repeat('9',64),repeat('e',64),repeat('a',64),CURRENT_TIMESTAMP);
                 """);
-            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true); INSERT INTO privacy_identifiers VALUES('iVB');"+syntheticContentReview();
+            String collisionReview="INSERT INTO privacy_request VALUES('55555555-5555-4555-8555-555555555555',5,'2026-10-03',true,true,true,true); INSERT INTO privacy_identifiers VALUES('iVB'); INSERT INTO privacy_praise_pdf_review SELECT id,md5(content),'KEEP_REVIEWED' FROM praise_pdfs;"+syntheticContentReview();
             // Excluding reviewed hash fields must not exclude a future plaintext field in the same table.
             assertRejectedDeletionRestoresAllRows(c,inputs,collisionReview,deletion,
                 "ALTER TABLE apple_notification_subjects ADD COLUMN unreviewed_note text; UPDATE apple_notification_subjects SET unreviewed_note='Ada retained plaintext' WHERE user_id=2;",
@@ -254,6 +298,12 @@ class PrivacyDeletionTest {
             String preservedNotificationSubjects=scalar(c,preservedNotificationSubjectsSql);
             String preservedNotificationReceipts=scalar(c,preservedNotificationReceiptsSql);
             String preservedOtherMemo=scalar(c,"SELECT to_jsonb(m)::text FROM student_memos m WHERE id=2");
+            var otherPush = new java.util.LinkedHashMap<String,String>();
+            for(String table:List.of("push_devices","notification_preferences","tts_linked_snapshots","push_deliveries"))
+                otherPush.put(table,scalar(c,"SELECT to_jsonb(t)::text FROM "+table+" t WHERE "+(table.equals("tts_linked_snapshots")?"teacher_id":table.equals("push_deliveries")?"notification_id":"user_id")+"=2"));
+            assertRejectedDeletionRestoresAllRows(c,inputs,review+namesakeReview,deletion,
+                "ALTER TABLE events ADD COLUMN unreviewed_push varchar(36) REFERENCES push_devices(installation_id) ON DELETE CASCADE; UPDATE events SET unreviewed_push='11111111-1111-4111-8111-111111111111';",
+                "Unreviewed push lifecycle");
             var userRepo=app.getBean(UserRepository.class);
             assertTrue(userRepo.findById(1L).isPresent());
             var tokens=app.getBean(JwtTokenProvider.class);
@@ -265,9 +315,22 @@ class PrivacyDeletionTest {
             assertEquals(200,http.send(me,java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode());
             c.setAutoCommit(false);s.execute(inputs+review+namesakeReview);s.execute(deletion);c.commit();c.setAutoCommit(true);
             assertTrue(userRepo.findById(1L).isEmpty(),"JWT/refresh both require an existing user row");
+            for(var entry:otherPush.entrySet()) {
+                String table=entry.getKey();
+                assertEquals("1",scalar(c,"SELECT count(*) FROM "+table),table+" must erase only the deleted account's data");
+                assertEquals(entry.getValue(),scalar(c,"SELECT to_jsonb(t)::text FROM "+table+" t"),table+" must preserve the other account exactly");
+            }
             assertEquals(401,http.send(me,java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode());
             assertThrows(com.newaveflow.exception.AppException.class,()->app.getBean(com.newaveflow.service.AuthService.class).refresh(refresh));
             assertTrue(app.getBean(AdminUserService.class).getPendingUsers().stream().noneMatch(u->u.id().equals(1L)));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM praise_members WHERE user_id IS NULL AND active=false"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM praise_members WHERE user_id=2"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM praise_responses"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM intercession_requests WHERE author_id=1"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM intercession_requests WHERE author_id=2"));
+            assertEquals("0",scalar(c,"SELECT count(*) FROM intercession_members WHERE id=1"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM intercession_meetings WHERE host_id IS NULL AND paper IS NULL AND zoom_url=''"));
+            assertEquals("1",scalar(c,"SELECT count(*) FROM praise_pdfs WHERE uploaded_by_id=2"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM tts_answers"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM tts_legacy_score WHERE id=2"));
             assertEquals("1",scalar(c,"SELECT count(*) FROM tts_legacy_score WHERE id=3"));
@@ -277,6 +340,11 @@ class PrivacyDeletionTest {
             assertEquals("1",scalar(c,"SELECT count(*) FROM event_participants WHERE kind='STUDENT'"));
             assertEquals("PRESENT",scalar(c,"SELECT status FROM event_student_attendances WHERE id=1 AND teacher_id IS NULL"));
             assertEquals("SUBMITTED",scalar(c,"SELECT status FROM daily_reports WHERE teacher_id IS NULL"));
+            assertEquals("학생 과정 기록 보존",scalar(c,"SELECT memo FROM new_family_members WHERE id=1"));
+            assertEquals("PRESENT",scalar(c,"SELECT status FROM new_family_checks WHERE id=1"));
+            assertEquals("삭제된 교사",scalar(c,"SELECT updated_by FROM new_family_checks WHERE id=1"));
+            assertEquals("삭제된 교사",scalar(c,"SELECT submitted_by FROM new_family_submissions WHERE report_date='2026-10-11'"));
+            assertEquals("1",scalar(c,"SELECT payload::jsonb->>'present' FROM new_family_submissions WHERE report_date='2026-10-11'"));
             assertEquals("1",scalar(c,"SELECT present_count FROM daily_reports"));
             assertEquals("학생 기록 보존",scalar(c,"SELECT special_notes FROM daily_reports_before_class_merge"));
             assertEquals("0",scalar(c,"SELECT count(*) FROM student_memos WHERE id=1"),"Personal author-owned text must be removed even without any identifying string");

@@ -1,0 +1,18 @@
+dialog.ui-dialog-shell{padding:0;overflow:hidden;max-height:calc(var(--safe-viewport-height,100dvh) - var(--app-safe-top,0px) - var(--app-safe-bottom,0px) - 24px)}
+.ui-dialog-shell[open]{display:flex;flex-direction:column}
+.ui-dialog-shell[role=dialog]{padding:0;overflow:hidden}
+.ui-dialog-shell>header{flex:none}
+.ui-dialog-shell>.ui-dialog-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scroll-padding-block:16px;overflow-anchor:none;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#c6bad2 transparent}
+.ui-dialog-footer{flex:none;min-width:0;padding:12px 16px max(12px,env(safe-area-inset-bottom));border-top:1px solid #e5eaf2;background:#fff}
+.ui-dialog-footer:empty{display:none}
+.ui-dialog-footer>.pt-live-error{margin:0 0 10px}
+.ui-dialog-actions:empty{display:none}
+.ui-dialog-footer:not(:has(>:not(.ui-dialog-actions:empty))){display:none}
+.ui-dialog-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;width:100%;min-width:0}
+.ui-dialog-actions>:is(button,a,.pt-action-control){flex:1 1 0;min-width:0;min-height:46px}
+.ui-dialog-actions>.pt-action-control>button{width:100%;min-height:46px}
+.ui-dialog-actions>:is(p,[role=alert],.ui-action-note){flex-basis:100%;margin:0}
+.ui-dialog-actions+.ui-dialog-actions{margin-top:10px}
+.ui-dialog-shell .ui-dialog-actions .motion-button{font-size:14px}
+.ui-dialog-shell :is(input:not([type=checkbox]):not([type=radio]),textarea){font-size:16px}
+@media(max-width:350px){.ui-dialog-footer{padding-inline:12px}.ui-dialog-actions{gap:8px}}

@@ -9,7 +9,14 @@ export const authApi = {
   registerKakao: data => client.post('/auth/kakao/register', data),
   login: createEmailLogin(client),
   register: (data)          => client.post('/auth/register', data),
-  logout: (config)          => client.post('/auth/logout', undefined, config),
+  logout: async (config) => {
+    // Remove this installation while the old session still authenticates the request.
+    try {
+      const { detachPushNotifications } = await import('../native/pushNotifications')
+      await detachPushNotifications(config)
+    } catch { /* A plugin/storage failure must not prevent logout. */ }
+    return client.post('/auth/logout', undefined, config)
+  },
   me:     ()                => client.get('/users/me'),
   checkEmail: (email)       => client.get('/auth/check-email', { params: { email } }),
   checkName:  (name)        => client.get('/auth/check-name', { params: { name } }),

@@ -1,3 +1,4 @@
+import { CollapsePanel } from '../common/Motion'
 import EventAttendanceFields from './EventAttendanceFields'
 import { eventToday, validateAttendanceWindow } from '../../utils/eventAttendance'
 import { useState, useEffect, useRef } from 'react'
@@ -45,20 +46,20 @@ export function AddEventChoice({ open, onClose, onSingle, onBulk }) {
     <>
       <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
       <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 pointer-events-none">
-        <div className="safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-4 shadow-2xl flex flex-col gap-2">
+        <div className="supporting-readable readable-content safe-modal-panel pointer-events-auto bg-white w-full max-w-sm rounded-3xl p-4 shadow-2xl flex flex-col gap-2">
           <p className="text-sm font-bold text-gray-900 px-1 pb-1">일정 추가</p>
           <button type="button" className={item} onClick={() => { onClose(); onSingle() }}>
             <CalendarPlus size={20} className="text-primary-500" />
             <div>
               <p className="text-sm font-bold text-gray-900">하나 추가</p>
-              <p className="text-xs text-gray-400">시간·설명까지 자세히 입력</p>
+
             </div>
           </button>
           <button type="button" className={item} onClick={() => { onClose(); onBulk() }}>
             <CalendarRange size={20} className="text-primary-500" />
             <div>
               <p className="text-sm font-bold text-gray-900">여러 개 한번에 추가</p>
-              <p className="text-xs text-gray-400">날짜와 제목만 빠르게 여러 줄</p>
+
             </div>
           </button>
           <button type="button" onClick={onClose} className="py-3 text-sm font-bold text-gray-400">취소</button>
@@ -155,19 +156,19 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
     <>
       <div className="fixed inset-0 z-[60] bg-black/60" onClick={onClose} />
       <div className="safe-overlay safe-overlay-spaced fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-        <div className="pointer-events-auto bg-white w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col safe-modal-panel safe-modal-90">
-          <div className="flex justify-between items-center px-5 pt-5 pb-3">
+        <div className="supporting-readable readable-content supporting-modal pointer-events-auto bg-white w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col safe-modal-panel safe-modal-90">
+          <div className="flex gap-3 justify-between items-center px-5 pt-5 pb-3">
             <h3 className="text-lg font-bold text-gray-900">여러 일정 한번에 추가</h3>
-            <button type="button" onClick={onClose} className="p-2 bg-gray-50 rounded-full text-gray-400" aria-label="닫기"><X size={18} /></button>
+            <button type="button" onClick={onClose} className="min-h-11 min-w-11 shrink-0 p-2 bg-gray-50 rounded-full text-gray-400" aria-label="닫기"><X size={18} /></button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-4">
+          <div className="supporting-modal-body flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-4">
             {/* 공통 설정 */}
             <div className="brand-card flex flex-col gap-3 p-4 rounded-2xl bg-gray-50">
               <p className="text-xs font-bold text-gray-500">공통 설정 <span className="font-medium text-gray-400">· 모든 줄에 적용</span></p>
               <div>
                 <span className={label}>구분</span>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="supporting-choice-grid gap-1.5">
                   {EVENT_TYPES.map(t => (
                     <button aria-pressed={common.eventType === t.value} key={t.value} type="button" onClick={() => setCommon(c => ({ ...c, eventType: t.value }))}
                       className={`py-2 rounded-xl text-xs font-bold border-2 transition-all ${common.eventType === t.value ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-transparent bg-white text-gray-400'}`}>
@@ -176,23 +177,23 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
                   ))}
                 </div>
               </div>
-              <button type="button" onClick={() => setCommon(c => ({ ...c, allDay: !c.allDay }))} className="flex items-center justify-between">
+              <button type="button" onClick={() => setCommon(c => ({ ...c, allDay: !c.allDay }))} className="flex flex-wrap gap-3 items-center justify-between">
                 <span className="text-sm font-bold text-gray-600">하루종일</span>
                 <Switch on={common.allDay} />
               </button>
               <AnimatePresence initial={false}>
                 {!common.allDay && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                    <div className="grid grid-cols-2 gap-2">
+                  <CollapsePanel initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                    <div className="supporting-form-grid gap-2">
                       <input type="time" value={common.startTime} onChange={e => setCommon(c => ({ ...c, startTime: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-100 bg-white text-sm font-bold outline-none" aria-label="시작 시간" />
                       <input type="time" value={common.endTime} onChange={e => setCommon(c => ({ ...c, endTime: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-gray-100 bg-white text-sm font-bold outline-none" aria-label="종료 시간" />
                     </div>
-                  </motion.div>
+                  </CollapsePanel>
                 )}
               </AnimatePresence>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-3 items-center justify-between">
                 <span className="text-sm font-bold text-gray-600">색상</span>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {COLORS.map(c => (
                     <button key={c.value} type="button" onClick={() => setCommon(cm => ({ ...cm, color: c.value }))}
                       className={`brand-color-swatch w-6 h-6 rounded-full ${c.class} ${common.color === c.value ? 'ring-2 ring-offset-2 ring-gray-900' : 'opacity-40'}`} />
@@ -229,16 +230,16 @@ export default function BulkEventForm({ open, onClose, defaultDate }) {
                   </button>
                   <AnimatePresence initial={false}>
                     {r.attendanceRequired && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                      <CollapsePanel initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                         <EventAttendanceFields value={r} onChange={patch => updateRow(r.key, patch)} />
-                      </motion.div>
+                      </CollapsePanel>
                     )}
                   </AnimatePresence>
                 </div>
               ))}
               <div ref={listEndRef} />
               {rows.length < MAX_ROWS ? (
-                <button type="button" onClick={addRow} className="flex items-center justify-center gap-1.5 py-3 rounded-2xl border-2 border-dashed border-primary-200 text-sm font-bold text-primary-600 active:bg-primary-50">
+                <button type="button" onClick={addRow} className="flex flex-wrap items-center justify-center gap-1.5 py-3 rounded-2xl border-2 border-dashed border-primary-200 text-sm font-bold text-primary-600 active:bg-primary-50">
                   <Plus size={16} /> 줄 추가 <span className="font-medium text-primary-400">(다음 주 같은 요일)</span>
                 </button>
               ) : (

@@ -18,6 +18,7 @@ backend/target
 *.log
 
 # Build artifacts
+.verification/
 backend/bin
 frontend/dist
 frontend/.verification
@@ -40,6 +41,8 @@ frontend/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 frontend/ios/App/build/
 frontend/ios/DerivedData/
 *.p12
+*.p8
+frontend/android/app/google-services.json
 *.mobileprovision
 *.xcarchive/
 *.ipa

@@ -115,6 +115,49 @@ public class EvangelismService {
             .toList();
     }
 
+    /** Validate every source before any move; the group lock serializes all membership edits. */
+    @Transactional
+    public int moveTeachers(List<TeacherMoveRequest> requests) {
+        if (requests == null || requests.isEmpty() || requests.size() > 500)
+            throw AppException.badRequest("1~500명의 교사를 선택해주세요.");
+        groupRepo.lockGroups();
+        var seen = new java.util.HashSet<Long>();
+        for (var req : requests) {
+            if (req == null || req.teacherId() == null || !seen.add(req.teacherId()))
+                throw AppException.badRequest("중복되지 않은 교사 목록을 보내주세요.");
+            User teacher = userRepo.findById(req.teacherId()).orElseThrow(() -> AppException.notFound("교사를 찾을 수 없습니다."));
+            if (!teacher.isActive()) throw AppException.badRequest("활성 교사만 배정할 수 있습니다.");
+            var current = memberRepo.findActiveByTeacherId(req.teacherId());
+            Long actual = current.isEmpty() ? null : current.get(0).getGroup().getId();
+            if (current.size() > 1 || !java.util.Objects.equals(actual, req.fromGroupId()))
+                throw AppException.conflict("조 편성이 변경되었습니다. 명단을 확인하고 다시 선택해주세요.");
+            if (req.toGroupId() != null) groupRepo.findById(req.toGroupId()).filter(EvangelismGroup::isActive)
+                .orElseThrow(() -> AppException.badRequest("이동할 조가 없습니다."));
+        }
+        for (var req : requests) moveTeacher(req.teacherId(), req.fromGroupId(), req.toGroupId());
+        return requests.size();
+    }
+
+    /** All dates commit together. Retrying with the same operation key returns the first result. */
+    @Transactional
+    public List<ScheduleResponse> createSchedules(List<ScheduleRequest> requests) {
+        if (requests == null || requests.isEmpty() || requests.size() > 52)
+            throw AppException.badRequest("일정은 한 번에 1~52개까지 등록할 수 있습니다.");
+        groupRepo.lockGroups();
+        var seen = new java.util.HashSet<String>();
+        for (var req : requests) {
+            if (req == null || req.scheduledDate() == null || req.groupId() == null)
+                throw AppException.badRequest("각 일정의 날짜와 담당 조를 선택해주세요.");
+            groupRepo.findById(req.groupId()).filter(EvangelismGroup::isActive)
+                .orElseThrow(() -> AppException.badRequest("사용 가능한 담당 조를 선택해주세요."));
+            if (!seen.add(req.scheduledDate() + ":" + req.groupId()))
+                throw AppException.badRequest("같은 날짜와 담당 조가 중복되었습니다.");
+            if (scheduleRepo.existsByScheduledDateAndResponsibleGroupIdAndStatusNot(req.scheduledDate(), req.groupId(), "CANCELED"))
+                throw AppException.conflict(req.scheduledDate() + "에 해당 조의 일정이 이미 있습니다.");
+        }
+        return requests.stream().map(this::createSchedule).toList();
+    }
+
     public MyStatusResponse getMyStatus(Long teacherId) {
         List<EvangelismGroupMember> memberships = memberRepo.findActiveByTeacherId(teacherId);
         if (memberships.isEmpty()) return new MyStatusResponse(null, null, List.of());
@@ -142,6 +185,8 @@ public class EvangelismService {
 
     @Transactional
     public ScheduleResponse createSchedule(ScheduleRequest req) {
+        groupRepo.lockGroups();
+        validateSchedule(req, null);
         EvangelismGroup responsibleGroup = req.groupId() != null
             ? groupRepo.findById(req.groupId()).orElseThrow(() -> AppException.notFound("조를 찾을 수 없습니다."))
             : null;
@@ -159,6 +204,8 @@ public class EvangelismService {
 
     @Transactional
     public ScheduleResponse updateSchedule(Long scheduleId, ScheduleRequest req) {
+        groupRepo.lockGroups();
+        validateSchedule(req, scheduleId);
         EvangelismSchedule schedule = scheduleRepo.findById(scheduleId)
             .orElseThrow(() -> AppException.notFound("일정을 찾을 수 없습니다."));
         EvangelismGroup responsibleGroup = req.groupId() != null
@@ -218,5 +265,16 @@ public class EvangelismService {
         }).toList();
 
         assignmentRepo.saveAll(assignments);
+    }
+
+    private void validateSchedule(ScheduleRequest req, Long excludeId) {
+        if (req == null || req.scheduledDate() == null) throw AppException.badRequest("전도 날짜를 선택해주세요.");
+        if (req.groupId() == null) return; // Preserve the existing direct-teacher API.
+        groupRepo.findById(req.groupId()).filter(EvangelismGroup::isActive)
+            .orElseThrow(() -> AppException.badRequest("사용 가능한 담당 조를 선택해주세요."));
+        boolean duplicate = excludeId == null
+            ? scheduleRepo.existsByScheduledDateAndResponsibleGroupIdAndStatusNot(req.scheduledDate(), req.groupId(), "CANCELED")
+            : scheduleRepo.existsByScheduledDateAndResponsibleGroupIdAndStatusNotAndIdNot(req.scheduledDate(), req.groupId(), "CANCELED", excludeId);
+        if (duplicate) throw AppException.conflict(req.scheduledDate() + "에 해당 조의 일정이 이미 있습니다.");
     }
 }

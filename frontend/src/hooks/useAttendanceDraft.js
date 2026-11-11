@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { scopedDraft, studentEventForm, teacherEventForm } from '../utils/attendanceDraft'
+import { useUnsavedChanges } from '../components/common/UnsavedChanges'
+import { formSnapshot } from '../utils/unsavedChanges'
 
 function useDraft(key, saved, normalize = value => value) {
   const [draft, setDraft] = useState(null)
   const values = normalize(scopedDraft(draft, key, saved))
+  useUnsavedChanges({ dirty: draft?.key === key && formSnapshot({ ...values, editing: false }) !== formSnapshot({ ...normalize(saved), editing: false }) })
   const setField = field => value => setDraft(previous => {
     const current = normalize(scopedDraft(previous, key, saved))
     return { key, values: { ...current, editing: true,

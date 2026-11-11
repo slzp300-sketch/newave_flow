@@ -1,9 +1,15 @@
+import ListItemMotion from '../components/common/ListItemMotion'
+import DialogActions, {DialogSections} from '../components/common/DialogActions'
+import AppSelect from '../components/common/AppSelect'
+import { Collapse, CollapsePanel } from '../components/common/Motion'
+import './CalendarPage.css'
 import ReportLink from '../components/common/ReportLink'
 import EventAttendanceFields from '../components/calendar/EventAttendanceFields'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import { eventToday, isEventEnded, validateAttendanceWindow } from '../utils/eventAttendance'
 import { eventRangeKey } from '../api/queryPolicy'
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usePersistedState } from '../hooks/usePersistedState'
 import useSwipeMonth from '../hooks/useSwipeMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -55,6 +61,8 @@ const EVENT_TYPES = [
 ]
 
 export default function CalendarPage() {
+  const [linkParams] = useSearchParams()
+  const linkedDate = linkParams.get('date')
   const { user } = useAuthStore()
   const today = useToday(eventToday)
   const qc = useQueryClient()
@@ -62,6 +70,12 @@ export default function CalendarPage() {
 
   const [currentTs, setCurrentTs] = usePersistedState('current', new Date().getTime())
   const [selectedTs, setSelectedTs] = usePersistedState('selected', new Date().getTime())
+  useEffect(() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(linkedDate || '')) return
+    const date = new Date(linkedDate + 'T12:00:00')
+    if (!Number.isFinite(date.getTime()) || toApiDate(date) !== linkedDate) return
+    setCurrentTs(date.getTime()); setSelectedTs(date.getTime())
+  }, [linkedDate, setCurrentTs, setSelectedTs])
 
   const current  = useMemo(() => new Date(currentTs),  [currentTs])
   const selected = useMemo(() => new Date(selectedTs), [selectedTs])
@@ -70,7 +84,7 @@ export default function CalendarPage() {
   const setSelected = useCallback((val) => setSelectedTs(prev => (typeof val === 'function' ? val(new Date(prev)) : val).getTime()), [setSelectedTs])
 
   const { swipeHandlers, direction } = useSwipeMonth(current, setCurrent)
-  
+
   // Form State
   const [showForm, setShowForm] = useState(false)
   const [showChoice, setShowChoice] = useState(false)
@@ -92,7 +106,7 @@ export default function CalendarPage() {
     attendanceStartDate: '',
     attendanceTarget: 'STUDENT_ONLY',
   })
-  
+
   const [viewMode, setViewMode] = useState('calendar')
 
   const eventsQuery = useQuery({
@@ -115,7 +129,7 @@ export default function CalendarPage() {
   const { isNew, markSeen, isSaving, readError, retryReads } = useEventSeen(today, viewMode === 'list' ? allEvents : events)
   const acknowledge = event => knownRead(viewMode === 'list' ? allEventsQuery : eventsQuery) && isNew(event) && <button type="button" disabled={isSaving}
     aria-label={`${event.title} 내용 확인`} onClick={() => markSeen([event])}
-    className="relative mt-3 min-h-11 rounded-xl border border-primary-200 py-2 pl-3 pr-6 text-xs disabled:opacity-50">
+    className="relative mt-3 min-h-11 rounded-xl border border-primary-200 py-2 pl-3 pr-6 text-sm disabled:opacity-50">
     <AttentionDot show label="새 일정 또는 변경된 일정" />{isSaving ? '확인 상태 저장 중…' : '내용 확인했어요'}
   </button>
 
@@ -175,18 +189,18 @@ export default function CalendarPage() {
     return lanes;
   }, [events]);
 
-  const days = eachDayOfInterval({ 
-    start: startOfWeek(startOfMonth(current)), 
-    end: endOfWeek(endOfMonth(current)) 
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(current)),
+    end: endOfWeek(endOfMonth(current))
   })
 
   const eventsOnDay = (day) =>
     events.filter(e => {
       const start = new Date(e.eventDate);
       const end = e.endDate ? new Date(e.endDate) : start;
-      return isWithinInterval(startOfDay(day), { 
-        start: startOfDay(start), 
-        end: startOfDay(end) 
+      return isWithinInterval(startOfDay(day), {
+        start: startOfDay(start),
+        end: startOfDay(end)
       });
     }).sort((a, b) => a.id - b.id)
 
@@ -325,7 +339,7 @@ export default function CalendarPage() {
               {format(current, 'yyyy년 M월', { locale: ko })}
             </h2>
             {isAdmin && (
-              <button 
+              <button
                 onClick={() => setShowChoice(true)}
                 aria-label="일정 추가" className="ml-2 min-w-11 min-h-11 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center hover:bg-primary-100 transition-colors"
               >
@@ -335,7 +349,7 @@ export default function CalendarPage() {
           </div>
           <div className="flex items-center bg-gray-100 rounded-xl p-1">
             <button onClick={() => setCurrent(subMonths(current, 1))} aria-label="이전 달" className="min-w-11 min-h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all"><ChevronLeft size={18} /></button>
-            <button onClick={() => setCurrent(new Date())} className="min-h-11 px-3 py-1 text-xs font-bold uppercase tracking-widest hover:bg-white rounded-lg transition-all">오늘</button>
+            <button onClick={() => setCurrent(new Date())} className="min-h-11 px-3 py-1 text-sm font-bold  hover:bg-white rounded-lg transition-all">오늘</button>
             <button onClick={() => setCurrent(addMonths(current, 1))} aria-label="다음 달" className="min-w-11 min-h-11 flex items-center justify-center hover:bg-white rounded-lg transition-all"><ChevronRight size={18} /></button>
           </div>
         </div>
@@ -343,8 +357,8 @@ export default function CalendarPage() {
         {/* 요일 */}
         <div className="grid grid-cols-7 mb-2">
           {WEEKDAYS.map((d, i) => (
-            <div key={d} className={`text-center text-xs font-bold py-1 uppercase tracking-widest
-              ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
+            <div key={d} className={`text-center text-sm font-bold py-1
+              ${i === 0 ? 'text-red-600' : i === 6 ? 'text-blue-700' : 'text-gray-600'}`}>
               {d}
             </div>
           ))}
@@ -375,27 +389,30 @@ export default function CalendarPage() {
             const dayOfWeek = getDay(day)
 
             return (
-              <div 
+              <div
                 key={day.toISOString()}
                 onClick={() => setSelected(day)}
-                className={`min-h-[70px] p-1 flex flex-col gap-0.5 cursor-pointer relative transition-all
+                role="button" tabIndex={0} aria-pressed={isSelected}
+                aria-label={`${format(day, 'M월 d일')} 일정 ${dayEvents.length}개`}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelected(day) } }}
+                className={`calendar-day min-w-0 min-h-[70px] flex flex-col gap-0.5 cursor-pointer relative transition-all
                   ${isSelected ? 'bg-secondary-50 ring-2 ring-secondary-600 ring-inset z-10' : !isCurrMonth ? 'bg-gray-50/50' : 'bg-white'}`}
               >
                 <div className="flex justify-between items-start mb-0.5">
-                  <span className={`text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full
+                  <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
                     ${isSelected ? 'bg-secondary-700 text-white' :
                       isToday(day) ? 'bg-primary-600 text-white shadow-md' :
                       !isCurrMonth ? 'text-gray-300' :
-                      dayOfWeek === 0 ? 'text-red-400' : 
-                      dayOfWeek === 6 ? 'text-blue-400' : 'text-gray-900'}`}>
+                      dayOfWeek === 0 ? 'text-red-600' :
+                      dayOfWeek === 6 ? 'text-blue-700' : 'text-gray-900'}`}>
                     {format(day, 'd')}
                   </span>
                 </div>
-                
-                <div className="flex flex-col gap-0.5 mt-auto relative h-[50px] justify-end">
+
+                <div className="calendar-lanes flex flex-col gap-0.5 mt-auto relative">
                   {[0, 1, 2].map(laneIndex => {
                     const e = dayEvents.find(ev => eventLanes[ev.id] === laneIndex);
-                    if (!e) return <div key={`empty-${laneIndex}`} className="h-3.5" />; // Spacer
+                    if (!e) return <div key={`empty-${laneIndex}`} className="calendar-event-slot" aria-hidden="true" />; // Spacer
 
                     const isStartOfEvent = isSameDay(day, new Date(e.eventDate));
                     const isEndOfEvent = isSameDay(day, new Date(e.endDate));
@@ -404,9 +421,10 @@ export default function CalendarPage() {
                     const shouldShowTitle = isStartOfEvent || isStartOfWeek;
 
                     return (
-                      <div 
-                        key={e.id} 
-                        className={`h-3.5 px-1 text-[8px] font-bold truncate transition-all flex items-center shrink-0
+                      <div
+                        key={e.id}
+                        title={e.title}
+                        className={`calendar-event-slot font-bold transition-colors flex items-center min-w-0
                           ${isEventEnded(e, today) ? 'bg-gray-200 text-gray-600 border-gray-300' : getEventBg(e.color)}
                           ${(isStartOfEvent || isStartOfWeek) ? 'rounded-l-sm border-l-2' : 'rounded-l-none border-l-0'}
                           ${(isEndOfEvent || isEndOfWeek) ? 'rounded-r-sm' : 'rounded-r-none'}
@@ -414,12 +432,12 @@ export default function CalendarPage() {
                           ${!isEndOfEvent && !isEndOfWeek ? '-mr-1.5' : ''}
                         `}
                       >
-                        {shouldShowTitle && e.title}
+                        {shouldShowTitle && <span className="calendar-event-title">{e.title}</span>}
                       </div>
                     )
                   })}
                   {dayEvents.length > 3 && (
-                    <div className="absolute -top-4 right-0 text-[7px] font-bold text-gray-400 bg-white/80 px-1 rounded-full">
+                    <div className="absolute -top-4 right-0 text-xs font-bold text-gray-600 bg-white/80 px-1 rounded-full">
                       +{dayEvents.filter(ev => eventLanes[ev.id] >= 3).length}
                     </div>
                   )}
@@ -435,7 +453,7 @@ export default function CalendarPage() {
       <div className="px-4 py-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <p className="text-xs font-bold text-primary-500 uppercase tracking-[0.2em] mb-0.5">선택한 날짜</p>
+            <p className="text-sm font-bold text-primary-500  mb-0.5">선택한 날짜</p>
             <h3 className="text-lg font-bold text-gray-900">{format(selected, 'M월 d일 (EEEE)', { locale: ko })}</h3>
           </div>
           {isAdmin && (
@@ -447,13 +465,13 @@ export default function CalendarPage() {
 
         <div className="flex flex-col gap-3">
           {selectedEvents.length === 0 ? (
-            <Card className="py-12 flex flex-col items-center justify-center text-gray-400">
+            <Card className="py-12 flex flex-col items-center justify-center text-gray-600">
               <Clock size={32} strokeWidth={1} className="mb-2 opacity-20" />
               <p className="text-sm font-bold">등록된 일정이 없습니다</p>
             </Card>
           ) : (
             selectedEvents.map((e, idx) => (
-              <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+              <ListItemMotion key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} index={idx}>
                 <Card className={`brand-custom-color p-4 border-l-4 overflow-hidden relative ${isEventEnded(e, today) ? 'event-inactive' : getEventBorderColor(e.color)}`}>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant={e.eventType === 'SPECIAL' ? 'info' : e.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
@@ -462,16 +480,16 @@ export default function CalendarPage() {
                     <div className="flex items-center gap-1">
                       {(e.startTime || e.endTime || (e.endDate && e.endDate !== e.eventDate)) && (
                         <div className="flex flex-col items-end gap-0.5 mr-2">
-                          <div className="flex items-center gap-1 text-[0.6875rem] font-bold text-primary-500">
-                            {format(new Date(e.eventDate), 'M/d')} 
+                          <div className="flex items-center gap-1 text-sm font-semibold text-primary-700">
+                            {format(new Date(e.eventDate), 'M/d')}
                             {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M/d')}`}
                           </div>
                           {!e.startTime ? (
-                            <div className="flex items-center gap-1 text-xs font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
+                            <div className="flex items-center gap-1 text-sm font-bold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
                               하루종일
                             </div>
                           ) : (e.startTime || e.endTime) && (
-                            <div className="flex items-center gap-1 text-xs font-bold text-gray-400">
+                            <div className="flex items-center gap-1 text-sm font-bold text-gray-600">
                               <Clock size={12} /> {e.startTime} {e.endTime && `~ ${e.endTime}`}
                             </div>
                           )}
@@ -486,12 +504,12 @@ export default function CalendarPage() {
                     </div>
                   </div>
                   <h4 className="font-bold text-gray-900 text-base mb-1">{e.title}</h4>
-                  {isEventEnded(e, today) ? <p className="mb-2 text-xs font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
-                  {e.description && <p className="text-xs text-gray-500 font-medium leading-relaxed mb-2">{e.description}</p>}
+                  {isEventEnded(e, today) ? <p className="mb-2 text-sm font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
+                  {e.description && <p className="text-sm text-gray-600 font-medium leading-relaxed mb-2">{e.description}</p>}
                   <EventAttendanceStatus event={e} today={today} />
                   <ReportLink contentType="EVENT" targetId={e.id} label="일정 신고" />
                 </Card>
-              </motion.div>
+              </ListItemMotion>
             ))
           )}
         </div>
@@ -512,7 +530,7 @@ export default function CalendarPage() {
             </div>
           )}
           {allEvents.length === 0 ? (
-            <div className="py-20 text-center text-gray-400">
+            <div className="py-20 text-center text-gray-600">
               <CalendarIcon size={40} className="mx-auto mb-3 opacity-20" />
               <p className="text-sm font-bold">등록된 일정이 없습니다</p>
             </div>
@@ -525,14 +543,14 @@ export default function CalendarPage() {
               <div key={key} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-                  <p className="text-xs font-bold text-gray-500">{label}</p>
-                  <span className="text-xs text-gray-400">{list.length}</span>
+                  <p className="text-base font-bold text-gray-900">{label}</p>
+                  <span className="text-sm text-gray-600">{list.length}</span>
                   <div className="flex-1 h-px bg-gray-100" />
                 </div>
                 {list.map(e => (
                   <Card key={e.id} className={`brand-custom-color p-4 border-l-4 ${isEventEnded(e, today) ? 'event-inactive' : getEventBorderColor(e.color)}`}>
-                    <div className="flex justify-between items-start mb-1">
-                      <p className="text-xs font-bold text-gray-400">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-1">
+                      <p className="text-sm font-bold text-gray-600">
                         {format(new Date(e.eventDate), 'M월 d일 (EEE)', { locale: ko })}
                         {e.endDate && e.endDate !== e.eventDate && ` ~ ${format(new Date(e.endDate), 'M월 d일', { locale: ko })}`}
                       </p>
@@ -543,14 +561,14 @@ export default function CalendarPage() {
                         </div>
                       )}
                     </div>
-                    <h4 className="font-bold text-gray-900 text-sm mb-1">{e.title}</h4>
-                    {isEventEnded(e, today) ? <p className="mb-2 text-xs font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
-                    {e.description && <p className="text-xs text-gray-500 leading-relaxed">{e.description}</p>}
+                    <h4 className="font-bold text-gray-900 text-base mb-1">{e.title}</h4>
+                    {isEventEnded(e, today) ? <p className="mb-2 text-sm font-semibold text-gray-600">종료된 일정 · 내용 조회</p> : acknowledge(e)}
+                    {e.description && <p className="text-sm text-gray-600 leading-relaxed">{e.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {!e.startTime ? (
-                        <span className="text-xs font-bold text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
+                        <span className="text-sm font-bold text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-md">하루종일</span>
                       ) : e.startTime && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-gray-400">
+                        <span className="flex items-center gap-1 text-sm font-bold text-gray-600">
                           <Clock size={10} /> {e.startTime}{e.endTime && ` ~ ${e.endTime}`}
                         </span>
                       )}
@@ -569,13 +587,13 @@ export default function CalendarPage() {
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="safe-overlay safe-overlay-spaced fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl overflow-y-auto safe-modal-panel safe-modal-90" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-6">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} role="dialog" aria-label={editingId ? '일정 수정' : '새 일정 등록'} className="ui-dialog-shell bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col safe-modal-panel safe-modal-90" onClick={e => e.stopPropagation()}>
+              <DialogSections><header className="flex justify-between items-center p-4 border-b border-gray-100">
                 <h3 className="text-xl font-bold text-gray-900">{editingId ? '일정 수정' : '새 일정 등록'}</h3>
-                <button onClick={() => setShowForm(false)} className="p-2 bg-gray-50 rounded-full text-gray-400"><X size={20} /></button>
-              </div>
+                <button type="button" aria-label="일정 입력 닫기" disabled={submitting} onClick={() => setShowForm(false)} className="min-h-11 min-w-11 flex items-center justify-center bg-gray-50 rounded-full text-gray-400"><X size={20} /></button>
+              </header>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form id="calendar-event-editor" onSubmit={handleSubmit} className="ui-dialog-body p-4 flex flex-col gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">제목</label>
                   <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
@@ -591,9 +609,9 @@ export default function CalendarPage() {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">구분</label>
-                  <select value={formData.eventType} onChange={e => setFormData({...formData, eventType: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none">
+                  <AppSelect aria-label="구분" value={formData.eventType} onChange={e => setFormData({...formData, eventType: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none appearance-none">
                     {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
+                  </AppSelect>
                 </div>
 
                 {/* 하루종일 토글 */}
@@ -605,7 +623,7 @@ export default function CalendarPage() {
                 >
                   <div>
                     <p className={`text-sm font-bold ${formData.allDay ? 'text-secondary-700' : 'text-gray-500'}`}>하루종일</p>
-                    <p className="text-xs text-gray-400 mt-0.5">시간 없이 종일 일정으로 표시됩니다</p>
+
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${formData.allDay ? 'bg-secondary-700' : 'bg-gray-200'}`}>
                     <motion.div
@@ -618,7 +636,7 @@ export default function CalendarPage() {
 
                 <AnimatePresence initial={false}>
                   {!formData.allDay && (
-                    <motion.div
+                    <CollapsePanel
                       key="time-fields"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -650,7 +668,7 @@ export default function CalendarPage() {
                           <input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold outline-none" />
                         </div>
                       </div>
-                    </motion.div>
+                    </CollapsePanel>
                   )}
                 </AnimatePresence>
                 <div>
@@ -680,7 +698,7 @@ export default function CalendarPage() {
                     <p className={`text-sm font-bold ${formData.attendanceRequired ? 'text-emerald-700' : 'text-gray-500'}`}>
                       출석 체크 활성화
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">출석 체크가 필요한 행사에 활성화하세요</p>
+
                   </div>
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 relative ${
                     formData.attendanceRequired ? 'bg-emerald-500' : 'bg-gray-200'
@@ -691,13 +709,13 @@ export default function CalendarPage() {
                   </div>
                 </button>
 
-                {formData.attendanceRequired && <EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} />}
+                <Collapse open={formData.attendanceRequired}><EventAttendanceFields value={formData} onChange={patch => setFormData(d => ({ ...d, ...patch }))} /></Collapse>
 
-                <div className="flex gap-2 mt-2">
-                  <Button type="submit" loading={submitting} className="flex-1">저장하기</Button>
-                  <Button variant="ghost" onClick={() => setShowForm(false)}>취소</Button>
-                </div>
-              </form>
+                <DialogActions>
+                  <Button type="button" variant="secondary" disabled={submitting} onClick={() => setShowForm(false)}>취소</Button>
+                  <Button type="submit" form="calendar-event-editor" loading={submitting}>저장하기</Button>
+                </DialogActions>
+              </form></DialogSections>
             </motion.div>
           </motion.div>
         )}

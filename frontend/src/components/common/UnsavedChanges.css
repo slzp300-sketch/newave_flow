@@ -1,0 +1,7 @@
+dialog.unsaved-changes-dialog{width:calc(100% - 24px);max-width:26rem;margin:auto;border:1px solid #dce4f0;border-radius:20px;background:white;color:#142b50}
+.unsaved-changes-dialog::backdrop{background:rgb(15 32 61 / .38)}
+.unsaved-changes-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid #e6ebf3}
+.unsaved-changes-dialog h2{font-size:1rem;font-weight:700}
+.unsaved-changes-dialog>.ui-dialog-body{padding:16px}
+.unsaved-changes-dialog .ui-dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.unsaved-changes-dialog .ui-dialog-actions>button{min-height:44px;white-space:normal}

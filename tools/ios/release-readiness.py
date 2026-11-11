@@ -77,7 +77,7 @@ def github_get(endpoint, token):
 
 
 def verify(repository, sha, get, branch="main"):
-    require(branch in ('main', 'codex/ios-review-clarity'), 'Release branch is not explicitly approved')
+    require(branch in ('main', 'codex/ios-review-clarity', 'codex/ios-first-update'), 'Release branch is not explicitly approved')
     require(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*', repository or '') is not None,
             'Invalid GitHub repository')
     require(re.fullmatch(r'[a-f0-9]{40}', sha or '') is not None, 'Invalid release commit')
@@ -103,7 +103,7 @@ def verify(repository, sha, get, branch="main"):
 if __name__ == '__main__':
     try:
         ref = os.environ.get('GITHUB_REF', '')
-        require(ref in ('refs/heads/main', 'refs/heads/codex/ios-review-clarity'), 'Release checks require an approved branch')
+        require(ref in ('refs/heads/main', 'refs/heads/codex/ios-review-clarity', 'refs/heads/codex/ios-first-update'), 'Release checks require an approved branch')
         branch = ref.removeprefix('refs/heads/')
         sha = os.environ.get('RELEASE_SHA', '')
         require(sha == os.environ.get('GITHUB_SHA'), 'Release commit differs from this workflow')

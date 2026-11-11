@@ -22,7 +22,9 @@ public class ReportService {
     private final ClassGroupRepository   classGroupRepository;
     private final UserRepository         userRepository;
     private final StudentRepository      studentRepository;
+    private final TeacherClassRepository teacherClasses;
     private final ClassAccessService classAccessService;
+    private final WeeklyReportSourceService weeklySources;
 
     @Transactional
     public DailyReport saveOrUpdate(ReportRequest request, Long teacherId) {
@@ -65,35 +67,38 @@ public class ReportService {
         classAccessService.requireClass(teacher, report.getClassGroup().getId());
         report.recordEditor(teacher);
         report.submit();
+        weeklySources.capture(report);
         return report;
     }
 
     public ReportSummaryResponse getSummary(LocalDate date) {
         List<DailyReport> allReports = reportRepository.findByDateWithDetails(date);
+        var assigned = teacherClasses.findAllWithTeacherAndClass().stream()
+                .collect(java.util.stream.Collectors.groupingBy(a -> a.getTeacher().getId()));
         
         // N+1 문제 해결: 모든 활성 교사와 그들의 반 배정 정보를 한 번의 쿼리로 가져옵니다.
         List<User> targetTeachers = userRepository.findAllActiveWithClasses().stream()
-                .filter(u -> u.getRole() == User.Role.TEACHER || u.getRole() == User.Role.EXECUTIVE)
+                .filter(User::participatesInTeacherActivities)
+                .filter(t -> !t.isSuspended() && assigned.containsKey(t.getId()))
                 .toList();
 
         java.util.Set<Long> submittedClassIds = allReports.stream()
-                .filter(r -> r.getStatus() == DailyReport.Status.SUBMITTED)
+                .filter(DailyReport::isSubmissionComplete)
                 .map(r -> r.getClassGroup().getId())
                 .collect(java.util.stream.Collectors.toSet());
 
         List<Long> submittedTeacherIds = targetTeachers.stream()
-                .filter(t -> t.getTeacherClasses() != null && !t.getTeacherClasses().isEmpty()
-                    && t.getTeacherClasses().stream().allMatch(tc -> submittedClassIds.contains(tc.getClassGroup().getId())))
+                .filter(t -> assigned.get(t.getId()).stream().allMatch(tc -> submittedClassIds.contains(tc.getClassGroup().getId())))
                 .map(User::getId).toList();
         long submitted = submittedTeacherIds.size();
 
         List<ReportSummaryResponse.NotSubmittedTeacher> notSubmitted = targetTeachers.stream()
                 .filter(u -> !submittedTeacherIds.contains(u.getId()))
                 .map(u -> {
-                    String className = "미배정";
-                    if (u.getTeacherClasses() != null && !u.getTeacherClasses().isEmpty()) {
-                        className = u.getTeacherClasses().get(0).getClassGroup().getName();
-                    }
+                    String className = assigned.get(u.getId()).stream()
+                            .filter(tc -> !submittedClassIds.contains(tc.getClassGroup().getId()))
+                            .map(tc -> tc.getClassGroup().getName()).sorted()
+                            .collect(java.util.stream.Collectors.joining(" / "));
                     return new ReportSummaryResponse.NotSubmittedTeacher(
                             u.getId(),
                             u.getName(),

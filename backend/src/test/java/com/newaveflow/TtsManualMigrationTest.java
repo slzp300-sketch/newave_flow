@@ -30,8 +30,13 @@ class TtsManualMigrationTest {
             s.execute("ROLLBACK");assertEquals(original,EventReadMigrationTest.fingerprints(c));
             s.execute("INSERT INTO tts_item VALUES(4,'교사회의','ATTEND',true,'SAT_MEETING')");
             assertThrows(SQLException.class,()->s.execute(sql));s.execute("ROLLBACK");s.execute("DELETE FROM tts_item WHERE id=4");
-            s.execute("INSERT INTO tts_question_revisions(question_id,effective_from,title,type,active,link_type) VALUES(1,CURRENT_DATE+14,'교사회의','ATTEND',true,'NONE')");
-            assertThrows(SQLException.class,()->s.execute(sql));s.execute("ROLLBACK");s.execute("DELETE FROM tts_question_revisions WHERE effective_from>CURRENT_DATE");
+            long futureRevision;
+            try(var row=s.executeQuery("INSERT INTO tts_question_revisions(question_id,effective_from,title,type,active,link_type) VALUES(1,CURRENT_DATE+14,'교사회의','ATTEND',true,'NONE') RETURNING id")) {
+                assertTrue(row.next()); futureRevision=row.getLong(1);
+            }
+            assertThrows(SQLException.class,()->s.execute(sql));s.execute("ROLLBACK");
+            // Remove only the injected row; UTC CURRENT_DATE can lag the current Korean Sunday.
+            s.execute("DELETE FROM tts_question_revisions WHERE id="+futureRevision);
             s.execute("UPDATE tts_item SET link_type='NONE' WHERE id=2");
             assertThrows(SQLException.class,()->s.execute(sql));s.execute("ROLLBACK");s.execute("UPDATE tts_item SET link_type='PRAYER_MEETING' WHERE id=2");
             assertEquals(original,EventReadMigrationTest.fingerprints(c));

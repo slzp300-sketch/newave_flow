@@ -3,8 +3,15 @@ import { eventAttendanceState, eventAttendanceLabels, eventAttendanceDeadline, e
 export default function EventAttendanceStatus({ event, today }) {
   if (!event?.attendanceRequired) return null
   const state = eventAttendanceState(event, today)
-  return <div className={`mt-2 space-y-1 text-xs ${state === 'open' ? 'text-primary-700' : 'text-gray-600'}`}>
-    <p className="font-semibold">{eventAttendanceLabels[state]} · {eventAttendanceTarget(event)}</p>
-    <p>접수 {event.attendanceStartDate || '시작일 제한 없음'} ~ {eventAttendanceDeadline(event)}까지</p>
+  const targets = eventAttendanceTarget(event).split(' + ')
+  return <div className={`mt-2 space-y-1 text-sm leading-relaxed ${state === 'open' ? 'text-primary-800' : 'text-gray-700'}`}>
+    <p className="flex flex-wrap gap-x-1 gap-y-0.5 font-semibold">
+      <span className="whitespace-nowrap">{eventAttendanceLabels[state]} ·</span>
+      {targets.map((target, index) => <span key={target} className="inline-block whitespace-nowrap">{index > 0 ? '+ ' : ''}{target}</span>)}
+    </p>
+    <p className="flex flex-wrap gap-x-1 gap-y-0.5" style={{ fontSize: 'clamp(12px,.875rem,14px)' }}>
+      <span>접수</span><span className="inline-block whitespace-nowrap">{event.attendanceStartDate || '시작일 제한 없음'}</span>
+      <span className="inline-block whitespace-nowrap">~ {eventAttendanceDeadline(event)}까지</span>
+    </p>
   </div>
 }

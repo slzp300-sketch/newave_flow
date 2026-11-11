@@ -9,6 +9,32 @@
   --newave-canvas: theme('colors.gray.50');
 }
 @layer components {
+  .ui-disclosure-trigger { @apply flex min-h-11 w-full min-w-0 cursor-pointer items-center justify-between gap-3 rounded-xl border border-primary-200 px-3 py-3 text-left text-sm font-semibold leading-relaxed; list-style: none; }
+  .ui-disclosure-trigger::-webkit-details-marker { display:none; }
+  .ui-disclosure-trigger::marker { content:''; }
+  .ui-disclosure-label { @apply min-w-0 flex-1; overflow-wrap:anywhere; }
+  .ui-disclosure-chevron { @apply shrink-0; transition:transform .2s ease; }
+  details[open] > .ui-disclosure-trigger > .ui-disclosure-chevron,
+  .ui-disclosure-trigger[aria-expanded='true'] > .ui-disclosure-chevron { transform:rotate(180deg); }
+  details[open] > .ui-disclosure-trigger { @apply mb-3; }
+  @media (prefers-reduced-motion: reduce) { .ui-disclosure-chevron { transition:none; } }
+  /* Compact workflow screens share the app's cards, type and status palette. */
+  .ui-metrics { @apply grid overflow-hidden rounded-2xl border border-gray-200 bg-white; }
+  .ui-metrics-auto { grid-template-columns: repeat(var(--metric-columns), minmax(0, 1fr)); }
+  .ui-metrics > div { @apply flex min-w-0 flex-col gap-0.5 px-2.5 py-2; }
+  .ui-metrics dt { @apply text-xs font-medium leading-normal text-gray-500; overflow-wrap: anywhere; }
+  .ui-metrics :where(dd) { @apply text-base font-bold leading-normal text-gray-900; font-variant-numeric: tabular-nums; }
+  .ui-metrics dd small { @apply ml-0.5 text-xs font-normal text-gray-500; }
+  .ui-metrics > div + div { @apply border-l border-gray-100; }
+  .ui-stat-panel { @apply rounded-2xl border border-gray-200 bg-white px-2.5 py-2; }
+  .ui-stat-heading { @apply flex flex-wrap items-baseline gap-x-2 gap-y-1; }
+  .ui-stat-heading h2, .ui-stat-heading h3 { @apply text-sm font-semibold; }
+  .ui-stat-value { @apply text-xl font-bold leading-tight; font-variant-numeric: tabular-nums; }
+  .ui-stat-note { @apply text-xs leading-normal text-gray-500; }
+  @media (max-width: 359px) {
+    html.large-font .ui-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    html.large-font .ui-metrics > div { border-left: 0; }
+  }
   .ui-segments { @apply flex gap-1 rounded-2xl bg-primary-50 p-1; }
   .ui-search { @apply flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-3 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-100; }
   .ui-search input::-webkit-search-cancel-button { display: none; }
@@ -47,9 +73,12 @@
   .login-hero .newave-brand > span { font-weight: 500; }
   .tts-days { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
   .tts-day { min-width: 0; min-height: 44px; border-radius: 9px; }
-  .attendance-person { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .attendance-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .attendance-actions button { min-width: 52px; min-height: 44px; border-radius: 10px; font-size: .8125rem; font-weight: 600; }
+  @media (min-width: 351px) and (max-width: 380px) {
+    .tts-days { gap: 3px; }
+  }
+  .attendance-person { display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
+  .attendance-actions { display: flex; gap: 8px; width: 100%; }
+  .attendance-actions button { flex: 1; min-width: 0; min-height: 48px; border-radius: 12px; font-size: 1rem; font-weight: 700; }
   .attendance-submit { @apply fixed left-1/2 -translate-x-1/2 w-full max-w-mobile bg-white border-t border-gray-200 px-4 py-3 z-30; bottom: calc(68px + env(safe-area-inset-bottom)); }
   @media (max-width: 350px) {
     .tts-days { grid-template-columns: repeat(3, minmax(0, 1fr)); }
