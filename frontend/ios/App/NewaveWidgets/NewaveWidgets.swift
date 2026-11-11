@@ -209,6 +209,8 @@ struct NewaveWidgetView: View {
 @available(iOS 17.0, *)
 struct NewaveConfiguredWidget: Widget {
     let variant: WidgetVariant
+    init() { variant = .combined }
+    init(variant: WidgetVariant) { self.variant = variant }
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: variant.kind, provider: NewaveProvider()) { entry in NewaveWidgetView(entry: entry, variant: variant) }
             .contentMarginsDisabled() // Explicit 12pt insets keep six-row months within small-phone large widgets.
