@@ -1,3 +1,5 @@
+import ListItemMotion from '../components/common/ListItemMotion'
+import SaveErrorNotice from '../components/common/SaveErrorNotice'
 import GradeLabel from '../components/common/GradeLabel'
 import './SupportingReadability.css'
 import AttendanceChoice from '../components/common/AttendanceChoice'
@@ -5,6 +7,7 @@ import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
 import EventAttendanceStatus from '../components/calendar/EventAttendanceStatus'
 import { useId, useState } from 'react'
+import { useUnsavedChanges } from '../components/common/UnsavedChanges'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -69,9 +72,10 @@ function TeacherSelfCheck({ event, userId }) {
       await confirmAttendance(qc, queryKey, record)
       draft.reset(key)
     },
-    onError: (err) => alert(err.response?.data?.message || err.message || '출석을 저장하지 못했어요. 다시 시도해 주세요.'),
+
   })
 
+  useUnsavedChanges({ busy: saveMutation.isPending })
   const canSubmit = !isUnavailable && pending &&
     (pending !== 'PARTIAL' || partialFromDate) &&
     (pending !== 'ABSENT'  || absenceReason.trim() !== '')
@@ -81,7 +85,7 @@ function TeacherSelfCheck({ event, userId }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <QueryRefreshNotice queries={[attendanceQuery]} label="교사 출석 기록" />
+      <QueryRefreshNotice queries={[attendanceQuery]} label="교사 출석 기록" /><SaveErrorNotice error={saveMutation.error} preserved/>
       <fieldset disabled={!ready || saveMutation.isPending} className="min-w-0 flex flex-col gap-3">
       <p className="ui-section-title px-1">내 출석 체크</p>
 
@@ -212,9 +216,10 @@ function StudentAttendanceCheck({ event, userId }) {
       await confirmAttendance(qc, queryKey, records)
       draft.reset(key)
     },
-    onError: (err) => alert('제출 중 오류: ' + (err.response?.data?.message || err.message)),
+
   })
 
+  useUnsavedChanges({ busy: saveMutation.isPending })
   const setStatus = (sid, status) => setStatusMap(p => ({ ...p, [sid]: status }))
 
   const handleSubmit = () => {
@@ -242,7 +247,7 @@ function StudentAttendanceCheck({ event, userId }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <QueryRefreshNotice queries={[studentsQuery]} label="학생 출석 기록" />
+      <QueryRefreshNotice queries={[studentsQuery]} label="학생 출석 기록" /><SaveErrorNotice error={saveMutation.error} preserved/>
       <fieldset disabled={!ready || saveMutation.isPending} className="min-w-0 flex flex-col gap-3">
       <p className="ui-section-title px-1">우리 반 학생 출석</p>
 
@@ -280,7 +285,7 @@ function StudentAttendanceCheck({ event, userId }) {
             const sid    = student.studentId
             const status = statusMap[sid]
             return (
-              <motion.div key={sid} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} transition={{ delay: idx * 0.03 }}
+              <ListItemMotion key={sid} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} index={idx}
                 className="flex flex-col gap-1.5"
               >
                 {/* 학생 카드 */}
@@ -345,7 +350,7 @@ function StudentAttendanceCheck({ event, userId }) {
                       }`} />
                   </CollapsePanel>
                 )}
-              </motion.div>
+              </ListItemMotion>
             )
           })}
         </div>
@@ -472,7 +477,8 @@ export default function EventAttendanceListPage() {
   ]
   const events = groups.flatMap(group => rawEvents.filter(e => eventAttendanceState(e, today) === group.state))
 
-  const handleSelect = (id) => setSelectedId(prev => prev === id ? null : id)
+  const confirmMove = useUnsavedChanges()
+  const handleSelect = (id) => confirmMove(() => setSelectedId(prev => prev === id ? null : id))
 
   return (
     <div className="supporting-readable readable-content flex flex-col min-h-screen pb-10">
@@ -494,11 +500,11 @@ export default function EventAttendanceListPage() {
           events.map((event, idx) => {
             const isOpen = selectedId === event.id
             return (
-              <motion.div
+              <ListItemMotion
                 key={event.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.06 }}
+                index={idx}
                 className={`brand-card rounded-3xl border shadow-sm overflow-hidden ${isEventAttendanceInactive(event, today) ? 'event-inactive' : 'bg-white border-gray-100'}`}
               >
                 {(idx === 0 || eventAttendanceState(events[idx - 1], today) !== eventAttendanceState(event, today)) && <p className="border-b border-gray-200 px-4 py-3 text-sm font-semibold">{groups.find(g => g.state === eventAttendanceState(event, today))?.label}</p>}
@@ -526,7 +532,7 @@ export default function EventAttendanceListPage() {
                     </CollapsePanel>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </ListItemMotion>
             )
           })
         )}

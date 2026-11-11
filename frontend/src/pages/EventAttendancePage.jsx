@@ -1,4 +1,7 @@
+import ListItemMotion from '../components/common/ListItemMotion'
+import SaveErrorNotice from '../components/common/SaveErrorNotice'
 import GradeLabel from '../components/common/GradeLabel'
+import { useUnsavedChanges } from '../components/common/UnsavedChanges'
 import AttendanceChoice from '../components/common/AttendanceChoice'
 import { CollapsePanel } from '../components/common/Motion'
 import useToday from '../hooks/useToday'
@@ -76,10 +79,7 @@ export default function EventAttendancePage() {
       await confirmAttendance(queryClient, queryKey, records)
       studentDraft.reset(key)
     },
-    onError: (err) => {
-      console.error(err)
-      alert('제출 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message))
-    }
+
   })
 
   const teacherDraft = useTeacherAttendanceDraft(`${eventId}:${user?.id}:teacher`, myTeacherAttendance)
@@ -102,11 +102,10 @@ export default function EventAttendancePage() {
       await confirmAttendance(queryClient, queryKey, record)
       teacherDraft.reset(key)
     },
-    onError: (err) => {
-      alert(err.response?.data?.message || err.message || '제출 중 오류가 발생했습니다.')
-    },
+
   })
 
+  useUnsavedChanges({ busy: saveMutation.isPending || teacherAttendanceMutation.isPending })
   const teacherCanSubmit = pendingTeacherStatus &&
     (pendingTeacherStatus !== 'PARTIAL' || partialFromDate) &&
     (pendingTeacherStatus !== 'ABSENT' || teacherAbsenceReason.trim() !== '')
@@ -169,7 +168,7 @@ export default function EventAttendancePage() {
         </div>
       )}
 
-      <div className="px-4"><QueryRefreshNotice queries={reads} label="행사 참석 기록" /></div>
+      <div className="px-4 space-y-2"><QueryRefreshNotice queries={reads} label="행사 참석 기록" /><SaveErrorNotice error={saveMutation.error} preserved/><SaveErrorNotice error={teacherAttendanceMutation.error} preserved/></div>
       <fieldset disabled={!ready || isUnavailable || saveMutation.isPending || teacherAttendanceMutation.isPending} className="min-w-0 px-4 py-5 flex flex-col gap-4">
 
         {/* 교사 본인 참석 체크 */}
@@ -328,11 +327,11 @@ export default function EventAttendancePage() {
               {students.map((student, idx) => {
                 const status = statusMap[student.studentId]
                 return (
-                  <motion.div
+                  <ListItemMotion
                     key={student.studentId}
                     initial={{ opacity: 0, x: -12 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.04 }}
+                    index={idx}
                     className="flex flex-col gap-2"
                   >
                     {/* 학생 카드 + 상태 버튼 */}
@@ -458,7 +457,7 @@ export default function EventAttendancePage() {
                       )}
                     </AnimatePresence>
 
-                  </motion.div>
+                  </ListItemMotion>
                 )
               })}
             </div>

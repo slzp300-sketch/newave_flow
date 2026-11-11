@@ -1,3 +1,9 @@
+import QueryNotice from '../components/common/QueryNotice'
+import SaveErrorNotice from '../components/common/SaveErrorNotice'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import {hasQueryData,queryReadState} from '../utils/queryReadState'
+import {requestErrorMessage} from '../utils/requestFeedback'
+import { useUnsavedChanges, useFormChanges } from '../components/common/UnsavedChanges'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {useNavigate,useSearchParams,Link} from 'react-router-dom'
 import {useQuery,useMutation,useQueryClient} from '@tanstack/react-query'
@@ -40,24 +46,26 @@ export default function WorshipPage(){
  const [conflict,setConflict]=useState(false)
  const serial=useRef(0),busyRef=useRef(false)
  const query=useQuery({queryKey:['worship',user?.id,date],queryFn:()=>api.state(date),enabled:!!user,refetchInterval:20000})
- const data=query.isError?null:query.data
+ const data=hasQueryData([query])?query.data:null
  const mutation=useMutation({mutationFn:action=>action()})
  const busy=mutation.isPending||exporting||saving
+ const {confirm:confirmMove}=useFormChanges(draft,{enabled:!!draft,resetKey:dialog,busy})
  const notify=text=>setNotice({id:++serial.current,text})
  const closeNotice=useCallback(()=>setNotice(null),[])
- const go=(next,day=date)=>{if(busyRef.current)return;setDialog(null);setDraft(null);setError('');setParams({page:next,date:day})}
+ const go=(next,day=date)=>confirmMove(()=>{if(busyRef.current)return;setDialog(null);setDraft(null);setError('');setParams({page:next,date:day})})
  const run=async(action,success,close=false)=>{
-  if(busyRef.current||query.isError)return false
+  if(busyRef.current)return false
+  if(queryReadState([query])!=='ready'){setError('최신 자료를 확인한 뒤 저장해 주세요.');return false;}
   busyRef.current=true;setSaving(true);setError('');setConflict(false)
   try{const result=await mutation.mutateAsync(action);qc.setQueryData(['worship',user?.id,date],result);await qc.invalidateQueries({queryKey:['officer-access']});if(close){setDialog(null);setDraft(null)}notify(success);return true}
-  catch(e){setError(message(e));setConflict(e?.response?.status===409);return false}
+  catch(e){setError(requestErrorMessage(e));setConflict(e?.response?.status===409);return false}
   finally{busyRef.current=false;setSaving(false)}
  }
  useEffect(()=>{window.scrollTo(0,0)},[page,date])
  const openCommittee=()=>{setError('');setConflict(false);setDraft(committeeDraft(data));setDialog({type:'committee'})}
  const openTeam=()=>{setError('');setConflict(false);setDraft(teamDraft(data));setDialog({type:'team'})}
  const openAssign=t=>{setError('');setConflict(false);setDraft({revision:t.revision,userId:t.assignee?.id??null});setDialog({type:'assign',task:t})}
- const close=()=>{if(!busy){setDialog(null);setDraft(null);setError('')}}
+ const close=()=>confirmMove(()=>{if(!busy){setDialog(null);setDraft(null);setError('')}})
  const reloadDraft=async()=>{
   if(busyRef.current)return false
   busyRef.current=true;setSaving(true)
@@ -66,7 +74,7 @@ export default function WorshipPage(){
    if(dialog.type==='committee')setDraft(committeeDraft(latest))
    else if(dialog.type==='team')setDraft(teamDraft(latest))
    else{const task=latest.tasks.find(t=>t.key===dialog.task.key);setDraft({revision:task.revision,userId:task.assignee?.id??null})}
-   setError('');setConflict(false);return true
+   setDialog(current=>({...current}));setError('');setConflict(false);return true
   }catch(e){setError(message(e));return false}
   finally{busyRef.current=false;setSaving(false)}
  }
@@ -96,8 +104,8 @@ export default function WorshipPage(){
     <button className="icon-button" aria-label="다음 주" disabled={busy||!isWorshipDate(shiftWorshipDate(date,1))} onClick={()=>go(page,shiftWorshipDate(date,1))}><ChevronRight size={20}/></button>
    </div>
    {date!==currentWorshipDate()&&<button className="wo-current" disabled={busy} onClick={()=>go(page,currentWorshipDate())}>이번 주로</button>}
-   {query.isPending&&<p className="wo-empty" role="status">불러오는 중…</p>}
-   {((error&&!dialog)||query.isError)&&<div className="wo-error" role="alert">{error||message(query.error)}<Button size="sm" variant="secondary" onClick={async()=>{await query.refetch();setDialog(null);setDraft(null);setError('')}}>최신 내용 확인</Button></div>}
+   {hasQueryData([query])?<QueryRefreshNotice queries={[query]} label="예배운영 자료"/>:<QueryNotice queries={[query]} label="예배운영 자료"/>}
+   {error&&!dialog&&<SaveErrorNotice error={error}><Button size="sm" variant="secondary" onClick={()=>confirmMove(async()=>{await query.refetch();setDialog(null);setDraft(null);setError('')})}>최신 내용 확인</Button></SaveErrorNotice>}
    {data&&!data.canWork&&<p className="wo-readonly">열람 중</p>}
    {data&&page==='home'&&<>
     <section className="wo-card"><div className="wo-section-head"><h2><Church size={18}/>이번 주 예배위원</h2><button className="wo-text-button" onClick={()=>go('notice')}>공지 보기<ChevronRight size={15}/></button></div><Committee data={data}/></section>
@@ -135,9 +143,9 @@ export default function WorshipPage(){
    </>}
   </MotionPage>
   <AnimatePresence>{dialog?.type==='week'&&<MotionDialog className="wo-dialog" title="주일 선택" onClose={close}><WeekPicker date={date} onChoose={d=>go(page,d)}/></MotionDialog>}
-   {data&&dialog?.type==='committee'&&<WorshipEditor title="예배위원 수정" onClose={close} busy={busy} error={error} canSave={data.canLead} onReload={conflict?reloadDraft:undefined} onSave={()=>run(()=>api.committee(date,draft),'예배위원을 저장했습니다.',true)}><CommitteeForm draft={draft} setDraft={setDraft} data={data}/></WorshipEditor>}
-   {data&&dialog?.type==='team'&&<WorshipEditor title="팀원 지정" onClose={close} busy={busy} error={error} canSave={data.canLead} onReload={conflict?reloadDraft:undefined} onSave={()=>run(()=>api.team(date,draft),'팀원을 저장했습니다.',true)}><PeoplePicker label="예배운영팀 교사" people={data.candidates.filter(p=>!data.team.some(t=>t.id===p.id&&t.label==='팀장'))} selected={draft.userIds} onChange={userIds=>setDraft(d=>({...d,userIds}))}/></WorshipEditor>}
-   {data&&dialog?.type==='assign'&&<WorshipEditor title="준비 담당 지정" onClose={close} busy={busy} error={error} canSave={data.canLead} onReload={conflict?reloadDraft:undefined} onSave={()=>run(()=>api.task(date,dialog.task.key,'assignee',draft),'담당자를 저장했습니다.',true)}><p className="wo-dialog-label">{dialog.task.label}</p><PersonSelect label="담당 교사" people={data.team} value={draft.userId} empty="팀원 공동" onChange={userId=>setDraft(d=>({...d,userId}))}/></WorshipEditor>}
+   {data&&dialog?.type==='committee'&&<WorshipEditor title="예배위원 수정" onClose={close} busy={busy} error={error} canSave={data.canLead} onReload={conflict?()=>confirmMove(reloadDraft):undefined} onSave={()=>run(()=>api.committee(date,draft),'예배위원을 저장했습니다.',true)}><CommitteeForm draft={draft} setDraft={setDraft} data={data}/></WorshipEditor>}
+   {data&&dialog?.type==='team'&&<WorshipEditor title="팀원 지정" onClose={close} busy={busy} error={error} canSave={data.canLead} onReload={conflict?()=>confirmMove(reloadDraft):undefined} onSave={()=>run(()=>api.team(date,draft),'팀원을 저장했습니다.',true)}><PeoplePicker label="예배운영팀 교사" people={data.candidates.filter(p=>!data.team.some(t=>t.id===p.id&&t.label==='팀장'))} selected={draft.userIds} onChange={userIds=>setDraft(d=>({...d,userIds}))}/></WorshipEditor>}
+   {data&&dialog?.type==='assign'&&<WorshipEditor title="준비 담당 지정" onClose={close} busy={busy} error={error} canSave={data.canLead} onReload={conflict?()=>confirmMove(reloadDraft):undefined} onSave={()=>run(()=>api.task(date,dialog.task.key,'assignee',draft),'담당자를 저장했습니다.',true)}><p className="wo-dialog-label">{dialog.task.label}</p><PersonSelect label="담당 교사" people={data.team} value={draft.userId} empty="팀원 공동" onChange={userId=>setDraft(d=>({...d,userId}))}/></WorshipEditor>}
   </AnimatePresence>
   <FeedbackToast className="wo-feedback" notice={notice} onClose={closeNotice}/>
  </>

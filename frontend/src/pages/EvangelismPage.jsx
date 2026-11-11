@@ -1,3 +1,4 @@
+import ListItemMotion from '../components/common/ListItemMotion'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -155,10 +156,10 @@ function ScheduleCard({ schedule, index, myGroupId, allGroups, past = false }) {
   const groupName = schedule.assignments?.[0]?.groupName
 
   return (
-    <motion.div
+    <ListItemMotion
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.04 }}
+      index={index}
     >
       <Card className={`flex flex-col gap-3 py-4 px-5 ${isMyGroup && !past ? `border-l-4 ${c.border}` : ''}`}>
         <div className="flex-1 min-w-0 w-full">
@@ -178,7 +179,7 @@ function ScheduleCard({ schedule, index, myGroupId, allGroups, past = false }) {
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm"><span className="text-gray-600">진행 상태</span><StatusBadge status={schedule.status} /></div>
       </Card>
-    </motion.div>
+    </ListItemMotion>
   )
 }
 

@@ -1,4 +1,8 @@
+import {requestErrorMessage} from '../utils/requestFeedback'
+import SaveErrorNotice from '../components/common/SaveErrorNotice'
 import AppSelect from '../components/common/AppSelect'
+import { useUnsavedChanges } from '../components/common/UnsavedChanges'
+import { formSnapshot } from '../utils/unsavedChanges'
 import GradeLabel from '../components/common/GradeLabel'
 import { useState, useMemo, useId } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -105,7 +109,7 @@ export default function AttendancePage() {
     if (!ready || isSubmitted || isSubmitting) return
     setDraft(prev => {
       const values = prev?.key === formKey ? prev.values : savedForm
-      return { key: formKey, values: { ...values,
+      return { key: formKey, baseline: prev?.key === formKey ? prev.baseline : formSnapshot(savedForm), values: { ...values,
         [id]: { ...(values[id] || { status: 'PRESENT', absentReason: '', note: '' }), ...fields },
       } }
     })
@@ -143,21 +147,23 @@ export default function AttendancePage() {
       setSubmitError('')
       void qc.invalidateQueries({ queryKey: ['weekly-status'] })
     },
-    onError: (err) => setSubmitError(err.response?.data?.message || err.message || '저장 중 오류가 발생했습니다.'),
+    onError: (err) => setSubmitError(requestErrorMessage(err)),
   })
 
+  const confirmMove = useUnsavedChanges({ dirty: (draft?.key === formKey && formSnapshot(draft.values) !== draft.baseline)
+    || (supplementDraft?.key === formKey && formSnapshot(supplementDraft.value) !== supplementDraft.baseline), busy: isSubmitting })
   const weekNav = (
     <>
     <WeekNavigator
       offset={offset}
-      onChange={value => { setDraft(null); setSupplementDraft(null); setEditingKey(null); setSearch(''); setSubmitError(''); setOffset(value) }}
+      onChange={value => confirmMove(() => { setDraft(null); setSupplementDraft(null); setEditingKey(null); setSearch(''); setSubmitError(''); setOffset(value) })}
       disabled={isSubmitting}
       title={`${labels.monthWeek} 출석`}
       sub={reportWeekLabel(today)}
       range={`${formatShort(today)} 주일`}
     />
     {['TEACHER', 'EXECUTIVE', 'ADMIN'].includes(user?.role) && <TeacherSundayCheck key={`${user?.id}:${today}`} date={today} />}
-    {classes.length > 1 && <label className="teacher-class-picker">담당 반 전환<AppSelect aria-label="출석 입력할 반" aria-describedby="assigned-class-help" value={classId} disabled={isSubmitting} onChange={e => { setSelectedClassId(Number(e.target.value)); setDraft(null); setSupplementDraft(null); setEditingKey(null); setSearch(''); setSubmitError('') }}>{classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</AppSelect><span id="assigned-class-help">담당 반 {classes.length}개</span></label>}
+    {classes.length > 1 && <label className="teacher-class-picker">담당 반 전환<AppSelect aria-label="출석 입력할 반" aria-describedby="assigned-class-help" value={classId} disabled={isSubmitting} onChange={e => { const next = Number(e.target.value); confirmMove(() => { setSelectedClassId(next); setDraft(null); setSupplementDraft(null); setEditingKey(null); setSearch(''); setSubmitError('') }) }}>{classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</AppSelect><span id="assigned-class-help">담당 반 {classes.length}개</span></label>}
     </>
   )
   const lastUpdated = reportStatus?.updatedAt || reportStatus?.submittedAt
@@ -250,8 +256,8 @@ export default function AttendancePage() {
         {!students.some(student => student.name.includes(search.trim())) && <p className="rounded-2xl bg-white p-5 text-center text-sm text-gray-600">{students.length ? '검색 결과가 없습니다.' : '등록된 학생이 없습니다.'}</p>}
       </fieldset>
 
-      {supplement && <div className="px-3 pb-3"><TeacherReportExtras key={formKey} editor={supplementQuery.data} value={supplement} onChange={value => setSupplementDraft({ key: formKey, value })} disabled={!ready || isSubmitting} /></div>}
-      {submitError && <p className="mx-3 text-sm text-red-700" role="alert">{submitError}</p>}
+      {supplement && <div className="px-3 pb-3"><TeacherReportExtras key={formKey} editor={supplementQuery.data} value={supplement} onChange={value => setSupplementDraft(previous => ({ key: formKey, value, baseline: previous?.key === formKey ? previous.baseline : formSnapshot(supplement) }))} disabled={!ready || isSubmitting} /></div>}
+      <div className="mx-3"><SaveErrorNotice error={submitError} preserved/></div>
 
       {/* 하단 플로팅 버튼 */}
       <div className="attendance-submit">

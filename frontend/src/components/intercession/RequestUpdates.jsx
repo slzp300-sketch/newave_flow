@@ -1,3 +1,4 @@
+import {useFormChanges} from '../common/UnsavedChanges'
 import {useState} from 'react'
 import {PencilLine,History,Globe} from 'lucide-react'
 import PrayerDisclosure from './PrayerDisclosure'
@@ -7,6 +8,7 @@ import {FormField,isShared} from './RequestForms'
 const stamp=value=>value?.replace('T',' ').slice(0,16)||''
 export function OwnerUpdateForm({request:r,busy,onSave}){
  const [title,setTitle]=useState(r.pendingUpdate?.title||r.title),[body,setBody]=useState(r.pendingUpdate?.body||r.body),[note,setNote]=useState(r.pendingUpdate?.note||'')
+ useFormChanges({title,body,note},{busy})
  const changed=title.trim()!==r.title||body.trim()!==r.body||!!note.trim()
  return <PrayerDisclosure title="내용 수정·근황 전달" icon={PencilLine} disabled={busy}><form onSubmit={e=>{e.preventDefault();if(changed)onSave({revision:r.revision,title,body,note})}}>
   <fieldset className="it-stack" disabled={busy}>
@@ -23,6 +25,7 @@ export function UpdateReviewForm({request:r,busy,onSave}){
  const update=r.pendingUpdate,shared=isShared(r)
  const [title,setTitle]=useState(update.title===r.title&&r.publicTitle?r.publicTitle:update.title)
  const [body,setBody]=useState((update.body===r.body&&r.publicText?r.publicText:update.body)+(update.note?'\n\n근황\n'+update.note:''))
+ useFormChanges({title,body},{busy})
  const save=updatePublic=>onSave({revision:r.revision,updatePublic,publicTitle:title,publicText:body})
  return <section className="it-card it-stack it-update-notice">
   <div className="it-row"><h2>수정 내용·근황</h2><span className="it-new-badge">확인 대기</span></div>

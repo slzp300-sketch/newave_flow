@@ -1,3 +1,9 @@
+import QueryNotice from '../components/common/QueryNotice'
+import SaveErrorNotice from '../components/common/SaveErrorNotice'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import {hasQueryData,queryReadState} from '../utils/queryReadState'
+import {requestErrorMessage} from '../utils/requestFeedback'
+import { useUnsavedChanges, useFormChanges, useAfterSave } from '../components/common/UnsavedChanges'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {Link,useSearchParams} from 'react-router-dom'
 import {useQuery,useQueryClient} from '@tanstack/react-query'
@@ -10,7 +16,6 @@ import RosterDirectory from '../components/praise/RosterDirectory'
 import Editor from '../components/praise/PraiseEditor'
 import {featureTone} from '../utils/featureAppearance'
 import {praiseApi,savePraisePdf} from '../api/praise'
-import {reportError} from '../api/weeklyReports'
 import useAuthStore from '../store/authStore'
 import {parts,today,shortDate,addDays,nextMonth,monthOfWeek,termMonths,saturdays,timeLabel,unavailable,needsReview,myWeek} from '../utils/praise'
 import '../pages/OfficerPage.css'
@@ -32,14 +37,15 @@ export default function PraisePage(){
  useEffect(()=>()=>{if(pdf?.imageUrl)URL.revokeObjectURL(pdf.imageUrl)},[pdf?.imageUrl])
  useEffect(()=>{setEditor(null);setPdf(null);setError('');heading.current?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'})},[page,weekId,termId])
  const link=(next,week=null,month=params.get('month'))=>{const p=new URLSearchParams({page:next});if(data?.term?.id)p.set('term',data.term.id);if(week)p.set('week',week);if(month)p.set('month',month);return `/praise?${p}`}
- const run=async(work,message)=>{if(busy)return false;setBusy(true);setError('');try{const result=await work();if(result?.term){qc.setQueryData(key,result);qc.setQueryData(['praise',user?.id,result.term.id],result);if(!data?.term||result.term.id!==data.term.id)setParams({page,term:result.term.id});void qc.invalidateQueries({queryKey:['officer-access']})}setEditor(null);if(message)toast(message);return true}catch(e){setError(await reportError(e));return false}finally{setBusy(false)}}
+ const afterSave=useAfterSave()
+ const run=async(work,message)=>{if(busy)return false;if(message&&queryReadState([query])!=='ready'){setError('최신 자료를 확인한 뒤 저장해 주세요.');return false;}setBusy(true);setError('');try{const result=await work();if(result?.term){qc.setQueryData(key,result);qc.setQueryData(['praise',user?.id,result.term.id],result);if(!data?.term||result.term.id!==data.term.id)afterSave(()=>setParams({page,term:result.term.id}));void qc.invalidateQueries({queryKey:['officer-access']})}setEditor(null);if(message)toast(message);return true}catch(e){setError(requestErrorMessage(e,message?'save':'load'));return false}finally{setBusy(false)}}
  const save=(path,body,message)=>run(()=>praiseApi.save(data.term.id,path,{revision:data.term.revision,...body}),message)
- const refresh=async()=>{if(busy)return;setEditor(null);await query.refetch();setRefreshVersion(n=>n+1);setError('')}
+ const confirmMove=useUnsavedChanges({busy})
+ const refresh=()=>confirmMove(async()=>{if(busy)return;try{await query.refetch({throwOnError:true});setEditor(null);setRefreshVersion(n=>n+1);setError('')}catch(e){setError(requestErrorMessage(e,'load'))}})
  const openPdf=async(w,item=w.pdfs[0])=>{if(!item)return;await run(async()=>{const [blob,image]=await Promise.all([praiseApi.pdf(item.id),praiseApi.page(item.id,0)]);setPdf({blob,imageUrl:URL.createObjectURL(image),week:w,version:item.version,id:item.id,page:0,pages:item.pages})})}
  const turnPdf=index=>run(async()=>{const image=await praiseApi.page(pdf.id,index);setPdf(p=>({...p,page:index,imageUrl:URL.createObjectURL(image)}))})
  const download=async()=>{const saved=await savePraisePdf(pdf.blob,pdf.week.worshipDate,pdf.version);if(saved)toast('콘티 파일을 준비했습니다.');return saved}
- if(query.isPending)return <div className="pt-body" role="status">찬양팀을 불러오는 중…</div>
- if(query.isError)return <div className="pt-body"><p role="alert">{query.error.response?.data?.message||'찬양팀을 불러오지 못했습니다.'}</p><Button onClick={()=>query.refetch()}>다시 확인</Button></div>
+ if(!hasQueryData([query]))return <div className="pt-body"><QueryNotice queries={[query]} label="찬양팀 자료"/></div>
  const manager=data.canManage,roster=data.members.filter(m=>m.active),name=ids=>ids?.map(id=>data.members.find(m=>m.id===id)?.name||'삭제된 팀원').join(', ')||'—'
  const months=data.term?termMonths(data.term):[],month=months.includes(params.get('month'))?params.get('month'):months.includes(today().slice(0,7))?today().slice(0,7):months[0]
  const monthWeeks=data.weeks.filter(w=>monthOfWeek(w)===month),active=data.weeks.find(w=>w.id===weekId),current=myWeek(data.weeks)
@@ -47,8 +53,8 @@ export default function PraisePage(){
  const mine=roster.find(m=>m.userId===data.me),ownParts=w=>parts.filter(p=>w.slots[p]?.includes(mine?.id))
  const pdfSection=w=><section className="pt-card"><div className="pt-row"><h2><FileText size={17}/>콘티 PDF</h2><span className="pt-badge">{w.pdfs.length?`v${w.pdfs[0].version} · 공유됨`:'공유 대기'}</span></div><p className="pt-meta">{data.members.find(m=>m.id===w.slots.인도자?.[0])?.kind==='학생'?'학생 인도 · 팀장 공유':`인도 · ${name(w.slots.인도자)}`}</p><div className="pt-actions">{!!w.pdfs.length&&<Button size="sm" disabled={busy} onClick={()=>openPdf(w)}>PDF 보기</Button>}{w.canUpload&&<label className="pt-upload">{busy?'처리 중…':w.pdfs.length?'PDF 교체':'PDF 공유'}<input aria-label="콘티 PDF 선택" type="file" accept="application/pdf,.pdf" disabled={busy} onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file){if(file.size>5*1024*1024){setError('5MB 이하 PDF를 선택해주세요.');return}run(()=>praiseApi.upload(data.term.id,w.id,data.term.revision,file),'콘티를 공유했습니다.')}}}/></label>}</div>{w.canUpload&&<p className="pt-meta">수요일까지 · PDF 5MB 이하</p>}{w.pdfs.length>1&&<Disclosure className="pt-disclosure" title="이전 콘티">{w.pdfs.slice(1).map(item=><Button key={item.id} size="sm" variant="secondary" disabled={busy} onClick={()=>openPdf(w,item)}>v{item.version} · {item.uploadedAt.slice(0,10)}</Button>)}</Disclosure>}</section>
  return <div className="pt-preview pt-live"><div className="pt-app"><header className="pt-header pt-route-header app-header" data-feature-tone={featureTone('/praise')}><Link className="pt-route-icon" aria-label={page==='home'?'앱 홈':'찬양팀 홈으로'} to={page==='home'?'/':link('home')}><ChevronLeft size={21}/></Link><span className="brand-heading-icon" aria-hidden="true"><Music2 size={20}/></span><div className="pt-route-title"><h1 data-feature-title ref={heading} tabIndex={-1}>{title}</h1></div>{page!=='home'&&<Link aria-label="찬양팀 홈" className="pt-route-icon" to={link('home')}><Home size={19}/></Link>}</header>
- <div className="pt-term-bar">{data.terms.length>0&&<AppSelect aria-label="활동 학기" value={data.term.id} disabled={busy} onChange={e=>setParams({page,term:e.target.value})}>{data.terms.map(t=><option key={t.id} value={t.id}>{t.year} {t.half===1?'상':'하'}반기</option>)}</AppSelect>}<Button size="sm" variant="secondary" disabled={busy} onClick={refresh}>새로고침</Button></div>
- {error&&<p className="pt-live-error" role="alert">{error}</p>}
+ <QueryRefreshNotice queries={[query]} label="찬양팀 자료"/><div className="pt-term-bar">{data.terms.length>0&&<AppSelect aria-label="활동 학기" value={data.term.id} disabled={busy} onChange={e=>setParams({page,term:e.target.value})}>{data.terms.map(t=><option key={t.id} value={t.id}>{t.year} {t.half===1?'상':'하'}반기</option>)}</AppSelect>}<Button size="sm" variant="secondary" disabled={busy} onClick={refresh}>새로고침</Button></div>
+ <SaveErrorNotice error={error} className="mx-4 my-2"/>
  <MotionPage key={`${page}:${weekId}:${data.term?.id}:${month}`} className="pt-body pt-route-body pt-motion-page">
  {!data.term?<section className="pt-card"><p>{manager?'학기를 만들어 시작하세요.':'지정된 찬양팀 학기가 없습니다.'}</p>{manager&&<Button onClick={()=>setEditor({type:'term'})}>학기 만들기</Button>}</section>:<>
  {page==='home'&&<>
@@ -81,7 +87,8 @@ function Availability({data,link,busy,save}){
  const overview=data.canViewAll??data.canManage,canRespond=data.canManage||data.members.some(m=>m.active&&m.userId===data.me),DateTag=canRespond?'label':'div'
  const [dates,setDates]=useState(record?.dates||[]),[none,setNone]=useState(!!record&&!record.dates.length)
  const toggle=d=>{setNone(false);setDates(a=>a.includes(d)?a.filter(v=>v!==d):[...a,d])},versions=Object.fromEntries(ws.map(w=>[String(w.id),w.scheduleVersion]))
- const submit=()=>save('availability',{month,dates,scheduleVersions:versions},'불가 일정을 제출했습니다.')
+ const {markSaved}=useFormChanges({dates,none},{busy})
+ const submit=async()=>{const ok=await save('availability',{month,dates,scheduleVersions:versions},'불가 일정을 제출했습니다.');if(ok)markSaved();return ok}
  if(!valid)return <p className="pt-meta">다음 달에 해당하는 학기를 선택해주세요.</p>
  return <><div className="pt-row"><h2 className="ui-section-title">{month} 토요일</h2><span className="pt-meta">{overview?`${data.responses.filter(r=>r.month===month).length}명 제출`:record?'제출됨':'미제출'}</span></div>{needsReview(record,ws)&&<p className="pt-av-warning">연습 시간 변경 · 확인 후 다시 제출해주세요.</p>}<section className={overview?'pt-av-date-list':'pt-card'}><div className={overview?'pt-av-date-list':'pt-av-dates'}>{saturdays(month).map(d=>{const w=ws.find(w=>addDays(w.worshipDate,-1)===d),rows=data.responses.filter(r=>r.dates.includes(d)),selected=dates.includes(d);return <div key={d} className={overview?'pt-card pt-av-week':''} data-selected={selected}><DateTag className={overview?'pt-av-date-check':'pt-av-date'} data-selected={selected}>{canRespond&&<MotionCheck checked={selected} disabled={busy} onChange={()=>toggle(d)} aria-label={`${shortDate(d)} 토 연습 불가`}/>}<span><strong>{shortDate(d)} 토</strong><small>{w?`${w.practiceDate!==d?shortDate(w.practiceDate)+' 연습 · ':''}${timeLabel(w)}`:'17:00–19:00'}</small></span></DateTag>{overview&&<><div className="pt-row"><span className="pt-meta">불가 <AnimatedValue value={rows.length}/>명</span>{w&&<Link to={link('rotation',w.id,month)}>{data.canManage?'배정':'로테이션 보기'} ›</Link>}</div><p className="pt-av-names">{rows.map(r=>data.members.find(m=>m.userId===r.userId)?.name||(r.userId===data.me?'나':'활동 종료 교사')).join(', ')||'—'}</p></>}</div>})}</div></section>{canRespond&&<div className="pt-row"><label className="pt-av-none"><MotionCheck checked={none} disabled={busy} onChange={e=>{setNone(e.target.checked);setDates([])}}/>불가 날짜 없음</label><Button disabled={busy||(!dates.length&&!none)} successLabel="제출 완료" onClick={submit}>{record?'수정 제출':'제출'}</Button></div>}</>
 }

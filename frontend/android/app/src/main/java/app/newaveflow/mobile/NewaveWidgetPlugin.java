@@ -26,7 +26,7 @@ public class NewaveWidgetPlugin extends Plugin {
     @PluginMethod public void pin(PluginCall call){
         AppWidgetManager manager=AppWidgetManager.getInstance(getContext());
         boolean supported=Build.VERSION.SDK_INT>=26&&manager.isRequestPinAppWidgetSupported();
-        if(supported)manager.requestPinAppWidget(new ComponentName(getContext(),NewaveWidgetProvider.class),null,null);
+        if(supported)supported=manager.requestPinAppWidget(new ComponentName(getContext(),NewaveWidgetProvider.provider(call.getString("type","combined"))),null,null);
         JSObject result=new JSObject();result.put("supported",supported);call.resolve(result);
     }
 }

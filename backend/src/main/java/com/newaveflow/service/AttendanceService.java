@@ -136,6 +136,18 @@ public class AttendanceService {
                 .stream().map(AttendanceResponse::from).toList();
     }
 
+    public com.newaveflow.dto.attendance.AttendanceHistoryPage getStudentAttendanceHistoryPage(Long studentId, LocalDate before, int size) {
+        if (size < 1 || size > 50) throw AppException.badRequest("한 번에 1~50개의 기록을 조회할 수 있습니다.");
+        if (!studentRepository.existsById(studentId)) throw AppException.notFound("학생을 찾을 수 없습니다.");
+        var limit = org.springframework.data.domain.PageRequest.of(0, size + 1);
+        var rows = before == null ? attendanceRepository.findHistory(studentId, limit)
+                : attendanceRepository.findHistoryBefore(studentId, before, limit);
+        boolean more = rows.size() > size;
+        var items = rows.stream().limit(size).map(AttendanceResponse::from).toList();
+        return new com.newaveflow.dto.attendance.AttendanceHistoryPage(items, more,
+                more ? items.get(items.size() - 1).attendanceDate() : null);
+    }
+
     public boolean isSubmissionWindowOpen() {
         LocalDate now = LocalDate.now();
         java.time.DayOfWeek day = now.getDayOfWeek();
@@ -158,22 +170,18 @@ public class AttendanceService {
 
     // ── 관리자: 주간 출석 요약 (반별) ──
     public List<AdminWeeklyAttendanceDto.ClassSummary> getAdminWeeklySummary(LocalDate date) {
-        Map<Long, String> primaryNames = teacherClassRepository.findAllWithTeacherAndClass().stream().filter(com.newaveflow.entity.TeacherClass::isPrimary)
-                .collect(Collectors.toMap(tc -> tc.getClassGroup().getId(), tc -> tc.getTeacher().getName(), (a,b) -> a));
-        return dailyReportRepository.findByDateWithDetails(date)
-                .stream()
-                .map(r -> {
-                    Long classGroupId = r.getClassGroup().getId();
-                    String teacherName = primaryNames.get(classGroupId);
+        var saved = dailyReportRepository.findByDateWithDetails(date).stream()
+                .collect(Collectors.toMap(r -> r.getClassGroup().getId(), r -> r));
+        return weeklySources.classSources(date).stream()
+                .map(source -> {
+                    var r = saved.get(source.classId());
                     return new AdminWeeklyAttendanceDto.ClassSummary(
-                            classGroupId,
-                            r.getClassGroup().getName(),
-                            r.getClassGroup().getAgeGroup(),
-                            r.getTotalStudents(),
-                            r.getPresentCount(),
-                            r.getAbsentCount(),
-                            r.getStatus() == DailyReport.Status.SUBMITTED,
-                            teacherName
+                            source.classId(), source.className(), source.grade(),
+                            r == null ? 0 : r.getTotalStudents(),
+                            r == null ? 0 : r.getPresentCount(),
+                            r == null ? 0 : r.getAbsentCount(),
+                            "SUBMITTED".equals(source.submissionStatus()),
+                            source.teacherName(), source.submissionStatus()
                     );
                 })
                 .toList();

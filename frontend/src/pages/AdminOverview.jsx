@@ -1,3 +1,4 @@
+import ListItemMotion from '../components/common/ListItemMotion'
 import { eventRangeKey } from '../api/queryPolicy'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -7,9 +8,11 @@ import {
   ChevronRight, Users, Calendar, Bell, Megaphone,
   Settings2, Plus, X, Trash2
 } from 'lucide-react'
-import { reportsApi } from '../api/reports'
+import { weeklyReportsApi } from '../api/weeklyReports'
+import { isReportSubmitted, reportSubmissionLabel } from '../utils/reportSubmission'
+import QueryNotice from '../components/common/QueryNotice'
 import { adminUsersApi } from '../api/adminUsers'
-import { toApiDate } from '../utils/date'
+import { toApiDate, getMostRecentSunday } from '../utils/date'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import client from '../api/client'
@@ -39,6 +42,7 @@ const ALL_QUICK_LINKS = [
 export default function AdminOverview() {
   const navigate = useNavigate()
   const today = useToday()
+  const reportDate = toApiDate(getMostRecentSunday(new Date(`${today}T12:00:00`)))
   const [selectedPaths, setSelectedPaths] = useState(() => {
     const saved = localStorage.getItem('admin_quick_links')
     if (saved) {
@@ -100,11 +104,13 @@ export default function AdminOverview() {
     .filter(e => new Date(e.eventDate) >= new Date())
     .slice(0, 3)
 
-  const { data: reportData, isLoading: reportLoading } = useQuery({
-    queryKey: ['report-summary', today],
-    queryFn:  () => reportsApi.getSummary(today).then(r => r.data),
-    staleTime: 5 * 60 * 1000,
+  const reportQuery = useQuery({
+    queryKey: ['officer-attendance', reportDate],
+    queryFn: () => weeklyReportsApi.attendance(reportDate).then(r => r.data),
+    staleTime: 30000,
   })
+  const reportClasses = reportQuery.data?.classes || []
+  const unfinishedClasses = reportClasses.filter(c => !isReportSubmitted(c))
 
   const STATS = [
     { label: '승인 대기',    value: pendingUsers.length, bg: 'bg-amber-50',   color: 'text-amber-600',   icon: Bell       },
@@ -159,13 +165,13 @@ export default function AdminOverview() {
             {activeLinks.map((link, i) => {
               const showBadge = link.badge && pendingUsers.length > 0
               return (
-                <motion.div
+                <ListItemMotion
                   key={link.to}
                   layout
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: isEditingLinks ? 0 : i * 0.03 }}
+                  index={i} disabledMotion={isEditingLinks}
                   className="relative min-w-0"
                 >
                   <button
@@ -190,7 +196,7 @@ export default function AdminOverview() {
                     </div>
                     <div className="w-full min-w-0 text-base font-bold text-gray-900"><FitLabel>{link.label}</FitLabel></div>
                   </button>
-                </motion.div>
+                </ListItemMotion>
               )
             })}
 
@@ -226,11 +232,11 @@ export default function AdminOverview() {
           </div>
           <div className="flex flex-col gap-2">
             {upcomingEvents.map((event, i) => (
-              <motion.div
+              <ListItemMotion
                 key={event.id}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.07 }}
+                index={i}
                 className="brand-card bg-white rounded-2xl px-4 py-3 border border-gray-200 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3"
               >
                 <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -248,38 +254,42 @@ export default function AdminOverview() {
                     출석
                   </span>
                 )}
-              </motion.div>
+              </ListItemMotion>
             ))}
           </div>
         </div>
       )}
 
       {/* 출석 제출 확인 */}
-      {!reportLoading && reportData?.notSubmitted?.length > 0 && (
+      {reportQuery.isError || !reportQuery.data ? <QueryNotice queries={[reportQuery]} label="반·팀 제출 현황" /> : (
         <div className="flex flex-col gap-3 mt-2">
           <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-             <SectionLabel>출석 제출 확인</SectionLabel>
-             <span className="text-sm font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-md">{reportData.notSubmitted.length}명 미제출</span>
+             <SectionLabel>반·팀 제출 현황</SectionLabel>
+             <span className="text-sm font-bold text-gray-600">{reportDate.slice(5).replace('-', '/')} 주일</span>
           </div>
+          <StatSummary label="반·팀 제출 현황" items={[
+            {label:'제출 완료',value:reportClasses.length - unfinishedClasses.length,unit:'건'},
+            {label:'미제출·재제출',value:unfinishedClasses.length,unit:'건'},
+          ]}/>
+          {!reportClasses.length && <p className="text-sm text-gray-600 px-1">보고 대상 반·팀이 없습니다.</p>}
+          {reportClasses.length > 0 && !unfinishedClasses.length && <p className="text-sm text-secondary-700 px-1">모든 반·팀이 제출했습니다.</p>}
           <div className="grid grid-cols-1 gap-2">
-            {reportData.notSubmitted.slice(0, 3).map(t => (
-              <Card key={t.teacherId} className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 py-3 px-4 border-l-4 border-l-red-400">
-                <div className="w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-sm font-bold">{t.teacherName[0]}</div>
+            {unfinishedClasses.slice(0, 3).map(t => (
+              <Card key={t.classId} className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 py-3 px-4 border-l-4 border-l-red-400">
+                <div className="w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-sm font-bold">{t.className[0]}</div>
                 <div className="min-w-0">
-                   <p className="text-base font-bold text-gray-900">{t.teacherName}</p>
-                   <p className="text-sm font-medium text-gray-600">{t.className}</p>
+                   <p className="text-base font-bold text-gray-900">{t.className}</p>
+                   <p className="text-sm font-medium text-gray-600">{t.teacherName || '담임 미배정'}</p>
                 </div>
-                <span className="col-start-2 justify-self-start rounded-lg bg-red-50 px-2 py-1 text-sm font-semibold text-red-700">보고서 미작성</span>
+                <span className="col-start-2 justify-self-start rounded-lg bg-red-50 px-2 py-1 text-sm font-semibold text-red-700">{reportSubmissionLabel(t)}</span>
               </Card>
             ))}
-            {reportData.notSubmitted.length > 3 && (
               <button
-                onClick={() => navigate('/admin/student-attendance')}
+                onClick={() => navigate('/admin/attendance')}
                 className="min-h-11 text-center text-sm text-gray-600 font-bold mt-1 hover:text-primary-500 transition-colors"
                 >
-                외 {reportData.notSubmitted.length - 3}명 더 있음 (상세 보기)
+                {unfinishedClasses.length > 3 ? `외 ${unfinishedClasses.length - 3}건 · ` : ''}전체 출석 보기 →
               </button>
-            )}
           </div>
         </div>
       )}

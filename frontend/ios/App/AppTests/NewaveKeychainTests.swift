@@ -5,6 +5,63 @@ import AuthenticationServices
 @testable import App
 
 final class NewaveKeychainTests: XCTestCase {
+    func testWidgetVariantsPreserveInstalledKindAndOldSnapshots() throws {
+        XCTAssertEqual(Set(WidgetVariant.allCases.map { $0.kind }).count, 4)
+        XCTAssertEqual(WidgetVariant.combined.kind, NewaveWidgetStore.kind)
+        let old = #"{"schemaVersion":1,"revision":1,"generatedAt":"2026-11-11T10:00:00Z","date":"2026-11-11","validUntil":"","events":[],"checks":[],"tasks":[]}"#
+        var snapshot = try JSONDecoder().decode(WidgetSnapshot.self, from: Data(old.utf8))
+        XCTAssertNil(snapshot.calendarDates)
+        snapshot.calendarDates = ["2026-11-01", "2026-11-11"]
+        let decoded = try JSONDecoder().decode(WidgetSnapshot.self, from: JSONEncoder().encode(snapshot))
+        XCTAssertEqual(decoded.calendarDates, snapshot.calendarDates)
+        var session = WidgetSession(token: "synthetic", baseURL: "", scope: "a", expiresAt: "", snapshot: snapshot)
+        let now = ISO8601DateFormatter().date(from: "2026-11-11T10:00:00Z")!
+        XCTAssertTrue(session.hasRecentSnapshot(at: now.addingTimeInterval(29)))
+        XCTAssertFalse(session.hasRecentSnapshot(at: now.addingTimeInterval(30)))
+        XCTAssertFalse(session.hasRecentSnapshot(at: now.addingTimeInterval(-1)))
+        session.error = "저장 확인 필요"
+        XCTAssertFalse(session.hasRecentSnapshot(at: now))
+    }
+    func testWidgetShowsOnlyRecentConfirmedSameDayCheckWithoutAnotherFetch() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let widget = NewaveWidgetStore(service: "widget-test." + UUID().uuidString, accessGroup: nil, directory: directory)
+        defer { try? widget.clear(); try? FileManager.default.removeItem(at: directory) }
+        let now = ISO8601DateFormatter().date(from: "2026-11-11T10:00:00Z")!
+        func snapshot(_ revision: Int64, date: String = "2026-11-11") -> WidgetSnapshot {
+            WidgetSnapshot(schemaVersion: 1, revision: revision, generatedAt: "revision-\(revision)", date: date,
+                validUntil: "2026-11-12T00:00:00Z", events: [], checks: [], tasks: [])
+        }
+        let session = WidgetSession(token: "synthetic", baseURL: "https://synthetic.up.railway.app/api", scope: "a",
+            expiresAt: "2030-01-01T00:00:00Z", snapshot: snapshot(1))
+        try widget.configure(session)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: session.token, snapshot: snapshot(2), checked: true, now: now)
+        let confirmed = try XCTUnwrap(widget.read())
+        XCTAssertTrue(confirmed.hasRecentConfirmedCheck(at: now.addingTimeInterval(1)))
+        XCTAssertFalse(confirmed.hasRecentConfirmedCheck(at: now.addingTimeInterval(5)))
+        XCTAssertFalse(confirmed.hasRecentConfirmedCheck(at: now.addingTimeInterval(-1)))
+        try widget.failed(token: session.token, revision: 2, message: "save uncertain")
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: session.token, snapshot: snapshot(3), checked: false, now: now)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: session.token, snapshot: snapshot(4, date: "2026-11-10"), checked: true, now: now)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+        try widget.update(token: "old-account", snapshot: snapshot(5), checked: true, now: now)
+        XCTAssertFalse(try XCTUnwrap(widget.read()).hasRecentConfirmedCheck(at: now))
+    }
+
+    func testWidgetSessionFromPreviousAppVersionStillDecodes() throws {
+        let original = WidgetSession(token: "synthetic", baseURL: "https://synthetic.up.railway.app/api", scope: "a", expiresAt: "2030-01-01T00:00:00Z")
+        let data = try JSONEncoder().encode(original)
+        let fields = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertNil(fields["confirmedCheckAt"])
+        let decoded = try JSONDecoder().decode(WidgetSession.self, from: data)
+        XCTAssertEqual(decoded.scope, original.scope)
+        XCTAssertNil(decoded.confirmedCheckAt)
+        XCTAssertFalse(decoded.hasRecentConfirmedCheck())
+    }
+
     func testWidgetStoreRejectsOldAccountAndOutOfOrderReplies() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

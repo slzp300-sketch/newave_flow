@@ -1,7 +1,14 @@
+import QueryNotice from '../components/common/QueryNotice'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import SaveErrorNotice from '../components/common/SaveErrorNotice'
+import {queryReadState,hasQueryData} from '../utils/queryReadState'
+import {useUnsavedChanges} from '../components/common/UnsavedChanges'
+import useVoteDraft from '../hooks/useVoteDraft'
+import {prayerFormFromVote} from '../utils/voteDraft'
 import GradeLabel from '../components/common/GradeLabel'
 import { CollapsePanel } from '../components/common/Motion'
 import FitLabel from '../components/common/FitLabel'
-import { useState, useEffect, useId } from 'react'
+import { useState, useId } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -34,7 +41,6 @@ function getMicRotationIndex(now) {
   return getISOWeek(base) % 3
 }
 
-const EMPTY_PRAYER = { status: null, micAvailable: null, reason: '', micReason: '' }
 
 export default function PrayerMeetingPage() {
   const { user }   = useAuthStore()
@@ -51,43 +57,31 @@ export default function PrayerMeetingPage() {
 
   const queryClient = useQueryClient()
 
-  const { data: voteData, isLoading: voteLoading } = useQuery({
+  const voteQuery = useQuery({
     queryKey: ['prayer-vote', weekStart, user?.id],
     queryFn:  () => prayerVoteApi.getMine(weekStart).then(r => r.data),
     enabled:  !!user,
   })
 
+  const voteData=voteQuery.data
+  const ready=queryReadState([voteQuery])==='ready'
+  const draft=useVoteDraft(weekStart,voteData,prayerFormFromVote)
+  const {value:prayer,editing:editingPrayer,update:updatePrayer}=draft
   const saveMutation = useMutation({
     mutationFn: (payload) => prayerVoteApi.save(payload).then(r => r.data),
     onSuccess: async (savedVote, payload) => {
       queryClient.setQueryData(['prayer-vote', payload.weekStart, user?.id], savedVote)
-      setEditingPrayer(false)
+      draft.reset(payload.weekStart)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['prayer-vote', payload.weekStart, user?.id] }),
         queryClient.invalidateQueries({ queryKey: ['prayer-participation'] }),
         queryClient.invalidateQueries({ queryKey: ['tts-week'] }),
       ])
     },
-    onError: (err) => alert(err.response?.data?.message || '투표 저장 중 오류가 발생했습니다.'),
   })
 
-  const [prayer, setPrayer]           = useState(EMPTY_PRAYER)
-  const [editingPrayer, setEditingPrayer] = useState(false)
-
-  // 주를 바꾸거나 저장 결과가 오면 화면 상태를 그 주 기록에 맞춘다
-  useEffect(() => {
-    if (voteData) {
-      setEditingPrayer(false)
-    } else {
-      setPrayer(EMPTY_PRAYER)
-      setEditingPrayer(true)
-    }
-  }, [voteData, weekStart])
-
-  const updatePrayer = (patch) => setPrayer(d => ({ ...d, ...patch }))
-
   const submitPrayer = () => {
-    if (!prayer.status) return alert('참석 여부를 선택해 주세요.')
+    if (!ready || !prayer.status || saveMutation.isPending) return
     const finalReason = prayer.status === 'ABSENT'
       ? (prayer.reason || '')
       : (prayer.micAvailable === false ? (prayer.micReason || '') : '')
@@ -102,7 +96,8 @@ export default function PrayerMeetingPage() {
         )))
   )
 
-  const prayerSubmitted = !!voteData && !editingPrayer
+  const prayerSubmitted = !!voteData?.status && !editingPrayer
+  const confirmMove=useUnsavedChanges({dirty:draft.dirty,busy:saveMutation.isPending})
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
@@ -111,7 +106,7 @@ export default function PrayerMeetingPage() {
       <div className="px-4 py-3 glass-effect flex flex-col gap-2">
         <WeekNavigator
           offset={offset}
-          onChange={setOffset}
+          onChange={value=>confirmMove(()=>{draft.reset();saveMutation.reset();setOffset(value)})}
           disabled={saveMutation.isPending}
           title={labels.monthWeek}
           range={`${tueDate}(화) · ${thuDate}(목)`}
@@ -126,33 +121,35 @@ export default function PrayerMeetingPage() {
 
       <div className="px-4 py-5">
         <PrayerMeetingLinks week={weekStart}/>
-        {voteLoading ? (
-          <Card className="py-8 text-center text-base text-gray-600">불러오는 중...</Card>
+        <QueryRefreshNotice queries={[voteQuery]} label="내 투표" />
+        {ready&&!voteData?.status&&<p className="mb-3 text-sm text-gray-600" role="status">아직 투표하지 않았습니다.</p>}
+        {!hasQueryData([voteQuery]) ? (
+          <QueryNotice queries={[voteQuery]} label="내 투표" />
         ) : prayerSubmitted ? (
           <PrayerSubmittedCard
             vote={voteData}
-            saving={saveMutation.isPending}
+            saving={!ready||saveMutation.isPending}
             micLabel={micGroup.label}
-            onEdit={() => { setPrayer({ status: voteData.status, micAvailable: voteData.status === 'ABSENT' ? null : !voteData.reason, reason: voteData.status === 'ABSENT' ? voteData.reason || '' : '', micReason: voteData.status === 'ABSENT' ? '' : voteData.reason || '' }); setEditingPrayer(true) }}
+            onEdit={()=>{if(ready){saveMutation.reset();draft.edit()}}}
             isMicTurn={isMicTurn}
             tueDate={tueDate}
             thuDate={thuDate}
           />
-        ) : (
-          <PrayerForm
+        ) : (ready || draft.dirty) ? (
+          <fieldset disabled={!ready||saveMutation.isPending} className="min-w-0"><PrayerForm
             prayer={prayer}
             micLabel={micGroup.label}
             update={updatePrayer}
             onSubmit={submitPrayer}
-            onCancel={voteData ? () => setEditingPrayer(false) : null}
-            valid={prayerValid}
+            onCancel={voteData?.status ? ()=>confirmMove(()=>{draft.reset();saveMutation.reset()}) : null}
+            valid={ready&&prayerValid}
             isMicTurn={isMicTurn}
             saving={saveMutation.isPending}
             tueDate={tueDate}
             thuDate={thuDate}
-          />
-        )}
-
+          /></fieldset>
+        ) : null}
+        <SaveErrorNotice error={saveMutation.error} preserved onRetry={submitPrayer} disabled={!ready||!prayerValid||saveMutation.isPending}/>
       </div>
     </div>
   )

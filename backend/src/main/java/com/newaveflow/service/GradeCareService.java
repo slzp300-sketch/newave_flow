@@ -65,13 +65,11 @@ public class GradeCareService {
  public Overview overview(String requested,LocalDate requestedDate,User actor){
   var u=requireOverview(actor);String g=checkGrade(requested);LocalDate d=date(requestedDate);
   var assigned=assignments.findAllWithTeacherAndClass();
-  var groups=classes.findAll().stream().filter(c->g.equals(grade(c.getAgeGroup()))).sorted(Comparator.comparing(ClassGroup::getName)).toList();
-  var saved=reports.findByDateWithDetails(d).stream().collect(Collectors.toMap(r->r.getClassGroup().getId(),r->r,(a,b)->a));
+  var groups=classes.findAll().stream().filter(c->g.equals(grade(c.getAgeGroup()))).toList();
   var classRows=new ArrayList<ClassCheck>();
-  for(var group:groups){
-   var source=newFamily.reconcile(saved.containsKey(group.getId())?sources.source(saved.get(group.getId())):sources.live(group,d),d);
-   var rows=source.students();String status=!source.submitted()?"MISSING":source.changed()?"CHANGED":"SUBMITTED";
-   classRows.add(new ClassCheck(group.getId(),group.getName(),source.teacherName(),status,source.submittedAt(),rows.size(),(int)rows.stream().filter(s->"PRESENT".equals(s.status())).count(),(int)rows.stream().filter(s->"ABSENT".equals(s.status())).count(),(int)rows.stream().filter(s->"LATE".equals(s.status())).count(),(int)rows.stream().filter(s->"UNKNOWN".equals(s.status())).count()));
+  for(var source:sources.classSources(d,groups)){
+   var rows=source.students();
+   classRows.add(new ClassCheck(source.classId(),source.className(),source.teacherName(),source.submissionStatus(),source.submittedAt(),rows.size(),(int)rows.stream().filter(s->"PRESENT".equals(s.status())).count(),(int)rows.stream().filter(s->"ABSENT".equals(s.status())).count(),(int)rows.stream().filter(s->"LATE".equals(s.status())).count(),(int)rows.stream().filter(s->"UNKNOWN".equals(s.status())).count()));
   }
   // The meeting screen uses Monday–Sunday; the report uses the preceding Sunday.
   LocalDate saturday=d.plusDays(6);

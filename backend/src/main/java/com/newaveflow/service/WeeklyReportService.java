@@ -71,13 +71,7 @@ public class WeeklyReportService {
         var draft=drafts.findByReportDate(date).orElse(null);
         Map<String,String> fields=new TreeMap<>();fields.put("department","청소년부");fields.put("includeLate","true");
         if(draft!=null)try {fields.putAll(json.readValue(draft.getFieldsJson(),new TypeReference<Map<String,String>>(){}));}catch(Exception e){throw new IllegalStateException(e);}
-        Map<Long,DailyReport> saved=reports.findByDateWithDetails(date).stream().collect(Collectors.toMap(r->r.getClassGroup().getId(),r->r));
-        var assigned=assignments.findAllWithTeacherAndClass().stream().map(a->a.getClassGroup().getId()).collect(Collectors.toSet());
-        List<ClassSource> classRows=new ArrayList<>();
-        for(var group:classes.findAll()) {
-            var row=newFamily.reconcile(saved.containsKey(group.getId())?sources.source(saved.get(group.getId())):sources.live(group,date),date);
-            if(!row.students().isEmpty()||assigned.contains(group.getId())||saved.containsKey(group.getId()))classRows.add(row);
-        }
+        List<ClassSource> classRows=new ArrayList<>(sources.classSources(date));
         classRows.addAll(newFamily.reportSources(date));
         classRows.sort(Comparator.comparing((ClassSource c)->Objects.toString(c.grade(),"")).thenComparing(ClassSource::className).thenComparing(ClassSource::classId));
         Map<Long,TeacherWorshipAttendance> checks=worship.findByWorshipDate(date).stream().collect(Collectors.toMap(r->r.getTeacher().getId(),r->r));
@@ -94,33 +88,33 @@ public class WeeklyReportService {
     }
     private List<Issue> validate(List<ClassSource> classes,List<TeacherRow> teachers,Map<String,String> fields) {
         List<Issue> issues=new ArrayList<>();Set<String> seen=new HashSet<>();Set<String> contacts=new HashSet<>();
-        if(classes.isEmpty())issues.add(new Issue("roster",null,"보고 대상 반이 없습니다. 반 배정을 확인해주세요."));
-        if(teachers.isEmpty())issues.add(new Issue("roster",null,"보고 대상 교사가 없습니다."));
+        if(classes.isEmpty())issues.add(new Issue("roster",null,"보고 대상 반이 없습니다. 반 배정을 확인해주세요.","assignment",null,null));
+        if(teachers.isEmpty())issues.add(new Issue("roster",null,"보고 대상 교사가 없습니다.","teachers",null,null));
         for(var c:classes) {
-            if(c.teacherName().isBlank())issues.add(new Issue("class",c.classId(),c.className()+" 담임 배정 확인 필요"));
-            if(!Set.of("중1","중2","중3","고1","고2","고3").contains(WeeklyReportDocumentService.grade(c.grade())))issues.add(new Issue("class",c.classId(),c.className()+" 학년을 중1~고3으로 지정해주세요."));
+            if(c.teacherName().isBlank())issues.add(new Issue("class",c.classId(),c.className()+" 담임 배정 확인 필요","assignment",null,null));
+            if(!Set.of("중1","중2","중3","고1","고2","고3").contains(WeeklyReportDocumentService.grade(c.grade())))issues.add(new Issue("class",c.classId(),c.className()+" 학년을 중1~고3으로 지정해주세요.","assignment",null,null));
             if(!c.submitted())issues.add(new Issue("class",c.classId(),c.className()+" 출석 미제출"));
             if(c.changed())issues.add(new Issue("class",c.classId(),c.className()+" 수정 중 · 다시 제출해야 합니다."));
             for(var s:c.students()) {
-                if(awaitsNewFamilyTeam(s))issues.add(new Issue("class",c.classId(),s.name()+" 첫 방문 · 새가족팀 출결 확인 필요 (집계 대기)"));
-                if(!seen.add(s.id()))issues.add(new Issue("class",c.classId(),s.name()+" 중복 집계 대상 · 반 배정을 확인해주세요."));
-                if("UNKNOWN".equals(s.status()))issues.add(new Issue("class",c.classId(),s.name()+" 출석 미확인"));
-                if(s.gender().isBlank())issues.add(new Issue("class",c.classId(),s.name()+" 성별 미입력"));
+                if(awaitsNewFamilyTeam(s))issues.add(new Issue("class",c.classId(),s.name()+" 첫 방문 · 새가족팀 출결 확인 필요 (집계 대기)","new-family",null,s.id()));
+                if(!seen.add(s.id()))issues.add(new Issue("class",c.classId(),s.name()+" 중복 집계 대상 · 반 배정을 확인해주세요.","students",null,s.id()));
+                if("UNKNOWN".equals(s.status()))issues.add(new Issue("class",c.classId(),s.name()+" 출석 미확인","class","status",s.id()));
+                if(s.gender().isBlank())issues.add(new Issue("class",c.classId(),s.name()+" 성별 미입력","class","gender",s.id()));
                 if(s.category().equals("FIRST")) {
                     if(List.of(s.name(),s.grade(),s.school(),s.address(),s.phone(),s.introducer()).stream().anyMatch(String::isBlank))
-                        issues.add(new Issue("class",c.classId(),s.name()+" 새 방문자 필수 정보 보완"));
+                        issues.add(new Issue("class",c.classId(),s.name()+" 새 방문자 필수 정보 보완","class",null,s.id()));
                     if(!s.phone().isBlank()&&!contacts.add(s.name()+"|"+s.phone().replaceAll("[^0-9]","")))
-                        issues.add(new Issue("class",c.classId(),s.name()+" 새 방문자 중복 가능 · 담당 반에서 확인해주세요."));
+                        issues.add(new Issue("class",c.classId(),s.name()+" 새 방문자 중복 가능 · 담당 반에서 확인해주세요.","class",null,s.id()));
                 }
             }
         }
         for(var t:teachers) {
-            if(t.status().equals("UNKNOWN"))issues.add(new Issue("teacher",t.id(),t.name()+" 청소년부 예배 출석 확인 필요"));
-            if(t.gender().isBlank())issues.add(new Issue("teacher",t.id(),t.name()+" 개인정보 성별 보완 필요"));
+            if(t.status().equals("UNKNOWN"))issues.add(new Issue("teacher",t.id(),t.name()+" 청소년부 예배 출석 확인 필요","teacher","status",null));
+            if(t.gender().isBlank())issues.add(new Issue("teacher",t.id(),t.name()+" 개인정보 성별 보완 필요","teacher","gender",null));
         }
         Map.of("scripture","성경 본문","sermon","설교 제목","preacher","설교자","author","담당자","director","교육부총괄","pastor","담임목사")
-                .forEach((key,label)->{if(fields.getOrDefault(key,"").isBlank())issues.add(new Issue("common",null,label+" 미입력"));});
-        if(!fields.getOrDefault("offering","").matches("[0-9]{1,12}"))issues.add(new Issue("common",null,"헌금은 0 이상의 정수로 입력해주세요."));
+                .forEach((key,label)->{if(fields.getOrDefault(key,"").isBlank())issues.add(new Issue("common",null,label+" 미입력","common",key,null));});
+        if(!fields.getOrDefault("offering","").matches("[0-9]{1,12}"))issues.add(new Issue("common",null,"헌금은 0 이상의 정수로 입력해주세요.","common","offering",null));
         return issues;
     }
     @Transactional

@@ -6,6 +6,7 @@ import usePullToRefresh from '../../hooks/usePullToRefresh'
 import useAuthStore from '../../store/authStore'
 import { useMotionPreference } from '../common/Motion'
 import CommunitySafetyGate from '../common/CommunitySafetyGate'
+import { UnsavedChangesProvider } from '../common/UnsavedChanges'
 
 export default function AppLayout() {
   const { pathname } = useLocation()
@@ -29,7 +30,7 @@ export default function AppLayout() {
   const pullProgress = Math.min(pullDistance / 70, 1)
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col overflow-x-clip">
+    <UnsavedChangesProvider><div className="min-h-screen bg-surface flex flex-col overflow-x-clip">
       <ScrollRestoration />
       
       {/* Pull to Refresh Animated Indicator */}
@@ -69,6 +70,6 @@ export default function AppLayout() {
         <div key={pathname} className="motion-page"><CommunitySafetyGate><Outlet /></CommunitySafetyGate></div>
       </main>
       <BottomNav />
-    </div>
+    </div></UnsavedChangesProvider>
   )
 }

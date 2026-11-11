@@ -1,4 +1,6 @@
+import {requestErrorMessage} from '../../utils/requestFeedback'
 import { useState, useEffect, useRef } from 'react'
+import { useUnsavedChanges } from '../common/UnsavedChanges'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Save, Trash2 } from 'lucide-react'
 import { ttsApi } from '../../api/tts'
@@ -40,6 +42,7 @@ export default function TtsQuestionsAdmin({ active }) {
     qc.setQueryData(key, response.data); setRows(draftRows(response.data)); setDirty(false); setOpenKey(null); setRemoveKey(null)
     setMessage('저장 완료 · 다음 주일부터 적용'); void qc.invalidateQueries({ queryKey: ['tts-questions'] })
   } })
+  useUnsavedChanges({dirty,busy:mutation.isPending})
   const update = (rowKey, patch) => {
     setRows(previous => previous.map(row => row._key === rowKey ? { ...row, ...patch } : row))
     setDirty(true); setError(''); setMessage('')
@@ -57,7 +60,7 @@ export default function TtsQuestionsAdmin({ active }) {
     if (invalid) { setOpenKey(invalid._key); setError(ttsQuestionError(invalid)); return }
     busy.current = true; setError(''); setMessage(''); setDiscarding(false); setRemoveKey(null)
     try { await mutation.mutateAsync(ttsQuestionPayload(rows)) }
-    catch (e) { setError(e.response?.data?.message || '저장하지 못했습니다. 다시 시도해 주세요.') }
+    catch (e) { setError(requestErrorMessage(e)) }
     finally { busy.current = false }
   }
   return <section className="tts-admin-body" aria-label="TTS 항목 관리">

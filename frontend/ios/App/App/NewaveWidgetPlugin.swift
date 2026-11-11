@@ -25,18 +25,18 @@ public class NewaveWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
             guard WidgetNetwork.validBase(session.baseURL), !session.token.isEmpty, session.token.count <= 4096,
                   session.snapshot?.schemaVersion == 1 else { throw WidgetStoreError.invalid }
             try NewaveWidgetStore.shared.configure(session)
-            WidgetCenter.shared.reloadTimelines(ofKind: NewaveWidgetStore.kind); call.resolve(try state())
+            WidgetCenter.shared.reloadAllTimelines(); call.resolve(try state())
         } catch { call.reject("Unable to configure widget") }
     }
     @objc func clear(_ call: CAPPluginCall) {
-        do { try NewaveWidgetStore.shared.clear(); WidgetCenter.shared.reloadTimelines(ofKind: NewaveWidgetStore.kind); call.resolve(try state()) }
+        do { try NewaveWidgetStore.shared.clear(); WidgetCenter.shared.reloadAllTimelines(); call.resolve(try state()) }
         catch { call.reject("Unable to clear widget") }
     }
     @objc func getState(_ call: CAPPluginCall) { do { call.resolve(try state()) } catch { call.reject("Unable to read widget") } }
     @objc func refresh(_ call: CAPPluginCall) {
         Task {
             await WidgetNetwork.refresh()
-            WidgetCenter.shared.reloadTimelines(ofKind: NewaveWidgetStore.kind)
+            WidgetCenter.shared.reloadAllTimelines()
             do { call.resolve(try state()) } catch { call.reject("Unable to refresh widget") }
         }
     }

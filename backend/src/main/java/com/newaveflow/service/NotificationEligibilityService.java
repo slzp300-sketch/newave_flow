@@ -62,7 +62,7 @@ public class NotificationEligibilityService {
         return roster.studentRecords(id).stream().anyMatch(s -> classIds.contains(s.classGroupId()) && s.status()==null);
     }
     private boolean reportMissing(LocalDate sunday,User user) {
-        var complete=reports.findByReportDate(sunday).stream().filter(r -> r.getStatus()==DailyReport.Status.SUBMITTED)
+        var complete=reports.findByReportDate(sunday).stream().filter(DailyReport::isSubmissionComplete)
                 .map(r -> r.getClassGroup().getId()).collect(Collectors.toSet());
         return user.getTeacherClasses()!=null && user.getTeacherClasses().stream().anyMatch(c -> !complete.contains(c.getClassGroup().getId()));
     }

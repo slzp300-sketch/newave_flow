@@ -12,6 +12,9 @@ export const attendanceApi = {
 
   getHistoryByStudent: (studentId) => client.get(`/attendance/student/${studentId}`),
 
+  getHistoryPage: (studentId, before, signal) =>
+    client.get(`/attendance/student/${studentId}/history`, { params: { before, size: 20 }, signal }),
+
   submit: (classId, date) =>
     client.post('/attendance/submit', null, { params: { classId, date } }),
 

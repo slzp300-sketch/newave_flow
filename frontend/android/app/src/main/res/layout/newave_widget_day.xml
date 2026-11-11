@@ -1,0 +1,4 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="0dp" android:layout_weight="1" android:layout_height="24dp" android:orientation="vertical" android:gravity="center" android:importantForAccessibility="no">
+ <TextView android:id="@+id/widget_day" android:layout_width="20dp" android:layout_height="20dp" android:gravity="center" android:textSize="11sp" android:textColor="#17335A"/>
+ <TextView android:id="@+id/widget_dot" android:layout_width="3dp" android:layout_height="3dp" android:background="@drawable/widget_dot"/>
+</LinearLayout>

@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@drawable/widget_background" android:padding="16dp">
- <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:baselineAligned="false" android:gravity="center_vertical">
-  <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="32dp" android:text="NEWAVE  FLOW" android:textColor="#0B338A" android:textSize="14sp" android:textStyle="bold"/>
-  <TextView android:id="@+id/widget_date" android:layout_width="wrap_content" android:layout_height="32dp" android:textColor="#206646" android:textSize="12sp"/>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@drawable/widget_background" android:padding="12dp">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="24dp" android:orientation="horizontal" android:gravity="center_vertical" android:baselineAligned="false">
+  <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="NEWAVE  FLOW" android:textColor="#0B338A" android:textSize="14sp" android:textStyle="bold"/>
+  <TextView android:id="@+id/widget_date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#657993" android:textSize="11sp"/>
  </LinearLayout>
- <TextView android:id="@+id/widget_message" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#9A4E13" android:textSize="12sp" android:paddingBottom="5dp"/>
- <TextView android:id="@+id/widget_event" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="42dp" android:maxLines="2" android:ellipsize="end" android:textColor="#173263" android:textSize="13sp" android:paddingBottom="6dp"/>
- <TextView android:layout_width="match_parent" android:layout_height="24dp" android:text="오늘 영성 체크" android:textColor="#206646" android:textSize="12sp" android:textStyle="bold"/>
- <LinearLayout android:id="@+id/widget_checks" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
- <TextView android:id="@+id/widget_progress" android:layout_width="match_parent" android:layout_height="28dp" android:gravity="center_vertical" android:textColor="#206646" android:textStyle="bold" android:textSize="12sp"/>
- <LinearLayout android:id="@+id/widget_tasks" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
- <TextView android:id="@+id/widget_more" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="24dp" android:gravity="bottom|end" android:text="영성 체크 전체 보기  ›" android:textColor="#0B338A" android:textSize="11sp"/>
+ <TextView android:id="@+id/widget_message" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="center_vertical" android:text="앱을 열어 위젯을 연결해주세요" android:textColor="#9A4E13" android:textSize="12sp"/>
+ <TextView android:id="@+id/widget_subtitle" android:layout_width="match_parent" android:layout_height="28dp" android:gravity="center_vertical" android:textColor="#246548" android:textSize="13sp" android:textStyle="bold" android:visibility="gone"/>
+ <TextView android:id="@+id/widget_event" android:layout_width="match_parent" android:layout_height="52dp" android:gravity="center_vertical" android:maxLines="2" android:ellipsize="end" android:textColor="#17335A" android:textSize="12sp" android:visibility="gone"/>
+ <LinearLayout android:id="@+id/widget_checks" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:visibility="gone"/>
+ <TextView android:id="@+id/widget_progress" android:layout_width="match_parent" android:layout_height="28dp" android:gravity="center_vertical" android:textColor="#246548" android:textStyle="bold" android:textSize="13sp" android:visibility="gone"/>
+ <LinearLayout android:id="@+id/widget_calendar" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"/>
+ <LinearLayout android:id="@+id/widget_tasks" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone"/>
+ <TextView android:id="@+id/widget_more" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center" android:textColor="#657993" android:textSize="11sp" android:visibility="gone"/>
 </LinearLayout>

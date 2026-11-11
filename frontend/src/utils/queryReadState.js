@@ -8,5 +8,5 @@ export function queryReadState(queries) {
 // Display cached reads while revalidating, including a successful empty/null result.
 // Keep queryReadState as the stricter guard for editing and submitting.
 export function hasQueryData(queries) {
-  return queries.every(q => q.data !== undefined && !q.isPlaceholderData)
+  return queries.every(q => q.data !== undefined && !q.isPlaceholderData && ![401, 403].includes(q.error?.response?.status))
 }

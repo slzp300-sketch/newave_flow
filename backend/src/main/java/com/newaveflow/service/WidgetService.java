@@ -35,7 +35,7 @@ public class WidgetService {
     public record Task(String id, String title, String state, String path) {}
     public record Schedule(String title, LocalDate date, String time, String path) {}
     public record Snapshot(int schemaVersion, long revision, String generatedAt, LocalDate date, String validUntil,
-                           List<Schedule> events, List<Check> checks, List<Task> tasks) {}
+                           List<Schedule> events, List<Check> checks, List<Task> tasks, List<LocalDate> calendarDates) {}
     public record Session(String token, String expiresAt, Snapshot snapshot) {}
     public record CheckInput(LocalDate date, Long questionId, Boolean checked, Boolean expectedChecked) {}
 
@@ -110,14 +110,27 @@ public class WidgetService {
         var generated = clock.instant();
         return new Snapshot(1, generated.getEpochSecond()*1_000_000+generated.getNano()/1000, generated.toString(), today, today.plusDays(1).atStartOfDay(ZONE).toInstant().toString(),
                 upcoming, user.participatesInTeacherActivities() ? todayChecks(tts.getWeek(user, today), today) : List.of(),
-                user.participatesInTeacherActivities() ? weeklyTasks(user, today) : List.of());
+                user.participatesInTeacherActivities() ? weeklyTasks(user, today) : List.of(), calendarDates(today));
+    }
+    // A bounded month of date markers, including past and multi-day church events.
+    // Keep event descriptions and participant details outside the widget snapshot.
+    private List<LocalDate> calendarDates(LocalDate today) {
+        LocalDate first = today.withDayOfMonth(1), last = today.withDayOfMonth(today.lengthOfMonth());
+        var dates = new TreeSet<LocalDate>();
+        for (var event : events.getEvents(first, last)) {
+            LocalDate start = event.eventDate().isBefore(first) ? first : event.eventDate();
+            LocalDate end = event.endDate() == null ? event.eventDate() : event.endDate();
+            if (end.isAfter(last)) end = last;
+            for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) dates.add(day);
+        }
+        return List.copyOf(dates);
     }
     private List<Task> weeklyTasks(User user, LocalDate today) {
         LocalDate sunday = TtsService.weekSunday(today), monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         var classIds = classes.findByTeacherId(user.getId()).stream().map(c -> c.getClassGroup().getId()).distinct().toList();
         var submitted = classIds.isEmpty() ? List.<DailyReport>of() : reports.findByClassGroupIdInAndReportDateBetween(classIds, sunday, sunday.plusDays(6));
         String attendance = classIds.isEmpty() ? "none" : state(classIds.stream().allMatch(id -> submitted.stream()
-                .anyMatch(r -> r.getClassGroup().getId().equals(id) && r.getStatus() == DailyReport.Status.SUBMITTED)));
+                .anyMatch(r -> r.getClassGroup().getId().equals(id) && r.getReportDate().equals(sunday) && r.isSubmissionComplete())));
         var published = minutes.findAllByIsActiveTrueOrderByMeetingDateDesc().stream().filter(m -> !m.getMeetingDate().isAfter(today)).toList();
         var dates = published.stream().map(MeetingMinute::getMeetingDate).distinct().toList();
         var absentDates = new HashSet<LocalDate>();

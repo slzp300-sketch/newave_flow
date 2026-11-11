@@ -132,6 +132,24 @@ public class WeeklyReportSourceService {
             return new ClassEditor(id,group.getName(),group.getAgeGroup(),date,supplement(id,date),live.students(),hash);
         } catch(java.security.NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
     }
+    /** Shared reporting cohort: assigned classes, classes with students, or an existing report. */
+    public List<ClassSource> classSources(LocalDate date) {
+        return classSources(date,classes.findAll());
+    }
+    public List<ClassSource> classSources(LocalDate date,Collection<ClassGroup> groups) {
+        var saved=reports.findByDateWithDetails(date).stream()
+                .collect(Collectors.toMap(r->r.getClassGroup().getId(),Function.identity()));
+        var assigned=assignments.findAllWithTeacherAndClass().stream()
+                .map(a->a.getClassGroup().getId()).collect(Collectors.toSet());
+        List<ClassSource> rows=new ArrayList<>();
+        for(var group:groups) {
+            var row=newFamily.reconcile(saved.containsKey(group.getId())?source(saved.get(group.getId())):live(group,date),date);
+            if(!row.students().isEmpty()||assigned.contains(group.getId())||saved.containsKey(group.getId()))rows.add(row);
+        }
+        rows.sort(Comparator.comparing((ClassSource c)->Objects.toString(c.grade(),""))
+                .thenComparing(ClassSource::className).thenComparing(ClassSource::classId));
+        return rows;
+    }
     public ClassSource live(ClassGroup group,LocalDate date) {
         var extra=supplement(group.getId(),date);
         Map<Long,Member> member=extra.members().stream().collect(Collectors.toMap(Member::studentId,Function.identity()));

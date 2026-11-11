@@ -1,3 +1,4 @@
+import {useFormChanges} from '../common/UnsavedChanges'
 import {useState} from 'react'
 import {Link} from 'react-router-dom'
 import {ChevronRight} from 'lucide-react'
@@ -13,7 +14,8 @@ function Field({title,children}) {
 
 export default function PraiseEditor({editor:e,setEditor,data,busy,save,run,name,link,error}) {
  const [draft,setDraft]=useState(e),[part,setPart]=useState('인도자'),[accepted,setAccepted]=useState(false)
- const close=()=>!busy&&setEditor(null),change=(key,value)=>setDraft(d=>({...d,[key]:value})),revision=e.revision
+ const {confirm:confirmMove}=useFormChanges(draft,{busy})
+ const close=()=>confirmMove(()=>!busy&&setEditor(null)),change=(key,value)=>setDraft(d=>({...d,[key]:value})),revision=e.revision
  const dialog={error,busy,onClose:close,className:'pt-editor-dialog'}
 
  if(e.type==='person') {

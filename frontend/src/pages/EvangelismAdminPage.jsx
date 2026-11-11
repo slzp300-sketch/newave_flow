@@ -1,3 +1,4 @@
+import {requestErrorMessage} from '../utils/requestFeedback'
 import DialogActions from '../components/common/DialogActions'
 import {useId,useState,useRef} from 'react'
 import {useQuery,useQueryClient} from '@tanstack/react-query'
@@ -44,7 +45,7 @@ function EvangelismAdmin({scope}){
   if(attempt.current?.signature!==signature)attempt.current={signature,key:crypto.randomUUID()}
   lock.current=true;setBusy(true);setError('');setNotice('')
   try{await work(attempt.current.key);attempt.current=null;await refresh();done?.();setNotice('저장 완료');return true}
-  catch(e){setError(e.response?.data?.message||'저장 결과를 확인하지 못했습니다. 같은 내용으로 다시 시도해주세요.');await refresh();return false}
+  catch(e){setError(requestErrorMessage(e));await refresh();return false}
   finally{lock.current=false;setBusy(false)}
  }
  const openEditor=filter=>{setError('');setNotice('');setEditor(filter)}

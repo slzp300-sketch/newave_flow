@@ -33,7 +33,7 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
 
     @Query("""
         SELECT COUNT(r) FROM DailyReport r
-        WHERE r.reportDate = :date AND r.status = 'SUBMITTED'
+        WHERE r.reportDate = :date AND r.status = 'SUBMITTED' AND r.draftChanged = false
         """)
     long countSubmittedByDate(@Param("date") LocalDate date);
 

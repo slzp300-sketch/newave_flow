@@ -80,6 +80,16 @@ class WidgetHttpTest {
   assertEquals("none",snapshot.tasks().get(0).state());assertEquals("pending",snapshot.tasks().get(1).state());
   String data=json.writeValueAsString(snapshot);assertFalse(data.contains(teacher.getEmail()));assertFalse(data.contains(other.getName()));assertFalse(data.contains("token"));assertFalse(data.contains("지난 일정 제외"));
  }
+ @Test void calendarContainsTheWholeMonthAndClipsMultiDayEventsAtMonthBoundaries(){
+  events.saveAndFlush(Event.builder().title("가상 월 경계 일정").eventDate(date.withDayOfMonth(1).minusDays(2)).endDate(date.withDayOfMonth(2)).eventType(Event.EventType.REGULAR).build());
+  events.saveAndFlush(Event.builder().title("가상 지난 일정").eventDate(date.withDayOfMonth(3)).eventType(Event.EventType.REGULAR).build());
+  events.saveAndFlush(Event.builder().title("가상 월말 일정").eventDate(date.withDayOfMonth(29)).endDate(date.plusMonths(1).withDayOfMonth(3)).eventType(Event.EventType.REGULAR).build());
+  var snapshot=widgets.read(credential());
+  assertEquals(List.of(date.withDayOfMonth(1),date.withDayOfMonth(2),date.withDayOfMonth(3),date.withDayOfMonth(29),date.withDayOfMonth(30)),snapshot.calendarDates());
+  assertTrue(snapshot.events().stream().noneMatch(e->e.title().equals("가상 지난 일정")));
+  assertTrue(snapshot.events().size()<=3);
+ }
+ @Test void emptyMonthIsExplicitRatherThanMissing(){assertEquals(List.of(),widgets.read(credential()).calendarDates());}
  @Test void partialFieldsValidateValuesAndPreserveLegacyAndQuarterRules()throws Exception{
   http.perform(put("/api/tts/answer-fields").header("Authorization",auth(teacher)).contentType("application/json")
    .content("{\"weekStart\":\"2026-11-08\",\"questionId\":"+daily.getId()+",\"changes\":{\"수\":true}}" )).andExpect(status().isOk());

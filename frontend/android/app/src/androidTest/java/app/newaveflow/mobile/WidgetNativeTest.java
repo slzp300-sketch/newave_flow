@@ -57,11 +57,29 @@ public class WidgetNativeTest {
             int width=Math.round(320*scale),pixels=Math.round(height*scale);
             view.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(pixels,View.MeasureSpec.EXACTLY));view.layout(0,0,width,pixels);
             assertEquals("NEWAVE  FLOW",((TextView)view.findViewById(R.id.widget_title)).getText().toString());
-            assertEquals("이번 주  0 / 1",((TextView)view.findViewById(R.id.widget_progress)).getText().toString());
+            if(height>=300)assertEquals("이번 주 남은 체크  1개",((TextView)view.findViewById(R.id.widget_progress)).getText().toString());
             assertChildrenFit((ViewGroup)view);
             if(height==320){Bitmap image=Bitmap.createBitmap(width,pixels,Bitmap.Config.ARGB_8888);view.draw(new Canvas(image));
                 try(var output=new FileOutputStream(new java.io.File(context.getCacheDir(),"widget-layout.png"))){image.compress(Bitmap.CompressFormat.PNG,100,output);}image.recycle();}
         }
+    }
+    @Test public void eachWidgetTypeHasItsOwnProviderAndFitsItsMinimumSize()throws Exception{
+        var providers=new HashSet<Class<?>>();
+        for(String type:new String[]{"daily","weekly","combined","calendar"}){
+            providers.add(NewaveWidgetProvider.provider(type));
+            var data=fixture(1);data.getJSONObject("snapshot").put("calendarDates",new JSONArray());
+            int height="calendar".equals(type)?340:"weekly".equals(type)?184:176;
+            View view=NewaveWidgetProvider.buildViews(context,2,data,height,new Date(),type).apply(context,new FrameLayout(context));
+            float scale=context.getResources().getDisplayMetrics().density;
+            int width=Math.round(250*scale),pixels=Math.round(height*scale);
+            view.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(pixels,View.MeasureSpec.EXACTLY));view.layout(0,0,width,pixels);
+            assertChildrenFit((ViewGroup)view);
+            assertEquals(type,NewaveWidgetProvider.typeFor(new android.content.ComponentName(context,NewaveWidgetProvider.provider(type))));
+        }
+        assertEquals(4,providers.size());assertEquals(NewaveWidgetProvider.class,NewaveWidgetProvider.provider("old"));
+        assertArrayEquals(new int[]{0,30},NewaveWidgetProvider.calendarShape("2026-11-11"));
+        assertArrayEquals(new int[]{6,31},NewaveWidgetProvider.calendarShape("2026-08-01"));
+        assertEquals(29,NewaveWidgetProvider.calendarShape("2028-02-29")[1]);
     }
     void assertChildrenFit(ViewGroup parent){for(int i=0;i<parent.getChildCount();i++){View child=parent.getChildAt(i);if(child.getVisibility()==View.GONE)continue;
         assertTrue("Widget child "+child.getId()+" bottom="+child.getBottom()+" parent="+parent.getHeight()+" fontScale="+context.getResources().getConfiguration().fontScale,child.getBottom()<=parent.getHeight());if(child instanceof ViewGroup)assertChildrenFit((ViewGroup)child);}}

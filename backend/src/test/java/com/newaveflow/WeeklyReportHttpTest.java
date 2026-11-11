@@ -45,6 +45,56 @@ class WeeklyReportHttpTest {
     @Autowired WeeklyReportSourceService sources;
     @Autowired WeeklyReportService weekly;
     @Autowired WeeklyReportDocumentService documents;
+    @Autowired ReportService legacyReports;
+    @Autowired GradeCareService gradeCare;
+    @Autowired WidgetService widgets;
+
+    @Test void submissionStateAgreesAcrossReportsGradeCareHomeAndWidgets() throws Exception {
+        var day=TtsService.weekSunday(LocalDate.now());
+        var admin=account("가상 미배정 관리자",User.Role.ADMIN);
+        var teacher=account("가상 담임",User.Role.TEACHER);
+        var assistant=account("가상 부담임",User.Role.TEACHER);
+        var missingTeacher=account("가상 미작성 담임",User.Role.TEACHER);
+        account("가상 미배정 교사",User.Role.TEACHER);
+        var c=group(teacher);var draftClass=group(teacher);var missingClass=group(missingTeacher);
+        classes.saveAndFlush(ClassGroup.builder().name("가상 빈 미배정 반").ageGroup("중1").build());
+        assignments.saveAndFlush(TeacherClass.builder().teacher(assistant).classGroup(c).isPrimary(false).build());
+        var s=student(c,"가상 제출 학생","남");var draftStudent=student(draftClass,"가상 초안 학생","여");
+        student(missingClass,"가상 미작성 학생","남");
+        var batch=new AttendanceBatchRequest(c.getId(),day,List.of(new AttendanceBatchRequest.Record(s.getId(),"PRESENT","","")));
+        var draftBatch=new AttendanceBatchRequest(draftClass.getId(),day,List.of(new AttendanceBatchRequest.Record(draftStudent.getId(),"ABSENT","가상 사유","")));
+        attendance.saveBatch(batch,teacher.getId());attendance.submitReport(c.getId(),day,teacher.getId());
+        attendance.saveBatch(draftBatch,teacher.getId());
+        assertSubmissionStates(day,admin,Map.of(c.getId(),"SUBMITTED",draftClass.getId(),"MISSING",missingClass.getId(),"MISSING"));
+        assertEquals(3,legacyReports.getSummary(day).totalTeachers());
+        assertEquals(1,legacyReports.getSummary(day).submitted()); // shared class, assistant already complete
+        assertEquals("done",widgets.preview(assistant).tasks().stream().filter(t->t.id().equals("attendance")).findFirst().orElseThrow().state());
+        http.perform(get("/api/weekly-status").header("Authorization",auth(assistant)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.attendanceSubmittedThisWeek").value(true));
+
+        attendance.saveBatch(batch,assistant.getId());
+        assertSubmissionStates(day,admin,Map.of(c.getId(),"CHANGED",draftClass.getId(),"MISSING",missingClass.getId(),"MISSING"));
+        assertEquals(0,legacyReports.getSummary(day).submitted());
+        assertEquals(0,daily.countSubmittedByDate(day));
+        assertEquals("pending",widgets.preview(assistant).tasks().stream().filter(t->t.id().equals("attendance")).findFirst().orElseThrow().state());
+        http.perform(get("/api/weekly-status").header("Authorization",auth(assistant)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.attendanceSubmittedThisWeek").value(false));
+
+        attendance.submitReport(c.getId(),day,assistant.getId());
+        attendance.submitReport(draftClass.getId(),day,teacher.getId());
+        assertSubmissionStates(day,admin,Map.of(c.getId(),"SUBMITTED",draftClass.getId(),"SUBMITTED",missingClass.getId(),"MISSING"));
+        assertEquals(2,legacyReports.getSummary(day).submitted());
+        assertEquals(1,legacyReports.getSummary(day).notSubmittedCount());
+        assertEquals("done",widgets.preview(teacher).tasks().stream().filter(t->t.id().equals("attendance")).findFirst().orElseThrow().state());
+    }
+
+    void assertSubmissionStates(LocalDate day,User admin,Map<Long,String> expected) {
+        var summary=attendance.getAdminWeeklySummary(day);
+        assertEquals(expected,summary.stream().collect(java.util.stream.Collectors.toMap(r->r.classGroupId(),r->r.submissionStatus())));
+        for(var row:summary)assertEquals(row.submissionStatus().equals("SUBMITTED"),row.submitted());
+        assertEquals(expected,weekly.get(day).classes().stream().collect(java.util.stream.Collectors.toMap(ClassSource::classId,ClassSource::submissionStatus)));
+        assertEquals(expected,gradeCare.overview("중1",day,admin).classes().stream().collect(java.util.stream.Collectors.toMap(r->r.id(),r->r.status())));
+    }
     User account(String name,User.Role role) {
         var u=users.saveAndFlush(User.builder().name(name).email(UUID.randomUUID()+"@example.invalid").password("synthetic").role(role).build());
         agreements.saveAndFlush(new CommunityAgreement(u.getId(),CommunitySafetyService.POLICY_VERSION));return u;
@@ -198,7 +248,12 @@ class WeeklyReportHttpTest {
         http.perform(put("/api/weekly-reports/my-worship").param("date",DAY.toString()).header("Authorization",auth(other))
             .contentType("application/json").content("{\"status\":\"PRESENT\"}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.gender").value(""));
-        assertTrue(weekly.get(DAY).issues().stream().anyMatch(i->i.area().equals("teacher")&&i.targetId().equals(other.getId())&&i.message().contains("성별")));
+        var genderIssue=weekly.get(DAY).issues().stream().filter(i->i.area().equals("teacher")&&i.targetId().equals(other.getId())&&i.message().contains("성별")).findFirst().orElseThrow();
+        assertEquals("teacher",genderIssue.action());assertEquals("gender",genderIssue.field());
+        var studentIssue=weekly.get(DAY).issues().stream().filter(i->("student:"+student.getId()).equals(i.subjectId())).findFirst().orElseThrow();
+        assertEquals(c.getId(),studentIssue.targetId());assertEquals("class",studentIssue.action());assertEquals("status",studentIssue.field());
+        var sermonIssue=weekly.get(DAY).issues().stream().filter(i->"sermon".equals(i.field())).findFirst().orElseThrow();
+        assertEquals("common",sermonIssue.action());
 
         var extra=new Supplement(List.of(new Member(student.getId(),"REGULAR",false,"여","오래된학교","오래된주소","오래된번호","")),List.of(),"");
         http.perform(put("/api/weekly-reports/classes/{id}",c.getId()).param("date",DAY.toString()).header("Authorization",auth(teacher))

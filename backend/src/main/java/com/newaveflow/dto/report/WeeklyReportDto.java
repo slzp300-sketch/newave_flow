@@ -30,7 +30,9 @@ public final class WeeklyReportDto {
     }
     public record ClassSource(Long classId, String className, String grade, String teacherName,
                               long revision, boolean submitted, boolean changed, boolean legacy,
-                              LocalDateTime submittedAt, List<StudentRow> students, String notes, String correctionReason) {}
+                              LocalDateTime submittedAt, List<StudentRow> students, String notes, String correctionReason) {
+        public String submissionStatus() { return !submitted ? "MISSING" : changed ? "CHANGED" : "SUBMITTED"; }
+    }
     public record ClassEditor(Long classId, String className, String grade, LocalDate date,
                               Supplement supplement, List<StudentRow> students, String sourceHash) {}
     public record TeacherRow(Long id, String name, String gender, String status, long revision,
@@ -38,7 +40,9 @@ public final class WeeklyReportDto {
     public record WorshipInput(String gender, String status, String reason) {}
     public record DraftInput(Long revision, Map<String,String> fields) {}
     public record CorrectionInput(Supplement supplement, Map<String,String> attendance, String reason, String sourceHash) {}
-    public record Issue(String area, Long targetId, String message) {}
+    public record Issue(String area, Long targetId, String message, String action, String field, String subjectId) {
+        public Issue(String area, Long targetId, String message) { this(area, targetId, message, area, null, null); }
+    }
     public record ExportRequest(String sourceHash, long draftRevision) {}
     public record ExportView(Long id, LocalDateTime createdAt, String createdBy) {}
     public record Report(LocalDate date, long draftRevision, String sourceHash,

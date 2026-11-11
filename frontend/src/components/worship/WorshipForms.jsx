@@ -1,3 +1,4 @@
+import SaveErrorNotice from '../common/SaveErrorNotice'
 import {useState} from 'react'
 import AppSelect from '../common/AppSelect'
 import SearchField from '../common/SearchField'
@@ -8,7 +9,7 @@ import {gradeClasses} from '../../utils/gradeColors'
 export function Field({label,children}){return <label className="wo-field"><span>{label}</span>{children}</label>}
 export function WorshipEditor({title,busy,error,canSave,onSave,onReload,onClose,children}){
  return <MotionDialog className="wo-dialog" title={title} busy={busy} onClose={onClose}
-  footer={<div className="wo-dialog-actions">{error&&<p className="wo-save-error" role="alert">{error}{onReload&&<small>다시 불러오면 작성 중인 내용은 초기화돼요.</small>}</p>}<Button key={onReload?'reload':'save'} disabled={busy||!canSave} onClick={onReload||onSave} successLabel={onReload?'불러오기 완료':'저장 완료'}>{onReload?'최신 내용 다시 불러오기':'저장'}</Button></div>}>
+  footer={<div className="wo-dialog-actions"><SaveErrorNotice error={error} preserved/><Button key={onReload?'reload':'save'} disabled={busy||!canSave} onClick={onReload||onSave} successLabel={onReload?'불러오기 완료':'저장 완료'}>{onReload?'최신 내용 다시 불러오기':'저장'}</Button></div>}>
   <fieldset className="wo-dialog-fields" disabled={busy||!canSave}>{children}</fieldset>
  </MotionDialog>
 }

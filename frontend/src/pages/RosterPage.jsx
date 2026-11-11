@@ -1,3 +1,9 @@
+import SearchField from '../components/common/SearchField'
+import QueryNotice from '../components/common/QueryNotice'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import { hasQueryData } from '../utils/queryReadState'
+import { matchesRosterName } from '../utils/rosterSearch'
+import ListItemMotion from '../components/common/ListItemMotion'
 import { gradeClasses } from '../utils/gradeColors'
 import { STUDENT_ROSTER_MODES } from '../utils/viewModes'
 import './PeopleReadability.css'
@@ -293,8 +299,9 @@ function TeacherRoster() {
   const [activeTab, setActiveTab] = useState('executive')
   const [activeGrade, setActiveGrade] = useState('전체')
   const [showTagPool, setShowTagPool] = useState(false)
+  const [search, setSearch] = useState('')
 
-  const { data: teachers = [], isLoading } = useQuery({
+  const teachersQuery = useQuery({
     queryKey: ['teacher-roster'],
     queryFn: () => usersApi.getTeacherRoster().then(r => r.data),
     staleTime: 2 * 60 * 1000,
@@ -306,21 +313,19 @@ function TeacherRoster() {
     staleTime: 5 * 60 * 1000,
   })
 
-  if (isLoading) {
-    return <div className="flex-1 flex items-center justify-center mt-20"><Loader2 className="w-8 h-8 text-secondary-700 animate-spin" /></div>
-  }
+  if (!hasQueryData([teachersQuery])) return <div className="p-4"><QueryNotice queries={[teachersQuery]} label="교사 명단" /></div>
+  const teachers = teachersQuery.data || []
 
-  const admins     = teachers.filter(t => t.role === 'ADMIN')
-  const pastors    = teachers.filter(t => t.role === 'PASTOR')
-  const executives = teachers.filter(t => t.role === 'EXECUTIVE')
-  const pureTeachers = teachers.filter(t => t.role === 'TEACHER')
+  const admins     = teachers.filter(t => t.role === 'ADMIN' && matchesRosterName(t.name, search))
+  const pastors    = teachers.filter(t => t.role === 'PASTOR' && matchesRosterName(t.name, search))
+  const executives = teachers.filter(t => t.role === 'EXECUTIVE' && matchesRosterName(t.name, search))
   // 목사님 제외한 모든 교사 (관리자·임원 포함, 반 배정 여부 무관)
-  const teacherTabList = [...pureTeachers, ...executives, ...admins]
+  const teacherTabList = teachers.filter(t => ['TEACHER','EXECUTIVE','ADMIN'].includes(t.role))
     .filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
 
   // 교사 탭 – 학년별 그룹화
   const teachersByGrade = teacherTabList.reduce((acc, t) => {
-    const grade = t.className && t.className.trim() !== '' ? t.className.split(' ')[0] : '교사'
+    const grade = t.className && t.className.trim() !== '' ? t.className.split(' ')[0] : '학년 미배정'
     if (!acc[grade]) acc[grade] = []
     acc[grade].push(t)
     return acc
@@ -348,14 +353,15 @@ function TeacherRoster() {
     })
   })
 
-  const otherGrades = Object.keys(teachersByGrade).filter(g => !GRADE_ORDER.includes(g) && g !== '교사')
+  const otherGrades = Object.keys(teachersByGrade).filter(g => !GRADE_ORDER.includes(g) && g !== '학년 미배정')
   const gradeKeys = [
     ...GRADE_ORDER.filter(g => teachersByGrade[g]),
     ...otherGrades.sort((a, b) => a.localeCompare(b)),
-    ...(teachersByGrade['교사'] ? ['교사'] : [])
+    ...(teachersByGrade['학년 미배정'] ? ['학년 미배정'] : [])
   ]
   const availableGrades = ['전체', ...gradeKeys]
-  const filteredGrades = activeGrade === '전체' ? gradeKeys : [activeGrade].filter(g => teachersByGrade[g])
+  const filteredGrades = (activeGrade === '전체' ? gradeKeys : [activeGrade]).filter(g => teachersByGrade[g]?.some(t => matchesRosterName(t.name, search)))
+  const matchedCount = activeTab === 'executive' ? admins.length + pastors.length + executives.length : filteredGrades.reduce((count, grade) => count + teachersByGrade[grade].filter(t => matchesRosterName(t.name, search)).length, 0)
 
   const execTags    = allTags.filter(t => t.category === 'EXECUTIVE').sort((a, b) => a.name.localeCompare(b.name))
   const teacherTags = allTags.filter(t => t.category === 'TEACHER').sort((a, b) => a.name.localeCompare(b.name))
@@ -377,21 +383,17 @@ function TeacherRoster() {
               className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-all ${
                 activeTab === 'teacher' ? 'border-secondary-500 text-secondary-600' : 'border-transparent text-gray-400'
               }`}
-            >교사</button>
+            >전체 교사</button>
           </div>
         </div>
 
 
+        <div className="px-4 pt-3"><SearchField label="교사 이름 검색" placeholder="교사 이름 검색" value={search} onChange={setSearch}/><QueryRefreshNotice queries={[teachersQuery]} label="교사 명단"/></div>
         {/* 총 인원 및 태그 관리 */}
         <div className="px-4 pt-3 pb-0 flex flex-col gap-2">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-gray-500">
-              {activeTab === 'executive'
-                ? `총 ${admins.length + pastors.length + executives.length}명`
-                : activeGrade === '전체'
-                  ? `총 ${teacherTabList.length}명`
-                  : `총 ${teachersByGrade[activeGrade]?.length || 0}명`
-              }
+              {search.trim() ? `검색 결과 ${matchedCount}명` : `총 ${matchedCount}명`}
             </span>
           </div>
           {canManageTags && (
@@ -437,7 +439,7 @@ function TeacherRoster() {
               {admins.length === 0 && pastors.length === 0 && executives.length === 0 && (
                 <div className="py-20 flex flex-col items-center gap-3 text-gray-300">
                   <Users size={40} />
-                  <p className="text-sm font-bold">임원 정보가 없습니다</p>
+                  <p className="text-sm font-bold">{search.trim() ? '검색 결과가 없습니다' : '임원 정보가 없습니다'}</p>
                 </div>
               )}
             </motion.div>
@@ -466,11 +468,11 @@ function TeacherRoster() {
                 {filteredGrades.length === 0 ? (
                   <div className="py-20 flex flex-col items-center gap-3 text-gray-300">
                     <Users size={40} />
-                    <p className="text-sm font-bold">교사 정보가 없습니다</p>
+                    <p className="text-sm font-bold">{search.trim() ? '검색 결과가 없습니다' : '교사 정보가 없습니다'}</p>
                   </div>
                 ) : filteredGrades.map(grade => {
                   const gc = GRADE_COLORS[grade] || GRADE_COLORS['전체']
-                  const list = teachersByGrade[grade] || []
+                  const list = (teachersByGrade[grade] || []).filter(t => matchesRosterName(t.name, search))
                   return (
                     <div key={grade}>
                       <div className="flex items-center gap-2 mb-3">
@@ -578,11 +580,11 @@ function TeacherRow({ teacher, idx, onSelect, context = 'default' }) {
   const { label: displayLabel, bg: displayBg } = teacherBadge(teacher, context)
 
   return (
-    <motion.button
+    <ListItemMotion
       type="button"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(idx * 0.03, 0.3) }}
+      index={idx} as="button"
       onClick={() => onSelect(teacher)}
       className="w-full flex items-center gap-3 px-3 py-2.5 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.98] transition-all text-left"
     >
@@ -598,7 +600,7 @@ function TeacherRow({ teacher, idx, onSelect, context = 'default' }) {
         <TeacherTags tags={teacher.tags} className="mt-1" />
       </div>
       <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
-    </motion.button>
+    </ListItemMotion>
   )
 }
 
@@ -1017,7 +1019,7 @@ function ClassCard({ cls, grade, colors, idx, isSelected, onClick, mode = 'large
 
   if (mode === 'list') {
     return (
-      <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.03, 0.3) }}
+      <ListItemMotion initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} index={idx} as="button"
         onClick={onClick}
         className={`glass-card w-full rounded-2xl px-3 py-2.5 flex items-center gap-3 border-2 text-left active:scale-[0.98] transition-all ${isSelected ? colors.border : 'border-transparent'}`}>
         <div className={`people-class-symbol rounded-xl ${colors.bg} flex items-center justify-center shadow-sm flex-shrink-0`}>
@@ -1035,12 +1037,12 @@ function ClassCard({ cls, grade, colors, idx, isSelected, onClick, mode = 'large
           </p>
         </div>
         <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
-      </motion.button>
+      </ListItemMotion>
     )
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+    <ListItemMotion initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} index={idx}>
       <Card onClick={onClick} className={`border-2 transition-all ${isSelected ? colors.border : 'border-transparent'}`}>
         <div className="flex items-start justify-between mb-3">
           <div className={`people-class-symbol rounded-xl ${colors.bg} flex items-center justify-center shadow-sm`}>
@@ -1065,7 +1067,7 @@ function ClassCard({ cls, grade, colors, idx, isSelected, onClick, mode = 'large
           )}
         </div>
       </Card>
-    </motion.div>
+    </ListItemMotion>
   )
 }
 
@@ -1157,7 +1159,7 @@ function StudentList({ students, colors }) {
 function StudentRow({ student, colors, idx }) {
   const age = calcAge(student.birthDate)
   return (
-    <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
+    <ListItemMotion initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} index={idx}
       className="people-student-row flex items-start gap-3 px-5 py-3.5">
       <div className={`w-9 h-9 rounded-xl ${student.gender === '여' ? 'bg-pink-400' : 'bg-primary-400'} flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm overflow-hidden`}>
         {student.profileImage
@@ -1200,7 +1202,7 @@ function StudentRow({ student, colors, idx }) {
           </div>
         )}
       </div>
-    </motion.div>
+    </ListItemMotion>
   )
 }
 

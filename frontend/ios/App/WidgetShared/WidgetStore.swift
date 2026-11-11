@@ -8,10 +8,42 @@ struct WidgetSchedule: Codable { let title: String; let date: String; let time: 
 struct WidgetSnapshot: Codable {
     let schemaVersion: Int; let revision: Int64; let generatedAt: String; let date: String; let validUntil: String
     let events: [WidgetSchedule]; let checks: [WidgetCheck]; let tasks: [WidgetTask]
+    var calendarDates: [String]? = nil // Older installed snapshots remain decodable.
+}
+enum WidgetVariant: String, CaseIterable {
+    case daily, weekly, combined, calendar
+    var kind: String {
+        switch self {
+        case .daily: return "NewaveDailyWidget"
+        case .weekly: return "NewaveWeeklyWidget"
+        case .combined: return "NewavePersonalWidget" // Preserve installed widgets.
+        case .calendar: return "NewaveCalendarWidget"
+        }
+    }
+    var title: String {
+        switch self { case .daily: return "영성 체크"; case .weekly: return "이번 주 체크"; case .combined: return "일정·체크"; case .calendar: return "교회 달력" }
+    }
 }
 struct WidgetSession: Codable {
     let token: String; let baseURL: String; let scope: String; let expiresAt: String
     var snapshot: WidgetSnapshot?; var error: String?; var lastCheckAt: String?
+    var confirmedCheckAt: Date?
+
+    func hasRecentSnapshot(at now: Date = Date()) -> Bool {
+        guard error == nil, let snapshot = snapshot, snapshot.date == WidgetLinks.today(now) else { return false }
+        let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let generated = formatter.date(from: snapshot.generatedAt) ?? ISO8601DateFormatter().date(from: snapshot.generatedAt)
+        guard let generated = generated else { return false }
+        let age = now.timeIntervalSince(generated)
+        return age >= 0 && age < 30
+    }
+
+    func hasRecentConfirmedCheck(at now: Date = Date()) -> Bool {
+        guard error == nil, let snapshot = snapshot, snapshot.date == WidgetLinks.today(now),
+              lastCheckAt == snapshot.generatedAt, let savedAt = confirmedCheckAt else { return false }
+        let age = now.timeIntervalSince(savedAt)
+        return age >= 0 && age < 5
+    }
 }
 enum WidgetStoreError: Error { case unavailable, invalid, keychain(OSStatus) }
 
@@ -67,12 +99,12 @@ final class NewaveWidgetStore {
     func configure(_ session: WidgetSession) throws { try locked { try writeUnlocked(session) } }
     func clear() throws { try locked { try clearUnlocked() } }
     func revoke(token: String) throws { try locked { if try readUnlocked()?.token == token { try clearUnlocked() } } }
-    func update(token: String, snapshot: WidgetSnapshot, checked: Bool) throws {
+    func update(token: String, snapshot: WidgetSnapshot, checked: Bool, now: Date = Date()) throws {
         try locked {
             guard var current = try readUnlocked(), current.token == token,
                   snapshot.revision >= (current.snapshot?.revision ?? 0) else { return }
             current.snapshot = snapshot; current.error = nil
-            if checked { current.lastCheckAt = snapshot.generatedAt }
+            if checked { current.lastCheckAt = snapshot.generatedAt; current.confirmedCheckAt = now }
             try writeUnlocked(current)
         }
     }

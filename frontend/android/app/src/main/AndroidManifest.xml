@@ -59,6 +59,18 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/newave_widget_info" />
         </receiver>
+        <receiver android:name=".DailyWidgetProvider" android:exported="false" android:label="@string/widget_daily_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/newave_widget_daily_info" />
+        </receiver>
+        <receiver android:name=".WeeklyWidgetProvider" android:exported="false" android:label="@string/widget_weekly_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/newave_widget_weekly_info" />
+        </receiver>
+        <receiver android:name=".CalendarWidgetProvider" android:exported="false" android:label="@string/widget_calendar_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/newave_widget_calendar_info" />
+        </receiver>
         <receiver android:name=".WidgetActionReceiver" android:exported="false" />
         <service android:name=".WidgetRefreshJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
     </application>

@@ -1,3 +1,4 @@
+import ListItemMotion from '../components/common/ListItemMotion'
 import './PeopleReadability.css'
 import SearchField from '../components/common/SearchField'
 import { AdminIntro, FilterResults, AdminEmpty } from '../components/common/AdminTools'
@@ -83,11 +84,11 @@ export default function DeactivationRequestsAdminPage() {
             </div> },
           ]}>
           {filtered.map((req, idx) => (
-            <motion.div
+            <ListItemMotion
               key={req.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
+              index={idx}
             >
               <Card className="flex flex-col gap-3 p-4">
                 {/* 학생 정보 */}
@@ -132,7 +133,7 @@ export default function DeactivationRequestsAdminPage() {
                   </button>
                 </div>
               </Card>
-            </motion.div>
+            </ListItemMotion>
           ))}
           </RecordViews>
         </div>

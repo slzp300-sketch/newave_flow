@@ -1,3 +1,4 @@
+import ListItemMotion from '../components/common/ListItemMotion'
 import AppSelect from '../components/common/AppSelect'
 import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
@@ -374,11 +375,11 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
         )}
 
         {filteredDisplayGroups.map((cls, idx) => (
-          <motion.div
+          <ListItemMotion
             key={cls.id}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
+            index={idx}
             className="brand-card bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 bg-gray-50/50">
@@ -427,7 +428,7 @@ function AssignTab({ assignGroups, roster, allStudents, onRefresh, queryClient }
                 ))
               )}
             </div>
-          </motion.div>
+          </ListItemMotion>
         ))}
       </div>
 

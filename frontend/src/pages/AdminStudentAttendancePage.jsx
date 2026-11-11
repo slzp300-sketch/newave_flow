@@ -17,6 +17,7 @@ import Header from '../components/layout/Header'
 import Card from '../components/common/Card'
 import StatSummary from '../components/common/StatSummary'
 import { attendanceApi } from '../api/attendance'
+import { isReportSubmitted, reportSubmissionLabel } from '../utils/reportSubmission'
 
 // Recent Sundays, including the current week, preserve the existing date scope.
 function getPastSundays(count = 10) {
@@ -116,7 +117,7 @@ function ClassListPanel({ grade, classes, onBack, onSelectClass }) {
           <span className="attendance-row-content">
             <span className="attendance-row-heading">
               <span className="attendance-row-name">{cls.classGroupName}</span>
-              <span className={'attendance-report-state ' + (cls.submitted ? 'attendance-report-complete' : 'attendance-report-pending')}>{cls.submitted ? '제출 완료' : '미제출'}</span>
+              <span className={'attendance-report-state ' + (isReportSubmitted(cls) ? 'attendance-report-complete' : 'attendance-report-pending')}>{reportSubmissionLabel(cls)}</span>
             </span>
             <span className="attendance-teacher"><span>담임</span><span>{cls.teacherName || '미배정'}</span></span>
             <AttendanceCounts total={cls.totalStudents} present={cls.presentCount} absent={cls.absentCount} />
@@ -257,7 +258,7 @@ export default function AdminStudentAttendancePage() {
         ) : classSummaries.length === 0 ? (
           <Card className="py-16 flex flex-col items-center gap-3">
             <Users size={36} className="text-gray-200" />
-            <p className="text-sm font-bold text-gray-600">해당 주차에 제출된 출석 데이터가 없습니다</p>
+            <p className="text-sm font-bold text-gray-600">해당 주일의 보고 대상 반이 없습니다</p>
           </Card>
         ) : (
           <>

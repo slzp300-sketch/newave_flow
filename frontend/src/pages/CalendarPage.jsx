@@ -1,3 +1,4 @@
+import ListItemMotion from '../components/common/ListItemMotion'
 import DialogActions, {DialogSections} from '../components/common/DialogActions'
 import AppSelect from '../components/common/AppSelect'
 import { Collapse, CollapsePanel } from '../components/common/Motion'
@@ -470,7 +471,7 @@ export default function CalendarPage() {
             </Card>
           ) : (
             selectedEvents.map((e, idx) => (
-              <motion.div key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+              <ListItemMotion key={e.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} index={idx}>
                 <Card className={`brand-custom-color p-4 border-l-4 overflow-hidden relative ${isEventEnded(e, today) ? 'event-inactive' : getEventBorderColor(e.color)}`}>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant={e.eventType === 'SPECIAL' ? 'info' : e.eventType === 'CHURCH_WIDE' ? 'danger' : 'gray'}>
@@ -508,7 +509,7 @@ export default function CalendarPage() {
                   <EventAttendanceStatus event={e} today={today} />
                   <ReportLink contentType="EVENT" targetId={e.id} label="일정 신고" />
                 </Card>
-              </motion.div>
+              </ListItemMotion>
             ))
           )}
         </div>

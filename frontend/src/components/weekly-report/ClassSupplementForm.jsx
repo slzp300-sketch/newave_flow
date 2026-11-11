@@ -7,10 +7,10 @@ import Button from '../common/Button'
 const visitorFields = { name: '이름', grade: '학년', school: '학교', address: '주소', phone: '연락처', introducer: '인도자' }
 const fieldLengths = { name: 50, grade: 20, school: 100, address: 255, phone: 30, introducer: 100 }
 export function GenderSelect({ value, onChange, name }) {
-  return <label>성별<AppSelect aria-label={`${name} 성별`} value={value || ''} onChange={e => onChange(e.target.value)}><option value="">선택</option><option value="남">남</option><option value="여">여</option></AppSelect></label>
+  return <label data-report-field="gender">성별<AppSelect aria-label={`${name} 성별`} value={value || ''} onChange={e => onChange(e.target.value)}><option value="">선택</option><option value="남">남</option><option value="여">여</option></AppSelect></label>
 }
 export function StatusSelect({ value, onChange, name, teacher = false }) {
-  return <label>출석<AppSelect aria-label={`${name} 출석`} value={value} onChange={e => onChange(e.target.value)}><option value="UNKNOWN">미확인</option><option value="PRESENT">출석</option><option value="ABSENT">결석</option>{!teacher && <option value="LATE">지각</option>}</AppSelect></label>
+  return <label data-report-field="status">출석<AppSelect aria-label={`${name} 출석`} value={value} onChange={e => onChange(e.target.value)}><option value="UNKNOWN">미확인</option><option value="PRESENT">출석</option><option value="ABSENT">결석</option>{!teacher && <option value="LATE">지각</option>}</AppSelect></label>
 }
 export default function ClassSupplementForm({ editor, value, onChange, disabled, attendance, onAttendance }) {
   const member = (index, update) => onChange({ ...value, members: value.members.map((v, i) => i === index ? { ...v, ...update } : v) })
@@ -20,7 +20,7 @@ export default function ClassSupplementForm({ editor, value, onChange, disabled,
 
     {value.members.map((m, index) => {
       const student = editor.students.find(s => s.studentId === m.studentId)
-      return <details className="wr-person" key={m.studentId}>
+      return <details className="wr-person" key={m.studentId} data-report-subject={`student:${m.studentId}`} tabIndex={-1}>
         <DisclosureSummary>{student?.name} <span>{reportCategories[m.category]}{m.graduated ? ' · 등반' : ''}{!m.gender ? ' · 성별 확인 필요' : ''}</span></DisclosureSummary>
         <div className="wr-grid">
           <label>보고 구분<AppSelect aria-label="보고 구분" value={m.category} onChange={e => member(index, { category: e.target.value, graduated: e.target.value === 'REGULAR' && m.graduated })}>{Object.entries(reportCategories).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</AppSelect></label>
@@ -33,7 +33,7 @@ export default function ClassSupplementForm({ editor, value, onChange, disabled,
     })}
     <div className="wr-row"><h3>금주 새 인원 · 새가족팀 확인</h3><Button variant="secondary" size="sm" type="button" onClick={() => onChange({ ...value, visitors: [...value.visitors, { id: crypto.randomUUID(), name: '', gender: '', grade: editor.grade || '', school: '', address: '', phone: '', introducer: '', status: 'PRESENT', teamConfirmed: false }] })}>+ 추가</Button></div>
 
-    {value.visitors.map((v, index) => <div className="wr-person" key={v.id}>
+    {value.visitors.map((v, index) => <div className="wr-person" key={v.id} data-report-subject={`visitor:${v.id}`} tabIndex={-1}>
       <div className="wr-row"><strong>새 방문자 {index + 1}</strong><Button variant="secondary" size="sm" type="button" onClick={() => onChange({ ...value, visitors: value.visitors.filter((_, i) => i !== index) })}>삭제</Button></div>
       <div className="wr-grid">{Object.entries(visitorFields).map(([key, label]) => <label key={key}>{label}<input maxLength={fieldLengths[key]} value={v[key]} onChange={e => visitor(index, { [key]: e.target.value })} /></label>)}
         <GenderSelect name={`새 방문자 ${index + 1}`} value={v.gender} onChange={gender => visitor(index, { gender })} />

@@ -82,6 +82,9 @@ public class DailyReport {
 
     public enum Status { DRAFT, SUBMITTED }
 
+    @JsonIgnore
+    public boolean isSubmissionComplete() { return status == Status.SUBMITTED && !draftChanged; }
+
     public void recordEditor(User editor) { this.teacher = editor; }
 
     public void submit() {

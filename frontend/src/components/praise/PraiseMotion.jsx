@@ -1,3 +1,4 @@
+import SaveErrorNotice from '../common/SaveErrorNotice'
 import React, {useEffect, useId, useRef, useState} from 'react'
 import {createPortal} from 'react-dom'
 import {AnimatePresence, motion, useIsPresent} from 'framer-motion'
@@ -60,7 +61,7 @@ export function MotionDialog({title,busy,onClose,children,error,className='',foo
   data-exiting={!present||undefined} inert={present?undefined:''} onCancel={e=>{e.preventDefault();if(!busy&&present)onClose()}}
   initial={reduced?{opacity:0}:{opacity:0,y:14,scale:.985}} animate={{opacity:1,y:0,scale:1}}
   exit={reduced?{opacity:0}:{opacity:0,y:8,scale:.99}} transition={{duration:reduced?.12:.2,ease}}>
-  <DialogSections footer={<>{error&&<p className="pt-live-error" role="alert">{error}</p>}{footer&&<div className="ui-dialog-actions">{footer}</div>}</>}>
+  <DialogSections footer={<><SaveErrorNotice error={error}/>{footer&&<div className="ui-dialog-actions">{footer}</div>}</>}>
    <header><h2 id={id} ref={heading} tabIndex={-1}>{title}</h2><button type="button" className="icon-button" aria-label="닫기" disabled={busy||!present} onClick={onClose}><X size={20}/></button></header>
    <div className="officer-dialog-body ui-dialog-body">{children}</div>
   </DialogSections>

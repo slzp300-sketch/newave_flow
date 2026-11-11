@@ -1,5 +1,6 @@
 import client from './client'
 import { saveReportFile } from '../native/reportExport'
+import { requestErrorMessage } from '../utils/requestFeedback'
 
 export const weeklyReportsApi = {
   attendance: date => client.get(`/weekly-reports/${date}/attendance`),
@@ -18,9 +19,9 @@ export const weeklyReportsApi = {
 
 export async function reportError(error) {
   if (error.response?.data instanceof Blob) {
-    try { return JSON.parse(await error.response.data.text()).message || '파일을 받지 못했습니다.' } catch { return '파일을 받지 못했습니다. 다시 시도해주세요.' }
+    try { return requestErrorMessage({response:{...error.response,data:JSON.parse(await error.response.data.text())}}, 'download') } catch { return requestErrorMessage(error, 'download') }
   }
-  return error.response?.data?.message || error.message || '처리하지 못했습니다. 다시 시도해주세요.'
+  return requestErrorMessage(error, 'download')
 }
 
 export async function downloadReport(id, date, format) {

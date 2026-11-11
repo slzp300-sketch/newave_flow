@@ -1,6 +1,9 @@
 export const eventRangeKey = (from, to) => ['events', from, to]
 
 const rules = [
+  // A quick round trip from the preview must show confirmed saves immediately.
+  // Expire only its snapshot; TTS keeps its own optimistic write journal.
+  [/^\/(?:tts|admin\/tts|prayer-votes|meetings|minutes|events|attendance|reports|weekly-reports|new-family|(?:admin\/)?(?:users|students|classes)|officers|safety)(?:\/|$)/, ['widget-preview']],
   [/^\/grade-care|^\/officers|^\/(admin\/)?users|^\/(admin\/)?students|^\/(admin\/)?classes|^\/attendance|^\/reports|^\/weekly-reports|^\/events|^\/meetings|^\/minutes|^\/new-family|^\/safety/, ['grade-care']],
   [/^\/worship/, ['worship', 'officer-access']],
   [/^\/officers|^\/(admin\/)?users|^\/(admin\/)?students|^\/safety/, ['worship']],
@@ -10,7 +13,7 @@ const rules = [
   [/^\/officers|^\/(admin\/)?users|^\/(admin\/)?students|^\/safety/, ['praise']],
   [/^\/officers/, ['officer-', 'new-family-capability', 'admin-teachers', 'teachers', 'teacher-roster', 'weekly-report']],
   [/^\/weekly-reports|^\/new-family|^\/attendance|^\/reports|^\/(admin\/)?users|^\/(admin\/)?students|^\/(admin\/)?classes|^\/safety/, ['officer-attendance', 'officer-access', 'officer-organization']],
-  [/^\/new-family/, ['new-family-', 'weekly-report', 'weekly-class-editor', 'students', 'student', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'attendance']],
+  [/^\/new-family/, ['new-family-', 'weekly-report', 'weekly-class-editor', 'students', 'student', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'attendance', 'admin-weekly-attendance', 'report-', 'weekly-status']],
   [/^\/weekly-reports/, ['weekly-report', 'weekly-worship', 'weekly-class-editor', 'report-', 'attendance', 'admin-weekly-attendance', 'admin-absent']],
   [/^\/attendance|^\/reports|^\/(admin\/)?students|^\/(admin\/)?classes|^\/(admin\/)?users|^\/safety/, ['weekly-report', 'weekly-class-editor', 'weekly-worship']],
   [/^\/safety/, ['safety-summary', 'content-report-', 'my-content-reports', 'report-target', 'photo-review-', 'my-profile', 'student', 'students', 'my-class-students', 'admin-students', 'roster', 'admin-roster', 'teachers', 'teacher-roster', 'meeting-minutes', 'admin-minute', 'events', 'event', 'weekly-events', 'attendance-required-events', 'report-', 'weekly-status', 'pending-users', 'suspended-users', 'admin-teachers']],

@@ -1,5 +1,12 @@
+import QueryNotice from '../components/common/QueryNotice'
+import QueryRefreshNotice from '../components/common/QueryRefreshNotice'
+import SaveErrorNotice from '../components/common/SaveErrorNotice'
+import {queryReadState,hasQueryData} from '../utils/queryReadState'
+import {useUnsavedChanges} from '../components/common/UnsavedChanges'
+import useVoteDraft from '../hooks/useVoteDraft'
+import {meetingFormFromVote} from '../utils/voteDraft'
 import { CollapsePanel } from '../components/common/Motion'
-import { useState, useEffect, useId } from 'react'
+import { useState, useId } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, CalendarCheck, MessageSquare } from 'lucide-react'
@@ -24,41 +31,30 @@ export default function SatMeetingPage() {
 
   const queryClient = useQueryClient()
 
-  const { data: satData, isLoading: satLoading } = useQuery({
+  const voteQuery = useQuery({
     queryKey: ['meeting-attendance', satDate, user?.id],
     queryFn:  () => client.get(`/meetings/attendance?date=${satDate}`).then(r => r.data),
     enabled:  !!user,
   })
 
+  const satData=voteQuery.data
+  const ready=queryReadState([voteQuery])==='ready'
+  const draft=useVoteDraft(satDate,satData,meetingFormFromVote)
+  const {value:sat,editing:editingSat,update:updateSat}=draft
   const saveSatMutation = useMutation({
     mutationFn: (payload) => client.post('/meetings/attendance', payload).then(r => r.data),
     onSuccess: async (savedVote, payload) => {
       queryClient.setQueryData(['meeting-attendance', payload.meetingDate, user?.id], savedVote)
-      setEditingSat(false)
+      draft.reset(payload.meetingDate)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['meeting-attendance', payload.meetingDate, user?.id] }),
         queryClient.invalidateQueries({ queryKey: ['tts-week'] }),
       ])
     },
-    onError: (err) => alert(err.response?.data?.message || '저장 중 오류가 발생했습니다.'),
   })
 
-  const [sat, setSat]           = useState({ status: null, reason: '' })
-  const [editingSat, setEditingSat] = useState(false)
-
-  useEffect(() => {
-    if (satData?.status) {
-      setSat({ status: satData.status, reason: satData.reason || '' })
-      setEditingSat(false)
-    } else {
-      setSat({ status: null, reason: '' })
-      setEditingSat(true)
-    }
-  }, [satData, satDate])
-
-  const updateSat  = (patch) => setSat(d => ({ ...d, ...patch }))
   const submitSat  = () => {
-    if (!sat.status) return alert('참석 여부를 선택해주세요.')
+    if (!ready || !sat.status || saveSatMutation.isPending) return
     saveSatMutation.mutate({
       meetingDate: satDate,
       status: sat.status,
@@ -67,6 +63,7 @@ export default function SatMeetingPage() {
   }
   const satValid     = sat.status !== null && (sat.status === 'ATTEND' || sat.reason.trim() !== '')
   const satSubmitted = satData?.status && !editingSat
+  const confirmMove=useUnsavedChanges({dirty:draft.dirty,busy:saveSatMutation.isPending})
 
   return (
     <div className="flex flex-col min-h-screen pb-10">
@@ -75,7 +72,7 @@ export default function SatMeetingPage() {
       <div className="px-4 py-3 glass-effect">
         <WeekNavigator
           offset={offset}
-          onChange={setOffset}
+          onChange={value=>confirmMove(()=>{draft.reset();saveSatMutation.reset();setOffset(value)})}
           disabled={saveSatMutation.isPending}
           title={labels.monthWeek}
 
@@ -84,28 +81,24 @@ export default function SatMeetingPage() {
       </div>
 
       <div className="px-4 py-5">
-        {satLoading ? (
-          <Card className="py-8 text-center text-base text-gray-600">불러오는 중...</Card>
+        <QueryRefreshNotice queries={[voteQuery]} label="내 투표" />
+        {ready&&!satData?.status&&<p className="mb-3 text-sm text-gray-600" role="status">아직 투표하지 않았습니다.</p>}
+        {!hasQueryData([voteQuery]) ? (
+          <QueryNotice queries={[voteQuery]} label="내 투표" />
         ) : satSubmitted ? (
-          <SatSubmittedCard sat={satData} dateLabel={satDateLabel} saving={saveSatMutation.isPending} onEdit={() => {
-            setSat({ status: satData.status, reason: satData.reason || '' })
-            setEditingSat(true)
-          }} />
-        ) : (
-          <SatForm
+          <SatSubmittedCard sat={satData} dateLabel={satDateLabel} saving={!ready||saveSatMutation.isPending} onEdit={()=>{if(ready){saveSatMutation.reset();draft.edit()}}} />
+        ) : (ready || draft.dirty) ? (
+          <fieldset disabled={!ready||saveSatMutation.isPending} className="min-w-0"><SatForm
             sat={sat}
             update={updateSat}
             onSubmit={submitSat}
-            onCancel={satData?.status ? () => {
-              setSat({ status: satData.status, reason: satData.reason || '' })
-              setEditingSat(false)
-            } : null}
-            valid={satValid}
+            onCancel={satData?.status ? ()=>confirmMove(()=>{draft.reset();saveSatMutation.reset()}) : null}
+            valid={ready&&satValid}
             saving={saveSatMutation.isPending}
             satDateLabel={satDateLabel}
-          />
-        )}
-
+          /></fieldset>
+        ) : null}
+        <SaveErrorNotice error={saveSatMutation.error} preserved onRetry={submitSat} disabled={!ready||!satValid||saveSatMutation.isPending}/>
       </div>
     </div>
   )

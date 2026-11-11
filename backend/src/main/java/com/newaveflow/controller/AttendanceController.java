@@ -43,6 +43,15 @@ public class AttendanceController {
         return ResponseEntity.ok(attendanceService.getStudentAttendanceHistory(studentId));
     }
 
+    // Keep the existing array response for already installed app versions.
+    @GetMapping("/student/{studentId}/history")
+    public ResponseEntity<com.newaveflow.dto.attendance.AttendanceHistoryPage> getStudentHistoryPage(
+            @PathVariable Long studentId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate before,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(attendanceService.getStudentAttendanceHistoryPage(studentId, before, size));
+    }
+
     @PostMapping("/submit")
     public ResponseEntity<Void> submitReport(
             @RequestParam Long classId,

@@ -1,3 +1,5 @@
+import {requestErrorMessage} from '../utils/requestFeedback'
+import {useUnsavedChanges} from '../components/common/UnsavedChanges'
 import DialogActions, {DialogSections} from '../components/common/DialogActions'
 import AppSelect from '../components/common/AppSelect'
 import { useState, useLayoutEffect, useRef, useId } from 'react'
@@ -104,6 +106,7 @@ function EventDialog({ event, today, onClose, onSaved, onDeleted }) {
   const [message, setMessage] = useState('')
   const [confirmation, setConfirmation] = useState(null)
   const dirty = editing && Object.keys(baseline).some(key => baseline[key] !== draft[key])
+  useUnsavedChanges({dirty,busy:saving})
   const change = patch => setDraft(previous => ({ ...previous, ...patch }))
   useLayoutEffect(() => {
     const node = dialog.current, previous = document.activeElement, overflow = document.body.style.overflow
@@ -131,7 +134,7 @@ function EventDialog({ event, today, onClose, onSaved, onDeleted }) {
       const response = event.isNew ? await client.post('/events', payload) : await client.put(`/events/${event.id}`, payload)
       onSaved({ ...event, ...payload, ...response.data, isNew: false })
       setEditing(false); setMessage(event.isNew ? '일정 등록 완료' : '수정 완료')
-    } catch (e) { setError(errorText(e, '저장하지 못했습니다. 다시 시도해 주세요.')) }
+    } catch (e) { setError(requestErrorMessage(e)) }
     finally { busy.current = false; setSaving(false) }
   }
   const remove = async () => {

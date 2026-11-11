@@ -1,4 +1,5 @@
 import DialogActions from '../common/DialogActions'
+import {useFormChanges} from '../common/UnsavedChanges'
 import {useState,useEffect,useRef,useId} from 'react'
 import {useQuery} from '@tanstack/react-query'
 import {format,parseISO,addDays,nextSaturday} from 'date-fns'
@@ -49,6 +50,7 @@ function ScheduleForm({form,groups,schedules,busy,error,onClose,onSubmit}){
  const initial=()=>bulk?rotationRows(form.scheduledDate||nextDate(),4,1,groups,groups[0]?.id):[{scheduledDate:form.scheduledDate||nextDate(),groupId:form.groupId||groups[0]?.id||''}]
  const [rows,setRows]=useState(initial),[dirty,setDirty]=useState(false),[confirmClose,setConfirmClose]=useState(false),[localError,setLocalError]=useState('')
  const feedback=useRef(null),closePrompt=useRef(null)
+ useFormChanges({start,count,interval,first,rows},{busy})
  useEffect(()=>{if(localError||error)feedback.current?.focus()},[localError,error])
  useEffect(()=>{if(confirmClose)closePrompt.current?.focus()},[confirmClose])
  useEffect(()=>{if(!dirty)return;const guard=e=>{e.preventDefault();e.returnValue=''};window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard)},[dirty])

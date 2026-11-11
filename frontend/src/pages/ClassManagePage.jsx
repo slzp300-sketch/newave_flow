@@ -1,3 +1,4 @@
+import ListItemMotion from '../components/common/ListItemMotion'
 import AppSelect from '../components/common/AppSelect'
 import GradeLabel from '../components/common/GradeLabel'
 import './PeopleReadability.css'
@@ -195,10 +196,10 @@ export default function ClassManagePage() {
 
 function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit, onDeactivate, onActivate, isPending }) {
   return (
-    <motion.div
+    <ListItemMotion
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.04 }}
+      index={idx}
     >
       <Card className={`people-student-row flex flex-wrap items-center gap-3 p-4 ${isInactive ? 'opacity-60' : ''}`}>
         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden ${
@@ -259,7 +260,7 @@ function ManageStudentCard({ student, idx, isInactive, isPendingApproval, onEdit
           ) : null}
         </div>
       </Card>
-    </motion.div>
+    </ListItemMotion>
   )
 }
 
@@ -281,7 +282,7 @@ function MemoTab({ students, onEditMemo }) {
       {activeStudents.map((student, idx) => {
         const hasContent = student.prayerRequest || student.sketch
         return (
-          <motion.div key={student.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}>
+          <ListItemMotion key={student.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} index={idx}>
             <Card onClick={() => onEditMemo(student)} className="people-memo-card p-4 group">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden ${
                 student.gender === '여' ? 'bg-pink-100 text-pink-600' : 'bg-primary-100 text-primary-600'
@@ -314,7 +315,7 @@ function MemoTab({ students, onEditMemo }) {
               </div>
               <StickyNote size={14} className={`flex-shrink-0 mt-0.5 transition-colors ${hasContent ? 'text-amber-400' : 'text-gray-200 group-active:text-amber-300'}`} />
             </Card>
-          </motion.div>
+          </ListItemMotion>
         )
       })}
     </div>

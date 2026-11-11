@@ -31,6 +31,8 @@ export function validateAttendanceWindow(event) {
 // 화면을 열어 둔 채 날짜가 바뀐 경우도 저장 직전에 다시 확인한다.
 export function assertEventAttendanceOpen(event, today = eventToday()) {
   if (isEventAttendanceInactive(event, today)) {
-    throw new Error(eventAttendanceMessage(event, today))
+    const error = new Error(eventAttendanceMessage(event, today))
+    error.userMessage = error.message
+    throw error
   }
 }

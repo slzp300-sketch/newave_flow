@@ -1,3 +1,5 @@
+import {requestErrorMessage} from '../utils/requestFeedback'
+import {useUnsavedChanges} from '../components/common/UnsavedChanges'
 import DialogActions, {DialogSections} from '../components/common/DialogActions'
 import { useState, useLayoutEffect, useRef, useId } from 'react'
 import { createPortal } from 'react-dom'
@@ -93,6 +95,7 @@ function MinuteDialog({ minute, scope, onClose, onSaved, onDeleted }) {
   const [showStatus, setShowStatus] = useState(false)
   const initial = minute.isNew ? blankMinute() : fieldsOf(minute)
   const dirty = editing && Object.keys(initial).some(key => draft[key] !== initial[key])
+  useUnsavedChanges({dirty,busy:saving})
   const status = useQuery({ queryKey: ['admin-minute-status', ...scope, minute.id], enabled: !!minute.id && showStatus,
     queryFn: ({ signal }) => client.get(`/minutes/${minute.id}/status`, { signal }).then(r => r.data) })
   useLayoutEffect(() => {
@@ -113,7 +116,7 @@ function MinuteDialog({ minute, scope, onClose, onSaved, onDeleted }) {
       const response = minute.isNew ? await client.post('/minutes', payload) : await client.put(`/minutes/${minute.id}`, payload)
       onSaved({ ...minute, ...response.data, ...payload, id: minute.id || response.data.id, isNew: false })
       setEditing(false); setConfirmation(null); setMessage(success)
-    } catch (e) { setError(errorText(e, '저장하지 못했습니다. 다시 시도해 주세요.')) }
+    } catch (e) { setError(requestErrorMessage(e)) }
     finally { busy.current = false; setSaving(false) }
   }
   const submit = e => {

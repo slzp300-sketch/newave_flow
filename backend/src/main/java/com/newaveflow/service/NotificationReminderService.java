@@ -62,7 +62,7 @@ public class NotificationReminderService {
     }
     private void attendance(LocalDate today,List<User> teachers) {
         LocalDate sunday=today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
-        Set<Long> completed=reports.findByReportDate(sunday).stream().filter(r -> r.getStatus()==DailyReport.Status.SUBMITTED)
+        Set<Long> completed=reports.findByReportDate(sunday).stream().filter(DailyReport::isSubmissionComplete)
                 .map(r -> r.getClassGroup().getId()).collect(Collectors.toSet());
         for(var user:teachers) if(user.getTeacherClasses().stream().anyMatch(c -> !completed.contains(c.getClassGroup().getId()))) {
             send(user,"attendance:"+sunday+":"+today,"주일 출석·보고 안내",

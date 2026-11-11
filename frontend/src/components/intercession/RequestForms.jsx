@@ -1,3 +1,4 @@
+import {useFormChanges} from '../common/UnsavedChanges'
 import {useId,useState} from 'react'
 import DialogActions from '../common/DialogActions'
 import {SlidersHorizontal,Lock,Globe,Check,RotateCcw,History} from 'lucide-react'
@@ -14,8 +15,9 @@ export function FormField({label,children}){return <label className="it-field"><
 export function RequestForm({proxy=false,onSave,busy}){
  const formId=useId()
  const [form,setForm]=useState({title:'',body:'',category:'청소년부',proxy,senderName:'',share:true,anonymous:true})
+ const {confirm:confirmMove}=useFormChanges(form,{busy})
  const change=patch=>setForm(s=>({...s,...patch}))
- return <form id={formId} className="it-stack" onSubmit={e=>{e.preventDefault();onSave(form)}}>
+ return <form id={formId} className="it-stack" onSubmit={e=>{e.preventDefault();onSave({...form,proxy})}}>
   <fieldset disabled={busy} className="it-stack">
    {proxy&&<FormField label="보내주신 분"><input required maxLength={80} className="field-input" value={form.senderName} onChange={e=>change({senderName:e.target.value})} placeholder="이름 또는 익명"/></FormField>}
    <FormField label="기도제목"><input required maxLength={80} className="field-input" value={form.title} onChange={e=>change({title:e.target.value})} placeholder="함께 기도할 제목"/></FormField>
@@ -31,6 +33,7 @@ export function ReviewForm({request:r,onSave,busy}){
  const pending=r.state==='pending',completed=!!r.completed||r.state==='answered'
  const saved={revision:r.revision,publish:isShared(r),completed,publicTitle:r.publicTitle||r.title||'',publicText:r.publicText||r.body||'',anonymous:r.anonymous}
  const [form,setForm]=useState(saved)
+ const {confirm:confirmMove}=useFormChanges(form,{busy})
  const change=patch=>setForm(s=>({...s,...patch}))
  const valid=form.publicTitle.trim()&&form.publicText.trim()
  if(r.state==='archived')return null
@@ -51,7 +54,7 @@ export function ReviewForm({request:r,onSave,busy}){
    </div>
   </fieldset></form>:<>
    <div className="it-row"><h2>{completed?'지난 기도제목':'현재 기도제목'}</h2><span className="it-meta">{sharingName(r)}</span></div>
-   <Button disabled={busy} loading={busy} variant={completed?'secondary':'primary'} onClick={()=>onSave({...saved,completed:!completed},completed?'resume':'complete')}>
+   <Button disabled={busy} loading={busy} variant={completed?'secondary':'primary'} onClick={()=>confirmMove(()=>onSave({...saved,completed:!completed},completed?'resume':'complete'))}>
     {completed?<RotateCcw size={16}/>:<History size={16}/>} {completed?'다시 기도하기':'지난 기도제목으로 이동'}
    </Button>
    <form onSubmit={e=>{e.preventDefault();if(valid)onSave(form,'edit')}}><fieldset disabled={busy}>{editor}</fieldset></form>
